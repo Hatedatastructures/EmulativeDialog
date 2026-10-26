@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-00
     Title: 建立 Codex 聊天 Agent 核心重写能力映射与上游基线
     TaskKind: SourceMapping
-    State: Rework
+    State: Review
     OwnerRole: ProductContractOwner
     OwnerSlotId: Worker02
     OwnerAgentId: "/root/agent_core"
@@ -60,7 +60,7 @@ Tasks:
     BaselineCommit: c75af0560e0d71fab753fbe7ac8995425314bb49
     Branch: Task/ED-0001-CodexCapabilityMap
     Worktree: H:/Qbot/EmulativeDialog.ED-0001
-    HeadCommit: 6e5ed9cc512165641d1dfe1edf2a2171d5756e2e
+    HeadCommit: 882b39ccd53077c93ab47a6266956af6e0202031
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0001
     OpenFindings:
       - ED-0001-RV-001
