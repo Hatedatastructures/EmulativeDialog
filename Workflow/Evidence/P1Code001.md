@@ -247,6 +247,9 @@ C++ 子分母（16）：
 ## 变更记录
 
 - BaseCommit: d151c5b3287718964d376ad550953e4d34890a08
-- CR-ED-0013-008 已在集成提交 68e83fa16f5fddd2c9c75baee1d64bff04111a93 的 Workflow/Events/Bootstrap/P1.jsonl 中登记：Submitted EventId 99141cee-01a0-4e93-b151-4f870bb22acb，Approved EventId 7fb1dcac-49b6-475e-bbe2-ada1bf9af27f。批准范围仅为证据交付路径 Workflow/Evidence/P1Code001.md；P1 计划未修改。
-- 操作偏差：第一次使用未指定目标 worktree 的 apply_patch，文件落在 H:\Qbot\EmulativeDialog\Workflow\Evidence；随后已撤回本轮创建的唯一文件。该文件夹现为空。Coordinator 指示保留此空目录供其只读复核；原始目录此后没有进一步写操作。
+- CR-ED-0013-008 的 Submitted EventId 99141cee-01a0-4e93-b151-4f870bb22acb 与 Approved EventId 7fb1dcac-49b6-475e-bbe2-ada1bf9af27f 记录在集成提交 68e83fa16f5fddd2c9c75baee1d64bff04111a93 的 Workflow/Events/Bootstrap/P1.jsonl；ApprovalTiming 更正 EventId 7ad92d16-3496-46c1-96b5-9a902b69d997 记录在集成提交 7b3ccd7a4df1d5f3eec144130cbfa76cede2b21e。CR 仅批准证据交付路径，P1 计划未修改。
+- 原始路径偏差：第一次对默认目录执行的 apply_patch 是未提交草稿；草稿文件已撤回，没有进入任何 commit。H:\Qbot\EmulativeDialog\Workflow\Evidence 留下空目录，按 Coordinator 指示保留供只读复核；撤回后未再写入原始 worktree。
+- 正确路径时间线：Coordinator 先在本线程消息中批准 PascalCase 路径 Workflow/Evidence/P1Code001.md，之后 Agent 才在 Task/P1-CODE-001-Audit 隔离 worktree 写入正确路径。该路径的首个 branch commit 是 4ed8910a0e82ac8f85c6768411bb92fe9e48ddc4，提交时间为 2026-10-27 02:39:37+08:00。
+- Submitted/Approved Event 的 OccurredAt 均为 2026-10-27 02:40:26+08:00，即首个正确路径提交之后 49 秒；Correction Event 7ad92d16-3496-46c1-96b5-9a902b69d997 澄清 OccurredAt 表示写入 EventStore 的登记时间，不是审批决定时间。RequestedBeforeArtifactWrite 与 ApprovalPrecededArtifactWrite 依据协调者消息先于正确路径写入的顺序；精确的会话消息时钟未保存，因此不能由这些 Event 时间推断决策时刻。
+- 后续提交 fde056d1325b0bcec6e529654170ada1e0111f38 与 1a7bf6cdffef79a94c95bcd1bcbde5297252d2ea 仅修正审计报告措辞；首个正确路径 artifact commit 仍为 4ed8910a0e82ac8f85c6768411bb92fe9e48ddc4。
 - 本报告只覆盖上述固定基线的静态名称/路径规则；不代替独立 Reviewer 或 Coordinator 对 P1 ExitGate 的决定。
