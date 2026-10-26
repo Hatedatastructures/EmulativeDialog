@@ -852,7 +852,7 @@ Tasks:
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Ready
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -1039,9 +1039,9 @@ Tasks:
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R1 was superseded before any six-path edit; CR-ED-0013-001 authorizes the exact governance write set, and R2 ReadSet is expanded to 12 unique files."
+      CurrentFindingOrFailure: "CR-ED-0013-001 approved; R2 expands ReadSet to 12 unique files and delegates the exact six governance paths. R1 branch/worktree remains preserved with no task-file edits."
       TriedApproaches: []
-      NextAction: "Coordinator records the CR decision, fixes a new R2 BaseCommit, assigns Worker01 on a new isolated R2 branch/worktree, then Worker02 reviews the fixed Head."
+      NextAction: "Coordinator fixes R2 BaseCommit to the committed R2 TaskSpec, assigns Worker01 on a new isolated R2 branch/worktree, then Worker02 reviews the fixed Head."
       OpenMessageIds: []
       LastValidationResult: "Not run; task has not started."
     Deliverable:
