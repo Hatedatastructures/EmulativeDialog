@@ -50,9 +50,17 @@ Acceptance:
     Evidence: ""
 Validation:
   RequiredTargets: []
+  # Absolute sibling build directory; command strings must contain the resolved path, not an undefined token.
+  TaskBuildDirectory: ""
   TargetedBuild: []
   ContractFixtures: []
   StaticChecks: []
+  Coverage:
+    Required: false
+    ProductionSources: []
+    TestDriverSource: ""
+    MinimumLinePercent: 80
+    ReportDirectory: ""
   LiveSideEffects: Forbidden
   NotRunReason: ""
 

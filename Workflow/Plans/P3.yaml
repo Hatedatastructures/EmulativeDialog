@@ -16,6 +16,7 @@ TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
   AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123]
   AllTaskSpecsFrozenBeforeAssignment: true
+  ValidationCommandChangeRequestId: CR-ED-0126-001
 
 ParallelGroups:
   - GroupId: DurableMemory
