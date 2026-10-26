@@ -257,12 +257,13 @@ Tasks:
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Ready
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
     OwnerAgentId: "/root/workflow_controller"
     ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
     ParallelGroup: ControllerAfterBuild
@@ -284,9 +285,12 @@ Tasks:
       - Workflow/EnforcementMatrix.yaml
       - Architecture/ModuleMap.yaml
       - Architecture/Modules/WorkflowTools.yaml
+      - Standards/DependencyPolicy.md
       - CMakeLists.txt
       - CMakePresets.json
+      - CMake/DependencyPins.cmake
     WriteSet:
+      - CMakeLists.txt
       - Tools/WorkflowController/
       - Tests/Contract/WorkflowController/
     ForbiddenSet:
@@ -295,7 +299,8 @@ Tasks:
       - Source/Providers/**
       - Source/Channels/**
       - Architecture/Contracts/**
-    SharedLocks: []
+    SharedLocks:
+      - RootCMakeAndPresets
     Acceptance:
       - AcceptanceId: AC-1
         Description: Query one TaskId from the routed phase plan and reject missing, stale-revision, invalid-state, and unsatisfied-dependency assignments.
@@ -325,14 +330,14 @@ Tasks:
         - ctest --preset windows-mingw --output-on-failure
       StaticChecks:
         - C++20 and PascalCase checks for new project-owned C++ paths and identifiers.
-        - Verify the task branch diff is contained in the two authorized WriteRoots.
+        - Verify the task branch diff is contained in the exact frozen WriteSet: CMakeLists.txt and the two authorized source roots.
       LiveSideEffects: Forbidden
       NotRunReason: ""
     RiskLevel: High
     RiskOwnerRole: AgentWorkflowOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: c4d2b94e0dbfb82d922634c1b175aab76f545567
     HeadCommit: ""
     Branch: ""
     Worktree: ""
@@ -340,7 +345,7 @@ Tasks:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Implement the controller after ED-0006 is verified; the P1 ExitGate still requires ED-0007 contract freeze.
+      NextAction: Create the isolated controller worktree from BaselineCommit and implement only the frozen WriteSet; ED-0007 remains a parallel contract task.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
