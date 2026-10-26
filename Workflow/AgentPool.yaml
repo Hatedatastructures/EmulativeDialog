@@ -29,7 +29,7 @@ Slots:
       - RootBuildAndDependencies
       - AgentWorkflowController
     CurrentTaskId: ED-0008
-    Status: Active
+    Status: Review
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/agent_core"
@@ -54,7 +54,7 @@ Slots:
     ModuleIds:
       - ProviderOpenAIChatCompletions
     CurrentTaskId: ED-0010
-    Status: Active
+    Status: Review
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/provider_anthropic"
@@ -62,7 +62,7 @@ Slots:
     ModuleIds:
       - ProviderAnthropicMessages
     CurrentTaskId: ED-0011
-    Status: Active
+    Status: Review
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
     AgentId: "/root/memory_context"

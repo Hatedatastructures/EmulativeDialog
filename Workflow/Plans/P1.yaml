@@ -274,7 +274,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Rework
+    State: Review
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -363,26 +363,26 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042
-    HeadCommit: e32bdaf5ce85426504a661cd1ac00cad167014b1
+    HeadCommit: 35186cb8e5b56942f8127f2a241f1b21f909eadb
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R4
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
-      CurrentFindingOrFailure: "ED-0008-RV-002 Major: R3 ReviewBundle copied CommandExecuted events without filtering TaskRevision; its R3 manifest contains an R2 git diff --check command (c4d2..ddcf) instead of the R3 Base..Head validation."
+      CurrentFindingOrFailure: ""
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
         - "Early compile failures: duplicate TaskScopedMessageStore constructor; PathsEqual declaration order; missing Trim fixture helper; corrected in the task WriteSet."
         - "Early CTest failures: invalid ReadSet setup and missing PhaseId in event fixture; corrected and superseded by final 2/2 pass."
         - "Review of Base c4d2b94 found the source diff out of the P1 task WriteSet because the frozen CMakeLists.txt/SharedLock revision was committed later in b0f5def; rebase and re-review required."
-        - "Coordinator found R3 ReviewBundle included stale Revision2 validation evidence because validation events were not filtered by TaskRevision; must filter exact TaskId/Revision and add regression fixture."
-      NextAction: Filter ReviewBundle validation evidence by exact TaskId/TaskRevision, add an R2-versus-R3 event regression fixture, rerun Revision3 tests, and generate R4 bundle at the new output path.
+        - "Coordinator found R3 ReviewBundle included stale Revision2 validation evidence because validation events were not filtered by TaskRevision; R4 now filters TaskId/TaskRevision and includes R2-versus-R3 plus cross-TaskId regression fixtures."
+      NextAction: Generate the R4 ReviewBundle from the current TaskRevision 3 validation events; Worker02 must review the fixed Base/Head and bundle.
       OpenMessageIds:
         - FUP-ED-0008-01
         - ED-0008-RV-001
         - ED-0008-RV-002
-      LastValidationResult: "Revision 3 configure/build/CTest passed 2/2 on Base b0f5def; ReviewBundle validation list is invalid because it carries R2 command events. Code review correction and R4 bundle are pending."
+      LastValidationResult: "Revision 3 configure/build/CTest and diff check exit 0 on Base b0f5def..Head 35186cb; ReviewBundle R4 generation pending after TaskRevision3 event ledger update."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -512,7 +512,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Chat Completions 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Rework
+    State: Verified
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -579,18 +579,22 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
-    HeadCommit: 6bd28756642183ed44501adab42a41e067408b20
+    HeadCommit: 97223128541c4238465ae0f0db68e94951a95348
     Branch: Task/ED-0010-ChatFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0010
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
+    MergeTargetBranch: codex/integration
+    MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    ReviewerDecision: Approved
+    ReviewHeadCommit: 97223128541c4238465ae0f0db68e94951a95348
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
-      CurrentFindingOrFailure: "ED-0010-RV-001 P2: ErrorCases ERROR-005 RegisteredResponseFields does not distinguish the standard response envelope id/object/created/model fields from the unsupported vendor extension fields."
-      TriedApproaches: []
-      NextAction: Clarify ERROR-005 field semantics within ErrorCases.json, then submit a new fixed Head for focused P2 re-review.
-      OpenMessageIds:
-        - ED-0010-RV-001
-      LastValidationResult: "Initial JSON parse, diff check and WriteSet checks passed; fixed-commit review opened one P2 fixture ambiguity; no C++ build/live request applies."
+      CurrentFindingOrFailure: ""
+      TriedApproaches:
+        - "R1 P2 finding: RegisteredResponseFields was ambiguous; R2 registers id/object/created/model, maps id to ProviderResponseId, separates canonicalized fields, and names x_vendor_trace as unsupported; Worker05 approved R2."
+      NextAction: Queue and merge the independently approved R2 Chat fixture patch into codex/integration for ED-0105.
+      OpenMessageIds: []
+      LastValidationResult: "R2 JSON parse, git diff --check Base..Head and exact four-file WriteSet pass; focused Worker05 review approved with no findings; fixture-only, no C++ build/live request."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -603,7 +607,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Anthropic Messages 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Rework
+    State: Verified
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -670,17 +674,22 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
-    HeadCommit: 1a38453d09e79f2606d9f862088aa8ee37c4e113
+    HeadCommit: 431ed519516a1576c46522becf9be3864163a11e
     Branch: Task/ED-0011-AnthropicFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0011
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0011
+    MergeTargetBranch: codex/integration
+    MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    ReviewerDecision: Approved
+    ReviewHeadCommit: 431ed519516a1576c46522becf9be3864163a11e
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
-      CurrentFindingOrFailure: "ED-0011-RV-001 Major: four Anthropic stop-reason cases have cumulative message_delta usage.output_tokens=0 after message_start usage.output_tokens=1, violating the frozen cumulative snapshot rule."
-      TriedApproaches: []
-      NextAction: Make the four follow-up output_tokens snapshots nondecreasing and synchronize expected canonical usage, then submit a new fixed Head for focused re-review.
+      CurrentFindingOrFailure: ""
+      TriedApproaches:
+        - "R1 ED-0011-RV-001 Major: four stop-reason cases dropped cumulative output_tokens from 1 to 0. R2 changes only ErrorCases.json and keeps all four follow-up values at 1 with synchronized expected snapshots."
+      NextAction: Queue and merge the independently approved R2 Anthropic fixture patch into codex/integration for ED-0106.
       OpenMessageIds: []
-      LastValidationResult: "Initial JSON parse, diff check, exact WriteSet, SSE frame, terminal and UTF-8 checks passed; fixed-commit review found one open Major; fixture-only, no live request."
+      LastValidationResult: "R2 JSON parse, diff check, exact four-file WriteSet, focused cumulative-usage checks and Worker03 review passed with no findings; fixture-only, no live request."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
