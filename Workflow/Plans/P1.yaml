@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-05
     Title: 建立 Windows 原生 C++20 CMake 与依赖基线
     TaskKind: Build
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -131,11 +131,16 @@ Tasks:
     Branch: Task/ED-0006-WindowsCpp20Build
     Worktree: H:/Qbot/EmulativeDialog.ED-0006
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0006
+    MergeTargetBranch: codex/integration
+    MergeBaseCommit: c0792ea36b443fc984ea04542f6895457d33a569
+    MergeCommit: 71bed25a257b018f1e2a8c6e34ca751133135f30
+    ReviewerDecision: Approved
+    ReviewHeadCommit: b8fb2f36b868ee4c14766ace9bd00278121af74a
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Merge the independently reviewed task branch into local codex/integration using the approved bootstrap ReviewBundle; GitHub PR creation returned 403 Resource not accessible by integration.
+      NextAction: Merged to local codex/integration at 71bed25a257b018f1e2a8c6e34ca751133135f30 using the approved bootstrap ReviewBundle; remote PR creation was blocked by connector permissions.
       LastValidationResult: "Root reviewer approved fixed Base/Head; Windows-native configure/build/CTest and diff check exit 0; 1/1 CTest passed."
       OpenMessageIds: []
     Deliverable:
