@@ -9,8 +9,8 @@
 - ED-0006 Windows 原生 C++20 BuildProbe 与 ED-0007 四份 V1 合同均已独立审查并本地合入；GitHub PR 创建被 connector 的 403 权限阻止且 CLI 未登录，未声称已建 PR。ED-0009 Responses、ED-0010 Chat Completions、ED-0011 Anthropic Messages、ED-0012 Memory/Context 离线夹具均已独立审查并本地合入；ED-0010 merge 为 5355df76c87519d1730a4ff30ef635b22f9008ad，ED-0011 merge 为 3f63b920ddab43d73ee0ef5db381d8911a9f40ac。这些夹具任务不包含 C++ 实现，也不解除 P1 ExitGate。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
-- ED-0008 R4 尚未获批。Worker02 固定检查 Base b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042 → Head 35186cb8e5b56942f8127f2a241f1b21f909eadb 时发现 Base 中只有 ED-0008 TaskRevision 1，缺少 R3 使用的预算覆盖、worktree 字段和验证命令；R4 validations 的 evidence_path 为空，并发现脱敏顺序、事件路径约束和 Review 状态 bundle 路径等 Major 问题。R4 ReviewBundle 不可批准；Worker02 正汇总正式 findings，Worker01 已提交最小 ChangeRequest 提案。P1 ExitGate 通过前不启动产品 AgentRuntime 写代码。
-- Workflow/AgentPool.yaml 保持 Worker01–Worker06 六个稳定职责；Worker01 准备 ED-0008 作者回应，Worker02 独立复审，Worker03/04/05 并行准备各自 Provider C++ 实现 TaskSpec，Worker06 准备 Memory/Context TaskSpec。只读设计工作不替代正式 TaskSpec 注册和实现任务；后续继续复用逻辑身份，不虚报已完成 Agent 会话仍在运行。
+- ED-0008 R4 被 Worker02 以 RequestChanges 拒绝；ReviewResult 记录 RV-003..RV-010（2 Blocker、4 Major、2 P2）。Coordinator 已批准 CR-ED-0008-003：保持原 Goal、AC-1..AC-6、Reviewer 与六路径 WriteSet，代码 Base 固定为 10a38af152971b782eb422addaba14f4eabb4ba9；TaskRevision4 冻结提交与后续 TaskAssigned/BasePinned 事件分开记录，绑定 SpecCommit、CodeBaseCommit、branch/worktree 和 revision 专属预算批准。Worker01 将在 assignment event 后从新 Base 重基并修复全部 findings；尚未开始产品 AgentRuntime 代码。
+- Workflow/AgentPool.yaml 保持 Worker01–Worker06 六个稳定职责；Worker01 推进 ED-0008 Revision4 修复，Worker02 准备 ED-0101 首条切片 TaskSpec 并保留独立复审，Worker03/04/05 并行审阅和准备 ProviderPort/Adapter/NetworkPlatform TaskSpec，Worker06 对账 ED-0007 合同状态及 Memory/Storage 前置。只读任务设计不替代正式 TaskSpec 注册；继续复用逻辑身份。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
 - `Workflow/CodexCapabilityMap.yaml` 已锁定 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97` 与 Apache-2.0 行为参考边界；24 项能力已分类，15 项 Keep/Redesign 具备拟议 TaskId。正式 P2/P3 TaskSpecs 须在实现分配前登记。TUI 参照库仍未锁定，且不阻塞 Agent 核心。
 - 任何阶段不得把本状态描述为“已实现”或“已构建”。
@@ -33,9 +33,9 @@
 ## 下一步
 1. P0 的 ED-0001 与 ED-0005 已通过独立审查并合入本地 `codex/integration`；P1 现已打开。
 2. ED-0006 Windows C++20/CMake 基础和 ED-0007 Core/Provider/Memory/Channel 合同已通过独立审查并合并。
-3. 处理 ED-0008-RV-003..RV-007 Major findings，按 ChangeRequest 冻结新 TaskSpec/Base，再用新固定 Head 重建 ReviewBundle 并独立复审；P1 ExitGate 通过前不启动产品 AgentRuntime 实现。
+3. ED-0008 Revision4 固定后，Worker01 修复 RV-003..RV-010 并生成 R5 ReviewBundle；Worker02 只读复审固定 SpecCommit/Assignment/Base/Head。P1 ExitGate 通过前不启动产品 AgentRuntime 实现。
 4. P1 通过后登记 ED-0101–ED-0115 的正式 TaskSpecs，再完成 Mock 消息 → Core policy → C++ AgentRuntime → FakeProvider → MockChannel 的可编译行为切片。
 5. QQ 官方/授权接入与 TUI 参照分别按 P4/P5 推进；TUI 不阻塞 Agent 核心，微信继续 Deferred。
 
 ## 验证账本
-已存在 Windows 原生 C++20 BuildProbe 与 C++ WorkflowController 目标；ED-0006 post-merge configure/build/CTest 通过（1/1）。ED-0008 Head 35186cb8e5b56942f8127f2a241f1b21f909eadb 的 configure/build/CTest（2/2）与 diff check 均退出码 0，但固定 Base 的 TaskSpec 不支持该 Revision/命令，且审查发现多个 Major finding，因此这些运行结果不能作为 ED-0008 验收通过。ED-0009..0012 fixture JSON parse 和合并 diff check 通过。这些是构建/开发工具与离线协议数据证据，不是产品 AgentRuntime 行为。尚无产品 AgentRuntime 行为和真实 QQ 收发证据；微信本阶段不做收发。
+已存在 Windows 原生 C++20 BuildProbe 与 C++ WorkflowController 目标；ED-0006 post-merge configure/build/CTest 通过（1/1）。ED-0008 Head 35186cb8e5b56942f8127f2a241f1b21f909eadb 的 configure/build/CTest（2/2）与 diff check 均退出码 0，但 fixed TaskSpec/Base 不支持该 revision/命令且 Reviewer RequestChanges，因此不构成验收。R3 P1 ledger 还含四组重复 CommandExecuted EventId；不覆盖历史记录，Revision4/R5 需去重并拒绝冲突ID。ED-0009..0012 fixture JSON parse 和合并 diff check 通过。这些是开发工具与离线数据证据，不是产品 AgentRuntime 行为。

@@ -270,11 +270,11 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0008
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Review
+    State: Rework
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -308,10 +308,10 @@ Tasks:
       - CMake/DependencyPins.cmake
     ContextBudgetOverride:
       TaskId: ED-0008
-      TaskRevision: 3
+      TaskRevision: 4
       MaxReferenceFiles: 13
       ApprovedByRole: Coordinator
-      ApprovalEventId: a9d9ac40-3075-4d4e-a626-1c92eb43c038
+      ApprovalEventId: 3f2866a0-2dbb-4bfd-ad7a-501a5d6cb8e3
       RuleRef: Workflow/AgentExecutionStandard.md:47-48
       Reason: All 13 listed files are direct dependencies of AC-1..AC-6 or the authorized Windows/yaml-cpp build; no unrelated task history is loaded.
     WriteSet:
@@ -347,42 +347,58 @@ Tasks:
         Evidence: Rejection fixtures for forbidden controller operations.
     Validation:
       RequiredTargets:
+        - BuildProbe
         - WorkflowController
+        - WorkflowControllerContractTests
       TargetedBuild:
         - cmake --preset windows-mingw
         - cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
       ContractFixtures:
         - ctest --preset windows-mingw --output-on-failure
       StaticChecks:
+        - git diff --check <CodeBaseCommit> <HeadCommit>
         - C++20 and PascalCase checks for new project-owned C++ paths and identifiers.
         - Verify the task branch diff is contained in the exact frozen WriteSet: CMakeLists.txt and the two authorized source roots.
+        - Verify every ReviewBundle validation is bound to one unique EventId and a nonempty accessible EvidencePath.
       LiveSideEffects: Forbidden
       NotRunReason: ""
     RiskLevel: High
     RiskOwnerRole: AgentWorkflowOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042
-    HeadCommit: 35186cb8e5b56942f8127f2a241f1b21f909eadb
+    BaselineCommit: 10a38af152971b782eb422addaba14f4eabb4ba9
+    HeadCommit: ""
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R4/ReviewBundle.json
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R5/ReviewBundle.json
+    ReviewerDecision: ""
+    ReviewHeadCommit: ""
     Checkpoint:
-      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
-      CurrentFindingOrFailure: ""
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: "ED-0008-RV-003..RV-010 request changes; R4 is superseded. Revision 4 keeps the original goal and WriteSet while binding a frozen TaskSpec snapshot and fixing review, redaction, path, and evidence checks."
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
         - "Early compile failures: duplicate TaskScopedMessageStore constructor; PathsEqual declaration order; missing Trim fixture helper; corrected in the task WriteSet."
         - "Early CTest failures: invalid ReadSet setup and missing PhaseId in event fixture; corrected and superseded by final 2/2 pass."
         - "Review of Base c4d2b94 found the source diff out of the P1 task WriteSet because the frozen CMakeLists.txt/SharedLock revision was committed later in b0f5def; rebase and re-review required."
-        - "Coordinator found R3 ReviewBundle included stale Revision2 validation evidence because validation events were not filtered by TaskRevision; R4 now filters TaskId/TaskRevision and includes R2-versus-R3 plus cross-TaskId regression fixtures."
-      NextAction: Worker02 independent fixed-Base/Head review of R4 ReviewBundle.json; author must not change Head during review.
+        - "Worker02 fixed-commit R4 review found the Base task record was Revision 1 while R4 claimed Revision 3; the 13-file budget, Branch/Worktree, and R3 validation commands were not frozen at that Base. R4 is superseded."
+        - "R4 findings: RV-004 Bearer-token redaction leak; RV-005 EventShard/checkpoint path escape; RV-006 Review-state worktree validation rejects bundle creation; RV-007 validation evidence paths empty; RV-008 public budget override can be forged; RV-009 FlushFileBuffers failure ignored; RV-010 in-repository reparse target bypasses exact ReadSet."
+        - "Coordinator also observed four duplicate EventIds across identical R3 CommandExecuted records; Revision 4 must not count duplicate IDs as independent validation evidence and must reject conflicting duplicate IDs."
+      NextAction: Coordinator freeze TaskRevision 4 in a TaskSpec commit and append an assignment event binding TaskSpecCommit, CodeBaseCommit, owner/reviewer, branch and worktree; then Worker01 rebases the task branch onto CodeBaseCommit and fixes RV-003..RV-010.
       OpenMessageIds:
         - FUP-ED-0008-01
         - ED-0008-RV-001
         - ED-0008-RV-002
-      LastValidationResult: "R3 configure/build/CTest and Base..Head diff check exit 0; R4 ReviewBundle.json generated by the Controller and verified with only TaskRevision3 commands in Validations (8 current events; 4 historical R2 command events remain labeled in Events)."
+        - ED-0008-RV-003
+        - ED-0008-RV-004
+        - ED-0008-RV-005
+        - ED-0008-RV-006
+        - ED-0008-RV-007
+        - ED-0008-RV-008
+        - ED-0008-RV-009
+        - ED-0008-RV-010
+      LastValidationResult: "R4 configure/build/CTest and diff check ran successfully, but fixed TaskSpec/base mismatch and empty ReviewBundle evidence paths invalidate them; no TaskRevision4 validation has run."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -409,6 +425,40 @@ Tasks:
         ApprovedBaselineCommit: b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042
         SupersededReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008
         Reason: Independent review found the old Base task record did not contain the already-frozen CMakeLists.txt WriteSet and RootCMakeAndPresets lock, making the branch diff exceed the Base TaskSpec. The new Base contains the frozen ED-0008 scope; code WriteSet, goal and acceptance stay unchanged.
+        PreserveBranchAndWorktree: true
+      - ChangeRequestId: CR-ED-0008-003
+        FromTaskRevision: 3
+        ToTaskRevision: 4
+        RequestedByAgentId: "/root"
+        ApprovedByAgentId: "/root"
+        Scope:
+          - Bind immutable TaskSpecFreezeCommit and Coordinator assignment event to the separate CodeBaseCommit without a self-referential hash.
+          - Keep Goal, AC-1..AC-6, Reviewer, 13-item ReadSet, exact six-path WriteSet, ForbiddenSet and SharedLocks unchanged.
+          - Freeze TaskRevision4-specific budget approval, validation allowlist, artifact evidence, and review bundle references.
+          - Fix ED-0008-RV-003..RV-010 within the existing six-path WriteSet; no product AgentRuntime scope is added.
+        CodeBaseCommit: 10a38af152971b782eb422addaba14f4eabb4ba9
+        TaskSpecFreezeCommit: Coordinator commit following CodeBaseCommit; referenced by the later TaskAssigned event.
+        AssignmentEventCommit: Coordinator commit after TaskSpecFreezeCommit; records TaskSpecCommit and CodeBaseCommit.
+        SupersededReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R4/ReviewBundle.json
+        Findings:
+          - ED-0008-RV-003 Major: TaskSpec snapshot, revision, budget, branch/worktree and validation did not match fixed Base.
+          - ED-0008-RV-004 Blocker: Bearer token redaction leaked credential suffixes.
+          - ED-0008-RV-005 Blocker: event/checkpoint paths could escape repository root.
+          - ED-0008-RV-006 Major: Review state could not use the read-only ReviewBundle path.
+          - ED-0008-RV-007 Major: validations lacked nonempty accessible evidence paths.
+          - ED-0008-RV-008 P2: public context assembler accepted unverified budget overrides.
+          - ED-0008-RV-009 P2: flush failure was reported as a successful append.
+          - ED-0008-RV-010 Major: in-repository reparse targets could bypass exact ReadSet authorization.
+          - Coordinator observation: four duplicate R3 CommandExecuted EventIds must not inflate evidence.
+        Reason: Independent fixed-commit review rejected R4 and found two credential/path blockers plus task-snapshot and review-evidence defects; these prevent the Controller from safely enforcing its own acceptance gates.
+        Alternatives: Reject R4 and continue on R3 without repairing the security and audit gates; rejected because the discovered issues violate AC-2/AC-4/AC-5.
+        SafetyImpact: Fixes credential leakage, repository escape, unauthorized ReadSet traversal, and non-auditable validation evidence.
+        TargetedValidation:
+          - cmake --preset windows-mingw
+          - cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
+          - ctest --preset windows-mingw --output-on-failure
+          - Typed GitDiffCheck from CodeBaseCommit to HeadCommit
+          - JSONL event parse, unique EventId handling, nonempty validation artifacts, and exact WriteSet review
         PreserveBranchAndWorktree: true
 
   - TaskId: ED-0009
