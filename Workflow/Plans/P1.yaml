@@ -414,7 +414,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 OpenAI Responses 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Verified
+    State: MergeQueued
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -494,7 +494,7 @@ Tasks:
       CurrentFindingOrFailure: ""
       TriedApproaches:
         - "R1 reviewer found Major: in-band Responses error omitted sequence_number; R2 added sequence_number=2 following response.created sequence_number=1, then the fixed-commit reviewer approved."
-      NextAction: Queue and merge the approved R2 fixture patch into codex/integration; provider adapter task ED-0104 can then read these fixtures.
+      NextAction: Merge the approved R2 fixture patch into codex/integration; provider adapter task ED-0104 can then read these fixtures.
       OpenMessageIds: []
       LastValidationResult: "R2 PowerShell JSON parse exit 0; git diff --check Base..Head exit 0; exact four-file WriteSet; Worker04 approved with no remaining findings."
     Deliverable:
