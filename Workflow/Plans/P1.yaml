@@ -831,11 +831,11 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0017
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-05
     Title: 补齐 Provider refusal details 与终态错误类型合同
     TaskKind: ContractChange
-    State: Assigned
+    State: Ready
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -866,10 +866,22 @@ Tasks:
         Disposition: SupersededBeforeAssignment
         Branch: Task/ED-0017-R2-ProviderContractV1_2
         Reason: "WorkflowController.validate-assignment rejected the underscore and hyphenated branch topic; no assignment or implementation began."
+      - TaskRevision: 3
+        TaskSpecCommit: 0a5b57310310446c5843893172ff6055704e098d
+        TaskSpecBlob: e399905f7190e2f8d0ad4cde21e9a4a4d4692f76
+        State: Review
+        Disposition: SupersededAfterMajorReviewFinding
+        HeadCommit: c0604bba524c12b6a0c5a26b12e368737e3bc757
+        ReviewerDecision: RequestChanges
+        ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0017-R3-V1_2
+        ReviewFindingId: ED-0017-RV-001
+        RemotePullRequestCreated: false
+        Reason: "Worker02 found that the contract did not require discarding prior Anthropic partial TextDelta content when a refusal arrives mid-stream."
     ParallelGroup: ProviderRefusalContractV1_2
     Goal: >-
       通过 CR-ED-0007-006 在已冻结的 V1.1 之上发布 ModelProviderContract V1.2，
-      补全 Chat Completions 与 Anthropic refusal 的协议映射，并保留三协议共用的规范终态语义。
+      补全 Chat Completions 与 Anthropic refusal 的协议映射，并保留三协议共用的规范终态语义；Anthropic
+      refusal 在流中途出现时，先前部分文本必须丢弃，不得进入最终回复。
     OutOfScope:
       - 任一 Provider Adapter 或 AgentRuntime 实现
       - 任何工具、权限、MemoryConsent 或 Channel policy 变更
@@ -880,7 +892,7 @@ Tasks:
       - https://platform.claude.com/docs/en/api/messages/create
       - https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
       - https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
-    PreviousRevisionChangeRequest:
+    HistoricalRevisionChangeRequestV1_1:
       ChangeRequestId: CR-ED-0007-005
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -897,7 +909,7 @@ Tasks:
     ContractVersion:
       Before: ModelProviderContract V1.1
       After: ModelProviderContract V1.2
-    PreviousRevisionChangeRequest:
+    PreviousRevisionChangeRequestV1_2:
       ChangeRequestId: CR-ED-0007-006
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -916,7 +928,7 @@ Tasks:
         could be treated as a normal completed answer. The task record freezes V1.1; a new V1.2 contract preserves
         that history while closing the refusal mapping gap before any adapter implementation.
       PreserveCanonicalCppPortAndSecurityBoundary: true
-    RevisionChangeRequest:
+    PreviousRevisionChangeRequestBranchCorrection:
       ChangeRequestId: CR-ED-0007-007
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -932,6 +944,24 @@ Tasks:
         The registered R2 branch contains separators in the topic, while the C++ WorkflowController accepts only
         Task/ED-<id>-<PascalCase alphanumeric topic>. Assignment validation failed before any worktree or source edit.
       PreserveTargetCodeWriteSet: true
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0007-008
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+      Scope: >-
+        Add a normative Anthropic refusal rule requiring any earlier partial TextDelta output to be discarded when
+        the completed response has stop_reason=refusal; it must not enter a final reply or ChannelAction. No rollback
+        event or new C++ type is introduced. Preserve the exact contract-only WriteSet and all other V1.2 mappings.
+      Reason: >-
+        Independent fixed-Head review ED-0017-RV-001 found official Anthropic streaming-refusal guidance requires
+        prior partial output to be discarded, while CoreAgent V1's final-only Channel rule does not explicitly cover
+        the completed Refusal terminal. R3 Acceptance did not authorize this consumer behavior; this revision adds it
+        through a separate approved ChangeRequest.
+      PreserveTargetCodeWriteSet: true
     BaselineCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
     HeadCommit: ""
     MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
@@ -940,7 +970,7 @@ Tasks:
     IntegrationMode: PendingReview
     Branch: Task/ED-0017-ProviderContractV12
     Worktree: H:/Qbot/EmulativeDialog.ED-0017-R3
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0017-R3-V1_2
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0017-R4-V1_2
     RemotePullRequestCreated: false
     Context:
       ModuleId: ModelProviderPort
@@ -981,6 +1011,7 @@ Tasks:
         - "Keep Chat content_filter mapped only to ResponseFailed/ContentFiltered; length maps only to ResponseOutputLimited."
         - "ResponseFailed uses only failure codes; OutputLimitReached, cancellation and unknown outcomes remain their own terminal event variants."
         - "No change may authorize Provider or AgentRuntime action calls; RefusalStopDetails are informational metadata only."
+        - "When Anthropic completes with stop_reason=refusal after prior TextDelta output, that partial text is incomplete and must not enter the final reply or a ChannelAction; no event rollback mechanism is added."
         - "Only Architecture/Contracts/ModelProviderContract.md in the exact WriteSet may change."
       SoftDefaults: []
       ApprovedOverrides: []
@@ -1022,6 +1053,12 @@ Tasks:
           typed object, known categories map to the canonical enum, missing/null/unknown categories map to
           Unclassified, and explanation is omitted from canonical output.
         Evidence: Normative Anthropic mapping and refusal privacy rules agree with the V1.2 fixture successor.
+      - AcceptanceId: AC-8
+        Description: >-
+          If an Anthropic refusal arrives after partial TextDelta output, the earlier text is treated as incomplete and
+          discarded; it is not included in the final reply or sent to a Channel. This does not add an event rollback
+          mechanism or a new C++ event/type.
+        Evidence: Normative refusal rule matches Anthropic streaming refusal guidance and CoreAgent V1 final-only delivery.
     Validation:
       RequiredTargets: []
       TargetedBuild: []
@@ -1040,12 +1077,12 @@ Tasks:
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
-      LastCompletedAcceptance: "R1 AC-1..AC-5 preserved as historical V1.1 evidence"
-      CurrentFindingOrFailure: "R2 addresses the missing Chat Completions refusal mapping before any Provider adapter implementation; V1.2 fixtures remain blocked on this contract."
+      LastCompletedAcceptance: "R3 AC-1..AC-6; R3 AC-7 received RequestChanges"
+      CurrentFindingOrFailure: "R3 was rejected for missing Anthropic mid-stream partial-text discard semantics; R4 adds AC-8 under CR-ED-0007-008."
       TriedApproaches: []
-      NextAction: "Implement only the R2 contract WriteSet, then request an independent fixed-Base/Head review."
+      NextAction: "Implement only the R4 contract WriteSet, then request a new independent fixed-Base/Head review."
       OpenMessageIds: []
-      LastValidationResult: "Not run; R2 implementation has not started."
+      LastValidationResult: "R3 static checks passed; R4 implementation has not started."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
