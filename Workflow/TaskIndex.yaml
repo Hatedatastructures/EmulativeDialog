@@ -31,7 +31,10 @@ TaskArchive:
 Coordination:
   # Worker01/Worker06 为支持槽；Worker02-Worker05 为实现槽。
   MaximumSubagents: 6
-  EffectiveParallelism: MinimumOfConfiguredSlotsHostCapacityAndReadyIndependentTasks
+  MaximumRemoteBranches: 4
+  ReservedIntegrationBranches: 1
+  MaximumConcurrentTaskBranches: 3
+  EffectiveParallelism: MinimumOfConfiguredSlotsHostCapacityReadyIndependentTasksAndRemoteBranchCapacity
   CoordinatorIsSeparate: true
   StableRoleSlots: true
   ReuseAgentSessionAcrossRelatedTasks: true

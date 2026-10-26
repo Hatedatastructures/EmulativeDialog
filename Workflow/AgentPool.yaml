@@ -1,9 +1,14 @@
 # 稳定工作槽注册表，不代表当前已经启动了这些 Agent。
 SchemaVersion: 1
 MaximumSubagents: 6
+MaximumRemoteBranches: 4
+ReservedIntegrationBranches: 1
+MaximumConcurrentTaskBranches: 3
+RemoteBranchCapCountsDefaultBranch: true
+RetireRemoteTaskBranchAfterMerge: true
 State: Active
 EffectiveParallelism:
-  Formula: MinimumOfConfiguredSlotsHostCapacityAndReadyIndependentTasks
+  Formula: MinimumOfConfiguredSlotsHostCapacityReadyIndependentTasksAndRemoteBranchCapacity
 
 LifecyclePolicy:
   KeepLogicalSlotIdentityAcrossTasks: true
