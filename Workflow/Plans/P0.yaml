@@ -50,9 +50,27 @@ Tasks:
     EpicId: EP-00
     Title: 建立 Codex 聊天 Agent 核心重写能力映射与上游基线
     TaskKind: SourceMapping
-    State: Proposed
+    State: Ready
     OwnerRole: ProductContractOwner
+    ReviewerRole: AgentWorkflowOwner
+    ReviewerAgentId: "/root/workflow_controller"
     DependsOn: []
+    Goal: "锁定 Codex 上游基线，并把聊天产品范围的行为追踪到 C++ 合同、模块、实现任务和验收。"
+    OutOfScope:
+      - TUI 参照库选型
+      - QQ 真实账号登录或发送
+      - 微信调研或实现
+      - 复制或翻译 Rust 源码
+    ContractVersion: CodexCapabilityMapSchemaV1
+    ForbiddenSet:
+      - Source/**
+      - Tests/**
+      - Architecture/Contracts/**
+      - Workflow/Plans/**
+      - Workflow/TaskIndex.yaml
+      - Workflow/AgentPool.yaml
+    RiskLevel: Medium
+    RiskOwnerRole: ProductContractOwner
     ExternalInputs:
       - Codex 官方源码仓库位置
       - 要作为重写基线的上游提交
