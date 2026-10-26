@@ -852,7 +852,7 @@ Tasks:
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -1032,16 +1032,16 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: 8ede04243ac45d9cfd101286f6482d00c5dc321b
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0013-R2-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R2
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: "CR-ED-0013-001 approved; R2 expands ReadSet to 12 unique files and delegates the exact six governance paths. R1 branch/worktree remains preserved with no task-file edits."
       TriedApproaches: []
-      NextAction: "Coordinator fixes R2 BaseCommit to the committed R2 TaskSpec, assigns Worker01 on a new isolated R2 branch/worktree, then Worker02 reviews the fixed Head."
+      NextAction: "Worker01 creates the isolated R2 worktree from BaseCommit 8ede04243ac45d9cfd101286f6482d00c5dc321b, then writes only the six-path delegated WriteSet and reports fixed Head for Worker02 review."
       OpenMessageIds: []
       LastValidationResult: "Not run; task has not started."
     Deliverable:
