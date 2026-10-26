@@ -300,7 +300,7 @@ Tasks:
       TaskRevision: 1
       MaxReferenceFiles: 13
       ApprovedByRole: Coordinator
-      ApprovalEventId: b5c84bb8-1e17-4d5f-aa53-b1c00e7b1721
+      ApprovalEventId: d04f16ad-692d-46bc-b3fc-08c7770c1d61
       RuleRef: Workflow/AgentExecutionStandard.md:47-48
       Reason: All 13 listed files are direct dependencies of AC-1..AC-6 or the authorized Windows/yaml-cpp build; no unrelated task history is loaded.
     WriteSet:
