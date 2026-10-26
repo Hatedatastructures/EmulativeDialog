@@ -848,11 +848,11 @@ Tasks:
         - ED-0113
 
   - TaskId: ED-0013
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
-    TaskKind: WorkflowStandard
-    State: Assigned
+    TaskKind: IntegrationTask
+    State: Proposed
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -861,6 +861,17 @@ Tasks:
     ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
+    ChangeRequestId: CR-ED-0013-001
+    PriorRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
+      TaskSpecBlob: f766858c4360bc9b45f8aefc940a9e19c7fe0ef0
+      ReviewFindingId: ED-0013-RV-001
+      ReviewerAgentId: /root/agent_core
+      ReviewerDecision: RequestChanges
+      SourceBranch: Task/ED-0013-MultiAgentCollaborationStandard
+      SourceWorktree: H:/Qbot/EmulativeDialog.ED-0013
+      SourceHeadCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
     ParallelGroup: P1GovernanceAndGateEvidence
     Goal: >-
       将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
@@ -878,12 +889,16 @@ Tasks:
       - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
       - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
       - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
+      - "CR-ED-0013-001: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 2."
     ContractVersion: Workflow governance only; no product contract changes.
     GoalFrozen: true
     ReadSet:
       - AGENTS.md
       - Workflow/CurrentState.md
       - Workflow/TaskIndex.yaml
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
+      - Workflow/TaskTemplate.yaml
       - Workflow/AgentPool.yaml
       - Workflow/AgentExecutionStandard.md
       - Workflow/TaskLifecycle.md
@@ -897,6 +912,25 @@ Tasks:
       - Workflow/AgentPool.yaml
       - Workflow/EnforcementMatrix.yaml
       - Workflow/MultiAgentCollaborationStandard.md
+    WriteSetAuthorization:
+      ChangeRequestId: CR-ED-0013-001
+      ApprovedByRole: Coordinator
+      Scope: This exact TaskRevision only
+      AuthorizedPaths:
+        - AGENTS.md
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentPool.yaml
+        - Workflow/EnforcementMatrix.yaml
+        - Workflow/MultiAgentCollaborationStandard.md
+      SharedOwnerDelegations:
+        - Path: Workflow/TaskIndex.yaml
+          SharedOwnerRole: Coordinator
+          DelegateAgentId: /root/workflow_controller
+        - Path: Workflow/AgentPool.yaml
+          SharedOwnerRole: Coordinator
+          DelegateAgentId: /root/workflow_controller
+      ExpiresAt: TaskClosed
     ForbiddenSet:
       - Source/**
       - Tests/**
@@ -915,6 +949,9 @@ Tasks:
         - Workflow/CurrentState.md
         - Workflow/TaskIndex.yaml
       ReadSet:
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
+        - Workflow/TaskTemplate.yaml
         - Workflow/AgentPool.yaml
         - Workflow/AgentExecutionStandard.md
         - Workflow/TaskLifecycle.md
@@ -970,6 +1007,17 @@ Tasks:
       - AcceptanceId: AC-6
         Description: 仅改动六个精确 WriteSet 路径；无产品代码或外部 GitHub 设置副作用。
         Evidence: 固定 Base..Head 路径核对与 git diff --check。
+    Rules:
+      MustFollow:
+        - "Only the six paths explicitly delegated by CR-ED-0013-001 may be written; no ModuleMap or product contract changes."
+        - "TaskIndex and AgentPool changes are single-task Coordinator delegations and expire at TaskClosed."
+        - "P1 ExitGate stays Pending until separate Coordinator evaluation; this task does not start product AgentRuntime code."
+      SoftDefaults: []
+      ApprovedOverrides:
+        - RuleRef: Architecture/ModuleMap.yaml#OwnershipRules.CrossModuleChangesRequireContractOrIntegrationTask
+          ChangeRequestId: CR-ED-0013-001
+          Scope: Exact six-path WriteSet in ED-0013 Revision 2 only
+          ApprovedByRole: Coordinator
     Validation:
       RequiredTargets: []
       TargetedBuild: []
@@ -984,16 +1032,16 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
+    BaselineCommit: ""
     HeadCommit: ""
-    Branch: Task/ED-0013-MultiAgentCollaborationStandard
-    Worktree: H:/Qbot/EmulativeDialog.ED-0013
+    Branch: ""
+    Worktree: ""
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "TaskSpec revision 1 assigned at fixed BaseCommit 1ed077f751dc1850a2a64757f5c6e29aec67356f; isolated worktree creation pending."
+      CurrentFindingOrFailure: "R1 was superseded before any six-path edit; CR-ED-0013-001 authorizes the exact governance write set, and R2 ReadSet is expanded to 12 unique files."
       TriedApproaches: []
-      NextAction: "Worker01 creates the isolated task worktree from the fixed BaseCommit, implements the six-path WriteSet, commits and pushes the task branch, then reports fixed Head for Worker02 review."
+      NextAction: "Coordinator records the CR decision, fixes a new R2 BaseCommit, assigns Worker01 on a new isolated R2 branch/worktree, then Worker02 reviews the fixed Head."
       OpenMessageIds: []
       LastValidationResult: "Not run; task has not started."
     Deliverable:
