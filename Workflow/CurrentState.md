@@ -5,7 +5,7 @@
 ## 仓库证据
 - 根路径：H:/Qbot/EmulativeDialog。
 - 原始 `main` 仍是 unborn branch，原工作区中的项目目录仍未跟踪。为保护它并提供隔离基线，协调者从只读 workspace snapshot 建立本地 bootstrap commit `6e9b727ab88ae910d70069d9b9f19a9912f2bcb4`；当前集成工作树是 `codex/integration`，原工作区未切换或覆盖。
-- 远端 `origin` 指向公开 GitHub 仓库 `Hatedatastructures/EmulativeDialog`，但仓库当前 size=0 且没有任何已发布分支；默认 `main` 尚无 commit。ED-0006 的独立 ReviewBundle 已获批，正在确认远端 integration 基线能否建立后创建 PR。
+- 远端 `origin` 指向公开 GitHub 仓库 `Hatedatastructures/EmulativeDialog`；已发布 `codex/integration` 和 ED-0006 任务分支。创建 PR 时 GitHub connector 返回 `403 Resource not accessible by integration`，`gh auth status` 也显示 CLI 未登录。因此 ED-0006 按 bootstrap 规则使用已批准的本地 ReviewBundle，不声称有远端 PR。
 - ED-0006 已交付 Windows 原生 C++20 BuildProbe，configure/build/CTest 全部通过并获独立审查批准；ED-0007 正在冻结四份公共合同。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。

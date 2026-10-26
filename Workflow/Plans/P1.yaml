@@ -135,7 +135,7 @@ Tasks:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Merge the independently reviewed task branch into codex/integration; publish the integration base first because origin has no refs.
+      NextAction: Merge the independently reviewed task branch into local codex/integration using the approved bootstrap ReviewBundle; GitHub PR creation returned 403 Resource not accessible by integration.
       LastValidationResult: "Root reviewer approved fixed Base/Head; Windows-native configure/build/CTest and diff check exit 0; 1/1 CTest passed."
       OpenMessageIds: []
     Deliverable:
