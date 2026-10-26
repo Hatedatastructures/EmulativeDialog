@@ -5,7 +5,7 @@
 ## 仓库证据
 - 根路径：H:/Qbot/EmulativeDialog。
 - 原始 `main` 仍是 unborn branch，原工作区中的项目目录仍未跟踪。为保护它并提供隔离基线，协调者从只读 workspace snapshot 建立本地 bootstrap commit `6e9b727ab88ae910d70069d9b9f19a9912f2bcb4`；当前集成工作树是 `codex/integration`，原工作区未切换或覆盖。
-- 远端 `origin` 指向公开 GitHub 仓库 `Hatedatastructures/EmulativeDialog`；已发布 `codex/integration` 和 ED-0006 任务分支。创建 PR 时 GitHub connector 返回 `403 Resource not accessible by integration`，`gh auth status` 也显示 CLI 未登录。因此 ED-0006 按 bootstrap 规则使用已批准的本地 ReviewBundle，不声称有远端 PR。
+- origin 指向公开 GitHub 仓库 Hatedatastructures/EmulativeDialog。ED-0006 任务分支与 codex/integration 均已推送；本次从 4a8dbabf68f12f091a2fd90c78335ab0afd73968 到 621fa32325ead2be32a316824e6ff2a7fb5058a5 的 fast-forward push 成功。创建 PR 时 GitHub connector 返回 403 Resource not accessible by integration，gh CLI 未登录；未声称已创建远端 PR。
 - ED-0006 Windows 原生 C++20 BuildProbe 与 ED-0007 四份 V1 合同均已独立审查并本地合入；GitHub PR 创建被 connector 的 403 权限阻止且 CLI 未登录，未声称已建 PR。ED-0009 Responses、ED-0010 Chat Completions、ED-0011 Anthropic Messages、ED-0012 Memory/Context 离线夹具均已独立审查并本地合入；ED-0010 merge 为 5355df76c87519d1730a4ff30ef635b22f9008ad，ED-0011 merge 为 3f63b920ddab43d73ee0ef5db381d8911a9f40ac。这些夹具任务不包含 C++ 实现，也不解除 P1 ExitGate。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
