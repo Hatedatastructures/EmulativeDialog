@@ -1432,7 +1432,7 @@ LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
     ProcessRunner& Runner) {
   if (PhaseId != "P1" || TaskId != "ED-0014" || TaskRevision != 9 ||
       !IsCommitId(TaskSpecCommit) || !IsCommitId(TaskSpecBlobId)) {
-    throw WorkflowError("EventId recovery requires the pinned ED-0014 revision 8 TaskSpec");
+    throw WorkflowError("EventId recovery requires the pinned ED-0014 revision 9 TaskSpec");
   }
   const auto Root = CanonicalExistingDirectory(RepositoryRoot);
   const ProcessResult IndexResult = RunGit(
