@@ -27,8 +27,8 @@ Slots:
     HostSessionRef: ""
     ModuleIds:
       - AgentWorkflowController
-    CurrentTaskId: ED-0001
-    Status: Active
+    CurrentTaskId: ""
+    Status: Dormant
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/agent_core"
@@ -36,8 +36,8 @@ Slots:
     ModuleIds:
       - AgentRuntime
       - Core
-    CurrentTaskId: ED-0001
-    Status: Review
+    CurrentTaskId: ""
+    Status: Dormant
   - SlotId: Worker03
     RoleFamily: Unassigned
     AgentId: ""
