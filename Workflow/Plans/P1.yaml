@@ -161,7 +161,7 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0014
-    TaskRevision: 6
+    TaskRevision: 7
     EpicId: EP-05
     Title: 实现 P1 事件 EventId 冲突的协调者授权恢复
     TaskKind: BootstrapRecovery
@@ -178,11 +178,16 @@ Tasks:
     CreatedAt: "2026-10-26"
     UpdatedAt: "2026-10-26"
     PreviousRevisionEvidence:
-      TaskRevision: 5
-      TaskSpecCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
-      TaskSpecBlob: 08986224281b0c5ccdfa6884006a73f38f72ad2d
-      Disposition: SupersededBeforeCodeChanges
-      Reason: "Reviewer found that Controller does not inject TaskIndex AlwaysLoad paths and R5 used an unparsed nested BudgetOverride block."
+      - TaskRevision: 5
+        TaskSpecCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
+        TaskSpecBlob: 08986224281b0c5ccdfa6884006a73f38f72ad2d
+        Disposition: SupersededBeforeCodeChanges
+        Reason: "R5 omitted required AlwaysLoad paths from the actual Controller ReadSet and used an unparsed BudgetOverride field."
+      - TaskRevision: 6
+        TaskSpecCommit: b94fc9aa2de7d89b298948b398133b77bfd6ae30
+        TaskSpecBlob: 8f5d155516a9d8c95519794dbe8aac5042ade96d
+        Disposition: SupersededBeforeCodeChanges
+        Reason: "R6 gcov paths pointed at the integration build instead of the fixed task worktree build; its event evidence assertions did not explicitly require the TaskSpec commit/blob and Coordinator actor values."
     ParallelGroup: P1ControllerRecovery
     Goal: >-
       在 C++ WorkflowController 中增加受限、追加式 EventId 冲突恢复路径，使冲突事件日志保持原字节，
@@ -223,15 +228,15 @@ Tasks:
       ProductAgentRuntimeMayStart: false
     BaselineCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
     HeadCommit: ""
-    Branch: Task/ED-0014-R6-EventIdConflictRecovery
-    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R6
+    Branch: Task/ED-0014-R7-EventIdConflictRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R7
     Context:
       ModuleId: AgentWorkflowController
       ReadSet:
         - AGENTS.md
         - Workflow/CurrentState.md
         - Workflow/TaskIndex.yaml
-        - Workflow/TaskTemplate.yaml
+        - CMakeLists.txt
         - Workflow/TaskLifecycle.md
         - Workflow/AgentExecutionStandard.md
         - Architecture/ModuleMap.yaml#ShardId=WorkflowTools
@@ -266,7 +271,7 @@ Tasks:
         - "This workflow declaration is a single-writer provenance control, not OS or cryptographic authentication; the command must not accept freeform AgentId or AgentRole as authority."
         - "Preserve selected raw JSON records, including unknown fields, through read projection and ReviewBundle evidence."
         - "Resolution events retain the required common event envelope and safe EvidenceRefs; never store raw payload, chat text, command output, payload hashes, or merged EvidenceRefs."
-        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 6; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole specifically from the matching ApprovedOverrides ApprovedByAgentId/ApprovedByRole (Coordinator /root), never from the ED-0014 Worker01 task owner."
+        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 7; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole specifically from the matching ApprovedOverrides ApprovedByAgentId/ApprovedByRole (Coordinator /root), never from the ED-0014 Worker01 task owner."
         - "Only the four exact C++/test paths in WriteSet may change."
         - "Require at least 80 percent line coverage for changed production translation units and report denominator, exclusions, and gcov version."
       SoftDefaults: []
@@ -354,6 +359,24 @@ Tasks:
         Context.BudgetOverride. The corrected ReadSet is exactly 12 files including the three required entry files.
         The review also found missing gcov instrumentation/report commands and CLI-path coverage, so R6 adds
         explicit native coverage instrumentation and process-level acceptance without changing the 80-percent bar.
+    AdditionalChangeRequest:
+      ChangeRequestId: CR-ED-0014-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Supersede R6 before code changes. Bind all gcov commands and reports to the R7 worktree-specific
+        CMake binary directory; assert that each resolution serializes the pinned TaskSpec commit/blob and
+        derives Actor AgentId/AgentRole from the matching Coordinator ApprovedOverrides entry.
+        Replace Workflow/TaskTemplate.yaml with CMakeLists.txt in the exact 12-file ReadSet to bind the object
+        locations used by gcov; the code task does not edit or need the task-template schema. Keep goal,
+        four-path WriteSet, five occurrence choices and the 80-percent threshold unchanged.
+      Reason: >-
+        Worker02 verified that the R6 preset output directory is R6-specific, while the task pointed gcov at
+        the unrelated integration build. The event evidence must also prove which immutable approval and actor
+        produced each resolution, rather than only testing that authorization was accepted.
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
@@ -369,30 +392,35 @@ Tasks:
       - AcceptanceId: AC-3
         Description: >-
           A resolution binds EventId, full target scope, distinct raw variant count, physical occurrence count,
-          1-based canonical occurrence, approved TaskSpec commit/blob, CR ID, reason and common event envelope; it never
+          1-based canonical occurrence, exact approved TaskSpec commit/blob, CR ID, reason and common event envelope; it never
           merges EvidenceRefs or payload fields.
         Evidence: Serialized resolution schema tests include required Branch, CorrelationId, safe EvidenceRefs and reject raw payload/hash fields.
       - AcceptanceId: AC-4
         Description: >-
+          Each accepted resolution records the exact supplied TaskSpec commit and P1.yaml blob and derives
+          AgentId=/root and AgentRole=Coordinator from that target's matching ApprovedOverrides entry.
+        Evidence: Positive serialization fixture asserts commit, blob, actor, role, target and approval fields; negative fixture rejects a mismatched actor or pin.
+      - AcceptanceId: AC-5
+        Description: >-
           The selected original event is preserved byte-for-byte, including unknown SourceHeadCommit on the 72cc
           fixture, in all event reads and ReviewBundle evidence. Original shard bytes remain an unchanged prefix.
         Evidence: Raw-record round-trip and prefix-preservation fixtures.
-      - AcceptanceId: AC-5
+      - AcceptanceId: AC-6
         Description: >-
           Any stale count/pin, new occurrence, cross-scope variant, missing/multiple authorization, conflicting
           resolution payload, malformed or torn tail, partial write, or flush ambiguity remains fail closed;
           retry is idempotent and never blindly duplicates a possibly committed resolution.
         Evidence: Negative stale/partial/flush/concurrency and restart fixtures.
-      - AcceptanceId: AC-6
+      - AcceptanceId: AC-7
         Description: >-
           The actual WorkflowController.exe command-line success and rejection paths are exercised against a
           disposable copy of the P1 event shard and the pinned TaskSpec; tests never pass the real P1 event file
           as a write target.
         Evidence: Process-level CLI tests cover an approved resolution, wrong pin/target rejection, and unchanged source bytes.
-      - AcceptanceId: AC-7
+      - AcceptanceId: AC-8
         Description: Only the four exact WriteSet paths change; no real P1 event, task plan, or product source is modified.
         Evidence: Fixed BaseCommit..HeadCommit changed-path audit.
-      - AcceptanceId: AC-8
+      - AcceptanceId: AC-9
         Description: >-
           Changed WorkflowController production translation units achieve at least 80 percent line coverage;
           report denominator, excluded generated/dependency lines and gcov version.
@@ -409,9 +437,9 @@ Tasks:
         - git diff --check <BaselineCommit> <HeadCommit>
         - Verify changed paths equal the exact four-path WriteSet.
         - gcov --version
-        - From H:/Qbot/EmulativeDialog.integration.build/windows-mingw, run gcov --relative-only --branch-counts -o CMakeFiles/WorkflowControllerCore.dir/Tools/WorkflowController/WorkflowController.cpp.obj Tools/WorkflowController/WorkflowController.cpp.
-        - From H:/Qbot/EmulativeDialog.integration.build/windows-mingw, run gcov --relative-only --branch-counts -o CMakeFiles/WorkflowController.dir/Tools/WorkflowController/Main.cpp.obj Tools/WorkflowController/Main.cpp.
-        - Retain generated .gcov reports under H:/Qbot/EmulativeDialog.integration.build/windows-mingw.
+        - From H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw/CMakeFiles/WorkflowControllerCore.dir/Tools/WorkflowController/WorkflowController.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R7/Tools/WorkflowController/WorkflowController.cpp.
+        - From H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw/CMakeFiles/WorkflowController.dir/Tools/WorkflowController/Main.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R7/Tools/WorkflowController/Main.cpp.
+        - Retain generated .gcov reports under H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw.
         - Verify combined changed-production-source line coverage >= 80 percent and record denominator, executable count, exclusions, and gcov version.
       LiveSideEffects: Forbidden
       NotRunReason: ""
@@ -419,14 +447,14 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    TaskSpecCommitPin: Coordinator supplies immutable R6 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
+    TaskSpecCommitPin: Coordinator supplies immutable R7 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5 was superseded before code edits after the fixed reviewer found an incomplete ReadSet."
+      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5 and R6 were superseded before code edits after fixed reviewers found ReadSet and coverage evidence path gaps."
       TriedApproaches:
         - "R4/R5 proposal reviews identified authorization bootstrap cycle, event-envelope omissions, unknown-field loss, and missing append/flush recovery tests; these are incorporated in the frozen AC above."
-      NextAction: "Create the isolated R6 worktree from the fixed code baseline, implement the four-path C++ recovery command, run the named native Windows C++20 build/CTest and focused gcov report, then request Worker02 fixed-Head review."
+      NextAction: "Create the isolated R7 worktree from the fixed code baseline, implement the four-path C++ recovery command, run the named native Windows C++20 build/CTest and worktree-local gcov report, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
@@ -436,7 +464,7 @@ Tasks:
       FollowUpTaskIds: [ED-0013]
 
   - TaskId: ED-0015
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-05
     Title: 定义 ModelProviderPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
@@ -452,6 +480,12 @@ Tasks:
     CreatedBy: Coordinator
     CreatedAt: "2026-10-26"
     UpdatedAt: "2026-10-26"
+    PreviousRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: b94fc9aa2de7d89b298948b398133b77bfd6ae30
+      TaskSpecBlob: 8f5d155516a9d8c95519794dbe8aac5042ade96d
+      Disposition: SupersededBeforeCodeChanges
+      Reason: "R1 compiled its test executable into the shared integration build directory, creating cross-task artifact contention."
     ParallelGroup: P1CppContractPorts
     Goal: >-
       将已冻结 ModelProviderContract V1 投影为可编译的 C++20 ModelProviderPort 公共 API；只冻结类型与
@@ -463,10 +497,19 @@ Tasks:
       - 修改 ModelProviderContract.md、ModuleMap、CMake 或其他模块文件
     DependsOn:
       - ED-0007
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0015-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Supersede R1 before code changes and route compile/test outputs to a task-specific H-drive sibling build directory; goal, contracts, ReadSet, WriteSet and acceptance remain unchanged."
+      Reason: "Independent concurrent tasks must not write the same integration build directory."
     BaselineCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
     HeadCommit: ""
-    Branch: Task/ED-0015-ModelProviderPortCpp
-    Worktree: H:/Qbot/EmulativeDialog.ED-0015
+    Branch: Task/ED-0015-R2-ModelProviderPortCpp
+    Worktree: H:/Qbot/EmulativeDialog.ED-0015-R2
     Context:
       ModuleId: ModelProviderPort
       ReadSet:
@@ -524,9 +567,10 @@ Tasks:
     Validation:
       RequiredTargets: []
       TargetedBuild:
-        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic -I. Tests/Contract/Providers/Contracts/ModelProviderPortContractTests.cpp -o H:/Qbot/EmulativeDialog.integration.build/windows-mingw/ModelProviderPortContractTests.exe
+        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0015-R2.build
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic -I. Tests/Contract/Providers/Contracts/ModelProviderPortContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0015-R2.build/ModelProviderPortContractTests.exe
       ContractFixtures:
-        - Run H:/Qbot/EmulativeDialog.integration.build/windows-mingw/ModelProviderPortContractTests.exe
+        - Run H:/Qbot/EmulativeDialog.ED-0015-R2.build/ModelProviderPortContractTests.exe
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
         - Verify changed paths equal the exact two-path WriteSet.
@@ -541,7 +585,7 @@ Tasks:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "Implement the C++20 public port and compile-contract tests, then request Worker05 fixed-Head review."
+      NextAction: "Implement the R2 C++20 public port and compile-contract tests in the isolated worktree, then request Worker05 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
@@ -551,7 +595,7 @@ Tasks:
       FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]
 
   - TaskId: ED-0016
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-05
     Title: 定义 ChannelAdapterPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
@@ -567,6 +611,12 @@ Tasks:
     CreatedBy: Coordinator
     CreatedAt: "2026-10-26"
     UpdatedAt: "2026-10-26"
+    PreviousRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: b94fc9aa2de7d89b298948b398133b77bfd6ae30
+      TaskSpecBlob: 8f5d155516a9d8c95519794dbe8aac5042ade96d
+      Disposition: SupersededBeforeCodeChanges
+      Reason: "R1 compiled its test executable into the shared integration build directory, creating cross-task artifact contention."
     ParallelGroup: P1CppContractPorts
     Goal: >-
       将已冻结 ChannelAdapterContract V1 投影为可编译的 C++20 ChannelAdapterPort 公共 API；只冻结可信入站
@@ -578,10 +628,19 @@ Tasks:
       - 修改 ChannelAdapterContract.md、ModuleMap、CMake 或其他模块文件
     DependsOn:
       - ED-0007
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0016-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Supersede R1 before code changes and route compile/test outputs to a task-specific H-drive sibling build directory; goal, contracts, ReadSet, WriteSet and acceptance remain unchanged."
+      Reason: "Independent concurrent tasks must not write the same integration build directory."
     BaselineCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
     HeadCommit: ""
-    Branch: Task/ED-0016-ChannelAdapterPortCpp
-    Worktree: H:/Qbot/EmulativeDialog.ED-0016
+    Branch: Task/ED-0016-R2-ChannelAdapterPortCpp
+    Worktree: H:/Qbot/EmulativeDialog.ED-0016-R2
     Context:
       ModuleId: ChannelAdapterPort
       ReadSet:
@@ -636,9 +695,10 @@ Tasks:
     Validation:
       RequiredTargets: []
       TargetedBuild:
-        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic -I. Tests/Contract/Channels/Contracts/ChannelAdapterPortContractTests.cpp -o H:/Qbot/EmulativeDialog.integration.build/windows-mingw/ChannelAdapterPortContractTests.exe
+        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0016-R2.build
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic -I. Tests/Contract/Channels/Contracts/ChannelAdapterPortContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0016-R2.build/ChannelAdapterPortContractTests.exe
       ContractFixtures:
-        - Run H:/Qbot/EmulativeDialog.integration.build/windows-mingw/ChannelAdapterPortContractTests.exe
+        - Run H:/Qbot/EmulativeDialog.ED-0016-R2.build/ChannelAdapterPortContractTests.exe
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
         - Verify changed paths equal the exact two-path WriteSet.
@@ -653,7 +713,7 @@ Tasks:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "Implement the C++20 public port and compile-contract tests, then request Worker06 fixed-Head review."
+      NextAction: "Implement the R2 C++20 public port and compile-contract tests in the isolated worktree, then request Worker06 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
