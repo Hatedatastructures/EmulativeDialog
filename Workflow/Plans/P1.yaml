@@ -154,7 +154,7 @@ Tasks:
     EpicId: EP-05
     Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
     TaskKind: ContractFreeze
-    State: Verified
+    State: MergeQueued
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -248,7 +248,7 @@ Tasks:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Queue and merge the independently approved four-contract change into codex/integration; provider and memory code may start only after this merge.
+      NextAction: Merge Head 6a53c8d52f98ce563e38016ee9ed772da72d0a88 into codex/integration after confirming a clean four-file contract diff; no source code was produced in this task.
       OpenMessageIds: []
       LastValidationResult: "Independent review approved AC-1..AC-5 on fixed Head 6a53c8d52f98ce563e38016ee9ed772da72d0a88; ED-0007-RV-001 resolved; diff check exit 0; contract-only, no build/tests required."
     Deliverable:
