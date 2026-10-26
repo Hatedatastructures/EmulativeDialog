@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-05
     Title: 建立 Windows 原生 C++20 CMake 与依赖基线
     TaskKind: Build
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -126,10 +126,10 @@ Tasks:
     RiskOwnerRole: BuildAndDependencyOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: c0792ea36b443fc984ea04542f6895457d33a569
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0006-WindowsCpp20Build
+    Worktree: H:/Qbot/EmulativeDialog.ED-0006
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
@@ -148,7 +148,7 @@ Tasks:
     EpicId: EP-05
     Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
     TaskKind: ContractFreeze
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -229,10 +229,10 @@ Tasks:
     RiskOwnerRole: ContractOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: c0792ea36b443fc984ea04542f6895457d33a569
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0007-ContractFreeze
+    Worktree: H:/Qbot/EmulativeDialog.ED-0007
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
