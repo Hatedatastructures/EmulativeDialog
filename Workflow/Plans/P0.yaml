@@ -191,11 +191,16 @@ Tasks:
     EpicId: EP-04
     Title: 冻结 Codex 核心模块 owner、写集边界与治理门
     TaskKind: ArchitectureOwnership
-    State: Ready
+    State: Assigned
     OwnerRole: IntegrationOwner
     OwnerAgentId: "/root"
     ReviewerRole: ProductContractOwner
+    ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
+    BaselineCommit: 1b35708675cb4da7379f6eee0f78e6472386e720
+    Branch: Task/ED-0005-ModuleOwnership
+    Worktree: H:/Qbot/EmulativeDialog.ED-0005
+    HeadCommit: ""
     DependsOn:
       - ED-0001
     Goal: "将 Codex 聊天 Agent 范围的模块 owner、合同入口、写根和依赖方向冻结为可执行边界。"
