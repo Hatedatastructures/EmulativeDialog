@@ -2,6 +2,17 @@ SchemaVersion: 1
 ShardId: Providers
 
 Modules:
+  - ModuleId: ModelProviderPort
+    OwnerRole: ContractOwner
+    WriteRoots:
+      - Source/Providers/Contracts/
+      - Tests/Contract/Providers/Contracts/
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    DependsOn: []
+    LoadEntry:
+      - Architecture/Contracts/ModelProviderContract.md#公共请求与事件
+
   - ModuleId: ProviderOpenAIResponses
     OwnerRole: ResponsesProviderOwner
     WriteRoots:
@@ -11,6 +22,7 @@ Modules:
       - Architecture/Contracts/ModelProviderContract.md
     DependsOn:
       - NetworkPlatform
+      - ModelProviderPort
     LoadEntry:
       - Architecture/Contracts/ModelProviderContract.md#三协议映射
 
@@ -23,6 +35,7 @@ Modules:
       - Architecture/Contracts/ModelProviderContract.md
     DependsOn:
       - NetworkPlatform
+      - ModelProviderPort
     LoadEntry:
       - Architecture/Contracts/ModelProviderContract.md#三协议映射
 
@@ -35,5 +48,6 @@ Modules:
       - Architecture/Contracts/ModelProviderContract.md
     DependsOn:
       - NetworkPlatform
+      - ModelProviderPort
     LoadEntry:
       - Architecture/Contracts/ModelProviderContract.md#三协议映射

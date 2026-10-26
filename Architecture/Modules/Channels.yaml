@@ -2,28 +2,45 @@ SchemaVersion: 1
 ShardId: Channels
 
 Modules:
+  - ModuleId: ChannelAdapterPort
+    OwnerRole: ContractOwner
+    WriteRoots:
+      - Source/Channels/Contracts/
+      - Tests/Contract/Channels/Contracts/
+    ContractRefs:
+      - Architecture/Contracts/ChannelAdapterContract.md
+    DependsOn: []
+    LoadEntry:
+      - Architecture/Contracts/ChannelAdapterContract.md#适配器职责
+
   - ModuleId: ChannelQQ
     OwnerRole: QQChannelOwner
+    LifecycleState: Active
+    ImplementationGate: P4
+    CurrentRelease: true
     WriteRoots:
       - Source/Channels/QQ/
       - Tests/Contract/Channels/QQ/
     ContractRefs:
       - Architecture/Contracts/ChannelAdapterContract.md
     DependsOn:
-      - Core
+      - ChannelAdapterPort
       - NetworkPlatform
     LoadEntry:
       - Research/Platforms/PlatformCapabilityMatrix.md#QQ-官方-Bot-当前资料提示
 
   - ModuleId: ChannelWeChat
     OwnerRole: WeChatChannelOwner
+    LifecycleState: Deferred
+    ImplementationGate: Deferred
+    CurrentRelease: false
     WriteRoots:
       - Source/Channels/WeChat/
       - Tests/Contract/Channels/WeChat/
     ContractRefs:
       - Architecture/Contracts/ChannelAdapterContract.md
     DependsOn:
-      - Core
+      - ChannelAdapterPort
       - NetworkPlatform
     LoadEntry:
       - Research/Platforms/PlatformCapabilityMatrix.md#WeChat-接入决策门

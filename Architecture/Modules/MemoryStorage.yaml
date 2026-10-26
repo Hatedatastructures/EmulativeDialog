@@ -25,6 +25,7 @@ Modules:
       - Architecture/Contracts/ModelProviderContract.md
     DependsOn:
       - Memory
+      - ModelProviderPort
     LoadEntry:
       - Architecture/Contracts/MemoryContract.md#ContextSelector-规则
 

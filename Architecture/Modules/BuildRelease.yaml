@@ -18,6 +18,7 @@ Modules:
 
   - ModuleId: IntegrationAndRelease
     OwnerRole: IntegrationOwner
+    ReleaseScope: CurrentChatAgentRelease
     WriteRoots:
       - Packaging/
       - Release/
@@ -26,13 +27,6 @@ Modules:
       - Workflow/EnforcementMatrix.yaml
     DependsOn:
       - AppHost
-      - Core
-      - AgentRuntime
-      - ProviderOpenAIResponses
-      - ProviderOpenAIChatCompletions
-      - ProviderAnthropicMessages
-      - ChannelQQ
-      - ChannelWeChat
-      - TuiApplication
+      - RootBuildAndDependencies
     LoadEntry:
       - Workflow/Roadmap.md#P6-集成和发行

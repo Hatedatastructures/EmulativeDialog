@@ -6,6 +6,9 @@ Epic:
   Status: Proposed
   ReferenceGate: Research/TuiReferenceMatrix.yaml
   ParityContract: Architecture/TuiApi.md
+  ImplementationGate: P5
+  CurrentRelease: false
+  BlocksCodexAgentCore: false
 
 Modules:
   - ModuleId: TuiTerminal
