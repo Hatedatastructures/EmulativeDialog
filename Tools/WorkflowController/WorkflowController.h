@@ -2,10 +2,12 @@
 
 #include <filesystem>
 #include <cstddef>
+#include <functional>
 #include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace EmulativeDialog::WorkflowController {
@@ -15,6 +17,8 @@ class WorkflowError final : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
+class EventStore;
+
 struct ContextBudgetOverride {
   std::string TaskId;
   int TaskRevision = 0;
@@ -23,6 +27,36 @@ struct ContextBudgetOverride {
   std::string ApprovedByRole;
   std::string ApprovalEventId;
   std::string ApprovalEventRef;
+};
+
+class VerifiedContextBudgetOverride final {
+ public:
+  const ContextBudgetOverride& Value() const noexcept { return Override; }
+  const std::string& TaskSpecCommit() const noexcept { return FrozenTaskSpecCommit; }
+  const std::string& TaskSpecBlobId() const noexcept { return FrozenTaskSpecBlobId; }
+  const std::string& AssignmentEventCommit() const noexcept {
+    return FrozenAssignmentEventCommit;
+  }
+  const std::string& AssignmentEventId() const noexcept { return FrozenAssignmentEventId; }
+
+ private:
+  VerifiedContextBudgetOverride(ContextBudgetOverride Override,
+                                std::string TaskSpecCommit,
+                                std::string TaskSpecBlobId,
+                                std::string AssignmentEventCommit,
+                                std::string AssignmentEventId)
+      : Override(std::move(Override)),
+        FrozenTaskSpecCommit(std::move(TaskSpecCommit)),
+        FrozenTaskSpecBlobId(std::move(TaskSpecBlobId)),
+        FrozenAssignmentEventCommit(std::move(AssignmentEventCommit)),
+        FrozenAssignmentEventId(std::move(AssignmentEventId)) {}
+
+  ContextBudgetOverride Override;
+  std::string FrozenTaskSpecCommit;
+  std::string FrozenTaskSpecBlobId;
+  std::string FrozenAssignmentEventCommit;
+  std::string FrozenAssignmentEventId;
+  friend class EventStore;
 };
 
 struct TaskSpec {
@@ -38,6 +72,12 @@ struct TaskSpec {
   std::string Branch;
   std::string Worktree;
   std::string BaselineCommit;
+  std::string ReviewerAgentId;
+  std::string TaskSpecCommit;
+  std::string TaskSpecBlobId;
+  std::string AssignmentEventCommit;
+  std::string AssignmentEventId;
+  std::string CodeBaseCommit;
   std::string EventShard;
   std::string CommunicationShard;
   std::vector<std::string> DependsOn;
@@ -46,6 +86,7 @@ struct TaskSpec {
   std::vector<std::string> ForbiddenSet;
   std::vector<std::string> SharedLocks;
   std::vector<std::string> ValidationCommands;
+  std::vector<std::string> StaticChecks;
   std::size_t MaxReferenceFiles = 12;
   std::optional<ContextBudgetOverride> RegisteredBudgetOverride;
 };
@@ -115,9 +156,19 @@ struct WorkflowEvent {
   std::string EvidencePath;
   std::string ApprovalReason;
   std::size_t MaxReferenceFiles = 0;
+  std::string TaskSpecPath;
+  std::string TaskSpecCommit;
+  std::string TaskSpecBlobId;
+  std::string AssignmentEventCommit;
+  std::string AssignmentEventId;
+  std::string CodeBaseCommit;
+  std::string ContextBudgetApprovalEventId;
+  std::string OwnerAgentId;
+  std::string ReviewerAgentId;
+  std::string Worktree;
+  std::string OutputSummary;
+  std::vector<std::string> ReadSetPaths;
 };
-
-class EventStore;
 
 struct Checkpoint {
   std::string TaskId;
@@ -139,6 +190,7 @@ struct ValidationResult {
   std::filesystem::path WorkingDirectory;
   unsigned long ExitCode = 0;
   std::filesystem::path EvidencePath;
+  std::string EventId;
 };
 
 std::vector<ValidationResult> CollectTaskRevisionValidations(
@@ -159,6 +211,12 @@ struct TaskScopedMessage {
 };
 
 struct ReviewBundleData {
+  std::string TaskSpecPath;
+  std::string TaskSpecCommit;
+  std::string TaskSpecBlobId;
+  std::string AssignmentEventCommit;
+  std::string AssignmentEventId;
+  std::string CodeBaseCommit;
   std::string BaseCommit;
   std::string HeadCommit;
   std::string AuthorAgentId;
@@ -174,6 +232,16 @@ TaskSpec LoadTaskSpec(const std::filesystem::path& RepositoryRoot,
                       const std::filesystem::path& TaskIndexPath,
                       const std::string& PhaseId,
                       const std::string& TaskId);
+
+TaskSpec LoadTaskSpecFromPinnedSnapshot(
+    const std::filesystem::path& RepositoryRoot,
+    const std::string& PhaseId,
+    const std::string& TaskId,
+    const std::string& TaskSpecCommit,
+    const std::string& TaskSpecBlobId,
+    const std::string& AssignmentEventCommit,
+    const std::string& AssignmentEventId,
+    ProcessRunner& Runner);
 
 std::string LoadTaskState(const std::filesystem::path& RepositoryRoot,
                           const std::filesystem::path& TaskIndexPath,
@@ -191,7 +259,8 @@ std::vector<ContextFile> AssembleReadSetContext(
     const TaskSpec& Task,
     std::size_t MaximumFileBytes = 1024U * 1024U,
     std::size_t MaximumTotalBytes = 8U * 1024U * 1024U,
-    const std::optional<ContextBudgetOverride>& BudgetOverride = std::nullopt);
+    const std::optional<VerifiedContextBudgetOverride>& BudgetOverride = std::nullopt,
+    ProcessRunner* PinnedSnapshotRunner = nullptr);
 
 void ValidateReadSetPath(const TaskSpec& Task, const std::string& RelativePath);
 
@@ -212,15 +281,17 @@ std::string RedactSensitiveText(const std::string& Text);
 
 class EventStore final {
  public:
-  explicit EventStore(std::filesystem::path EventPath);
+  explicit EventStore(std::filesystem::path EventPath,
+                      std::function<bool()> FlushOperation = {});
   void Append(const WorkflowEvent& Event) const;
   std::vector<WorkflowEvent> ReadTaskEvents(const std::string& TaskId,
                                             std::size_t MaximumEvents = 1000) const;
-  std::optional<ContextBudgetOverride> FindContextBudgetOverride(
+  std::optional<VerifiedContextBudgetOverride> FindContextBudgetOverride(
       const TaskSpec& Task) const;
 
  private:
   std::filesystem::path EventPath;
+  std::function<bool()> FlushOperation;
 };
 
 class CheckpointStore final {
@@ -235,6 +306,10 @@ class CheckpointStore final {
 WorktreeResult CreateOrVerifyWorktree(const WorktreeRequest& Request,
                                       ProcessRunner& Runner);
 
+WorktreeResult VerifyExistingWorktreeForReview(const WorktreeRequest& Request,
+                                               const std::string& TaskState,
+                                               ProcessRunner& Runner);
+
 ValidationResult RunFrozenValidation(const TaskSpec& Task,
                                      const std::string& ExactCommand,
                                      const std::filesystem::path& WorkingDirectory,
@@ -243,6 +318,15 @@ ValidationResult RunFrozenValidation(const TaskSpec& Task,
                                      const EventStore& Events,
                                      const std::string& AgentId,
                                      const std::string& CorrelationId);
+
+ValidationResult RunTypedGitDiffCheck(const TaskSpec& Task,
+                                      const std::string& HeadCommit,
+                                      const std::filesystem::path& WorkingDirectory,
+                                      const std::filesystem::path& EvidencePath,
+                                      ProcessRunner& Runner,
+                                      const EventStore& Events,
+                                      const std::string& AgentId,
+                                      const std::string& CorrelationId);
 
 class TaskScopedMessageStore final {
  public:
@@ -264,6 +348,14 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
                             const ReviewBundleData& Bundle,
                             const std::filesystem::path& OutputPath,
                             const EventStore& Events);
+
+std::filesystem::path ResolveTaskEventPath(
+    const std::filesystem::path& RepositoryRoot,
+    const TaskSpec& Task);
+
+std::filesystem::path ResolveTaskCheckpointPath(
+    const std::filesystem::path& RepositoryRoot,
+    const TaskSpec& Task);
 
 [[noreturn]] void RejectChangeApproval();
 [[noreturn]] void RejectMerge();
