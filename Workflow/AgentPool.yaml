@@ -1,7 +1,7 @@
 # 稳定工作槽注册表，不代表当前已经启动了这些 Agent。
 SchemaVersion: 1
 MaximumSubagents: 8
-State: Planned
+State: Active
 EffectiveParallelism:
   Formula: MinimumOfConfiguredSlotsHostCapacityAndReadyIndependentTasks
 
@@ -28,8 +28,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0014
-    Status: Verified
+    CurrentTaskId: ED-0013
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/agent_core"
@@ -37,16 +37,16 @@ Slots:
     ModuleIds:
       - AgentRuntime
       - Core
-    CurrentTaskId: ED-0014
-    Status: Verified
+    CurrentTaskId: ED-0013
+    Status: Review
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/provider_responses"
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0015
-    Status: Verified
+    CurrentTaskId: ED-0020
+    Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/provider_chat"
@@ -54,7 +54,7 @@ Slots:
     ModuleIds:
       - ProviderOpenAIChatCompletions
     CurrentTaskId: ED-0018
-    Status: Active
+    Status: Verified
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/provider_anthropic"
@@ -70,7 +70,7 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0018
+    CurrentTaskId: ED-0020
     Status: Review
   - SlotId: Worker07
     RoleFamily: Unassigned

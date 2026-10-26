@@ -165,7 +165,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 P1 事件 EventId 冲突的协调者授权恢复
     TaskKind: BootstrapRecovery
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -238,6 +238,10 @@ Tasks:
       ProductAgentRuntimeMayStart: false
     BaselineCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
     HeadCommit: 0b9d31f0b896d0bfc2b5e9c365d217c93feb848f
+    MergeBaseCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
+    MergeCommit: fc8b2628db8e750258b12f6eed6734aa9a9406f4
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundle
     Branch: Task/ED-0014-R9-EventIdConflictRecovery
     Worktree: H:/Qbot/EmulativeDialog.ED-0014-R9
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0014-R9-Final/ReviewBundle.json
@@ -507,7 +511,7 @@ Tasks:
     EpicId: EP-05
     Title: 定义 ModelProviderPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -573,6 +577,11 @@ Tasks:
     PriorImplementationHead: 01f2a628373b1dd678c9ccb724ae5e853b0afa59
     BaselineCommit: 7ca75f72f4fdaaf3ed1f578ed5546a68958123a9
     HeadCommit: e5070aa206dcea97baaea553e22ac55d5b788192
+    TaskBaseCommit: 7ca75f72f4fdaaf3ed1f578ed5546a68958123a9
+    IntegrationParentCommit: eef9b24ede8eed223088f875eaf4298c20def478
+    IntegrationCommit: f018dd7480087d9479f023be731c76cb815bf895
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundleValidatedSnapshotImport
     Branch: Task/ED-0015-R3-ModelProviderPortCpp
     Worktree: H:/Qbot/EmulativeDialog.ED-0015-R3
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0015-R3
@@ -676,7 +685,7 @@ Tasks:
     EpicId: EP-05
     Title: 定义 ChannelAdapterPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker04
@@ -716,6 +725,10 @@ Tasks:
       Reason: "Independent concurrent tasks must not write the same integration build directory."
     BaselineCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
     HeadCommit: 3f6b284a212156814aa5eb42d2aa0d2c0ff68a8f
+    MergeBaseCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
+    MergeCommit: eef9b24ede8eed223088f875eaf4298c20def478
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundle
     Branch: Task/ED-0016-R2-ChannelAdapterPortCpp
     Worktree: H:/Qbot/EmulativeDialog.ED-0016-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0016-R2
@@ -808,7 +821,7 @@ Tasks:
     EpicId: EP-05
     Title: 补齐 Provider refusal details 与终态错误类型合同
     TaskKind: ContractChange
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -853,6 +866,10 @@ Tasks:
       After: ModelProviderContract V1.1
     BaselineCommit: 6b0e71be3952542db372b8a833d2325a9038425d
     HeadCommit: a69f784d3b194aaa8b729a2f10b9891797a52725
+    MergeBaseCommit: 6b0e71be3952542db372b8a833d2325a9038425d
+    MergeCommit: 59389c035a2f47b581742327a18e9d03f2064606
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundle
     Branch: Task/ED-0017-ProviderRefusalContractV1_1
     Worktree: H:/Qbot/EmulativeDialog.ED-0017
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0017
@@ -954,7 +971,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现可复用的离线 MockChannelAdapter 测试替身
     TaskKind: TestSupport
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker04
@@ -1002,6 +1019,11 @@ Tasks:
       - "All channel/account/sender/conversation identities in tests are synthetic and remain confined to the trusted test adapter boundary."
     BaselineCommit: a52e4d01782be6504369bde865e5e513595f206f
     HeadCommit: ebdcdc1dd1106549f65d97ebd88eda39d775a435
+    TaskBaseCommit: a52e4d01782be6504369bde865e5e513595f206f
+    IntegrationParentCommit: f018dd7480087d9479f023be731c76cb815bf895
+    IntegrationCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundle
     Branch: Task/ED-0018-R2-MockChannelTestSupport
     Worktree: H:/Qbot/EmulativeDialog.ED-0018-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0018-R2-Final/ReviewBundle.json
@@ -1799,11 +1821,11 @@ Tasks:
         - ED-0113
 
   - TaskId: ED-0013
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Ready
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -1812,7 +1834,7 @@ Tasks:
     ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
-    ChangeRequestId: CR-ED-0013-001
+    ChangeRequestId: CR-ED-0013-002
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
@@ -1823,6 +1845,35 @@ Tasks:
       SourceBranch: Task/ED-0013-MultiAgentCollaborationStandard
       SourceWorktree: H:/Qbot/EmulativeDialog.ED-0013
       SourceHeadCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0013-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Supersede the blocked-before-code R2 assignment; keep the frozen Goal, AC-1..AC-6, Reviewer, exact six-path
+        WriteSet and dependencies; rebase onto current integrated Base 891d095c484a1a05f9c5145e45c8cd61ffc17361;
+        refresh the ReadSet with ED-0019 resolution evidence and the P1 event shard; create a new isolated R3 branch.
+      Reason: >-
+        R2 was blocked because five conflicting EventIds in P1 prevented ordinary task context loading. ED-0019/R1
+        resolved and locally merged the exact authorized events. R2 created no branch/worktree and changed no file;
+        its Base also predates the current Controller/port/mock-support integration. R3 refreshes only task base,
+        branch/worktree, and relevant ReadSet while preserving the approved governance goal and WriteSet.
+      PreserveGoalAcceptanceWriteSet: true
+      PreserveReviewer: true
+      NewBaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+      SupersededRevision: 2
+    SupersededRevision2Evidence:
+      TaskSpecCommit: 68898c7ab912b73507172dd8f705d76d189cc89b
+      P1PlanBlob: 330c61bb978d67b289302fa8de977a074af31bd6
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0013-R2-MultiAgentCollaborationStandard
+      Worktree: H:/Qbot/EmulativeDialog.ED-0013-R2
+      HeadCommit: ""
+      Reason: "ED-0019 had not yet resolved the P1 event collisions needed by R2 context loading; no implementation worktree or code changes existed."
     ParallelGroup: P1GovernanceAndGateEvidence
     Goal: >-
       将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
@@ -1840,7 +1891,7 @@ Tasks:
       - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
       - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
       - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
-      - "CR-ED-0013-001: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 2."
+      - "CR-ED-0013-002: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 3; R2 was superseded before code."
     ContractVersion: Workflow governance only; no product contract changes.
     GoalFrozen: true
     ReadSet:
@@ -1854,8 +1905,9 @@ Tasks:
       - Workflow/AgentExecutionStandard.md
       - Workflow/TaskLifecycle.md
       - Workflow/EnforcementMatrix.yaml
-      - Workflow/TaskReportTemplate.md
       - Workflow/Plans/P1.yaml#GateId=AgentWorkflowControllerAndCoreContractsVerified
+      - Workflow/Plans/P1.yaml#TaskId=ED-0019
+      - Workflow/Events/Bootstrap/P1.jsonl
     WriteSet:
       - AGENTS.md
       - Workflow/AgentExecutionStandard.md
@@ -1864,9 +1916,9 @@ Tasks:
       - Workflow/EnforcementMatrix.yaml
       - Workflow/MultiAgentCollaborationStandard.md
     WriteSetAuthorization:
-      ChangeRequestId: CR-ED-0013-001
+      ChangeRequestId: CR-ED-0013-002
       ApprovedByRole: Coordinator
-      Scope: This exact TaskRevision only
+      Scope: This exact TaskRevision 3 only
       AuthorizedPaths:
         - AGENTS.md
         - Workflow/AgentExecutionStandard.md
@@ -1907,8 +1959,9 @@ Tasks:
         - Workflow/AgentExecutionStandard.md
         - Workflow/TaskLifecycle.md
         - Workflow/EnforcementMatrix.yaml
-        - Workflow/TaskReportTemplate.md
         - Workflow/Plans/P1.yaml#GateId=AgentWorkflowControllerAndCoreContractsVerified
+        - Workflow/Plans/P1.yaml#TaskId=ED-0019
+        - Workflow/Events/Bootstrap/P1.jsonl
       OnDemandSet: []
       ForbiddenSet:
         - Source/**
@@ -1960,14 +2013,14 @@ Tasks:
         Evidence: 固定 Base..Head 路径核对与 git diff --check。
     Rules:
       MustFollow:
-        - "Only the six paths explicitly delegated by CR-ED-0013-001 may be written; no ModuleMap or product contract changes."
+        - "Only the six paths explicitly delegated by CR-ED-0013-002 may be written; no ModuleMap or product contract changes."
         - "TaskIndex and AgentPool changes are single-task Coordinator delegations and expire at TaskClosed."
         - "P1 ExitGate stays Pending until separate Coordinator evaluation; this task does not start product AgentRuntime code."
       SoftDefaults: []
       ApprovedOverrides:
         - RuleRef: Architecture/ModuleMap.yaml#OwnershipRules.CrossModuleChangesRequireContractOrIntegrationTask
-          ChangeRequestId: CR-ED-0013-001
-          Scope: Exact six-path WriteSet in ED-0013 Revision 2 only
+          ChangeRequestId: CR-ED-0013-002
+          Scope: Exact six-path WriteSet in ED-0013 Revision 3 only
           ApprovedByRole: Coordinator
     Validation:
       RequiredTargets: []
@@ -1983,18 +2036,20 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 8ede042a2ec1f64556b6a12c1b99ef15e8225f3f
+    BaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+    CodeBaseCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
     HeadCommit: ""
-    Branch: Task/ED-0013-R2-MultiAgentCollaborationStandard
-    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R2
+    TaskSpecCommitPin: Coordinator supplies immutable Revision3 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
+    Branch: Task/ED-0013-R3-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R3
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R2 controller context/create-worktree is blocked because P1.jsonl has conflicting duplicate EventIds; BaseCommit was corrected to the real 8ede042a commit by append-only assignment correction. No R2 worktree exists and no task-file edit began."
+      CurrentFindingOrFailure: "R2 was blocked before code because the P1 EventShard had five duplicate EventIds; ED-0019/R1 now resolved and merged those records, so the task can resume on a fresh current Base."
       TriedApproaches: []
-      NextAction: "Complete the ED-0014 EventId reconciliation code/test task, then retry R2 context and isolated worktree creation from the corrected BaseCommit."
+      NextAction: "After the Coordinator freezes this R3 TaskSpec, Worker01 creates the isolated R3 worktree, writes the exact six-path governance/doc set, defines MAN-003 P1 manual paths, and requests Worker02 fixed-Head review."
       OpenMessageIds: []
-      LastValidationResult: "Not run; task has not started."
+      LastValidationResult: NotRun
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -2006,7 +2061,7 @@ Tasks:
     EpicId: EP-05
     Title: 以协调者授权恢复 P1 EventId 重复记录
     TaskKind: DataRecoveryOperation
-    State: Ready
+    State: Merged
     Phase: P1
     OwnerRole: Coordinator
     OwnerSlotId: Coordinator
@@ -2037,9 +2092,19 @@ Tasks:
     GoalFrozen: true
     BaselineCommit: 791ce3a39d896c85e5b5d2e353d759fbe45c3298
     CodeBaseCommit: 791ce3a39d896c85e5b5d2e353d759fbe45c3298
-    HeadCommit: ""
+    HeadCommit: 07f6034c341c7e7118d794f2cfb68ae54ff1efcd
+    MergeBaseCommit: 791ce3a39d896c85e5b5d2e353d759fbe45c3298
+    MergeCommit: acd4e55e8cd55c3358c697b22e2470c098642904
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundle
     Branch: Task/ED-0019-P1EventIdResolution
     Worktree: H:/Qbot/EmulativeDialog.ED-0019
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0019-R1/ReviewBundle.json
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector create-pull-request returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
+    FrozenTaskSpecSnapshot:
+      Commit: 68898c7ab912b73507172dd8f705d76d189cc89b
+      P1PlanBlob: 330c61bb978d67b289302fa8de977a074af31bd6
     TaskSpecCommitPin: "Coordinator records the immutable P1 task snapshot and P1.yaml blob before operation; event-resolution authority remains the separate ED-0014/R9 pin above."
     Context:
       ModuleId: AgentWorkflowController
@@ -2107,16 +2172,154 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
+    ReviewerDecision: Approve
+    ReviewHeadCommit: 07f6034c341c7e7118d794f2cfb68ae54ff1efcd
+    Checkpoint:
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5
+      CurrentFindingOrFailure: "Five approved event resolutions were independently reviewed and locally merged at acd4e55e8cd55c3358c697b22e2470c098642904; no PR was created because the GitHub connector returned 403."
+      TriedApproaches:
+        - "The first post-run PowerShell target-set comparison had an operator-precedence error after the R9 command succeeded; a corrected HashSet verifier passed without rollback or event mutation."
+        - "ED-0008 context preflight hit its registered 13-file budget before reaching the event check; it was excluded as collision evidence."
+        - "ED-0012 context hit an invalid selector in that older task spec; it was excluded as collision evidence."
+        - "A bounded ED-0006 context pre/post fixture verified the actual result: Base failed on EventId 378e2cbe-98e9-4419-8418-287ef16b7c74; resolved Head passed and emitted ContextLoaded only in a disposable worktree."
+      NextAction: "ED-0019 is locally merged and verified. Coordinator completes independent P1 EnforcementMatrix review; keep P1 ExitGate Pending until signed evidence is recorded."
+      OpenMessageIds: []
+      LastValidationResult: "R9 Controller rebuild exit 0; resolver exit 0 and ResolutionCount=5; original 175936-byte snapshot SHA150AD9978DCAB7BCBC0793E495F0CC4193B302F21150E6F566D153336FEA3A97 preserved byte-for-byte as prefix; five exact authorization envelopes verified; Base context ED-0006/R1 failed on the approved EventId collision, resolved Head context exit0 and emitted one ContextLoaded only in disposable fixture; exact one-path WriteSet and diff-check passed; Worker01 approved fixed Head; local merge acd4e55; plugin PR attempt 403."
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: []
+
+  - TaskId: ED-0020
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现首条 AgentRuntime 切片用的 C++ FakeProvider 测试替身
+    TaskKind: TestSupport
+    State: Ready
+    Phase: P1
+    OwnerRole: ResponsesProviderOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/provider_responses"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-26"
+    UpdatedAt: "2026-10-26"
+    ParallelGroup: P1FirstSliceTestSupport
+    Goal: >-
+      在冻结的 ModelProviderPort V1.1 C++ 接口上交付确定性、完全离线的 FakeProvider，供后续 AgentRuntime
+      首条产品切片验证 canonical request、流式事件、取消、终态和回执路径；不实现任何真实协议 adapter 或产品 AgentRuntime。
+    OutOfScope:
+      - OpenAI Responses、Chat Completions 或 Anthropic Messages wire adapter
+      - Source/ 下任何产品运行时代码、Core 身份/授权或 AgentRuntime 回合逻辑
+      - CMake、根构建、公共合同或 QQ/微信代码
+      - 网络、密钥、真实账号、真实用户文本或其他外部副作用
+    DependsOn:
+      - ED-0015
+      - ED-0017
+    ExternalInputs:
+      - "ModelProviderContract V1.1 at ED-0017 Head a69f784d3b194aaa8b729a2f10b9891797a52725."
+      - "Final C++ ModelProviderPort V1.1 at ED-0015/R3 Head e5070aa206dcea97baaea553e22ac55d5b788192; integrated in f018dd7480087d9479f023be731c76cb815bf895."
+      - "C++20 code base: 891d095c484a1a05f9c5145e45c8cd61ffc17361."
+    ContractVersion: ModelProviderContract V1.1; ModelProviderPort C++ API at ED-0015/R3.
+    GoalFrozen: true
+    BaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+    CodeBaseCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+    HeadCommit: ""
+    Branch: Task/ED-0020-FakeProviderTestSupport
+    Worktree: H:/Qbot/EmulativeDialog.ED-0020
+    TaskSpecCommitPin: "Coordinator pins this immutable P1 TaskSpec snapshot and P1.yaml blob after the plan commit; code worktree is created from CodeBaseCommit."
+    Context:
+      ModuleId: ModelProviderPort
+      ReadSet:
+        - AGENTS.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/Plans/P1.yaml#TaskId=ED-0020
+        - Workflow/TaskLifecycle.md
+        - Workflow/AgentExecutionStandard.md
+        - Architecture/ModuleMap.yaml#ShardId=Providers
+        - Architecture/Modules/Providers.yaml#ModuleId=ModelProviderPort
+        - Architecture/Contracts/ModelProviderContract.md
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - Tests/Contract/Providers/Contracts/ModelProviderPortContractTests.cpp
+      MaxReferenceFiles: 10
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Tests/Contract/Providers/Contracts/FakeProvider.h
+      - Tests/Contract/Providers/Contracts/FakeProvider.cpp
+      - Tests/Contract/Providers/Contracts/FakeProviderContractTests.cpp
+    SharedLocks: []
+    ForbiddenSet:
+      - Source/**
+      - CMakeLists.txt
+      - CMakePresets.json
+      - Architecture/Contracts/**
+      - Architecture/Modules/**
+      - Tests/Contract/Providers/OpenAIResponses/**
+      - Tests/Contract/Providers/OpenAIChatCompletions/**
+      - Tests/Contract/Providers/AnthropicMessages/**
+    Rules:
+      MustFollow:
+        - "Implement only the frozen ModelProviderPort V1.1 surface; do not invent or change public API."
+        - "FakeProvider is test-only and deterministic; it must never open a socket, read credentials, or retain real message content."
+        - "Use an empty synthetic CredentialLease; the fake must not inspect or expose an authentication secret."
+        - "Capture canonical requests and emit only scripted nonterminal events followed by exactly one scripted terminal event; exhausted scripts fail closed and are never replayed implicitly."
+        - "Keep all IDs and body text synthetic and all changes to the exact three-path WriteSet."
+        - "Require at least 80 percent executable-line coverage for FakeProvider.cpp with numerator, denominator, exclusions, and gcov version."
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: "Provide a deterministic C++ ModelProviderPort test double that accepts queued scripts and captures each CanonicalModelRequest."
+        Evidence: "Contract tests prove request capture, FIFO script selection, and stable synthetic identifiers."
+      - AcceptanceId: AC-2
+        Description: "Emit ordered, request/turn-correlated nonterminal events and return one terminal event per StreamTurn call."
+        Evidence: "Tests cover response-started/text delta/completion and event metadata correlation."
+      - AcceptanceId: AC-3
+        Description: "Support scripted completion, output-limited, failure, cancellation, and unknown-outcome terminals; no extra terminal can be emitted through EventSink."
+        Evidence: "Contract tests assert each terminal variant and that one call cannot replay or duplicate its terminal result."
+      - AcceptanceId: AC-4
+        Description: "CredentialLease remains synthetic and empty; implementation performs no network, provider protocol mapping, or authorization behavior."
+        Evidence: "Source review and tests verify no network dependency or nonempty secret value."
+      - AcceptanceId: AC-5
+        Description: "FakeProvider.cpp executable-line coverage is at least 80 percent."
+        Evidence: "Task-local gcov report includes numerator, denominator, exclusions, and version."
+      - AcceptanceId: AC-6
+        Description: "Only the exact three test-support paths change and strict native C++20 compile/test succeeds."
+        Evidence: "BaseCommit..HeadCommit path comparison, diff-check, and contract executable exit 0."
+    Validation:
+      RequiredTargets: []
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0020.build"
+        - "g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Providers/Contracts/FakeProvider.cpp -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProvider.o"
+        - "g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Providers/Contracts/FakeProviderContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.o"
+        - "g++ --coverage H:/Qbot/EmulativeDialog.ED-0020.build/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.o -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.exe"
+      ContractFixtures:
+        - "Run H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.exe."
+      StaticChecks:
+        - "gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0020/Tests/Contract/Providers/Contracts/FakeProvider.cpp."
+        - "Verify line coverage is at least 80 percent for FakeProvider.cpp and changed paths equal the exact three-path WriteSet."
+        - "git diff --check <CodeBaseCommit> <HeadCommit>."
+      LiveSideEffects: Forbidden
+      NotRunReason: "Offline test-support implementation; no production network adapter is in scope."
+    RiskLevel: Low
+    RiskOwnerRole: ResponsesProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "P1 EventShard currently fails closed on five approved ED-0013 EventId collisions; original lines remain untouched."
+      CurrentFindingOrFailure: "Ready after ModelProviderContract V1.1 and ModelProviderPort V1.1 code were independently reviewed and locally integrated."
       TriedApproaches: []
-      NextAction: "Freeze this TaskSpec, create the isolated branch/worktree at CodeBaseCommit, execute the exact R9 recovery command, verify byte-prefix preservation, then request Worker01 fixed-Head review."
+      NextAction: "Create the isolated Worker03 branch/worktree from CodeBaseCommit, implement only FakeProvider test support, run strict C++20 contract tests and gcov, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
       EventShard: Workflow/Events/Bootstrap/P1.jsonl
-      FollowUpTaskIds: []
+      FollowUpTaskIds:
+        - ED-0101
