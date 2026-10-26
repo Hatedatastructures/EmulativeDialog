@@ -106,6 +106,22 @@ ChangeRequests:
       The capability map requires the CoreAgent V1 contract for these tasks, but their frozen P2 ContractVersion fields
       listed only ModelProvider V1.1. Correcting the mapping before implementation prevents an incomplete contract scope.
 
+  - ChangeRequestId: CR-ED-0126-004
+    RequestedBy: Coordinator
+    ApprovedBy: Coordinator
+    Decision: Accepted
+    TaskIds: [ED-0103]
+    TaskRevisionTransitions:
+      - {TaskId: ED-0103, FromRevision: 2, ToRevision: 3}
+    Scope: >-
+      Replace the ED-0103/R2 ReadSet entry Tests/Contract/Context/FixtureIndex.yaml, which does not exist, with the
+      existing Tests/Contract/Context/Fixtures/ContextBudgetCases.json. Preserve all other ReadSet entries, Goal, Owner,
+      Reviewer, WriteSet, dependencies, Acceptance, ContractVersion, and security boundaries. Update only the task revision
+      and its revision-specific Branch, Worktree, TaskBuildDirectory, and Validation path references. No product source work.
+    Reason: >-
+      ContextSelector depends on CB-001/CB-002 fixture inputs; the frozen ReadSet path was stale and prevented an exact,
+      executable context load. The existing fixture file is already part of the task's declared on-demand references.
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -583,7 +599,7 @@ Tasks:
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112, ED-0113]}
   - TaskId: ED-0103
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 实现有界且尊重信任层级的 ContextSelector
     TaskKind: CapabilitySlice
@@ -597,8 +613,8 @@ Tasks:
     ReviewerAgentId: "/root/agent_core"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0103-R2-ContextSelector
-    Worktree: H:/Qbot/EmulativeDialog.ED-0103-R2
+    Branch: Task/ED-0103-R3-ContextSelector
+    Worktree: H:/Qbot/EmulativeDialog.ED-0103-R3
     CapabilityIds: [ContextSelectionAndBudget]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -619,13 +635,32 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0103/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: 93f2723545f6056166b75534d83362c738e32e38
+      TaskSpecBlob: a67fffeeefaf9eae145207c4ab2d080732ac783d
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "The ReadSet named a non-existent FixtureIndex.yaml; R3 points to the existing ContextBudgetCases.json before any implementation branch, worktree, or source write began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-004
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0103/R2 Goal, Owner, Reviewer, WriteSet, dependencies, Acceptance, ContractVersion and security boundaries. Replace only Tests/Contract/Context/FixtureIndex.yaml with the existing Tests/Contract/Context/Fixtures/ContextBudgetCases.json ReadSet path; update the revision Branch/Worktree/TaskBuildDirectory and Validation path references."
+      PreserveGoalWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "实现 Core 已授权输入上的上下文优先级、预算裁剪、摘要占位和来源元数据保留；不从消息正文推导身份或权限。"
     OutOfScope: ["Durable memory writes", "Provider wire serialization", "任意文件/RAG/网络检索", "TUI", "微信"]
     DependsOn: [ED-0007, ED-0012, ED-0101]
     ContractVersion: [Architecture/Contracts/MemoryContract.md V1, Architecture/Contracts/ModelProviderContract.md V1.1]
     Context:
       ModuleId: ContextSelector
-      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/MemoryContract.md, Architecture/Contracts/ModelProviderContract.md, Tests/Contract/Context/FixtureIndex.yaml]
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/MemoryContract.md, Architecture/Contracts/ModelProviderContract.md, Tests/Contract/Context/Fixtures/ContextBudgetCases.json]
       OnDemandSet: [Tests/Contract/Context/Fixtures/CB-001.json, Tests/Contract/Context/Fixtures/CB-002.json]
       ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/*", "Source/Channels/QQ/"]
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
@@ -638,28 +673,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Untrusted history and summaries never override system/developer rules or grant identity/permissions.", Evidence: "Trust-order and spoofed-role contract tests."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh per-source gcov report."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0103-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0103-R3.build
       Coverage:
         Required: true
         ProductionSources: [Source/Context/ContextSelector.cpp]
         TestDriverSource: Tests/Contract/Context/ContextSelectorTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0103-R3.build/Reports
       RequiredTargets: [ContextSelectorTests]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports' | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0103-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0103-R2/Source/Context/ContextSelector.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelector.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0103-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0103-R2/Tests/Contract/Context/ContextSelectorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelectorTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelector.o\" \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelectorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/ContextSelectorTests.exe\""
-        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0103-R2'; & 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/ContextSelectorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0103-R3.build/Objects','H:/Qbot/EmulativeDialog.ED-0103-R3.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0103-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0103-R3/Source/Context/ContextSelector.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R3.build/Objects/ContextSelector.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0103-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0103-R3/Tests/Contract/Context/ContextSelectorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R3.build/Objects/ContextSelectorTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0103-R3.build/Objects/ContextSelector.o\" \"H:/Qbot/EmulativeDialog.ED-0103-R3.build/Objects/ContextSelectorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R3.build/ContextSelectorTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0103-R3'; & 'H:/Qbot/EmulativeDialog.ED-0103-R3.build/ContextSelectorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: [CB-001, CB-002]
       StaticChecks:
         - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
         - "Changed paths exactly equal frozen WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelector.o' 'H:/Qbot/EmulativeDialog.ED-0103-R2/Source/Context/ContextSelector.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Context/ContextSelector.cpp' }; } finally { Pop-Location }\""
-        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports."
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0103-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0103-R3.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0103-R3.build/Objects/ContextSelector.o' 'H:/Qbot/EmulativeDialog.ED-0103-R3/Source/Context/ContextSelector.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Context/ContextSelector.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0103-R3.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "No external retrieval or user data is used."
     RiskLevel: Medium
