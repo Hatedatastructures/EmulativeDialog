@@ -51,6 +51,7 @@ ParallelGroups:
 
 ExitGate:
   GateId: AgentWorkflowControllerAndCoreContractsVerified
+  State: Passed
   RequiredTaskIds:
     - ED-0006
     - ED-0007
@@ -69,6 +70,24 @@ ExitGate:
     - P2
     - P3
   ProductAgentRuntimeCodeAllowedBeforeExit: false
+  CoordinatorEvaluation:
+    State: Passed
+    Scope: P1BootstrapOnly
+    SourceSnapshotCommit: 89c2c6f8002df64c990db17ccecc438aa14fea93
+    EvidenceBundle: H:/Qbot/ReviewBundles/EmulativeDialog-P1-ExitGate-20261027
+    ReviewedEvidenceManifest: Manifest.reviewed-draft.sha256
+    ReviewedEvidenceManifestSHA256: 770f3b3d0913e49cf70a2aff16b6afa44c1e7754dab179d5d201cba5c0205ecc
+    PrimaryReviewer: /root/p1_code001_luna
+    PrimaryReviewerDecision: Approve
+    PrimaryReviewedRuleIds: [CODE-001, CODE-002, GOV-001, GOV-002, GOV-003, GOV-004, CTRL-001, CTX-001, CTX-002, PAR-001, PAR-002, TRACE-001, PLAN-001, SEC-002, MERGE-001, MERGE-002, CODEX-001]
+    SecondaryReviewer: /root/p1_trace_events_luna
+    SecondaryReviewerDecision: Approve
+    SecondaryReviewedRuleIds: [API-001, SEC-001, MAP-001]
+    CoordinatorAgentId: /root
+    CoordinatorSignoffEventId: a4de8064-e080-4331-9981-ac62b1ee6c6c
+    Decision: PassedForP1BootstrapOnly
+    LargeScaleProductImplementation: BlockedUnverified
+    ProductAgentRuntimeImplemented: false
   ChangeRequests:
     - ChangeRequestId: CR-P1-EXIT-001
       RequestedByRole: Coordinator

@@ -1,13 +1,17 @@
 SchemaVersion: 1
 PhaseId: P2
 PhaseName: Core Identity, AgentRuntime, and First Product Slice
-State: PendingP1ExitGate
+State: Current
 
 EntryGate:
   RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
   RequiredState: Passed
-  ProductAgentRuntimeCodeAllowed: false
-  State: Pending
+  ProductAgentRuntimeCodeAllowed: true
+  ProductAgentRuntimeCodeAllowedScope: [ED-0109, ED-0125, ED-0101, ED-0124]
+  LargeScaleProductImplementationState: BlockedUnverified
+  State: Passed
+  PassedByEventId: a4de8064-e080-4331-9981-ac62b1ee6c6c
+  EvidenceManifestSHA256: 770f3b3d0913e49cf70a2aff16b6afa44c1e7754dab179d5d201cba5c0205ecc
 
 TaskSpecRegistration:
   CapabilityMapSource: Workflow/CodexCapabilityMap/AgentCore.yaml
@@ -137,6 +141,23 @@ ChangeRequests:
     Reason: >-
       The prior revision declared two non-existent OnDemandSet files alongside the real combined fixture file in ReadSet.
       An empty OnDemandSet makes ContextSelector's fixture reads executable without changing its test scope.
+
+  - ChangeRequestId: CR-P2-FIRSTSLICE-001
+    RequestedBy: Coordinator
+    ApprovedBy: Coordinator
+    Decision: Accepted
+    TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
+    Scope: >-
+      Clarify the P2 first-product-slice review route: these four ordered tasks may use a fixed-head, independent local
+      ReviewBundle when the GitHub integration cannot create a PR, provided the owner records a GitHub PR attempt, the
+      reviewer is independent, the IntegrationOwner checks the final semantic diff, and all frozen Acceptance/Windows
+      build/coverage requirements pass. This narrow route is limited to the FirstProductSlice group and does not satisfy
+      the LargeScaleProductImplementation formal PR, required-check, or branch-protection gate. Do not apply this route
+      to provider, memory, or QQ implementation follow-ups.
+    Reason: >-
+      The P2 ExitGate explicitly requires a fixed-head local ReviewBundle for the first vertical slice and records the
+      GitHub PR attempt separately. The connected GitHub tool returns HTTP 403 for PR creation; this clarification
+      preserves the requested first C++ slice while keeping later large-scale work behind the formal PR platform gate.
 
 ParallelGroups:
   - GroupId: FirstProductSlice

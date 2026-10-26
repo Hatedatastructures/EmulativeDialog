@@ -12,8 +12,10 @@
 ## 阶段与实际实现
 
 - ED-0006 Windows 原生 C++20 BuildProbe、ED-0007 冻结合同、ED-0008 WorkflowController，以及 ED-0015/0016/0017 ports/合同、ED-0018 MockChannel、ED-0020 FakeProvider 测试支持均已本地集成；ED-0019 只追加已批准的事件冲突 resolution 并保留原始前缀。
-- P1 ExitGate 当前仍为 **Pending**。R7 的 MAN-003 覆盖 20 个 P1 RuleId，但逐条实际证据、Reviewer 决定和 Coordinator 签署尚待完成；Worker05 的独立复核此前正确指出这些状态仍是 Pending。
-- 已在 `Workflow/Plans/P2.yaml`、`Workflow/Plans/P3.yaml` 登记 15 个 Keep/Redesign 正式 TaskSpec（ED-0101..ED-0115），精确列出 Owner/Reviewer、ReadSet/WriteSet、依赖、Acceptance 和验证命令。另有必要的网络/构建/存储基础任务 ED-0120..ED-0124。TaskSpec 仍为 Blocked，尚未分派产品代码。
+- P1 ExitGate 已在源快照 `89c2c6f8002df64c990db17ccecc438aa14fea93` 上通过 Coordinator 签署，范围仅为 P1/bootstrap。MAN-003 的 20 个 RuleId 均获独立 Reviewer Approve，并在事件 `a4de8064-e080-4331-9981-ac62b1ee6c6c` 记录；证据清单 SHA256 为 `770f3b3d0913e49cf70a2aff16b6afa44c1e7754dab179d5d201cba5c0205ecc`。
+- P2 EntryGate 已通过，范围仅允许 ED-0109 → ED-0125 → ED-0101 → ED-0124 的首条 C++ 纵向切片，并已接受 CR-P2-FIRSTSLICE-001：若 GitHub 插件不能建 PR，可为这四项使用固定 Head 的独立 LocalReviewBundle，同时单独记录 PR 尝试；这不满足后续 LargeScaleProductImplementation 正式 PR 门。
+- 已在 `Workflow/Plans/P2.yaml`、`Workflow/Plans/P3.yaml` 登记 15 个 Keep/Redesign 正式 TaskSpec（ED-0101..ED-0115）。它们仍须逐项修订可执行的当前 Owner/Reviewer、ReadSet/WriteSet、依赖、合同 pin、BaselineCommit 与验证命令后才能分派；当前尚无 AgentRuntime 产品代码分支。
+- 远端 PR 平台查询确认仓库 `codex/integration` 未保护（`protected=false`）、规则集为空，GitHub 插件 PR 创建返回 HTTP 403 `Resource not accessible by integration`，本机 `gh` 未登录。LargeScaleProductImplementation 仍 BlockedUnverified；首条切片按上述窄范围本地评审路径推进。
 - **Codex AgentRuntime 产品 C++ 源码仍未实现。** FakeProvider、MockChannel、Port、能力图、合同与任务计划均不是 AgentRuntime 成果；不得报告首条产品纵向切片已完成。
 
 ## 目标范围与下一项产品切片
@@ -27,4 +29,4 @@
 
 - R7 Bundle 的 9 个内容哈希已核验；固定 Head 的六路径核对和 `git diff --check` 退出 0；MAN-003 的 20/20 RuleId 与 blocker union 一致；10 个 Markdown 链接无断链。
 - 现成 MinGW C++20 `WorkflowController.exe query` 对 ED-0101..ED-0115 及 ED-0120..ED-0124 共 20 个 TaskSpec 查询均退出 0，状态均为 Blocked（产品门未通过）。
-- 下一步：为 MAN-003 逐 RuleId 绑定 P1/bootstrap 证据与独立评审字段，交 Worker05 固定状态复核，再由 Coordinator 签署 P1 ExitGate。只有该门通过后才创建实现 worktree 并派发 C++ 代码任务。
+- 下一步：将 ED-0109/R3 修订为经固定合同/API、Owner/Reviewer、分支/worktree、工具版本与覆盖率命令审阅的 R4；随后只创建该任务的独立 worktree/branch，完成 Core 身份策略 C++ 代码、80% 覆盖与独立 LocalReviewBundle。之后依序处理 ED-0125、ED-0101、ED-0124。
