@@ -685,7 +685,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Memory 与 ContextSelector 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Verified
+    State: MergeQueued
     Phase: P1
     OwnerRole: MemoryContextOwner
     OwnerSlotId: Worker06
@@ -766,7 +766,7 @@ Tasks:
       CurrentFindingOrFailure: ""
       TriedApproaches:
         - "ED-0012-RV-001 Major resolved in R2: moved the verified envelope to Core-only SelectionInputs, removed it from budgeted Items/SelectedItemIds, asserted envelope/identity fields are not serialized, and recalculated CB-001/CB-002 budgets."
-      NextAction: Queue and merge the independently approved R2 fixture change into codex/integration; no source-code or CMake changes are in scope.
+      NextAction: Merge the independently approved R2 fixture change into codex/integration; no source-code or CMake changes are in scope.
       OpenMessageIds: []
       LastValidationResult: "Independent focused review approved R2 Head 8ac50caf67ff6fe240318a33f63bdfe68f3f4525; JSON parse, diff check and exact four-file WriteSet checks passed; fixture-only, no C++ build applies."
     Deliverable:
