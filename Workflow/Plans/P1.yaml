@@ -2797,12 +2797,15 @@ Tasks:
     IntegrationMode: LocalReviewBundle
     RemotePullRequestCreated: false
     RemotePRBlocker: "GitHub connector returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
+    RemoteBranchRetired: true
+    LocalBranchRetired: true
+    BranchRetirementHead: 54a7ba353fa5a491019ec5bf08966f7fe7d0ff3b
     Checkpoint:
       LastCompletedAcceptance: [AC-1, AC-2, AC-3]
       CurrentFindingOrFailure: ""
       TriedApproaches: []
       NextAction: "P1 ExitGate remains pending ED-0128/R4 review and merge."
-      LastValidationResult: "Author, independent review, and post-merge fixture checks passed; see LocalReviewBundle."
+      LastValidationResult: "Post-merge checks passed; task branch refs retired at integration Head 54a7ba3; task worktree retained detached."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
