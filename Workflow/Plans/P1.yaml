@@ -512,7 +512,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Chat Completions 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -585,6 +585,7 @@ Tasks:
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
     MergeTargetBranch: codex/integration
     MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    MergeCommit: 5355df76c87519d1730a4ff30ef635b22f9008ad
     ReviewerDecision: Approved
     ReviewHeadCommit: 97223128541c4238465ae0f0db68e94951a95348
     Checkpoint:
@@ -592,7 +593,7 @@ Tasks:
       CurrentFindingOrFailure: ""
       TriedApproaches:
         - "R1 P2 finding: RegisteredResponseFields was ambiguous; R2 registers id/object/created/model, maps id to ProviderResponseId, separates canonicalized fields, and names x_vendor_trace as unsupported; Worker05 approved R2."
-      NextAction: Queue and merge the independently approved R2 Chat fixture patch into codex/integration for ED-0105.
+      NextAction: R2 fixtures merged locally at 5355df76c87519d1730a4ff30ef635b22f9008ad; Chat adapter implementation remains a later dependency-gated task.
       OpenMessageIds: []
       LastValidationResult: "R2 JSON parse, git diff --check Base..Head and exact four-file WriteSet pass; focused Worker05 review approved with no findings; fixture-only, no C++ build/live request."
     Deliverable:
@@ -607,7 +608,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Anthropic Messages 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -680,6 +681,7 @@ Tasks:
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0011
     MergeTargetBranch: codex/integration
     MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    MergeCommit: 3f63b920ddab43d73ee0ef5db381d8911a9f40ac
     ReviewerDecision: Approved
     ReviewHeadCommit: 431ed519516a1576c46522becf9be3864163a11e
     Checkpoint:
@@ -687,7 +689,7 @@ Tasks:
       CurrentFindingOrFailure: ""
       TriedApproaches:
         - "R1 ED-0011-RV-001 Major: four stop-reason cases dropped cumulative output_tokens from 1 to 0. R2 changes only ErrorCases.json and keeps all four follow-up values at 1 with synchronized expected snapshots."
-      NextAction: Queue and merge the independently approved R2 Anthropic fixture patch into codex/integration for ED-0106.
+      NextAction: R2 fixtures merged locally at 3f63b920ddab43d73ee0ef5db381d8911a9f40ac; Anthropic adapter implementation remains a later dependency-gated task.
       OpenMessageIds: []
       LastValidationResult: "R2 JSON parse, diff check, exact four-file WriteSet, focused cumulative-usage checks and Worker03 review passed with no findings; fixture-only, no live request."
     Deliverable:
