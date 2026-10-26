@@ -1,0 +1,101 @@
+{
+  "SchemaVersion": 1,
+  "Task": {
+    "TaskId": "ED-0127",
+    "TaskRevision": 4,
+    "Protocol": "OpenAIResponses"
+  },
+  "Contract": {
+    "Path": "Architecture/Contracts/ModelProviderContract.md",
+    "Version": "V1.2",
+    "Commit": "c4ce5b8c28e7277e1182c4abec1a76cfae1545ea"
+  },
+  "CapabilityEvidence": {
+    "CapabilityId": "OpenAIResponsesTransport",
+    "CapabilityMapPath": "Workflow/CodexCapabilityMap/AgentCore.yaml",
+    "Artifact": "Tests/Contract/Providers/OpenAIResponses/RequestAndEventMapping",
+    "Proves": "V1.2 Responses refusal deltas remain nonterminal RefusalDelta events and only response.completed produces one Refusal terminal without a fabricated category."
+  },
+  "DataPolicy": {
+    "SyntheticOnly": true,
+    "ContainsCredentials": false,
+    "ContainsUserConversationData": false,
+    "CapturedFromNetwork": false,
+    "LiveRequestsPermitted": false
+  },
+  "Files": [
+    "FixtureIndex.json",
+    "RefusalCases.json"
+  ],
+  "CaseIndex": [
+    {
+      "CaseId": "refusal_delta_done_then_response_completed",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/0",
+      "AcceptanceIds": ["AC-1", "AC-2"]
+    },
+    {
+      "CaseId": "empty_refusal_done_then_response_completed",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/1",
+      "AcceptanceIds": ["AC-1", "AC-2"]
+    }
+  ],
+  "CoverageMatrix": [
+    {
+      "AcceptanceId": "AC-1",
+      "FixtureCases": [
+        "refusal_delta_done_then_response_completed",
+        "empty_refusal_done_then_response_completed"
+      ],
+      "ContractFields": [
+        "ContractVersion=ModelProviderContract V1.2",
+        "response.refusal.delta",
+        "response.refusal.done",
+        "response.completed",
+        "all CaseIndex JsonPointers resolve"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-2",
+      "FixtureCases": [
+        "refusal_delta_done_then_response_completed",
+        "empty_refusal_done_then_response_completed"
+      ],
+      "ContractFields": [
+        "refusal delta precedes refusal done and response.completed",
+        "empty refusal text emits no empty RefusalDelta",
+        "only response.completed produces ResponseCompleted/Refusal",
+        "no RefusalStopDetails category is fabricated"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-3",
+      "FixtureCases": [
+        "synthetic-only refusal cases",
+        "V1 fixture files remain byte-identical to BaseCommit"
+      ],
+      "ContractFields": [
+        "No credentials, private messages, or network-captured data",
+        "The V1.2 task WriteSet is separate from V1 fixtures"
+      ]
+    }
+  ],
+  "WireOrderAssertions": {
+    "NonEmptyRefusal": [
+      "response.refusal.delta",
+      "response.refusal.done",
+      "response.completed"
+    ],
+    "EmptyRefusal": [
+      "response.refusal.done",
+      "response.completed"
+    ]
+  },
+  "NotImplementedByThisTask": [
+    "C++ Provider adapter",
+    "Provider transport",
+    "Network validation",
+    "Live smoke"
+  ]
+}
