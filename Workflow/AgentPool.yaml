@@ -31,8 +31,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0013
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
@@ -62,8 +62,8 @@ Slots:
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0105
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/p3_validation_luna"
@@ -72,8 +72,8 @@ Slots:
     HostSessionRef: ""
     ModuleIds:
       - ProviderAnthropicMessages
-    CurrentTaskId: ED-0017
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
     AgentId: "/root/p1_par001_luna"
@@ -83,8 +83,8 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0015
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。
