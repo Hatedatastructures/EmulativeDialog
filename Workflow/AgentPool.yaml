@@ -36,8 +36,8 @@ Slots:
     ModuleIds:
       - AgentRuntime
       - Core
-    CurrentTaskId: ED-0005
-    Status: Active
+    CurrentTaskId: ""
+    Status: Dormant
   - SlotId: Worker03
     RoleFamily: Unassigned
     AgentId: ""
