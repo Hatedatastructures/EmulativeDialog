@@ -257,7 +257,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -339,13 +339,13 @@ Tasks:
     RequiresExternalAccount: false
     BaselineCommit: c4d2b94e0dbfb82d922634c1b175aab76f545567
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0008-AgentWorkflowController
+    Worktree: H:/Qbot/EmulativeDialog.ED-0008
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Create the isolated controller worktree from BaselineCommit and implement only the frozen WriteSet; ED-0007 remains a parallel contract task.
+      NextAction: Implement the frozen ED-0008 WriteSet in the assigned worktree; ED-0007 remains a parallel contract task.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
