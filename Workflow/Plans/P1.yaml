@@ -363,24 +363,26 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042
-    HeadCommit: ""
+    HeadCommit: e32bdaf5ce85426504a661cd1ac00cad167014b1
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R3
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R4
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
-      CurrentFindingOrFailure: "ED-0008-RV-001 Major: fixed Base c4d2b94 did not contain the frozen CMakeLists.txt/RootCMakeAndPresets WriteSet, so the old diff exceeded its Base TaskSpec. CR-ED-0008-002 approves rebase onto b0f5def, whose P1 TaskSpec contains the exact frozen write root."
+      CurrentFindingOrFailure: "ED-0008-RV-002 Major: R3 ReviewBundle copied CommandExecuted events without filtering TaskRevision; its R3 manifest contains an R2 git diff --check command (c4d2..ddcf) instead of the R3 Base..Head validation."
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
         - "Early compile failures: duplicate TaskScopedMessageStore constructor; PathsEqual declaration order; missing Trim fixture helper; corrected in the task WriteSet."
         - "Early CTest failures: invalid ReadSet setup and missing PhaseId in event fixture; corrected and superseded by final 2/2 pass."
         - "Review of Base c4d2b94 found the source diff out of the P1 task WriteSet because the frozen CMakeLists.txt/SharedLock revision was committed later in b0f5def; rebase and re-review required."
-      NextAction: Rebase the same isolated branch onto BaselineCommit b0f5def, preserve the frozen WriteSet/Acceptance, rerun Revision 3 validation, and submit a new fixed Head/ReviewBundle.
+        - "Coordinator found R3 ReviewBundle included stale Revision2 validation evidence because validation events were not filtered by TaskRevision; must filter exact TaskId/Revision and add regression fixture."
+      NextAction: Filter ReviewBundle validation evidence by exact TaskId/TaskRevision, add an R2-versus-R3 event regression fixture, rerun Revision3 tests, and generate R4 bundle at the new output path.
       OpenMessageIds:
         - FUP-ED-0008-01
         - ED-0008-RV-001
-      LastValidationResult: "Revision 2 configure/build/CTest passed 2/2 on the old Base; reviewer found the Base TaskSpec lacked the authorized CMake write root. Revision 3 validation is pending after rebase."
+        - ED-0008-RV-002
+      LastValidationResult: "Revision 3 configure/build/CTest passed 2/2 on Base b0f5def; ReviewBundle validation list is invalid because it carries R2 command events. Code review correction and R4 bundle are pending."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -414,7 +416,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 OpenAI Responses 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -487,6 +489,9 @@ Tasks:
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0009
     MergeTargetBranch: codex/integration
     MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    MergeCommit: c17a39ce3e4ff3904c7fb4a00e715adedf99d183
+    ReviewerDecision: Approved
+    ReviewHeadCommit: 6b14deb52c1878fbfee239bc9fb768616bcfd6af
     ReviewerDecision: Approved
     ReviewHeadCommit: 6b14deb52c1878fbfee239bc9fb768616bcfd6af
     Checkpoint:
@@ -494,7 +499,7 @@ Tasks:
       CurrentFindingOrFailure: ""
       TriedApproaches:
         - "R1 reviewer found Major: in-band Responses error omitted sequence_number; R2 added sequence_number=2 following response.created sequence_number=1, then the fixed-commit reviewer approved."
-      NextAction: Merge the approved R2 fixture patch into codex/integration; provider adapter task ED-0104 can then read these fixtures.
+      NextAction: Merged the approved R2 fixture patch into codex/integration at c17a39ce3e4ff3904c7fb4a00e715adedf99d183; provider adapter task ED-0104 can read these fixtures.
       OpenMessageIds: []
       LastValidationResult: "R2 PowerShell JSON parse exit 0; git diff --check Base..Head exit 0; exact four-file WriteSet; Worker04 approved with no remaining findings."
     Deliverable:

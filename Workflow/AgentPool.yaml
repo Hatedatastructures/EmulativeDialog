@@ -45,8 +45,8 @@ Slots:
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0009
-    Status: Review
+    CurrentTaskId: ""
+    Status: Dormant
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/provider_chat"
