@@ -1,0 +1,119 @@
+{
+  "SchemaVersion": 1,
+  "TaskId": "ED-0128",
+  "TaskRevision": 4,
+  "Contract": {
+    "Id": "ModelProviderContract",
+    "Version": "V1.2",
+    "TaskId": "ED-0017",
+    "TaskRevision": 4,
+    "TaskHeadCommit": "c632c574c957f122924a449f45e56b017f36d3e4",
+    "IntegrationMergeCommit": "c4ce5b8c28e7277e1182c4abec1a76cfae1545ea",
+    "Path": "Architecture/Contracts/ModelProviderContract.md",
+    "Blob": "69d38f5b98defd7890d488ec787d94ce4c797030"
+  },
+  "CapabilityId": "OpenAICompatibleChatCompletions",
+  "Protocol": "OpenAICompatibleChatCompletions",
+  "OfflineOnly": true,
+  "SyntheticDataOnly": true,
+  "CredentialBytesIncluded": false,
+  "NetworkRequestsPerformed": false,
+  "FixtureFiles": [
+    "FixtureIndex.json",
+    "RefusalCases.json"
+  ],
+  "Cases": [
+    {
+      "CaseId": "REF-001-stop-absent-refusal-is-final-answer",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/0",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["delta.refusal absent", "finish_reason stop", "ResponseCompleted/FinalAnswer"]
+    },
+    {
+      "CaseId": "REF-002-stop-null-refusal-is-final-answer",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/1",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["delta.refusal null", "finish_reason stop", "ResponseCompleted/FinalAnswer"]
+    },
+    {
+      "CaseId": "REF-003-stop-empty-refusal-completes-without-empty-delta",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/2",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["empty delta.refusal establishes refusal marker", "no empty RefusalDelta", "finish_reason stop", "ResponseCompleted/Refusal"]
+    },
+    {
+      "CaseId": "REF-004-stop-nonempty-refusal-delta-completes-refusal",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/3",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["nonempty delta.refusal emits RefusalDelta", "finish_reason stop", "ResponseCompleted/Refusal", "no synthetic refusal category"]
+    },
+    {
+      "CaseId": "REF-005-length-after-refusal-is-output-limited",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/4",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["nonempty delta.refusal", "finish_reason length", "ResponseOutputLimited", "not completed as refusal"]
+    },
+    {
+      "CaseId": "REF-006-content-filter-after-refusal-is-content-filtered",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/5",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["nonempty delta.refusal", "finish_reason content_filter", "ResponseFailed/ContentFiltered", "not completed as refusal"]
+    },
+    {
+      "CaseId": "REF-007-clean-tool-calls-terminal-is-tool-handoff",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/6",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["no delta.refusal", "finish_reason tool_calls", "complete valid arguments", "ToolCallReady", "ResponseCompleted/ToolHandoff"]
+    },
+    {
+      "CaseId": "REF-008-refusal-and-tool-calls-fail-closed",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/7",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["delta.refusal with actual tool_calls", "finish_reason tool_calls", "ResponseFailed/InvalidStream", "no ToolCallReady"]
+    },
+    {
+      "CaseId": "REF-009-content-before-refusal-fails-closed",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/8",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["nonempty delta.content before delta.refusal", "mixed content/refusal", "ResponseFailed/InvalidStream"]
+    },
+    {
+      "CaseId": "REF-010-refusal-before-content-fails-closed",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/9",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["delta.refusal before nonempty delta.content", "mixed refusal/content", "ResponseFailed/InvalidStream"]
+    },
+    {
+      "CaseId": "REF-011-empty-refusal-marker-conflicts-with-content",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/10",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["empty delta.refusal establishes refusal marker", "later nonempty delta.content", "ResponseFailed/InvalidStream"]
+    },
+    {
+      "CaseId": "REF-012-nonstring-refusal-fails-closed",
+      "File": "RefusalCases.json",
+      "JsonPointer": "/Cases/11",
+      "Acceptance": ["AC-1", "AC-2"],
+      "Covers": ["delta.refusal has a non-string non-null value", "ResponseFailed/InvalidStream"]
+    }
+  ],
+  "Invariants": [
+    "All identifiers, messages, tool names, tool arguments, and responses are synthetic.",
+    "No real credential bytes, private user messages, or network captures are present.",
+    "Chat Completions refusal has no refusal category; RefusalStopDetails and Unclassified are not synthesized.",
+    "A refusal marker is not a terminal event; exactly one protocol terminal is required.",
+    "Mixed refusal with nonempty content or actual tool calls fails as InvalidStream and never produces ToolCallReady.",
+    "Provider fixtures never authorize or execute business actions."
+  ]
+}
