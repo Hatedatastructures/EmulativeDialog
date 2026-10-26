@@ -270,11 +270,11 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0008
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Review
+    State: Rework
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -308,10 +308,10 @@ Tasks:
       - CMake/DependencyPins.cmake
     ContextBudgetOverride:
       TaskId: ED-0008
-      TaskRevision: 2
+      TaskRevision: 3
       MaxReferenceFiles: 13
       ApprovedByRole: Coordinator
-      ApprovalEventId: b7d3a845-6348-42a0-9530-3da7fd1f83a2
+      ApprovalEventId: a9d9ac40-3075-4d4e-a626-1c92eb43c038
       RuleRef: Workflow/AgentExecutionStandard.md:47-48
       Reason: All 13 listed files are direct dependencies of AC-1..AC-6 or the authorized Windows/yaml-cpp build; no unrelated task history is loaded.
     WriteSet:
@@ -362,23 +362,25 @@ Tasks:
     RiskOwnerRole: AgentWorkflowOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: c4d2b94e0dbfb82d922634c1b175aab76f545567
-    HeadCommit: ddcfac296c1cb50869bd5497bdc0739e8568a56a
+    BaselineCommit: b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042
+    HeadCommit: ""
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R3
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
-      CurrentFindingOrFailure: ""
+      CurrentFindingOrFailure: "ED-0008-RV-001 Major: fixed Base c4d2b94 did not contain the frozen CMakeLists.txt/RootCMakeAndPresets WriteSet, so the old diff exceeded its Base TaskSpec. CR-ED-0008-002 approves rebase onto b0f5def, whose P1 TaskSpec contains the exact frozen write root."
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
         - "Early compile failures: duplicate TaskScopedMessageStore constructor; PathsEqual declaration order; missing Trim fixture helper; corrected in the task WriteSet."
         - "Early CTest failures: invalid ReadSet setup and missing PhaseId in event fixture; corrected and superseded by final 2/2 pass."
-      NextAction: Independent fixed-commit review by Worker02; author must not change Head during review.
+        - "Review of Base c4d2b94 found the source diff out of the P1 task WriteSet because the frozen CMakeLists.txt/SharedLock revision was committed later in b0f5def; rebase and re-review required."
+      NextAction: Rebase the same isolated branch onto BaselineCommit b0f5def, preserve the frozen WriteSet/Acceptance, rerun Revision 3 validation, and submit a new fixed Head/ReviewBundle.
       OpenMessageIds:
         - FUP-ED-0008-01
-      LastValidationResult: "Revision 2 configure exit 0; three-target build exit 0; CTest exit 0 with 2/2 passed; fixed Base..Head diff check exit 0; clean worktree."
+        - ED-0008-RV-001
+      LastValidationResult: "Revision 2 configure/build/CTest passed 2/2 on the old Base; reviewer found the Base TaskSpec lacked the authorized CMake write root. Revision 3 validation is pending after rebase."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -394,6 +396,17 @@ Tasks:
         PreviousCommand: cmake --build --preset windows-mingw --target WorkflowController
         ApprovedCommand: cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
         Reason: A clean task-specific binary directory must build BuildProbe and WorkflowControllerContractTests before CTest; the TaskRevision 1 target built only WorkflowController, so registered tests were skipped or unavailable.
+        PreserveBranchAndWorktree: true
+      - ChangeRequestId: CR-ED-0008-002
+        FromTaskRevision: 2
+        ToTaskRevision: 3
+        RequestedByAgentId: "/root"
+        ApprovedByAgentId: "/root"
+        Scope: BaselineCommit
+        PreviousBaselineCommit: c4d2b94e0dbfb82d922634c1b175aab76f545567
+        ApprovedBaselineCommit: b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042
+        SupersededReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008
+        Reason: Independent review found the old Base task record did not contain the already-frozen CMakeLists.txt WriteSet and RootCMakeAndPresets lock, making the branch diff exceed the Base TaskSpec. The new Base contains the frozen ED-0008 scope; code WriteSet, goal and acceptance stay unchanged.
         PreserveBranchAndWorktree: true
 
   - TaskId: ED-0009

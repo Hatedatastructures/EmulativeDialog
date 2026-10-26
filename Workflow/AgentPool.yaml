@@ -29,7 +29,7 @@ Slots:
       - RootBuildAndDependencies
       - AgentWorkflowController
     CurrentTaskId: ED-0008
-    Status: Review
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/agent_core"
