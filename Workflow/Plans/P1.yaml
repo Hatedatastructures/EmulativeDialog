@@ -165,7 +165,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 P1 事件 EventId 冲突的协调者授权恢复
     TaskKind: BootstrapRecovery
-    State: Ready
+    State: Verified
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -237,9 +237,12 @@ Tasks:
       BootstrapControllerRemediationAllowed: true
       ProductAgentRuntimeMayStart: false
     BaselineCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
-    HeadCommit: ""
+    HeadCommit: 0b9d31f0b896d0bfc2b5e9c365d217c93feb848f
     Branch: Task/ED-0014-R9-EventIdConflictRecovery
     Worktree: H:/Qbot/EmulativeDialog.ED-0014-R9
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0014-R9-Final/ReviewBundle.json
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector create-pull-request returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Context:
       ModuleId: AgentWorkflowController
       ReadSet:
@@ -482,15 +485,17 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     TaskSpecCommitPin: Coordinator supplies immutable R9 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
+    ReviewHeadCommit: 0b9d31f0b896d0bfc2b5e9c365d217c93feb848f
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5-R8 were superseded before fixed Head after reviewer findings on ReadSet, isolated coverage path, strict C++20 and gcov absolute-source reporting."
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9
+      CurrentFindingOrFailure: "Fixed code review approved and R9 meets all implementation Acceptance. The real P1 event shard has not yet been resolved; that append-only operation is a separate Coordinator task."
       TriedApproaches:
         - "R4/R5 proposal reviews identified authorization bootstrap cycle, event-envelope omissions, unknown-field loss, and missing append/flush recovery tests; these are incorporated in the frozen AC above."
-      NextAction: "Move the uncommitted authorized four-path R8 implementation to the R9 task branch, rerun the strict native Windows C++20 build/CTest, capture valid absolute-source gcov totals, then request Worker02 fixed-Head review."
+        - "R9 replaced full-plan YAML parsing with TaskId-only extraction from the pinned TaskSpec and added strict resolution allowlist, durable retry, and real-S CLI fixtures."
+      NextAction: "Coordinator records the reviewed R9 task and registers a separate append-only P1 EventId resolution operation; keep P1 ExitGate Pending until that operation and manual enforcement review complete."
       OpenMessageIds: []
-      LastValidationResult: NotRun
+      LastValidationResult: "R9 native strict C++20 configure/build and Contract CTest 1/1 passed; CLI synthetic-shard process cases passed; gcov 16.1: WorkflowController.cpp 2219/2599 (85.38%), Main.cpp 466/526 (88.59%), combined 2685/3125 (85.92%); diff-check and exact four-path WriteSet passed."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -502,7 +507,7 @@ Tasks:
     EpicId: EP-05
     Title: 定义 ModelProviderPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
-    State: Ready
+    State: Verified
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -567,9 +572,12 @@ Tasks:
     ContractVersion: ModelProviderContract V1.1 at a69f784d3b194aaa8b729a2f10b9891797a52725
     PriorImplementationHead: 01f2a628373b1dd678c9ccb724ae5e853b0afa59
     BaselineCommit: 7ca75f72f4fdaaf3ed1f578ed5546a68958123a9
-    HeadCommit: ""
+    HeadCommit: e5070aa206dcea97baaea553e22ac55d5b788192
     Branch: Task/ED-0015-R3-ModelProviderPortCpp
     Worktree: H:/Qbot/EmulativeDialog.ED-0015-R3
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0015-R3
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector create-pull-request returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Context:
       ModuleId: ModelProviderPort
       ReadSet:
@@ -648,14 +656,15 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     TaskSpecCommitPin: Coordinator supplies immutable ED-0015/R3 task snapshot S at assignment; source path Workflow/Plans/P1.yaml#ED-0015.
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
+    ReviewHeadCommit: e5070aa206dcea97baaea553e22ac55d5b788192
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R2 RequestChanges is preserved in PreviousRevisionEvidence; R3 now targets ModelProviderContract V1.1 from the local reviewed port base."
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5
+      CurrentFindingOrFailure: "Worker05 approved the fixed V1.1 Port API after R3 restored RefusalDelta classification. GitHub PR creation returned 403; the local ReviewBundle is not a PR or merge."
       TriedApproaches: []
-      NextAction: "Create the isolated R3 worktree from the reviewed local port base, repair typed refusal details and failure-only codes, run the task-local compile contract, then request Worker05 fixed-Head review."
+      NextAction: "Keep Provider adapter implementations gated on P1 ExitGate and this V1.1 port contract; continue with the C++ AgentRuntime first slice when prerequisites are ready."
       OpenMessageIds: []
-      LastValidationResult: NotRun
+      LastValidationResult: "Native MinGW C++20 warnings-as-errors compile, contract executable, diff-check and exact two-path WriteSet passed; Worker05 approved; line coverage not applicable to declaration-only API."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -945,7 +954,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现可复用的离线 MockChannelAdapter 测试替身
     TaskKind: TestSupport
-    State: Ready
+    State: Verified
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker04
@@ -992,9 +1001,12 @@ Tasks:
       - "ED-0016/R2 reviewed fixed Head 3f6b284a212156814aa5eb42d2aa0d2c0ff68a8f; ChannelAdapterPort API is the only public input seam."
       - "All channel/account/sender/conversation identities in tests are synthetic and remain confined to the trusted test adapter boundary."
     BaselineCommit: a52e4d01782be6504369bde865e5e513595f206f
-    HeadCommit: ""
+    HeadCommit: ebdcdc1dd1106549f65d97ebd88eda39d775a435
     Branch: Task/ED-0018-R2-MockChannelTestSupport
     Worktree: H:/Qbot/EmulativeDialog.ED-0018-R2
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0018-R2-Final/ReviewBundle.json
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector create-pull-request returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Context:
       ModuleId: ChannelAdapterPort
       ReadSet:
@@ -1084,14 +1096,15 @@ Tasks:
     RiskOwnerRole: ContractOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
+    ReviewHeadCommit: ebdcdc1dd1106549f65d97ebd88eda39d775a435
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: ""
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
+      CurrentFindingOrFailure: "Worker06 approved the fixed R2 Head; the GitHub PR attempt returned HTTP 403, so the immutable local ReviewBundle is the available review artifact."
       TriedApproaches: []
-      NextAction: "Implement the R2 receipt/correlation cases in the three-path synthetic MockChannelAdapter, run task-local C++20 tests and gcov, then request Worker06 fixed-Head review."
+      NextAction: "Coordinator integrates after recording the exact local review artifact and GitHub blocker; then continue to the first product C++ vertical slice after P1 exit."
       OpenMessageIds: []
-      LastValidationResult: NotRun
+      LastValidationResult: "Two strict C++20 translation-unit builds, link and contract executable passed (exit 0); gcov 97/97 executable lines = 100%; exact three-path WriteSet and diff-check passed. Worker06 approved fixed Head ebdcdc1; no tests were rerun by the reviewer."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -1982,6 +1995,126 @@ Tasks:
       NextAction: "Complete the ED-0014 EventId reconciliation code/test task, then retry R2 context and isolated worktree creation from the corrected BaseCommit."
       OpenMessageIds: []
       LastValidationResult: "Not run; task has not started."
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: []
+
+  - TaskId: ED-0019
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 以协调者授权恢复 P1 EventId 重复记录
+    TaskKind: DataRecoveryOperation
+    State: Ready
+    Phase: P1
+    OwnerRole: Coordinator
+    OwnerSlotId: Coordinator
+    OwnerAgentId: "/root"
+    ReviewerRole: AgentWorkflowOwner
+    ReviewerSlotId: Worker01
+    ReviewerAgentId: "/root/workflow_controller"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-26"
+    UpdatedAt: "2026-10-26"
+    ParallelGroup: P1EventShardRecovery
+    Goal: >-
+      在隔离分支中调用已独立审查的 ED-0014/R9 恢复命令，对 P1 Bootstrap EventShard 内五个已批准的
+      EventId 冲突追加唯一 resolution 记录；保留原日志全部字节，并以原生 C++ Controller 查询验证恢复结果。
+    OutOfScope:
+      - 修改、删除、重排、格式化或重写任何既有 EventShard 记录
+      - 修改 ED-0014/R9 已批准的五项目标、规范 occurrence 或批准人
+      - 修改任何计划、合同、C++ 源码、CMake 文件或其他 EventShard
+      - 接入真实 QQ、微信、网络服务或凭据
+    DependsOn:
+      - ED-0014
+    ExternalInputs:
+      - "ED-0014/R9 fixed Head 0b9d31f0b896d0bfc2b5e9c365d217c93feb848f; Worker02 Approve; ReviewBundle H:/Qbot/ReviewBundles/EmulativeDialog-ED-0014-R9-Final/ReviewBundle.json."
+      - "Recovery authorization is pinned to TaskSpec S=5d8618036a559388bbaefa277a9d3288450e927e and P1.yaml blob f3a33ca5631380deb7b8e05d80c7d1e04971a0b7."
+      - "Approved targets: 6202e631-52ce-4145-96af-ce6934df7749, 5d773818-7efa-4055-b2ea-600d0dcaa69d, 72cc74ea-b68c-4588-95ca-58e0f6c22685, 4a9507a0-c338-40f0-8871-f15aff82be1c, 378e2cbe-98e9-4419-8418-287ef16b7c74."
+    ContractVersion: ED-0014/R9 EventId conflict-recovery allowlist; no product contract changes.
+    GoalFrozen: true
+    BaselineCommit: 791ce3a39d896c85e5b5d2e353d759fbe45c3298
+    CodeBaseCommit: 791ce3a39d896c85e5b5d2e353d759fbe45c3298
+    HeadCommit: ""
+    Branch: Task/ED-0019-P1EventIdResolution
+    Worktree: H:/Qbot/EmulativeDialog.ED-0019
+    TaskSpecCommitPin: "Coordinator records the immutable P1 task snapshot and P1.yaml blob before operation; event-resolution authority remains the separate ED-0014/R9 pin above."
+    Context:
+      ModuleId: AgentWorkflowController
+      ReadSet:
+        - Workflow/TaskIndex.yaml
+        - Workflow/Plans/P1.yaml#ED-0014
+        - Workflow/Plans/P1.yaml#ED-0019
+        - Workflow/Events/Bootstrap/P1.jsonl
+        - Workflow/TaskLifecycle.md
+        - Workflow/AgentExecutionStandard.md
+      MaxReferenceFiles: 6
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Workflow/Events/Bootstrap/P1.jsonl
+    SharedLocks: []
+    ForbiddenSet:
+      - Workflow/Plans/**
+      - Workflow/TaskIndex.yaml
+      - Workflow/Events/Bootstrap/P0.jsonl
+      - Workflow/Communications/**
+      - Tools/**
+      - Source/**
+      - CMakeLists.txt
+      - CMakePresets.json
+    Rules:
+      MustFollow:
+        - "Use only the reviewed ED-0014/R9 executable built from fixed Head 0b9d31f0b896d0bfc2b5e9c365d217c93feb848f and the exact recovery TaskSpec S/blob in ExternalInputs."
+        - "Resolve only the five exact TargetEventIds listed above; each approved target has two payload variants, two physical occurrences, and CanonicalOccurrence=2."
+        - "Append only. Preserve the original P1 EventShard byte-for-byte as a prefix of the resulting file."
+        - "Do not modify task scope or approvals while executing this operation; any change requires a ChangeRequest."
+        - "The reviewer is not the author and reviews the fixed BaseCommit..HeadCommit and the actual appended events read-only."
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: "The R9 recovery command accepts the pinned TaskSpec and appends exactly five allowlisted conflict-resolution events with Coordinator authorization."
+        Evidence: "Command output identifies each target, canonical occurrence, TaskSpec commit/blob and Coordinator actor; ResolutionCount=5."
+      - AcceptanceId: AC-2
+        Description: "Every original byte of Workflow/Events/Bootstrap/P1.jsonl remains unchanged and in its original order."
+        Evidence: "A pre-operation byte snapshot hash and exact-prefix comparison against the post-operation EventShard."
+      - AcceptanceId: AC-3
+        Description: "No unapproved target is resolved, and every newly appended resolution EventId is unique."
+        Evidence: "JSONL parse, exact appended-record allowlist, EventId uniqueness and approved resolution-envelope checks."
+      - AcceptanceId: AC-4
+        Description: "After recovery, the native C++ Controller can read the affected ED-0013 P1 task history without failing on the approved collisions."
+        Evidence: "Scoped WorkflowController query for ED-0013 revision 2 exits 0; no unapproved event target is changed."
+      - AcceptanceId: AC-5
+        Description: "The isolated task diff changes exactly Workflow/Events/Bootstrap/P1.jsonl and passes git diff --check."
+        Evidence: "Fixed BaseCommit..HeadCommit path comparison and diff-check exit 0."
+    Validation:
+      RequiredTargets: []
+      TargetedBuild:
+        - "Verify R9 worktree HEAD equals 0b9d31f0b896d0bfc2b5e9c365d217c93feb848f."
+        - "cmake --build H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw --target WorkflowController"
+        - "WorkflowController.exe resolve-event-id-conflicts <OperationWorktree> P1 ED-0014 9 5d8618036a559388bbaefa277a9d3288450e927e f3a33ca5631380deb7b8e05d80c7d1e04971a0b7"
+        - "WorkflowController.exe query <OperationWorktree> P1 ED-0013 2"
+      ContractFixtures:
+        - "Parse every original and appended P1 EventShard line as JSON; verify the original byte prefix and exact five-target append allowlist."
+      StaticChecks:
+        - "git diff --name-only <CodeBaseCommit> <HeadCommit> equals Workflow/Events/Bootstrap/P1.jsonl."
+        - "git diff --check <CodeBaseCommit> <HeadCommit>."
+      LiveSideEffects: Forbidden
+      NotRunReason: "Offline append-only recovery of the repository's development event shard; no product accounts, network or live channel effects."
+    RiskLevel: High
+    RiskOwnerRole: Coordinator
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    ReviewerDecision: Pending
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: "P1 EventShard currently fails closed on five approved ED-0013 EventId collisions; original lines remain untouched."
+      TriedApproaches: []
+      NextAction: "Freeze this TaskSpec, create the isolated branch/worktree at CodeBaseCommit, execute the exact R9 recovery command, verify byte-prefix preservation, then request Worker01 fixed-Head review."
+      OpenMessageIds: []
+      LastValidationResult: NotRun
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
