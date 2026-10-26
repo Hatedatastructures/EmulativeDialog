@@ -274,7 +274,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Rework
+    State: Verified
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -367,15 +367,15 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 10a38af152971b782eb422addaba14f4eabb4ba9
-    HeadCommit: ""
+    HeadCommit: df5c463ba45929da804b2c3c8a2ef21b25a3e13e
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R5/ReviewBundle.json
-    ReviewerDecision: ""
-    ReviewHeadCommit: ""
+    ReviewerDecision: Approve
+    ReviewHeadCommit: df5c463ba45929da804b2c3c8a2ef21b25a3e13e
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "ED-0008-RV-003..RV-010 request changes; R4 is superseded. Revision 4 keeps the original goal and WriteSet while binding a frozen TaskSpec snapshot and fixing review, redaction, path, and evidence checks."
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
+      CurrentFindingOrFailure: "R5 fixed S/A/C/B/H review approved and verified; integration is pending. Non-blocking ED-0008-RV-011 is a separate P2 follow-up for exact fragment-selector comparison; it does not change the frozen R5 Head or acceptance."
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
@@ -384,21 +384,12 @@ Tasks:
         - "Review of Base c4d2b94 found the source diff out of the P1 task WriteSet because the frozen CMakeLists.txt/SharedLock revision was committed later in b0f5def; rebase and re-review required."
         - "Worker02 fixed-commit R4 review found the Base task record was Revision 1 while R4 claimed Revision 3; the 13-file budget, Branch/Worktree, and R3 validation commands were not frozen at that Base. R4 is superseded."
         - "R4 findings: RV-004 Bearer-token redaction leak; RV-005 EventShard/checkpoint path escape; RV-006 Review-state worktree validation rejects bundle creation; RV-007 validation evidence paths empty; RV-008 public budget override can be forged; RV-009 FlushFileBuffers failure ignored; RV-010 in-repository reparse target bypasses exact ReadSet."
-        - "Coordinator also observed four duplicate EventIds across identical R3 CommandExecuted records; Revision 4 must not count duplicate IDs as independent validation evidence and must reject conflicting duplicate IDs."
-      NextAction: Worker01 rebase Task/ED-0008-AgentWorkflowController onto CodeBaseCommit 10a38af152971b782eb422addaba14f4eabb4ba9 and fix RV-003..RV-010 within the original six-path WriteSet; submit R5 bundle at the frozen TaskSpecCommit and assignment event.
-      OpenMessageIds:
-        - FUP-ED-0008-01
-        - ED-0008-RV-001
-        - ED-0008-RV-002
-        - ED-0008-RV-003
-        - ED-0008-RV-004
-        - ED-0008-RV-005
-        - ED-0008-RV-006
-        - ED-0008-RV-007
-        - ED-0008-RV-008
-        - ED-0008-RV-009
-        - ED-0008-RV-010
-      LastValidationResult: "R4 configure/build/CTest and diff check ran successfully, but fixed TaskSpec/base mismatch and empty ReviewBundle evidence paths invalidate them; no TaskRevision4 validation has run."
+        - "Coordinator also observed four duplicate EventIds across identical R3 CommandExecuted records; R5 de-duplicates identical IDs and rejects conflicting payloads."
+        - "R5 independent review approved fixed Head df5c463ba45929da804b2c3c8a2ef21b25a3e13e; integration merge and P1 gate recording remain pending."
+        - "Non-blocking ED-0008-RV-011: RequestAdditionalRead membership should compare selector key/value as well as path before any future fragment-read API is exposed."
+      NextAction: Coordinator integrates the verified fixed Head into codex/integration, records the merge and P1 gate, then expands P2 and registers the first independent RootBuild/Port/Core tasks.
+      OpenMessageIds: []
+      LastValidationResult: "At fixed Head df5c463ba45929da804b2c3c8a2ef21b25a3e13e: configure, specified BuildProbe/WorkflowController/WorkflowControllerContractTests build, full CTest (2/2), and typed B..H diff check all exited 0 with accessible evidence paths in the R5 ReviewBundle; Worker02 independently approved without rerunning tests."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
