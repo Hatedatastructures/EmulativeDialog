@@ -50,10 +50,17 @@ Tasks:
     EpicId: EP-00
     Title: 建立 Codex 聊天 Agent 核心重写能力映射与上游基线
     TaskKind: SourceMapping
-    State: Ready
+    State: Assigned
     OwnerRole: ProductContractOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
     ReviewerRole: AgentWorkflowOwner
+    ReviewerSlotId: Worker01
     ReviewerAgentId: "/root/workflow_controller"
+    BaselineCommit: c75af0560e0d71fab753fbe7ac8995425314bb49
+    Branch: Task/ED-0001-CodexCapabilityMap
+    Worktree: H:/Qbot/EmulativeDialog.ED-0001
+    HeadCommit: ""
     DependsOn: []
     Goal: "锁定 Codex 上游基线，并把聊天产品范围的行为追踪到 C++ 合同、模块、实现任务和验收。"
     OutOfScope:

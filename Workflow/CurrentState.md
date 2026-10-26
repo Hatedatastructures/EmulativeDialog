@@ -4,14 +4,15 @@
 
 ## 仓库证据
 - 根路径：H:/Qbot/EmulativeDialog。
-- 当前 Git 只有初始化的 .git 元数据，没有 commit。
+- 原始 `main` 仍是 unborn branch，原工作区中的项目目录仍未跟踪。为保护它并提供隔离基线，协调者从只读 workspace snapshot 建立本地 bootstrap commit `6e9b727ab88ae910d70069d9b9f19a9912f2bcb4`；当前集成工作树是 `codex/integration`，原工作区未切换或覆盖。
+- 远端 `origin` 当前没有公布 HEAD 或分支；启动阶段使用本地 ReviewBundle，不声称已创建远端 PR。
 - 本轮创建并修订中文治理、产品、合同、路线和平台能力文档；没有创建 C++ 源码、CMake 工程或测试。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
-- P0 候选切片见 Workflow/Plans/P0.yaml；所有任务仍为 Proposed，尚未分配 Agent 或开始实现。
-- Workflow/AgentPool.yaml 只有八个未分配的逻辑槽位；当前没有启动或伪报任何子代理。
+- P0 候选切片见 Workflow/Plans/P0.yaml；ED-0001 已分配给 AgentRuntimeOwner，独立审查者为 AgentWorkflowOwner；ED-0002 至 ED-0005 仍为 Proposed。
+- Workflow/AgentPool.yaml 为八个逻辑槽位中的 Worker01/Worker02 绑定了独立审查与 ED-0001 作者角色；后续 Agent 调用须沿用这两个稳定身份，未声称已结束的会话仍在运行。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
-- Codex 源码基线与 TUI 参照库尚未锁定；相关能力映射/差异矩阵当前是待填结构，不代表已完成调研。
+- 已只读核验 Codex 上游候选提交与许可证；ED-0001 负责将它记录进能力地图并完成全目标范围映射。能力地图仍为空，不代表映射完成。TUI 参照库仍未锁定，且不阻塞 Agent 核心。
 - 任何阶段不得把本状态描述为“已实现”或“已构建”。
 
 ## 当前产品解释

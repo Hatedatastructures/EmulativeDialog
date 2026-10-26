@@ -22,19 +22,22 @@ LifecyclePolicy:
 
 Slots:
   - SlotId: Worker01
-    RoleFamily: Unassigned
-    AgentId: ""
+    RoleFamily: AgentWorkflowOwner
+    AgentId: "/root/workflow_controller"
     HostSessionRef: ""
-    ModuleIds: []
-    CurrentTaskId: ""
-    Status: Dormant
+    ModuleIds:
+      - AgentWorkflowController
+    CurrentTaskId: ED-0001
+    Status: Assigned
   - SlotId: Worker02
-    RoleFamily: Unassigned
-    AgentId: ""
+    RoleFamily: AgentRuntimeOwner
+    AgentId: "/root/agent_core"
     HostSessionRef: ""
-    ModuleIds: []
-    CurrentTaskId: ""
-    Status: Dormant
+    ModuleIds:
+      - AgentRuntime
+      - Core
+    CurrentTaskId: ED-0001
+    Status: Assigned
   - SlotId: Worker03
     RoleFamily: Unassigned
     AgentId: ""
