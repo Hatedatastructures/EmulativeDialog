@@ -888,6 +888,14 @@ bool AppendLocked(const std::filesystem::path& Path,
       }
     }
     if (BeforeAppend && !BeforeAppend(ExistingRecords, CompleteTail)) {
+      const bool Flushed = FlushOperation != nullptr
+                               ? (*FlushOperation)()
+                               : FlushFileBuffers(Handle) != 0;
+      if (!Flushed) {
+        const DWORD Error = GetLastError();
+        throw WorkflowError("Unable to confirm existing append durability (Windows error " +
+                            std::to_string(Error) + "): " + Path.string());
+      }
       UnlockFileEx(Handle, 0, MAXDWORD, MAXDWORD, &Overlap);
       CloseHandle(Handle);
       return false;
@@ -1422,7 +1430,7 @@ LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
     const std::string& TaskSpecCommit,
     const std::string& TaskSpecBlobId,
     ProcessRunner& Runner) {
-  if (PhaseId != "P1" || TaskId != "ED-0014" || TaskRevision != 8 ||
+  if (PhaseId != "P1" || TaskId != "ED-0014" || TaskRevision != 9 ||
       !IsCommitId(TaskSpecCommit) || !IsCommitId(TaskSpecBlobId)) {
     throw WorkflowError("EventId recovery requires the pinned ED-0014 revision 8 TaskSpec");
   }
@@ -1472,7 +1480,8 @@ LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
       {"ChangeRequest", "CR-ED-0014-001"},
       {"RevisionChangeRequest", "CR-ED-0014-002"},
       {"AdditionalChangeRequest", "CR-ED-0014-003"},
-      {"FinalChangeRequest", "CR-ED-0014-004"}};
+      {"FinalChangeRequest", "CR-ED-0014-004"},
+      {"ValidationChangeRequest", "CR-ED-0014-005"}};
   for (const auto& [Field, ExpectedId] : ApprovedChanges) {
     const YAML::Node Change = Task[Field];
     if (!Change || OptionalString(Change, "ChangeRequestId") != ExpectedId ||
@@ -2212,23 +2221,65 @@ struct EventLogSnapshot {
   bool CompleteTail = true;
 };
 
-EventLogSnapshot ReadEventLogSnapshot(const std::filesystem::path& Path) {
-  std::ifstream Input(Path, std::ios::binary);
-  if (!Input) {
-    if (!std::filesystem::exists(Path)) {
+EventLogSnapshot ReadEventLogSnapshot(
+    const std::filesystem::path& Path,
+    const std::function<bool()>* FlushOperation) {
+  HANDLE Handle = CreateFileW(Path.c_str(), GENERIC_READ | GENERIC_WRITE,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (Handle == INVALID_HANDLE_VALUE) {
+    const DWORD Error = GetLastError();
+    if (Error == ERROR_FILE_NOT_FOUND || Error == ERROR_PATH_NOT_FOUND ||
+        !std::filesystem::exists(Path)) {
       return {};
     }
-    throw WorkflowError("Unable to read event log: " + Path.string());
+    throw WorkflowError("Unable to open event log for durable read: " + Path.string());
   }
-  std::string Bytes((std::istreambuf_iterator<char>(Input)),
-                    std::istreambuf_iterator<char>());
-  if (Bytes.size() > 64U * 1024U * 1024U) {
-    throw WorkflowError("Event log exceeds the bounded scan size");
+  OVERLAPPED Overlap{};
+  if (!LockFileEx(Handle, LOCKFILE_EXCLUSIVE_LOCK, 0, MAXDWORD, MAXDWORD, &Overlap)) {
+    CloseHandle(Handle);
+    throw WorkflowError("Unable to lock event log for durable read: " + Path.string());
   }
+  std::string Bytes;
+  try {
+    const bool Flushed = FlushOperation != nullptr
+                             ? (*FlushOperation)()
+                             : FlushFileBuffers(Handle) != 0;
+    if (!Flushed) {
+      const DWORD Error = GetLastError();
+      throw WorkflowError("Unable to confirm event log durability (Windows error " +
+                          std::to_string(Error) + "): " + Path.string());
+    }
+    LARGE_INTEGER Beginning{};
+    if (!SetFilePointerEx(Handle, Beginning, nullptr, FILE_BEGIN)) {
+      throw WorkflowError("Unable to seek event log for durable read: " + Path.string());
+    }
+    std::array<char, 64U * 1024U> Buffer{};
+    for (;;) {
+      DWORD BytesRead = 0;
+      if (!ReadFile(Handle, Buffer.data(), static_cast<DWORD>(Buffer.size()),
+                    &BytesRead, nullptr)) {
+        throw WorkflowError("Unable to read event log: " + Path.string());
+      }
+      if (BytesRead == 0) {
+        break;
+      }
+      Bytes.append(Buffer.data(), BytesRead);
+      if (Bytes.size() > 64U * 1024U * 1024U) {
+        throw WorkflowError("Event log exceeds the bounded scan size");
+      }
+    }
+    UnlockFileEx(Handle, 0, MAXDWORD, MAXDWORD, &Overlap);
+    CloseHandle(Handle);
+  } catch (...) {
+    UnlockFileEx(Handle, 0, MAXDWORD, MAXDWORD, &Overlap);
+    CloseHandle(Handle);
+    throw;
+  }
+
   EventLogSnapshot Snapshot;
   Snapshot.CompleteTail = Bytes.empty() || Bytes.back() == '\n';
   std::size_t Start = 0;
-  std::size_t PhysicalLine = 0;
   for (;;) {
     const std::size_t Newline = Bytes.find('\n', Start);
     if (Newline == std::string::npos) {
@@ -2243,7 +2294,6 @@ EventLogSnapshot ReadEventLogSnapshot(const std::filesystem::path& Path) {
       break;
     }
   }
-  (void)PhysicalLine;
   return Snapshot;
 }
 
@@ -2361,24 +2411,17 @@ std::vector<EventLogRow> ParseEventLogRows(const std::vector<std::string>& Recor
   return Rows;
 }
 
-std::string LowerEventKey(std::string Value) {
-  std::transform(Value.begin(), Value.end(), Value.begin(),
-                 [](unsigned char Character) {
-                   return static_cast<char>(std::tolower(Character));
-                 });
-  return Value;
-}
-
 void ValidateResolutionEnvelope(const EventLogRow& Row) {
   const WorkflowEvent& Event = Row.Event;
   if (Event.EventType != "EventIdConflictResolution") {
     return;
   }
-  if (Event.TaskId != "ED-0014" || Event.TaskRevision != 8 ||
+  if (Event.TaskId != "ED-0014" || Event.TaskRevision != 9 ||
       Event.AgentId != "/root" || Event.AgentRole != "Coordinator" ||
       Event.EventId.empty() || Event.ReleaseId != "Bootstrap" ||
       Event.PhaseId != "P1" || Event.Branch.empty() ||
-      Event.CorrelationId.empty() || Event.Result != "ResolvedOccurrenceSelected" ||
+      Event.CorrelationId != "ED-0014-R9-" + Event.TargetEventId ||
+      Event.Result != "ResolvedOccurrenceSelected" ||
       Event.TargetEventId.empty() || Event.TargetReleaseId != "Bootstrap" ||
       Event.TargetPhaseId != "P1" || Event.TargetTaskId != "ED-0013" ||
       Event.TargetTaskRevision <= 0 || Event.ExpectedVariantCount != 2 ||
@@ -2400,15 +2443,31 @@ void ValidateResolutionEnvelope(const EventLogRow& Row) {
     throw WorkflowError("EventId conflict resolution names an unapproved target scope");
   }
   YAML::Node Node = YAML::Load(Row.RawRecord);
+  static const std::vector<std::string> AllowedResolutionFields{
+      "EventId", "EventType", "OccurredAt", "ReleaseId", "PhaseId", "TaskId",
+      "TaskRevision", "AgentId", "AgentRole", "Branch", "CorrelationId", "Result",
+      "EvidenceRefs", "Command", "WorkingDirectory", "ExitCode", "EvidencePath",
+      "ApprovalReason", "MaxReferenceFiles", "TaskSpecPath", "TaskSpecCommit",
+      "TaskSpecBlobId", "AssignmentEventCommit", "AssignmentEventId",
+      "CodeBaseCommit", "HeadCommit", "BudgetCorrectionEventCommit",
+      "BudgetCorrectionEventId", "CorrectionOfEventId", "CorrectedField",
+      "OriginalValue", "CorrectedValue", "ChangeRequestId",
+      "ContextBudgetApprovalEventId", "OwnerAgentId", "ReviewerAgentId",
+      "Worktree", "OutputSummary", "ReadSetPaths", "TargetEventId",
+      "TargetReleaseId", "TargetPhaseId", "TargetTaskId", "TargetTaskRevision",
+      "ExpectedVariantCount", "ExpectedOccurrenceCount", "CanonicalOccurrence"};
+  std::unordered_map<std::string, bool> SeenFields;
   for (const auto& Entry : Node) {
     if (!Entry.first.IsScalar()) {
       throw WorkflowError("Resolution records cannot contain non-scalar field names");
     }
-    const std::string Key = LowerEventKey(Entry.first.as<std::string>());
-    if (Key == "rawpayload" || Key == "payload" || Key == "payloadhash" ||
-        Key == "rawpayloadhash" || Key == "chattext" || Key == "commandoutput" ||
-        Key == "originalevent" || Key == "sourceevent") {
-      throw WorkflowError("Resolution record contains prohibited raw payload data");
+    const std::string Key = Entry.first.as<std::string>();
+    if (std::find(AllowedResolutionFields.begin(), AllowedResolutionFields.end(), Key) ==
+        AllowedResolutionFields.end()) {
+      throw WorkflowError("Resolution record contains an unknown or prohibited field: " + Key);
+    }
+    if (!SeenFields.emplace(Key, true).second) {
+      throw WorkflowError("Resolution record contains a duplicate field: " + Key);
     }
   }
   if (!Event.Command.empty() || !Event.WorkingDirectory.empty() ||
@@ -2634,7 +2693,7 @@ void EventStore::ResolveEventIdConflict(
       Authorization.ResolutionReleaseId != "Bootstrap" ||
       Authorization.ResolutionPhaseId != "P1" ||
       Authorization.ResolutionTaskId != "ED-0014" ||
-      Authorization.ResolutionTaskRevision != 8 ||
+      Authorization.ResolutionTaskRevision != 9 ||
       Authorization.ResolutionBranch.empty()) {
     throw WorkflowError("EventId resolution authorization is incomplete or invalid");
   }
@@ -2649,7 +2708,7 @@ void EventStore::ResolveEventIdConflict(
   Event.AgentId = Authorization.ApprovedByAgentId;
   Event.AgentRole = Authorization.ApprovedByRole;
   Event.Branch = Authorization.ResolutionBranch;
-  Event.CorrelationId = "ED-0014-R8-" + Authorization.TargetEventId;
+  Event.CorrelationId = "ED-0014-R9-" + Authorization.TargetEventId;
   Event.Result = "ResolvedOccurrenceSelected";
   Event.EvidenceRefs = {
       Authorization.TaskPlanPath + "#TaskId=ED-0014",
@@ -2736,7 +2795,8 @@ std::vector<WorkflowEvent> EventStore::ReadTaskEvents(const std::string& TaskId,
   if (!IsTaskId(TaskId)) {
     throw WorkflowError("Task-scoped event query requires a valid TaskId");
   }
-  const EventLogSnapshot Snapshot = ReadEventLogSnapshot(EventPath);
+  const auto* Flush = FlushOperation ? &FlushOperation : nullptr;
+  const EventLogSnapshot Snapshot = ReadEventLogSnapshot(EventPath, Flush);
   if (!Snapshot.CompleteTail) {
     throw WorkflowError("Event log has a malformed or torn tail");
   }

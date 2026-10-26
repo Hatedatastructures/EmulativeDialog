@@ -818,11 +818,11 @@ RecoveryFixtureInfo CreateRecoveryFixtureRepository(
            << "PhaseId: P1\n"
            << "Tasks:\n"
            << "  - TaskId: ED-0014\n"
-           << "    TaskRevision: 8\n"
+           << "    TaskRevision: 9\n"
            << "    State: Ready\n"
            << "    OwnerAgentId: /root/workflow_controller\n"
            << "    ReviewerAgentId: /root/agent_core\n"
-           << "    Branch: Task/ED-0014-R8-EventIdConflictRecovery\n"
+           << "    Branch: Task/ED-0014-R9-EventIdConflictRecovery\n"
            << "    ChangeRequest:\n"
            << "      ChangeRequestId: CR-ED-0014-001\n"
            << "      Decision: Accepted\n"
@@ -840,6 +840,11 @@ RecoveryFixtureInfo CreateRecoveryFixtureRepository(
            << "      ApprovedByAgentId: /root\n"
            << "    FinalChangeRequest:\n"
            << "      ChangeRequestId: CR-ED-0014-004\n"
+           << "      Decision: Accepted\n"
+           << "      ApprovedByRole: Coordinator\n"
+           << "      ApprovedByAgentId: /root\n"
+           << "    ValidationChangeRequest:\n"
+           << "      ChangeRequestId: CR-ED-0014-005\n"
            << "      Decision: Accepted\n"
            << "      ApprovedByRole: Coordinator\n"
            << "      ApprovedByAgentId: /root\n"
@@ -937,7 +942,7 @@ ProcessResult RunRecoveryCli(WindowsProcessRunner& Runner,
       Fixture.Root.string(),
       "P1",
       "ED-0014",
-      "8",
+      "9",
       TaskSpecCommit,
       TaskSpecBlobId};
   if (!Target.empty()) {
@@ -962,13 +967,13 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
   const std::filesystem::path ControllerExe = WorkflowControllerExecutable();
   const ProcessResult WrongCommit = Runner.Run(
       {ControllerExe.string(), "resolve-event-id-conflicts", Fixture.Root.string(),
-       "P1", "ED-0014", "8", std::string(40, 'f'), Fixture.TaskSpecBlobId},
+       "P1", "ED-0014", "9", std::string(40, 'f'), Fixture.TaskSpecBlobId},
       Fixture.Root);
   Check(WrongCommit.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
         "CLI accepted an unknown Coordinator TaskSpec commit");
   const ProcessResult WrongScope = Runner.Run(
       {ControllerExe.string(), "resolve-event-id-conflicts", Fixture.Root.string(),
-       "P2", "ED-0014", "8", Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId},
+       "P2", "ED-0014", "9", Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId},
       Fixture.Root);
   Check(WrongScope.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
         "CLI accepted a resolution under an unapproved phase");
@@ -997,6 +1002,29 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
       Runner, Fixture, RejectedCommit, RejectedBlob);
   Check(RejectedChange.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
         "CLI accepted an unapproved ChangeRequest in the pinned TaskSpec");
+
+  std::string RejectedValidationPlan = OriginalTaskPlan;
+  const std::size_t ValidationRequest = RejectedValidationPlan.find("ValidationChangeRequest:");
+  const std::size_t ValidationDecision =
+      RejectedValidationPlan.find("Decision: Accepted", ValidationRequest);
+  Check(ValidationRequest != std::string::npos && ValidationDecision != std::string::npos,
+        "R9 recovery fixture omitted its validation ChangeRequest");
+  RejectedValidationPlan.replace(ValidationDecision,
+                                 std::string("Decision: Accepted").size(),
+                                 "Decision: Rejected");
+  WriteText(Fixture.Root / "Workflow/Plans/P1.yaml", RejectedValidationPlan);
+  RunGit(Runner, Fixture.Root, {"git", "add", "Workflow/Plans/P1.yaml"});
+  RunGit(Runner, Fixture.Root, {"git", "commit", "-m", "rejected R9 validation request fixture"});
+  const std::string RejectedValidationCommit = TrimText(Runner.Run(
+      {"git", "-C", Fixture.Root.string(), "rev-parse", "HEAD"}, Fixture.Root).Output);
+  const std::string RejectedValidationBlob = TrimText(Runner.Run(
+      {"git", "-C", Fixture.Root.string(), "rev-parse",
+       RejectedValidationCommit + ":Workflow/Plans/P1.yaml"}, Fixture.Root).Output);
+  const ProcessResult RejectedValidationChange = RunRecoveryCli(
+      Runner, Fixture, RejectedValidationCommit, RejectedValidationBlob);
+  Check(RejectedValidationChange.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted an unapproved R9 ValidationChangeRequest");
+
 
   const ProcessResult WrongTarget = RunRecoveryCli(
       Runner, Fixture, Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId,
@@ -1039,11 +1067,12 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
         "Resolution events were not available in the recovery task history");
   for (const WorkflowEvent& Event : ResolutionEvents) {
     Check(Event.EventType == "EventIdConflictResolution" &&
-              Event.TaskRevision == 8 && Event.AgentId == "/root" &&
+              Event.TaskRevision == 9 && Event.AgentId == "/root" &&
               Event.AgentRole == "Coordinator" &&
               Event.TaskSpecCommit == Fixture.TaskSpecCommit &&
               Event.TaskSpecBlobId == Fixture.TaskSpecBlobId &&
               Event.ChangeRequestId == "CR-ED-0014-001" &&
+              Event.CorrelationId == "ED-0014-R9-" + Event.TargetEventId &&
               Event.CanonicalOccurrence == 2 &&
               Event.ExpectedVariantCount == 2 &&
               Event.ExpectedOccurrenceCount == 2 &&
@@ -1082,6 +1111,29 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
   ExpectWorkflowError(
       [&] { (void)EventStore(MaliciousResolutionPath).ReadTaskEvents("ED-0014"); },
       "Resolution event containing raw payload was accepted");
+
+  const auto UnknownResolutionPath =
+      Fixture.Root / "Workflow/Events/UnknownSecretField/P1.jsonl";
+  std::filesystem::create_directories(UnknownResolutionPath.parent_path());
+  {
+    std::ofstream Unknown(UnknownResolutionPath, std::ios::binary);
+    Unknown << OriginalShard;
+    std::string UnknownResolution = ResolutionEvents.front().RawRecord;
+    const std::string ExistingId =
+        "eventid-conflict-resolution-" + Fixture.TargetIds.front();
+    const std::size_t EventIdOffset = UnknownResolution.find(ExistingId);
+    Check(EventIdOffset != std::string::npos,
+          "Unable to locate the resolution EventId in the schema fixture");
+    UnknownResolution.replace(EventIdOffset, ExistingId.size(),
+                              "eventid-conflict-resolution-unknown-secret-fixture");
+    UnknownResolution.replace(UnknownResolution.size() - 1, 1,
+                              ",\"api_token\":\"fixture-secret-placeholder\"}");
+    Unknown << UnknownResolution << '\n';
+  }
+  ExpectWorkflowError(
+      [&] { (void)EventStore(UnknownResolutionPath).ReadTaskEvents("ED-0014"); },
+      "Resolution schema accepted an unknown secret-like field");
+
   const auto StalePath = Fixture.Root / "Workflow/Events/Stale/P1.jsonl";
   WriteText(StalePath, ResolvedShard);
   {
@@ -1112,7 +1164,7 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
   Ordinary.EventType = "CommandExecuted";
   Ordinary.PhaseId = "P1";
   Ordinary.TaskId = "ED-0014";
-  Ordinary.TaskRevision = 8;
+  Ordinary.TaskRevision = 9;
   ExpectWorkflowError(
       [&] { EventStore(UnresolvedPath).Append(Ordinary); },
       "Ordinary append was allowed while EventId conflicts remained unresolved");
@@ -1130,7 +1182,7 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
   }
   std::vector<EventIdConflictAuthorization> Approvals =
       LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
-          Fixture.Root, "P1", "ED-0014", 8, Fixture.TaskSpecCommit,
+          Fixture.Root, "P1", "ED-0014", 9, Fixture.TaskSpecCommit,
           Fixture.TaskSpecBlobId, Runner);
   const auto FirstApproval = std::find_if(
       Approvals.begin(), Approvals.end(), [&](const EventIdConflictAuthorization& Item) {
@@ -1205,10 +1257,29 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
       [&] { FlushFailure.ResolveEventIdConflict(*FirstApproval); },
       "Flush failure did not report an ambiguous resolution append");
   const std::string AfterFlushAmbiguity = ReadText(FlushPath);
-  EventStore(FlushPath).ResolveEventIdConflict(*FirstApproval);
-  Check(ReadText(FlushPath) == AfterFlushAmbiguity &&
-            EventStore(FlushPath).ReadTaskEvents("ED-0013").size() == 1,
-        "Resolution retry duplicated an already persisted flush-ambiguous event");
+  ExpectWorkflowError(
+      [&] { (void)FlushFailure.ReadTaskEvents("ED-0013"); },
+      "Read accepted a complete resolution row before durable confirmation");
+  EventStore RetryFlushFailure(FlushPath, [] {
+    SetLastError(ERROR_WRITE_FAULT);
+    return false;
+  });
+  ExpectWorkflowError(
+      [&] { RetryFlushFailure.ResolveEventIdConflict(*FirstApproval); },
+      "Exact-resolution retry reported success without a successful re-flush");
+  ExpectWorkflowError(
+      [&] { (void)RetryFlushFailure.ReadTaskEvents("ED-0013"); },
+      "Reopened reader accepted a resolution whose durable flush still fails");
+  int DurableFlushCalls = 0;
+  EventStore RetryFlushSuccess(FlushPath, [&] {
+    ++DurableFlushCalls;
+    return true;
+  });
+  RetryFlushSuccess.ResolveEventIdConflict(*FirstApproval);
+  const auto DurableEvents = RetryFlushSuccess.ReadTaskEvents("ED-0013");
+  Check(DurableFlushCalls >= 2 && ReadText(FlushPath) == AfterFlushAmbiguity &&
+            DurableEvents.size() == 1,
+        "Successful re-flush did not make the existing resolution idempotently readable");
 
   const auto PartialPath = Fixture.Root / "Workflow/Events/Partial/P1.jsonl";
   std::filesystem::create_directories(PartialPath.parent_path());
@@ -1236,6 +1307,9 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
   ExpectWorkflowError(
       [&] { EventStore(PartialPath).ResolveEventIdConflict(*FirstApproval); },
       "Retry after a torn partial write did not fail closed");
+  ExpectWorkflowError(
+      [&] { (void)EventStore(PartialPath).ReadTaskEvents("ED-0013"); },
+      "Reader accepted a torn partial append after restart");
   Check(ReadText(PartialPath) == PartialBeforeRetry,
         "Torn partial retry changed the event shard");
 }
