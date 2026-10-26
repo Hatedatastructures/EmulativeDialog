@@ -9,7 +9,7 @@
 - 本轮创建并修订中文治理、产品、合同、路线和平台能力文档；没有创建 C++ 源码、CMake 工程或测试。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
-- P0 候选切片见 Workflow/Plans/P0.yaml；ED-0001 上游能力映射已通过独立复审并合并到本地 `codex/integration`。ED-0005 复审发现 PLAN-001 未列入 P1 阻断清单，现按原写集修复；P0 核心门仍待 ED-0005 完成。
+- P0 候选切片见 Workflow/Plans/P0.yaml；ED-0001 上游能力映射已通过独立复审并合并到本地 `codex/integration`。ED-0005 已把 PLAN-001 阶段转换门补入 P1 阻断清单，并以新 Head 提交独立复审；P0 核心门仍待 ED-0005 完成。
 - Workflow/AgentPool.yaml 为八个逻辑槽位中的 Worker01/Worker02 绑定了独立审查与 ED-0001 作者角色；后续 Agent 调用须沿用这两个稳定身份，未声称已结束的会话仍在运行。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
 - 已只读核验 Codex 上游候选提交与许可证；ED-0001 负责将它记录进能力地图并完成全目标范围映射。能力地图仍为空，不代表映射完成。TUI 参照库仍未锁定，且不阻塞 Agent 核心。
