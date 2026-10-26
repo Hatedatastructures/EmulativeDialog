@@ -161,7 +161,7 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0014
-    TaskRevision: 8
+    TaskRevision: 9
     EpicId: EP-05
     Title: 实现 P1 事件 EventId 冲突的协调者授权恢复
     TaskKind: BootstrapRecovery
@@ -193,6 +193,11 @@ Tasks:
         TaskSpecBlob: a49d9037873e23fab73001a2d3d71ac900d62cd3
         Disposition: SupersededBeforeCodeChanges
         Reason: "R7 configured a task-local build but did not explicitly disable GNU language extensions, unlike the frozen C++20 preset."
+      - TaskRevision: 8
+        TaskSpecCommit: 6b0e71be3952542db372b8a833d2325a9038425d
+        TaskSpecBlob: 6900ef924c55cd177be50b9a05f05282c96ee005
+        Disposition: SupersededDuringImplementationBeforeCommit
+        Reason: "The frozen gcov --relative-only command suppressed absolute-path source files and reported no executable lines; the non-relative diagnostic produced valid line totals."
     ParallelGroup: P1ControllerRecovery
     Goal: >-
       在 C++ WorkflowController 中增加受限、追加式 EventId 冲突恢复路径，使冲突事件日志保持原字节，
@@ -233,8 +238,8 @@ Tasks:
       ProductAgentRuntimeMayStart: false
     BaselineCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
     HeadCommit: ""
-    Branch: Task/ED-0014-R8-EventIdConflictRecovery
-    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R8
+    Branch: Task/ED-0014-R9-EventIdConflictRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R9
     Context:
       ModuleId: AgentWorkflowController
       ReadSet:
@@ -276,7 +281,7 @@ Tasks:
         - "This workflow declaration is a single-writer provenance control, not OS or cryptographic authentication; the command must not accept freeform AgentId or AgentRole as authority."
         - "Preserve selected raw JSON records, including unknown fields, through read projection and ReviewBundle evidence."
         - "Resolution events retain the required common event envelope and safe EvidenceRefs; never store raw payload, chat text, command output, payload hashes, or merged EvidenceRefs."
-        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 8; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole specifically from the matching ApprovedOverrides ApprovedByAgentId/ApprovedByRole (Coordinator /root), never from the ED-0014 Worker01 task owner."
+        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 9; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole specifically from the matching ApprovedOverrides ApprovedByAgentId/ApprovedByRole (Coordinator /root), never from the ED-0014 Worker01 task owner."
         - "Only the four exact C++/test paths in WriteSet may change."
         - "Require at least 80 percent line coverage for changed production translation units and report denominator, exclusions, and gcov version."
       SoftDefaults: []
@@ -391,6 +396,21 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Supersede R7 before code changes and add -DCMAKE_CXX_EXTENSIONS=OFF to the task-local native MinGW configure command; all other task fields remain unchanged."
       Reason: "The frozen Windows C++20 preset disables GNU language extensions; the direct task-local coverage configure must preserve that strict C++20 mode."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0014-005
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Supersede R8 before fixed Head. Replace gcov --relative-only commands with equivalent task-local gcov
+        commands that report absolute source paths; preserve the same two translation units, denominator rule,
+        80-percent threshold, code WriteSet and all behavior acceptance.
+      Reason: >-
+        On the fixed R8 task build, both frozen --relative-only commands exited 0 but emitted No executable lines
+        because CMake recorded absolute source paths. The same instrumented objects produced valid per-file line
+        totals when gcov ran without --relative-only; the task command must measure those actual R9 objects.
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
@@ -442,18 +462,18 @@ Tasks:
     Validation:
       RequiredTargets: [BuildProbe, WorkflowController, WorkflowControllerContractTests]
       TargetedBuild:
-        - cmake -S . -B H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
-        - cmake --build H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
+        - cmake -S . -B H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
+        - cmake --build H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
       ContractFixtures:
-        - ctest --test-dir H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
+        - ctest --test-dir H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
         - Run WorkflowController.exe process-level positive/negative resolution cases with a disposable copied shard and authorization commit S.
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
         - Verify changed paths equal the exact four-path WriteSet.
         - gcov --version
-        - From H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw/CMakeFiles/WorkflowControllerCore.dir/Tools/WorkflowController/WorkflowController.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R8/Tools/WorkflowController/WorkflowController.cpp.
-        - From H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw/CMakeFiles/WorkflowController.dir/Tools/WorkflowController/Main.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R8/Tools/WorkflowController/Main.cpp.
-        - Retain generated .gcov reports under H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw.
+        - From H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw, run gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw/CMakeFiles/WorkflowControllerCore.dir/Tools/WorkflowController/WorkflowController.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R9/Tools/WorkflowController/WorkflowController.cpp.
+        - From H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw, run gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw/CMakeFiles/WorkflowController.dir/Tools/WorkflowController/Main.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R9/Tools/WorkflowController/Main.cpp.
+        - Retain generated .gcov reports under H:/Qbot/EmulativeDialog.ED-0014-R9.build/windows-mingw.
         - Verify combined changed-production-source line coverage >= 80 percent and record denominator, executable count, exclusions, and gcov version.
       LiveSideEffects: Forbidden
       NotRunReason: ""
@@ -461,14 +481,14 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    TaskSpecCommitPin: Coordinator supplies immutable R8 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
+    TaskSpecCommitPin: Coordinator supplies immutable R9 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5-R7 were superseded before code edits after fixed reviewers found ReadSet, isolated coverage path, and strict C++20 configuration gaps."
+      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5-R8 were superseded before fixed Head after reviewer findings on ReadSet, isolated coverage path, strict C++20 and gcov absolute-source reporting."
       TriedApproaches:
         - "R4/R5 proposal reviews identified authorization bootstrap cycle, event-envelope omissions, unknown-field loss, and missing append/flush recovery tests; these are incorporated in the frozen AC above."
-      NextAction: "Create the isolated R8 worktree from the fixed code baseline, implement the four-path C++ recovery command, run the named native Windows C++20 build/CTest and worktree-local gcov report, then request Worker02 fixed-Head review."
+      NextAction: "Move the uncommitted authorized four-path R8 implementation to the R9 task branch, rerun the strict native Windows C++20 build/CTest, capture valid absolute-source gcov totals, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
@@ -880,6 +900,137 @@ Tasks:
       TaskReportFile: false
       EventShard: Workflow/Events/Bootstrap/P1.jsonl
       FollowUpTaskIds: [ED-0015, ED-0011]
+
+  - TaskId: ED-0018
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 实现可复用的离线 MockChannelAdapter 测试替身
+    TaskKind: TestSupport
+    State: Ready
+    Phase: P1
+    OwnerRole: ContractOwner
+    OwnerSlotId: Worker04
+    OwnerAgentId: "/root/provider_chat"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-26"
+    UpdatedAt: "2026-10-26"
+    ParallelGroup: P1FirstSliceTestSupport
+    Goal: >-
+      在已审查的 ChannelAdapterPort C++20 接口之上实现一个可复用、确定性、完全离线的 MockChannelAdapter，
+      为后续 AgentRuntime 首条产品切片提供可信 mock 入站 Envelope 与可观察 ChannelReceipt；不接入任何真实平台。
+    OutOfScope:
+      - QQ/微信账号登录、网络调用或真实发送
+      - Core 身份映射、授权、OperationRecord 或 action policy 实现
+      - ModelProviderPort、Provider Adapter 或 AgentRuntime 产品行为
+      - 修改 ChannelAdapterPort 接口、公共合同、CMake 或根构建
+    DependsOn:
+      - ED-0016
+    ExternalInputs:
+      - "ED-0016/R2 reviewed fixed Head 3f6b284a212156814aa5eb42d2aa0d2c0ff68a8f; ChannelAdapterPort API is the only public input seam."
+      - "All channel/account/sender/conversation identities in tests are synthetic and remain confined to the trusted test adapter boundary."
+    BaselineCommit: 3f6b284a212156814aa5eb42d2aa0d2c0ff68a8f
+    HeadCommit: ""
+    Branch: Task/ED-0018-MockChannelTestSupport
+    Worktree: H:/Qbot/EmulativeDialog.ED-0018
+    Context:
+      ModuleId: ChannelAdapterPort
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/TaskTemplate.yaml
+        - Workflow/TaskLifecycle.md
+        - Workflow/AgentExecutionStandard.md
+        - Architecture/ModuleMap.yaml#ShardId=Channels
+        - Architecture/Modules/Channels.yaml#ModuleId=ChannelAdapterPort
+        - Architecture/Contracts/ChannelAdapterContract.md
+        - Architecture/Contracts/CoreAgentContract.md
+        - Source/Channels/Contracts/ChannelAdapterPort.h
+        - Tests/Contract/Channels/Contracts/ChannelAdapterPortContractTests.cpp
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
+      - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
+      - Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp
+    SharedLocks: []
+    ForbiddenSet:
+      - Source/Channels/**
+      - Source/Core/**
+      - Source/Agent/**
+      - Source/Providers/**
+      - CMakeLists.txt
+      - CMakePresets.json
+      - Architecture/Contracts/**
+      - Architecture/Modules/**
+      - Workflow/CodexCapabilityMap/**
+      - Workflow/Events/**
+    Rules:
+      MustFollow:
+        - "The mock adapter may construct trusted synthetic envelopes only inside test support; it must not infer identity from CanonicalMessage, provider output, nicknames or body text."
+        - "Core remains the only component that resolves principal/scope and authorizes actions; MockChannelAdapter only returns the supplied action result/receipt."
+        - "Unsupported capability and UnknownOutcome paths never produce a success ChannelReceipt and are never automatically retried."
+        - "All fixtures use synthetic IDs/content; no real platform SDK, credential, network or personal data is used."
+        - "Keep source and test changes to the exact three-path WriteSet."
+        - "Require at least 80 percent line coverage for MockChannelAdapter.cpp and report numerator, denominator, exclusions and gcov version."
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          The mock deterministically emits one synthetic trusted ChannelEnvelope and CanonicalMessage while keeping
+          identity fields separate from message/model content; duplicate StableDeduplicationId events are not redelivered.
+        Evidence: Contract tests cover distinct synthetic identities, untrusted body spoof attempts and duplicate ingress.
+      - AcceptanceId: AC-2
+        Description: >-
+          Start/Stop are idempotent; supported text sends return one deterministic ChannelReceipt, while unsupported,
+          failed and unknown outcomes remain distinct and never fabricate a success receipt.
+        Evidence: Contract tests cover lifecycle, all receipt branches and no blind resend after UnknownOutcome.
+      - AcceptanceId: AC-3
+        Description: MockChannelAdapter is a test-only implementation of the fixed ED-0016/R2 public API and adds no authorization behavior.
+        Evidence: Compile-time interface conformance and independent review.
+      - AcceptanceId: AC-4
+        Description: Changed test-support implementation line coverage is at least 80 percent.
+        Evidence: Task-specific MinGW gcov report records numerator/denominator, exclusions and version.
+      - AcceptanceId: AC-5
+        Description: Only the three exact WriteSet paths change; no real account, network, product source or contract changes.
+        Evidence: Fixed BaseCommit..HeadCommit changed-path audit and git diff --check.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild:
+        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0018.build
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapter.o
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.o
+        - g++ --coverage H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.o -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.exe
+      ContractFixtures:
+        - Run H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.exe
+      StaticChecks:
+        - git diff --check <BaselineCommit> <HeadCommit>
+        - From H:/Qbot/EmulativeDialog.ED-0018.build, run gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0018/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp.
+        - Verify line coverage is at least 80 percent for MockChannelAdapter.cpp and changed paths equal the exact three-path WriteSet.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Offline C++ test-support implementation; direct native MinGW compile isolates output from other task builds."
+    RiskLevel: Medium
+    RiskOwnerRole: ContractOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    ReviewerDecision: Pending
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: "Implement the three-path synthetic MockChannelAdapter test double, run task-local C++20 tests and gcov, then request Worker06 fixed-Head review."
+      OpenMessageIds: []
+      LastValidationResult: NotRun
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: [ED-0101]
 
   - TaskId: ED-0007
     TaskRevision: 1

@@ -53,7 +53,7 @@ Slots:
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0016
+    CurrentTaskId: ED-0018
     Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
@@ -70,7 +70,7 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0016
+    CurrentTaskId: ED-0018
     Status: Review
   - SlotId: Worker07
     RoleFamily: Unassigned
