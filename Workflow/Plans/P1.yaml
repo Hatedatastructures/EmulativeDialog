@@ -2356,7 +2356,7 @@ Tasks:
     GoalFrozen: true
     BaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
     CodeBaseCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
-    HeadCommit: ""
+    HeadCommit: 85bb946e9602f65442cb228d77b993429211cf09
     Branch: Task/ED-0020-FakeProviderTestSupport
     Worktree: H:/Qbot/EmulativeDialog.ED-0020
     TaskSpecCommitPin: "Coordinator pins this immutable ED-0020/R2 TaskSpec snapshot and P1.yaml blob after the plan commit; CodeBaseCommit, branch, worktree, and WriteSet remain unchanged."
@@ -2438,14 +2438,15 @@ Tasks:
     RiskOwnerRole: ResponsesProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: Pending
+    ReviewerDecision: RequestChanges
+    ReviewHeadCommit: 85bb946e9602f65442cb228d77b993429211cf09
     Checkpoint:
-      LastCompletedAcceptance: "R1 implementation files exist only as the three authorized untracked WriteSet paths; R2 validation commands pending."
-      CurrentFindingOrFailure: "Worker06 found R1 gcov/diff-check command strings contained trailing periods and did not freeze gcov output working directory; CR-ED-0020-001 corrects validation only."
+      LastCompletedAcceptance: AC-1, AC-2, AC-4, AC-5, AC-6
+      CurrentFindingOrFailure: "Worker06 fixed-Head review found one Major: StreamTurn ignores stop_token and can continue emitting scripted events/ResponseCompleted after local cancellation."
       TriedApproaches: []
-      NextAction: "Preserve the three existing WriteSet files, load the R2 TaskSpec pin, rerun strict C++20 compile/link/tests and the corrected build-directory gcov command, then request Worker06 fixed-Head review."
+      NextAction: "Within the existing three-path WriteSet, make StreamTurn stop immediately on pre-requested or mid-delivery cancellation, return exactly one request/turn-correlated ResponseCancelledEvent, add both tests, rerun R2 validations, and request Worker06 fixed-Head review."
       OpenMessageIds: []
-      LastValidationResult: "Worker03 reports prior R1 strict compile/link/test exit 0 and FakeProvider.cpp 154/154 lines; these are superseded validation evidence, not R2 acceptance. Reviewer did not rerun tests."
+      LastValidationResult: "Worker03 reports R2 strict C++20 object compilation/link/contract executable and corrected gcov exited 0, FakeProvider.cpp 152/152 (100%) with gcov 16.1.0 and no source-tree .gcov; Worker06 did not rerun them. ReviewBundle/Head is superseded pending cancellation fix."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
