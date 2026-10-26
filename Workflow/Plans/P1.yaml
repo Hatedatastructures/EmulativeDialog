@@ -1821,7 +1821,7 @@ Tasks:
         - ED-0113
 
   - TaskId: ED-0013
-    TaskRevision: 5
+    TaskRevision: 6
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
@@ -1834,7 +1834,7 @@ Tasks:
     ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
-    ChangeRequestId: CR-ED-0013-004
+    ChangeRequestId: CR-ED-0013-005
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
@@ -1904,7 +1904,7 @@ Tasks:
       Worktree: H:/Qbot/EmulativeDialog.ED-0013-R3
       HeadCommit: ""
       Reason: "R3 was registered but never branched or written; coordinator's current AgentPool changes are in R3 WriteSet, so R4 uses the current integration commit as Base."
-    RevisionChangeRequest:
+    PriorRevisionChangeRequestR5:
       ChangeRequestId: CR-ED-0013-004
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -1939,6 +1939,34 @@ Tasks:
       ReviewerAgentId: /root/agent_core
       ReviewerDecision: Blocked
       Reason: "Worker02 readiness review found the R4 nested Context.ReadSet/ForbiddenSet conflict and underspecified MAN-003 AC-5. Worker01 confirmed all six WriteSet paths remained unchanged; no R4 code/document edits began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0013-005
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Preserve Goal, AC-1..AC-6, Owner, Reviewer, dependencies, Base, branch/worktree, and exact six-path WriteSet.
+        Correct one indentation error in Context.ReadSet so Workflow/AgentPool.yaml is a sibling list item. No other
+        ReadSet path, context budget, acceptance, file scope, or product scope changes are authorized.
+      Reason: >-
+        Worker02 fixed-S readiness review found Workflow/AgentPool.yaml at ten-space indentation inside the nested
+        Context.ReadSet, while sibling items use eight spaces; the controller therefore would not assemble that path.
+        R5 had no code or documentation edits. The R6 change is a single list-indentation correction.
+      PreserveGoalAcceptanceWriteSet: true
+      PreserveOwnerReviewerBaseAndIsolation: true
+    SupersededRevision5Evidence:
+      TaskSpecCommit: dc865fa3ab649dc6a2126ddc0fc2a0070d74b523
+      P1PlanBlob: 3ed67f7c10b95d1789fca5dd73021efc60e9f45c
+      State: Ready
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0013-R5-MultiAgentCollaborationStandard
+      Worktree: H:/Qbot/EmulativeDialog.ED-0013-R5
+      HeadCommit: ""
+      ReviewerAgentId: /root/agent_core
+      ReviewerDecision: Blocked
+      Reason: "Worker02 found the nested Context.ReadSet AgentPool path was indented as a child, not a sibling list item; Worker01 confirmed all six WriteSet paths remained untouched."
     ParallelGroup: P1GovernanceAndGateEvidence
     Goal: >-
       将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
@@ -1956,7 +1984,7 @@ Tasks:
       - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
       - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
       - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
-      - "CR-ED-0013-004: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 5; R2/R3/R4 were superseded before code."
+      - "CR-ED-0013-005: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 6; R2/R3/R4/R5 were superseded before code."
     ContractVersion: Workflow governance only; no product contract changes.
     GoalFrozen: true
     ReadSet:
@@ -1980,9 +2008,9 @@ Tasks:
       - Workflow/EnforcementMatrix.yaml
       - Workflow/MultiAgentCollaborationStandard.md
     WriteSetAuthorization:
-      ChangeRequestId: CR-ED-0013-004
+      ChangeRequestId: CR-ED-0013-005
       ApprovedByRole: Coordinator
-      Scope: This exact TaskRevision 5 only
+      Scope: This exact TaskRevision 6 only
       AuthorizedPaths:
         - AGENTS.md
         - Workflow/AgentExecutionStandard.md
@@ -2018,7 +2046,7 @@ Tasks:
       ReadSet:
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
-          - Workflow/AgentPool.yaml
+        - Workflow/AgentPool.yaml
         - Workflow/AgentExecutionStandard.md
         - Workflow/TaskLifecycle.md
         - Workflow/EnforcementMatrix.yaml
@@ -2082,14 +2110,14 @@ Tasks:
         Evidence: 固定 Base..Head 路径核对与 git diff --check。
     Rules:
       MustFollow:
-        - "Only the six paths explicitly delegated by CR-ED-0013-004 may be written; no ModuleMap or product contract changes."
+        - "Only the six paths explicitly delegated by CR-ED-0013-005 may be written; no ModuleMap or product contract changes."
         - "TaskIndex and AgentPool changes are single-task Coordinator delegations and expire at TaskClosed."
         - "P1 ExitGate stays Pending until separate Coordinator evaluation; this task does not start product AgentRuntime code."
       SoftDefaults: []
       ApprovedOverrides:
         - RuleRef: Architecture/ModuleMap.yaml#OwnershipRules.CrossModuleChangesRequireContractOrIntegrationTask
-          ChangeRequestId: CR-ED-0013-004
-          Scope: Exact six-path WriteSet in ED-0013 Revision 5 only
+          ChangeRequestId: CR-ED-0013-005
+          Scope: Exact six-path WriteSet in ED-0013 Revision 6 only
           ApprovedByRole: Coordinator
     Validation:
       RequiredTargets: []
@@ -2108,15 +2136,15 @@ Tasks:
     BaselineCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     CodeBaseCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     HeadCommit: ""
-    TaskSpecCommitPin: Coordinator supplies immutable Revision5 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
-    Branch: Task/ED-0013-R5-MultiAgentCollaborationStandard
-    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R5
+    TaskSpecCommitPin: Coordinator supplies immutable Revision6 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
+    Branch: Task/ED-0013-R6-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R6
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R4 preflight review found a nested Context forbidden/read conflict for the P1 EventShard and AC-5 did not require a testable RuleId/signoff/evidence mapping. CR-ED-0013-004 authorizes these limited fixes before any WriteSet edit."
+      CurrentFindingOrFailure: "R5 preflight found the nested Context.ReadSet AgentPool path had two extra spaces; CR-ED-0013-005 fixes only that list indentation. All six WriteSet paths remain untouched."
       TriedApproaches: []
-      NextAction: "Freeze the R5 snapshot, assemble bounded ReadSet context with P1 EventShard read-only, implement MAN-003 P1 RuleId coverage and collaboration docs on the six-path branch, then request Worker02 fixed-Head review."
+      NextAction: "Freeze R6 S/blob and confirm the Controller context contains Workflow/AgentPool.yaml. Worker01 then writes only the six authorized paths and requests Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
