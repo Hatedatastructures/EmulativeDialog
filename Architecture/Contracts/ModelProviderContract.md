@@ -1,6 +1,6 @@
 # 模型 Provider 合同 V1.2
 
-状态：V1.2 候选。V1.1 是已审查的历史基线；下文保留 V1.1 请求、事件、错误和协议映射语义，V1.2 补充位于文末。V1.2 只补全 Chat Completions 与 Anthropic refusal 的协议映射，不改变 ModelProviderPort C++ 类型、CoreAgentContract V1 或授权行为，也不实现任何 Adapter。
+状态：V1.2 已冻结。冻结依据：独立评审通过并集成的 ED-0017/R4（Task Head `c632c574c957f122924a449f45e56b017f36d3e4`、合并提交 `c4ce5b8c28e7277e1182c4abec1a76cfae1545ea`、合同 blob `69d38f5b98defd7890d488ec787d94ce4c797030`），以及已集成且 pin 到该合同的 ED-0127/R4、ED-0128/R4、ED-0129/R4 三组 V1.2 refusal fixtures。V1.1 是已审查的历史基线；下文保留 V1.1 请求、事件、错误和协议映射语义，V1.2 补充位于文末。V1.2 只补全 Chat Completions 与 Anthropic refusal 的协议映射，不改变 ModelProviderPort C++ 类型、CoreAgentContract V1 或授权行为，也不实现任何 Adapter。
 
 ## 职责和依赖方向
 
