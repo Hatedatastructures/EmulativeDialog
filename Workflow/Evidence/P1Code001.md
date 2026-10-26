@@ -81,7 +81,7 @@
 
 使用 clang-tidy 的 readability-identifier-naming。DefaultCase=CamelCase 覆盖未单独配置的 C++ 声明类别；clang-tidy 将此模式称为 CamelCase，其形式符合本项目的 PascalCase。MacroDefinitionCase=UPPER_CASE 覆盖宏规则。所有此检查的诊断被设为错误；检查文档见 [clang-tidy readability-identifier-naming](https://clang.llvm.org/extra/clang-tidy/checks/readability/identifier-naming.html)。
 
-命令从固定基线的 Git tree 选择全部 C++ 扩展名文件，直接传入全部 16 个文件；为 WorkflowControllerContractTests.cpp 加入 CMake 中已配置的私有包含路径。头文件过滤限定为当前审计 worktree；MSYS2 标准头和精确锁定的 yaml-cpp 源码仅用于解析。
+命令从固定基线的 Git tree 选择全部 C++ 扩展名文件，直接传入全部 16 个文件；为 WorkflowControllerContractTests.cpp 加入 CMake 已配置的 include path。头文件过滤限定为当前审计 worktree；MSYS2 标准头和精确锁定的 yaml-cpp 源码仅用于解析。
 
     $Repo = (Get-Location).Path.Replace('\', '/')
     $Base = 'd151c5b3287718964d376ad550953e4d34890a08'
@@ -110,7 +110,7 @@
     if ($FailedFiles.Count -gt 0) { $FailedFiles; exit 1 }
     exit 0
 
-结果：CPP_FILE_COUNT=16, CLANG_TIDY_FINDING_COUNT=0，进程退出码 0。最终调用没有命名诊断。五个其他检查的 warning 被 clang-tidy 按已选择的 check filter 抑制；readability-identifier-naming 诊断没有被抑制。
+结果：CPP_FILE_COUNT=16, CLANG_TIDY_FINDING_COUNT=0，进程退出码 0。最终调用没有命名诊断。命令仅启用了 readability-identifier-naming；其他 clang-tidy 检查未运行，因此没有其他检查的诊断结果。
 
 C++ 子分母（16）：
 
