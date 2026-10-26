@@ -2661,7 +2661,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Review
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2783,20 +2783,20 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
-    HeadCommit: ""
+    HeadCommit: "039788c1954d826f04f0cf4b58555809c6f5b896"
     MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0127-ResponsesV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0127-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R4
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
-    ReviewHeadCommit: ""
+    ReviewHeadCommit: "039788c1954d826f04f0cf4b58555809c6f5b896"
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "R4 assignment validated against the merged contract baseline; implementation not started."
+      CurrentFindingOrFailure: "Fixed Head pushed; independent review in progress. GitHub PR creation returned HTTP 403."
       TriedApproaches: []
-      NextAction: "Owner implements the two-file refusal fixture WriteSet, validates JSON pointers and exact paths, then commits and pushes this task branch."
-      LastValidationResult: "WorkflowController query and validate-assignment both succeeded at BaselineCommit."
+      NextAction: "Reviewer completes the fixed Base..Head review; Coordinator closes findings and verifies the final diff before bootstrap integration."
+      LastValidationResult: "JSON parsing, JSON Pointer resolution (2/2), diff check, exact two-path WriteSet, and four V1 fixture byte comparisons passed; commit/push succeeded and worktree is clean."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
@@ -2805,7 +2805,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Review
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -2929,20 +2929,20 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
-    HeadCommit: ""
+    HeadCommit: "354164fdb2fd73079b3ef7ff8646061b58b2ba15"
     MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0128-ChatCompletionsV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0128-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R4
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
-    ReviewHeadCommit: ""
+    ReviewHeadCommit: "354164fdb2fd73079b3ef7ff8646061b58b2ba15"
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "R4 assignment validated against the merged contract baseline; implementation not started."
+      CurrentFindingOrFailure: "Fixed Head pushed; independent review in progress. GitHub PR creation returned HTTP 403."
       TriedApproaches: []
-      NextAction: "Owner implements the two-file refusal fixture WriteSet, validates JSON pointers and exact paths, then commits and pushes this task branch."
-      LastValidationResult: "WorkflowController query and validate-assignment both succeeded at BaselineCommit."
+      NextAction: "Reviewer completes the fixed Base..Head review; Coordinator closes findings and verifies the final diff before bootstrap integration."
+      LastValidationResult: "TaskSpec JSON parse, R4 pin/12-case matrix/JsonPointer/terminal checks, diff check, exact WriteSet, and four V1 fixture byte comparisons passed; commit/push succeeded and worktree is clean."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
@@ -2951,7 +2951,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 Anthropic Messages V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Review
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -3082,19 +3082,19 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
-    HeadCommit: ""
+    HeadCommit: "d59bd7e0a798352c8b677118660a183952c3693c"
     MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0129-AnthropicV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0129-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0129-R4
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
-    ReviewHeadCommit: ""
+    ReviewHeadCommit: "d59bd7e0a798352c8b677118660a183952c3693c"
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "R4 assignment validated against the merged contract baseline; implementation not started."
+      CurrentFindingOrFailure: "Fixed Head pushed; independent review in progress. GitHub PR creation returned HTTP 403."
       TriedApproaches: []
-      NextAction: "Owner implements the two-file refusal fixture WriteSet, validates JSON pointers and exact paths, then commits and pushes this task branch."
-      LastValidationResult: "WorkflowController query and validate-assignment both succeeded at BaselineCommit."
+      NextAction: "Reviewer completes the fixed Base..Head review; Coordinator closes findings and verifies the final diff before bootstrap integration."
+      LastValidationResult: "TaskSpec JSON parse, 12-case/StopReasonMatrix/JsonPointer cross-check, diff check, exact two-path WriteSet, V1 blob comparison and canonical Explanation check passed; commit/push succeeded and worktree is clean."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
