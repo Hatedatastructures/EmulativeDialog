@@ -191,7 +191,7 @@ Tasks:
     EpicId: EP-04
     Title: 冻结 Codex 核心模块 owner、写集边界与治理门
     TaskKind: ArchitectureOwnership
-    State: Assigned
+    State: Active
     OwnerRole: IntegrationOwner
     OwnerAgentId: "/root"
     ReviewerRole: ProductContractOwner
