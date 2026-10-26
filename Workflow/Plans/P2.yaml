@@ -22,7 +22,7 @@ TaskSpecRegistration:
     - ED-0111
     - ED-0112
     - ED-0115
-  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124]
+  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125]
   AllTaskSpecsFrozenBeforeAssignment: true
 
 ChangeRequests:
@@ -40,10 +40,11 @@ ChangeRequests:
 
 ParallelGroups:
   - GroupId: FirstProductSlice
-    TaskIds: [ED-0109, ED-0101, ED-0124]
+    TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
     DependsOn: [ED-0006, ED-0007, ED-0008, ED-0015, ED-0016, ED-0018, ED-0020]
     OrderedDependencies:
       - ED-0109
+      - ED-0125
       - ED-0101
       - ED-0124
   - GroupId: IndependentContractPreparation
@@ -67,12 +68,13 @@ ParallelGroups:
 
 ExitGate:
   GateId: FirstCppAgentRuntimeVerticalSliceVerified
-  RequiredTaskIds: [ED-0109, ED-0101, ED-0124]
+  RequiredTaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
   RequiredEvidence:
     - Windows-native C++20 build target compiles Core and AgentRuntime product sources.
     - Root CMake exposes and builds AgentRuntimeVerticalSliceTests, and the focused CTest case passes.
     - Mock ingress passes Core trusted identity and policy checks before AgentRuntime runs.
     - AgentRuntime runs one complete turn through FakeProvider and returns only a completed final answer.
+    - Core writes a scoped OperationRecord before SendAction and updates it from the correlated receipt.
     - Core sends one authorized text action and verifies the correlated MockChannel receipt.
     - Unauthorized identity, duplicate inbound, provider failure, and mismatched receipt do not report success.
     - Changed production Core and AgentRuntime modules each meet at least 80 percent line coverage.
@@ -84,10 +86,10 @@ ExitGate:
 
 Tasks:
   - TaskId: ED-0109
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现可信身份映射与 Core 聊天策略入口
-    TaskKind: IntegrationTask
+    TaskKind: CapabilitySlice
     State: Blocked
     Phase: P2
     OwnerRole: CoreOwner
@@ -98,9 +100,35 @@ Tasks:
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    ChangeRequestId: CR-ED-0018-002
+    PriorRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Worker06 fixed TaskSpec readiness review found a nonexistent MockChannel test path, missing OperationRecord-before-send contract behavior, and a missing C++ ModelProviderPort header in the ReadSet. No branch or source write began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0109-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Preserve TrustedIdentityAndActionPolicy Goal and first-slice boundary. Replace the stale channel test paths
+        with Core-only policy/action/operation-record tests; add the frozen ModelProviderPort C++ header to ReadSet;
+        add an in-memory per-turn OperationRecord created before dispatch and updated from the receipt; and make the
+        ED-0008 Controller gate an explicit task dependency. Durable restart and recovery remain ED-0112.
+        MockChannel migration is split into ED-0125 under its own ChangeRequest.
+      Reason: >-
+        Independent readiness review identified a nonexistent path, an omitted hard CoreAgentContract operation-record
+        invariant, and an incomplete C++ interface ReadSet. These are frozen-task defects and must be corrected before
+        assignment; R1 had no code, worktree, or branch.
+      PreserveGoalAndCapabilityMapping: true
     CapabilityIds: [TrustedIdentityAndActionPolicy]
-    ModuleIds: [Core, ChannelAdapterPort]
     Goal: >-
       实现 Core 的可信 ChannelEnvelope 身份映射、会话范围和文本动作授权；拒绝由正文或 Provider 输出
       自称的身份/权限；只在 AgentRuntime 返回完整最终文字后创建 CoreAuthorizedAction，并验证唯一回执。
@@ -109,7 +137,7 @@ Tasks:
       - 持久会话、durable memory 或数据库迁移
       - 真实 QQ 登录、发送或微信
       - 工具执行、Shell、任意文件和通用 MCP
-    DependsOn: [ED-0007, ED-0016, ED-0018, ED-0015]
+    DependsOn: [ED-0006, ED-0007, ED-0008, ED-0015, ED-0016]
     ContractVersion:
       - Architecture/Contracts/CoreAgentContract.md V1
       - Architecture/Contracts/ChannelAdapterContract.md V1
@@ -122,13 +150,11 @@ Tasks:
         - Workflow/TaskIndex.yaml
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/HostCoreAgent.yaml
-        - Architecture/Modules/Channels.yaml
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/ChannelAdapterContract.md
         - Architecture/Contracts/ModelProviderContract.md
         - Source/Channels/Contracts/ChannelAdapterPort.h
-        - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
-        - Tests/Contract/Channels/Contracts/MockChannelContractTests.cpp
+        - Source/Providers/Contracts/ModelProviderPort.h
       OnDemandSet: []
       ForbiddenSet:
         - Workflow/Plans/P1.yaml
@@ -150,15 +176,12 @@ Tasks:
       - Source/Core/AgentRuntimePort.h
       - Source/Core/IdentityPolicy.h
       - Source/Core/IdentityPolicy.cpp
+      - Source/Core/OperationRecord.h
+      - Source/Core/OperationRecord.cpp
       - Source/Core/CoreChatService.h
       - Source/Core/CoreChatService.cpp
-      - Tests/Contract/Core/IdentityPolicyTests.cpp
-      - Tests/Contract/Core/CoreChatServiceContractTests.cpp
-      - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
-      - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
-      - Tests/Contract/Channels/Contracts/MockChannelContractTests.cpp
-      - Tests/Contract/Channels/Contracts/CoreAuthorizedActionTestFactory.h
-    SharedLocks: [MockChannelCoreAuthorizationSeam]
+      - Tests/Contract/Core/CorePolicyAndActionContractTests.cpp
+    SharedLocks: [CoreAgentRuntimePort, CoreOperationRecordState]
     ApiDesign:
       AuthorizedTurnContext: "Core-only construction; immutable mapped PrincipalId, exact ConversationScope, AgentTurnId, and canonical messages."
       AgentRuntimePort: "Agent implements Core::AgentRuntimePort::RunTurn(const AuthorizedTurnContext&, Providers::ModelProviderPort&, const Providers::ModelProviderProfile&, const Providers::CredentialLease&, std::stop_token) -> AgentTurnResult; the interface exposes no Channel identity or authorization constructor."
@@ -166,7 +189,7 @@ Tasks:
       CoreCredentialLease: "Core::CredentialLease is a noncopyable borrowed secret interface used only for ChannelAdapterPort calls; Provider::CredentialLease remains a distinct port type."
       CoreAuthorizedAction: "Core-only construction; immutable ActionId, OperationId, IdempotencyKey, exact target conversation, SendText kind, text payload, and AuthorizationRef."
       ReceiptRule: "Core reports send success only for one Succeeded ChannelReceipt whose ActionId and OperationId exactly match the issued action; UnknownOutcome is never retried."
-      MockMigration: "Replace the test-only stand-in action type with the Core type. Scripted receipts match exact ActionId/OperationId values, not object addresses, so an end-to-end Core-created action can be acknowledged without fabricating an uncorrelated result."
+      OperationRecord: "Create an in-memory scoped OperationRecord in Prepared/Authorized state before any Channel SendAction; mark Dispatched before the call and transition from its exact receipt to Succeeded/Rejected/Unsupported/Failed/UnknownOutcome. This is not durable restart recovery; ED-0112 owns that capability."
     Acceptance:
       - AcceptanceId: AC-1
         Description: "Registered account and sender map only from the trusted ChannelEnvelope to one Principal and exact ConversationScope."
@@ -178,17 +201,20 @@ Tasks:
         Description: "Only a completed final AgentRuntime result can produce a private CoreAuthorizedAction; Provider or message fields cannot grant identity or permission."
         Evidence: "Tests assert authorization object construction boundary and no send on refused, failed, cancelled, limited, or unknown outcome."
       - AcceptanceId: AC-4
-        Description: "Core checks SendText capability evidence and exact receipt correlation and does not retry UnknownOutcome."
-        Evidence: "Tests cover unsupported/unverified capability, mismatched IDs, rejection, and unknown receipt."
+        Description: "Core creates the scoped OperationRecord and authorizes it before SendAction, marks Dispatched before the adapter call, updates from one correlated receipt, and never retries UnknownOutcome."
+        Evidence: "An instrumented fake Channel asserts the record is Authorized/Dispatched before SendAction and is transitioned after Succeeded, Rejected, or UnknownOutcome."
       - AcceptanceId: AC-5
+        Description: "Core checks SendText capability evidence and exact receipt correlation; first-slice operation records are volatile and make no durable recovery claim."
+        Evidence: "Tests cover unsupported/unverified capability, mismatched IDs, rejection, unknown receipt, and no retry."
+      - AcceptanceId: AC-6
         Description: "All changed production Core sources meet at least 80 percent line coverage with the task-pinned compiler and gcov version."
         Evidence: "Fresh task build, per-source gcov report, denominator, exclusions, and tool version in ReviewBundle."
     Validation:
-      RequiredTargets: [CoreChatServiceContractTests, MockChannelContractTests]
+      RequiredTargets: [CorePolicyAndActionContractTests]
       TargetedBuild:
-        - "Windows PowerShell: g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Core/IdentityPolicy.cpp Source/Core/CoreChatService.cpp Tests/Contract/Core/IdentityPolicyTests.cpp Tests/Contract/Core/CoreChatServiceContractTests.cpp Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp Tests/Contract/Channels/Contracts/MockChannelContractTests.cpp -o <TaskBuildDir>/CoreChatServiceContractTests.exe"
-        - "<TaskBuildDir>/CoreChatServiceContractTests.exe"
-      ContractFixtures: ["Trusted envelope, sender mapping, deduplication, verified SendText, receipt correlation, and no-retry cases."]
+        - "Windows PowerShell: g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Core/IdentityPolicy.cpp Source/Core/OperationRecord.cpp Source/Core/CoreChatService.cpp Tests/Contract/Core/CorePolicyAndActionContractTests.cpp -o <TaskBuildDir>/CorePolicyAndActionContractTests.exe"
+        - "<TaskBuildDir>/CorePolicyAndActionContractTests.exe"
+      ContractFixtures: ["Trusted envelope, sender mapping, deduplication, verified SendText, record-before-dispatch, correlated receipt, UnknownOutcome, and no-retry cases."]
       StaticChecks: ["git diff --check BaseCommit HeadCommit", "Changed paths exactly equal frozen WriteSet", "C++20 warnings-as-errors build", "Core production line coverage >=80%"]
       LiveSideEffects: Forbidden
       NotRunReason: "No network, provider credentials, real QQ account, or user data is permitted in this slice."
@@ -199,15 +225,15 @@ Tasks:
     Rules:
       MustFollow: [SEC-001, GOV-001, API-001, PAR-002]
       SoftDefaults: []
-      ApprovedOverrides: ["CR-ED-0018-002 changes only the MockChannel test receipt key from object identity to exact action/operation ID matching."]
+      ApprovedOverrides: []
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
       EventShard: Workflow/Events/CodexRewrite/P2.jsonl
-      FollowUpTaskIds: [ED-0101, ED-0108, ED-0110, ED-0111, ED-0115]
+      FollowUpTaskIds: [ED-0125, ED-0101, ED-0108, ED-0110, ED-0111, ED-0115]
 
   - TaskId: ED-0101
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现 C++ AgentRuntime 首轮循环与产品纵向切片
     TaskKind: CapabilitySlice
@@ -221,12 +247,33 @@ Tasks:
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    PriorRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Worker06 fixed TaskSpec readiness review found that the end-to-end slice must depend on the separate ED-0125 MockChannel migration to the Core-only CoreAuthorizedAction type. No branch or source write began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0101-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0101 Goal, Acceptance, ReadSet/WriteSet, owner, and reviewer; add ED-0125 as an explicit dependency before compiling the vertical slice."
+      Reason: "The first-slice test must compile against the Core-owned authorization type without allowing the old MockChannel test stand-in to shadow it."
+      PreserveGoalAcceptanceWriteSet: true
+      PreserveOwnerReviewer: true
     CapabilityIds: [AgentTurnOrchestration]
     Goal: >-
       实现一个完整 C++ AgentRuntime turn：消费 Core 授权的上下文，调用 ModelProviderPort，校验事件关联与唯一终态，
       并交付 Mock ingress -> Core identity/policy -> AgentRuntime -> FakeProvider -> CoreAuthorizedAction -> MockChannel receipt 的可编译行为切片。
     OutOfScope: ["真实 Provider/QQ 网络", "工具执行", "持久化会话/记忆", "CLI/IDE/开发工具", "微信"]
-    DependsOn: [ED-0109, ED-0015, ED-0016, ED-0018, ED-0020]
+    DependsOn: [ED-0109, ED-0125, ED-0015, ED-0016, ED-0018, ED-0020]
     ContractVersion:
       - Architecture/Contracts/CoreAgentContract.md V1
       - Architecture/Contracts/ModelProviderContract.md V1.1
@@ -705,7 +752,7 @@ Tasks:
     CreatedBy: Coordinator
     Goal: "解决 OD-0007 的 Windows TLS 选择并冻结三种 Provider 共用的 C++ HTTP streaming Port 与 V1 合同；只接受注册 Provider 显式配置的 HTTPS endpoint。"
     OutOfScope: ["WinHTTP 实现代码", "任意网络工具", "loopback listener", "自动 redirect 到未批准 host", "凭据日志", "Provider wire schemas"]
-    DependsOn: [ED-0006, ED-0007]
+    DependsOn: [ED-0006, ED-0007, ED-0008]
     ContractVersion: HttpTransportContract V1 (created and frozen in this task)
     Context:
       ModuleId: NetworkPlatform
@@ -780,3 +827,73 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0125
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 让 MockChannel 使用 Core 专属动作与可关联回执
+    TaskKind: TestSupport
+    State: Blocked
+    Phase: P2
+    OwnerRole: ContractOwner
+    OwnerSlotId: Worker04
+    OwnerAgentId: "/root/provider_chat"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    ChangeRequestId: CR-ED-0018-002
+    ModuleIds: [ChannelAdapterPort]
+    Goal: "将现有离线 MockChannel 测试替身改为使用 Core 的不可伪造 CoreAuthorizedAction，并按预置 ActionId/OperationId 返回一次性精确关联回执。"
+    OutOfScope: ["修改 ChannelAdapterContract V1", "真实 QQ/网络/凭据", "Core 身份授权逻辑", "重试或自行合成成功回执"]
+    DependsOn: [ED-0018, ED-0109]
+    ContractVersion: [Architecture/Contracts/ChannelAdapterContract.md V1, CoreAuthorizedAction C++ API ED-0109/R2]
+    Context:
+      ModuleId: ChannelAdapterPort
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Channels.yaml
+        - Architecture/Contracts/CoreAgentContract.md
+        - Architecture/Contracts/ChannelAdapterContract.md
+        - Source/Channels/Contracts/ChannelAdapterPort.h
+        - Source/Core/CoreAuthorizedAction.h
+        - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
+        - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
+        - Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Plans/P1.yaml", "Workflow/Events/Bootstrap/P1.jsonl", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
+      - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
+      - Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp
+      - Tests/Contract/Channels/Contracts/CoreAuthorizedActionTestFactory.h
+    SharedLocks: [MockChannelCoreAuthorizationSeam]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "MockChannel uses Source/Core/CoreAuthorizedAction.h and no longer defines a competing test-only CoreAuthorizedAction type.", Evidence: "Compile test source with product Core header; repository search confirms one authoritative type."}
+      - {AcceptanceId: AC-2, Description: "A scripted receipt matches exact ActionId and OperationId and is consumed once; no receipt is synthesized for an unconfigured or mismatched action.", Evidence: "Contract tests for success, mismatched IDs, duplicate send, and exhausted script."}
+      - {AcceptanceId: AC-3, Description: "Existing offline MockChannel behavior and V1 receipt outcomes remain intact for the test adapter.", Evidence: "All existing MockChannel contract cases pass after migration."}
+    Validation:
+      RequiredTargets: [MockChannelAdapterContractTests]
+      TargetedBuild:
+        - "g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp -o <TaskBuildDir>/MockChannelAdapterContractTests.exe"
+        - "<TaskBuildDir>/MockChannelAdapterContractTests.exe"
+      ContractFixtures: ["Synthetic Core action/operation IDs, one-shot status receipts, mismatch, and unknown outcome."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact four-path WriteSet", "No public Channel contract change"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Test support is entirely offline and uses synthetic action/receipt data."
+    RiskLevel: Medium
+    RiskOwnerRole: ContractOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules:
+      MustFollow: [API-001, SEC-001, PAR-002]
+      SoftDefaults: []
+      ApprovedOverrides: ["CR-ED-0018-002 narrows receipt matching from object address to exact ActionId/OperationId while preserving one-shot correlated receipt semantics."]
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0101]}
