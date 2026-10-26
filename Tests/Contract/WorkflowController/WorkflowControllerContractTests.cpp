@@ -19,6 +19,8 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <thread>
+#include <exception>
 #include <vector>
 
 namespace {
@@ -785,6 +787,813 @@ void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Roo
                       "Uncertain EventId append was blindly duplicated after flush failure");
 }
 
+
+struct RecoveryFixtureInfo {
+  std::filesystem::path Root;
+  std::string TaskSpecCommit;
+  std::string TaskSpecBlobId;
+  std::vector<std::string> TargetIds;
+  std::vector<std::string> CanonicalRecords;
+};
+
+std::vector<std::pair<std::string, int>> RecoveryTargets() {
+  return {{"6202e631-52ce-4145-96af-ce6934df7749", 1},
+          {"5d773818-7efa-4055-b2ea-600d0dcaa69d", 1},
+          {"72cc74ea-b68c-4588-95ca-58e0f6c22685", 1},
+          {"4a9507a0-c338-40f0-8871-f15aff82be1c", 1},
+          {"378e2cbe-98e9-4419-8418-287ef16b7c74", 2}};
+}
+
+RecoveryFixtureInfo CreateRecoveryFixtureRepository(
+    const std::filesystem::path& Root) {
+  std::filesystem::create_directories(Root);
+  std::ostringstream TaskIndex;
+  TaskIndex << "CurrentReleaseId: Bootstrap\n"
+            << "PhasePlans:\n"
+            << "  - PhaseId: P1\n"
+            << "    Path: Workflow/Plans/P1.yaml\n";
+  WriteText(Root / "Workflow/TaskIndex.yaml", TaskIndex.str());
+  std::ostringstream TaskPlan;
+  TaskPlan << "SchemaVersion: 1\n"
+           << "PhaseId: P1\n"
+           << "Tasks:\n"
+           << "  - TaskId: ED-0014\n"
+           << "    TaskRevision: 8\n"
+           << "    State: Ready\n"
+           << "    OwnerAgentId: /root/workflow_controller\n"
+           << "    ReviewerAgentId: /root/agent_core\n"
+           << "    Branch: Task/ED-0014-R8-EventIdConflictRecovery\n"
+           << "    ChangeRequest:\n"
+           << "      ChangeRequestId: CR-ED-0014-001\n"
+           << "      Decision: Accepted\n"
+           << "      ApprovedByRole: Coordinator\n"
+           << "      ApprovedByAgentId: /root\n"
+           << "    RevisionChangeRequest:\n"
+           << "      ChangeRequestId: CR-ED-0014-002\n"
+           << "      Decision: Accepted\n"
+           << "      ApprovedByRole: Coordinator\n"
+           << "      ApprovedByAgentId: /root\n"
+           << "    AdditionalChangeRequest:\n"
+           << "      ChangeRequestId: CR-ED-0014-003\n"
+           << "      Decision: Accepted\n"
+           << "      ApprovedByRole: Coordinator\n"
+           << "      ApprovedByAgentId: /root\n"
+           << "    FinalChangeRequest:\n"
+           << "      ChangeRequestId: CR-ED-0014-004\n"
+           << "      Decision: Accepted\n"
+           << "      ApprovedByRole: Coordinator\n"
+           << "      ApprovedByAgentId: /root\n"
+           << "    Rules:\n"
+           << "      ApprovedOverrides:\n";
+  for (const auto& [TargetId, TargetRevision] : RecoveryTargets()) {
+    TaskPlan << "        - RuleRef: EventIdConflictResolution\n"
+             << "          ChangeRequestId: CR-ED-0014-001\n"
+             << "          ApprovedByRole: Coordinator\n"
+             << "          ApprovedByAgentId: /root\n"
+             << "          EventShard: Workflow/Events/Bootstrap/P1.jsonl\n"
+             << "          TargetEventId: " << TargetId << "\n"
+             << "          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: "
+             << TargetRevision << "}\n"
+             << "          ExpectedVariantCount: 2\n"
+             << "          ExpectedOccurrenceCount: 2\n"
+             << "          CanonicalOccurrence: 2\n"
+             << "          ApprovalReason: \"Select occurrence two for " << TargetId
+             << "; preserve the exact selected record without merging variants.\"\n";
+  }
+  WriteText(Root / "Workflow/Plans/P1.yaml", TaskPlan.str());
+
+  WindowsProcessRunner Runner;
+  RunGit(Runner, Root, {"git", "init", "--initial-branch", "main"});
+  RunGit(Runner, Root, {"git", "config", "user.name", "ED-0014 Fixture Coordinator"});
+  RunGit(Runner, Root, {"git", "config", "user.email", "ed0014-fixture@example.invalid"});
+  RunGit(Runner, Root, {"git", "add", "Workflow/TaskIndex.yaml", "Workflow/Plans/P1.yaml"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "ED-0014 pinned recovery authorization"});
+  RecoveryFixtureInfo Info;
+  Info.Root = Root;
+  Info.TaskSpecCommit = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
+  Info.TaskSpecBlobId = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse",
+       Info.TaskSpecCommit + ":Workflow/Plans/P1.yaml"}, Root).Output);
+  std::filesystem::create_directories(Root / "Workflow/Events/Bootstrap");
+  for (const auto& [TargetId, TargetRevision] : RecoveryTargets()) {
+    Info.TargetIds.push_back(TargetId);
+    std::ostringstream First;
+    First << "{\"EventId\":\"" << TargetId
+          << "\",\"EventType\":\"ChangeRequestCreated\","
+          << "\"OccurredAt\":\"2026-10-26T01:00:00Z\","
+          << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+          << "\"TaskId\":\"ED-0013\",\"TaskRevision\":" << TargetRevision
+          << ",\"AgentId\":\"/root/coordinator\",\"AgentRole\":\"Coordinator\","
+          << "\"Branch\":\"Task/ED-0013-R1\","
+          << "\"CorrelationId\":\"fixture-" << TargetId << "\","
+          << "\"Result\":\"OldVariant\",\"EvidenceRefs\":[\"first-evidence\"]}";
+    std::ostringstream Second;
+    Second << "{\"EventId\":\"" << TargetId
+           << "\",\"EventType\":\"ChangeRequestCreated\","
+           << "\"OccurredAt\":\"2026-10-26T02:00:00Z\","
+           << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+           << "\"TaskId\":\"ED-0013\",\"TaskRevision\":" << TargetRevision
+           << ",\"AgentId\":\"/root/coordinator\",\"AgentRole\":\"Coordinator\","
+           << "\"Branch\":\"Task/ED-0013-R1\","
+           << "\"CorrelationId\":\"fixture-" << TargetId << "\","
+           << "\"Result\":\"SelectedVariant\","
+           << "\"EvidenceRefs\":[\"second-evidence\"]";
+    if (TargetId == "72cc74ea-b68c-4588-95ca-58e0f6c22685") {
+      Second << ",\"SourceHeadCommit\":\"0123456789abcdef0123456789abcdef01234567\"";
+    }
+    Second << '}';
+    Info.CanonicalRecords.push_back(Second.str());
+    std::ofstream Events(Root / "Workflow/Events/Bootstrap/P1.jsonl",
+                         std::ios::binary | std::ios::app);
+    Events << First.str() << '\n' << Second.str() << '\n';
+    Check(static_cast<bool>(Events), "Unable to write disposable EventId conflict shard");
+  }
+  return Info;
+}
+
+std::filesystem::path WorkflowControllerExecutable() {
+  std::wstring Buffer(32768, L'\0');
+  const DWORD Length = GetModuleFileNameW(nullptr, Buffer.data(),
+                                          static_cast<DWORD>(Buffer.size()));
+  Check(Length != 0 && Length < Buffer.size(),
+        "Unable to locate contract test executable");
+  Buffer.resize(Length);
+  std::filesystem::path Executable(Buffer);
+  Executable.replace_filename(L"WorkflowController.exe");
+  Check(std::filesystem::is_regular_file(Executable),
+        "WorkflowController.exe is not beside the contract tests");
+  return Executable;
+}
+
+ProcessResult RunRecoveryCli(WindowsProcessRunner& Runner,
+                             const RecoveryFixtureInfo& Fixture,
+                             const std::string& TaskSpecCommit,
+                             const std::string& TaskSpecBlobId,
+                             const std::string& Target = {}) {
+  std::vector<std::string> Arguments{
+      WorkflowControllerExecutable().string(),
+      "resolve-event-id-conflicts",
+      Fixture.Root.string(),
+      "P1",
+      "ED-0014",
+      "8",
+      TaskSpecCommit,
+      TaskSpecBlobId};
+  if (!Target.empty()) {
+    Arguments.push_back(Target);
+  }
+  return Runner.Run(Arguments, Fixture.Root);
+}
+
+void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
+  OwnedTempDirectory Temp;
+  const RecoveryFixtureInfo Fixture =
+      CreateRecoveryFixtureRepository(Temp.Path / "RecoveryRepository");
+  const auto EventPath = Fixture.Root / "Workflow/Events/Bootstrap/P1.jsonl";
+  const std::string OriginalShard = ReadText(EventPath);
+  WindowsProcessRunner Runner;
+
+  const ProcessResult WrongBlob = RunRecoveryCli(
+      Runner, Fixture, Fixture.TaskSpecCommit, std::string(40, '0'));
+  Check(WrongBlob.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted a wrong pinned TaskSpec blob or changed the shard");
+
+  const std::filesystem::path ControllerExe = WorkflowControllerExecutable();
+  const ProcessResult WrongCommit = Runner.Run(
+      {ControllerExe.string(), "resolve-event-id-conflicts", Fixture.Root.string(),
+       "P1", "ED-0014", "8", std::string(40, 'f'), Fixture.TaskSpecBlobId},
+      Fixture.Root);
+  Check(WrongCommit.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted an unknown Coordinator TaskSpec commit");
+  const ProcessResult WrongScope = Runner.Run(
+      {ControllerExe.string(), "resolve-event-id-conflicts", Fixture.Root.string(),
+       "P2", "ED-0014", "8", Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId},
+      Fixture.Root);
+  Check(WrongScope.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted a resolution under an unapproved phase");
+  const ProcessResult WrongRevision = Runner.Run(
+      {ControllerExe.string(), "resolve-event-id-conflicts", Fixture.Root.string(),
+       "P1", "ED-0014", "7", Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId},
+      Fixture.Root);
+  Check(WrongRevision.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted a stale recovery TaskRevision");
+  const std::string OriginalTaskPlan = ReadText(Fixture.Root / "Workflow/Plans/P1.yaml");
+  std::string RejectedTaskPlan = OriginalTaskPlan;
+  const std::size_t FirstDecision = RejectedTaskPlan.find("Decision: Accepted");
+  Check(FirstDecision != std::string::npos,
+        "Recovery fixture has no accepted ChangeRequest decision");
+  RejectedTaskPlan.replace(FirstDecision, std::string("Decision: Accepted").size(),
+                           "Decision: Rejected");
+  WriteText(Fixture.Root / "Workflow/Plans/P1.yaml", RejectedTaskPlan);
+  RunGit(Runner, Fixture.Root, {"git", "add", "Workflow/Plans/P1.yaml"});
+  RunGit(Runner, Fixture.Root, {"git", "commit", "-m", "rejected recovery approval fixture"});
+  const std::string RejectedCommit = TrimText(Runner.Run(
+      {"git", "-C", Fixture.Root.string(), "rev-parse", "HEAD"}, Fixture.Root).Output);
+  const std::string RejectedBlob = TrimText(Runner.Run(
+      {"git", "-C", Fixture.Root.string(), "rev-parse",
+       RejectedCommit + ":Workflow/Plans/P1.yaml"}, Fixture.Root).Output);
+  const ProcessResult RejectedChange = RunRecoveryCli(
+      Runner, Fixture, RejectedCommit, RejectedBlob);
+  Check(RejectedChange.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted an unapproved ChangeRequest in the pinned TaskSpec");
+
+  const ProcessResult WrongTarget = RunRecoveryCli(
+      Runner, Fixture, Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId,
+      "unauthorized-event-id");
+  Check(WrongTarget.ExitCode != 0 && ReadText(EventPath) == OriginalShard,
+        "CLI accepted a target outside the pinned approvals or changed the shard");
+
+  const ProcessResult Success = RunRecoveryCli(
+      Runner, Fixture, Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId);
+  Check(Success.ExitCode == 0 &&
+            Success.Output.find("ResolutionCount=5") != std::string::npos &&
+            Success.Output.find("AgentId=/root AgentRole=Coordinator") != std::string::npos &&
+            Success.Output.find("TaskSpecCommit=" + Fixture.TaskSpecCommit) != std::string::npos &&
+            Success.Output.find("TaskSpecBlobId=" + Fixture.TaskSpecBlobId) != std::string::npos,
+        "Process-level recovery command did not apply the five pinned Coordinator approvals");
+  const std::string ResolvedShard = ReadText(EventPath);
+  Check(ResolvedShard.starts_with(OriginalShard),
+        "Recovery changed the original EventShard byte prefix");
+  const auto CanonicalEvents = EventStore(EventPath).ReadTaskEvents("ED-0013");
+  Check(CanonicalEvents.size() == 5,
+        "EventStore did not project exactly one selected original per conflict group");
+  for (std::size_t Index = 0; Index < Fixture.TargetIds.size(); ++Index) {
+    const auto Selected = std::find_if(
+        CanonicalEvents.begin(), CanonicalEvents.end(),
+        [&](const WorkflowEvent& Event) {
+          return Event.EventId == Fixture.TargetIds[Index];
+        });
+    Check(Selected != CanonicalEvents.end() &&
+              Selected->RawRecord == Fixture.CanonicalRecords[Index],
+          "EventStore did not preserve the exact canonical raw record");
+  }
+  Check(std::any_of(CanonicalEvents.begin(), CanonicalEvents.end(),
+                    [](const WorkflowEvent& Event) {
+                      return Event.EventId == "72cc74ea-b68c-4588-95ca-58e0f6c22685" &&
+                             Event.RawRecord.find("\"SourceHeadCommit\"") != std::string::npos;
+                    }),
+        "Unknown SourceHeadCommit was not retained in the selected raw event");
+  const auto ResolutionEvents = EventStore(EventPath).ReadTaskEvents("ED-0014");
+  Check(ResolutionEvents.size() == 5,
+        "Resolution events were not available in the recovery task history");
+  for (const WorkflowEvent& Event : ResolutionEvents) {
+    Check(Event.EventType == "EventIdConflictResolution" &&
+              Event.TaskRevision == 8 && Event.AgentId == "/root" &&
+              Event.AgentRole == "Coordinator" &&
+              Event.TaskSpecCommit == Fixture.TaskSpecCommit &&
+              Event.TaskSpecBlobId == Fixture.TaskSpecBlobId &&
+              Event.ChangeRequestId == "CR-ED-0014-001" &&
+              Event.CanonicalOccurrence == 2 &&
+              Event.ExpectedVariantCount == 2 &&
+              Event.ExpectedOccurrenceCount == 2 &&
+              Event.EvidenceRefs.size() == 5,
+          "Resolution evidence omitted its Coordinator, TaskSpec, scope, or count binding");
+  }
+
+  const ProcessResult Retry = RunRecoveryCli(
+      Runner, Fixture, Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId);
+  Check(Retry.ExitCode == 0 && ReadText(EventPath) == ResolvedShard,
+        "Recovery retry was not idempotent");
+
+
+  const auto MaliciousResolutionPath =
+      Fixture.Root / "Workflow/Events/MaliciousResolution/P1.jsonl";
+  std::filesystem::create_directories(MaliciousResolutionPath.parent_path());
+  {
+    std::ofstream Malicious(MaliciousResolutionPath, std::ios::binary);
+    Malicious << OriginalShard;
+    std::string BadResolution;
+    for (const WorkflowEvent& Event : ResolutionEvents) {
+      if (Event.TargetEventId == Fixture.TargetIds.front()) {
+        BadResolution = Event.RawRecord;
+        break;
+      }
+    }
+    Check(!BadResolution.empty(), "Unable to obtain a serialized resolution fixture");
+    BadResolution.replace(BadResolution.size() - 1, 1,
+                          ",\"RawPayload\":\"must-not-be-stored\"}");
+    BadResolution.replace(BadResolution.find("eventid-conflict-resolution-") +
+                              std::string("eventid-conflict-resolution-").size(),
+                          Fixture.TargetIds.front().size(),
+                          "malicious-resolution-id-000000000000000000000000000000000000");
+    Malicious << BadResolution << '\n';
+  }
+  ExpectWorkflowError(
+      [&] { (void)EventStore(MaliciousResolutionPath).ReadTaskEvents("ED-0014"); },
+      "Resolution event containing raw payload was accepted");
+  const auto StalePath = Fixture.Root / "Workflow/Events/Stale/P1.jsonl";
+  WriteText(StalePath, ResolvedShard);
+  {
+    std::ofstream Extra(StalePath, std::ios::binary | std::ios::app);
+    Extra << "{\"EventId\":\"" << Fixture.TargetIds.front()
+          << "\",\"EventType\":\"ChangeRequestCreated\","
+          << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+          << "\"TaskId\":\"ED-0013\",\"TaskRevision\":1,"
+          << "\"Result\":\"UnexpectedThirdOccurrence\"}\n";
+  }
+  ExpectWorkflowError(
+      [&] { (void)EventStore(StalePath).ReadTaskEvents("ED-0013"); },
+      "A new occurrence did not invalidate the stale resolution");
+
+  const auto DuplicatePath = Fixture.Root / "Workflow/Events/LineEndings/P1.jsonl";
+  const std::string DuplicateRecord =
+      "{\"EventId\":\"line-ending-duplicate\",\"EventType\":\"CommandExecuted\","
+      "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+      "\"TaskId\":\"ED-0013\",\"TaskRevision\":1,\"Result\":\"Same\"}";
+  WriteText(DuplicatePath, DuplicateRecord + "\n" + DuplicateRecord + "\r\n");
+  Check(EventStore(DuplicatePath).ReadTaskEvents("ED-0013").size() == 1,
+        "LF/CRLF exact duplicate records were not deduplicated");
+
+  const auto UnresolvedPath = Fixture.Root / "Workflow/Events/Unresolved/P1.jsonl";
+  WriteText(UnresolvedPath, OriginalShard);
+  WorkflowEvent Ordinary;
+  Ordinary.EventId = "ordinary-append-during-conflict";
+  Ordinary.EventType = "CommandExecuted";
+  Ordinary.PhaseId = "P1";
+  Ordinary.TaskId = "ED-0014";
+  Ordinary.TaskRevision = 8;
+  ExpectWorkflowError(
+      [&] { EventStore(UnresolvedPath).Append(Ordinary); },
+      "Ordinary append was allowed while EventId conflicts remained unresolved");
+
+  const auto CrossScopePath = Fixture.Root / "Workflow/Events/CrossScope/P1.jsonl";
+  std::filesystem::create_directories(CrossScopePath.parent_path());
+  {
+    std::ofstream Cross(CrossScopePath, std::ios::binary);
+    Cross << Fixture.CanonicalRecords.front() << '\n'
+          << "{\"EventId\":\"" << Fixture.TargetIds.front()
+          << "\",\"EventType\":\"ChangeRequestCreated\","
+          << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+          << "\"TaskId\":\"ED-0013\",\"TaskRevision\":9,"
+          << "\"Result\":\"CrossScope\"}\n";
+  }
+  std::vector<EventIdConflictAuthorization> Approvals =
+      LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
+          Fixture.Root, "P1", "ED-0014", 8, Fixture.TaskSpecCommit,
+          Fixture.TaskSpecBlobId, Runner);
+  const auto FirstApproval = std::find_if(
+      Approvals.begin(), Approvals.end(), [&](const EventIdConflictAuthorization& Item) {
+        return Item.TargetEventId == Fixture.TargetIds.front();
+      });
+  Check(FirstApproval != Approvals.end(), "Pinned authorization fixture omitted its first target");
+  const std::string CrossScopeBefore = ReadText(CrossScopePath);
+  ExpectWorkflowError(
+      [&] { EventStore(CrossScopePath).ResolveEventIdConflict(*FirstApproval); },
+      "Coordinator resolution accepted cross-scope target variants");
+  Check(ReadText(CrossScopePath) == CrossScopeBefore,
+        "Rejected cross-scope resolution changed its event shard");
+
+  const auto TornPath = Fixture.Root / "Workflow/Events/Torn/P1.jsonl";
+  WriteText(TornPath, OriginalShard + "{");
+  const std::string TornBefore = ReadText(TornPath);
+  ExpectWorkflowError(
+      [&] { EventStore(TornPath).ResolveEventIdConflict(*FirstApproval); },
+      "Recovery appended after a malformed or torn shard tail");
+  Check(ReadText(TornPath) == TornBefore,
+        "Torn-tail rejection changed the event shard");
+
+  const auto ConcurrentPath = Fixture.Root / "Workflow/Events/Concurrent/P1.jsonl";
+  std::filesystem::create_directories(ConcurrentPath.parent_path());
+  {
+    std::ofstream Concurrent(ConcurrentPath, std::ios::binary);
+    Concurrent << Fixture.CanonicalRecords.front() << '\n'
+               << "{\"EventId\":\"" << Fixture.TargetIds.front()
+               << "\",\"EventType\":\"ChangeRequestCreated\","
+               << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+               << "\"TaskId\":\"ED-0013\",\"TaskRevision\":1,"
+               << "\"Result\":\"ConcurrentVariant\"}\n";
+  }
+  std::exception_ptr FirstFailure;
+  std::exception_ptr SecondFailure;
+  std::thread FirstThread([&] {
+    try {
+      EventStore(ConcurrentPath).ResolveEventIdConflict(*FirstApproval);
+    } catch (...) {
+      FirstFailure = std::current_exception();
+    }
+  });
+  std::thread SecondThread([&] {
+    try {
+      EventStore(ConcurrentPath).ResolveEventIdConflict(*FirstApproval);
+    } catch (...) {
+      SecondFailure = std::current_exception();
+    }
+  });
+  FirstThread.join();
+  SecondThread.join();
+  Check(!FirstFailure && !SecondFailure &&
+            EventStore(ConcurrentPath).ReadTaskEvents("ED-0013").size() == 1,
+        "Concurrent resolution appended duplicates or lost the approved occurrence");
+
+  const auto FlushPath = Fixture.Root / "Workflow/Events/FlushFailure/P1.jsonl";
+  std::filesystem::create_directories(FlushPath.parent_path());
+  {
+    std::ofstream Flush(FlushPath, std::ios::binary);
+    Flush << Fixture.CanonicalRecords.front() << '\n'
+          << "{\"EventId\":\"" << Fixture.TargetIds.front()
+          << "\",\"EventType\":\"ChangeRequestCreated\","
+          << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+          << "\"TaskId\":\"ED-0013\",\"TaskRevision\":1,"
+          << "\"Result\":\"FlushVariant\"}\n";
+  }
+  EventStore FlushFailure(FlushPath, [] {
+    SetLastError(ERROR_WRITE_FAULT);
+    return false;
+  });
+  ExpectWorkflowError(
+      [&] { FlushFailure.ResolveEventIdConflict(*FirstApproval); },
+      "Flush failure did not report an ambiguous resolution append");
+  const std::string AfterFlushAmbiguity = ReadText(FlushPath);
+  EventStore(FlushPath).ResolveEventIdConflict(*FirstApproval);
+  Check(ReadText(FlushPath) == AfterFlushAmbiguity &&
+            EventStore(FlushPath).ReadTaskEvents("ED-0013").size() == 1,
+        "Resolution retry duplicated an already persisted flush-ambiguous event");
+
+  const auto PartialPath = Fixture.Root / "Workflow/Events/Partial/P1.jsonl";
+  std::filesystem::create_directories(PartialPath.parent_path());
+  {
+    std::ofstream Partial(PartialPath, std::ios::binary);
+    Partial << Fixture.CanonicalRecords.front() << '\n'
+            << "{\"EventId\":\"" << Fixture.TargetIds.front()
+            << "\",\"EventType\":\"ChangeRequestCreated\","
+            << "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+            << "\"TaskId\":\"ED-0013\",\"TaskRevision\":1,"
+            << "\"Result\":\"PartialVariant\"}\n";
+  }
+  EventStore PartialFailure(PartialPath, [] {
+    SetLastError(ERROR_WRITE_FAULT);
+    return false;
+  });
+  ExpectWorkflowError(
+      [&] { PartialFailure.ResolveEventIdConflict(*FirstApproval); },
+      "Partial resolution flush failure was not reported");
+  {
+    std::ofstream Torn(PartialPath, std::ios::binary | std::ios::app);
+    Torn << "{";
+  }
+  const std::string PartialBeforeRetry = ReadText(PartialPath);
+  ExpectWorkflowError(
+      [&] { EventStore(PartialPath).ResolveEventIdConflict(*FirstApproval); },
+      "Retry after a torn partial write did not fail closed");
+  Check(ReadText(PartialPath) == PartialBeforeRetry,
+        "Torn partial retry changed the event shard");
+}
+
+
+struct CliFixtureInfo {
+  std::filesystem::path Root;
+  std::filesystem::path Worktree;
+  std::string BaseCommit;
+};
+
+CliFixtureInfo CreateControllerCliFixture(const std::filesystem::path& Root,
+                                          const std::filesystem::path& Worktree) {
+  std::filesystem::create_directories(Root);
+  WriteText(Root / "README.md", "WorkflowController CLI fixture base\n");
+  WriteText(Root / "Workflow/TaskTemplate.yaml", "TaskTemplate: CLI fixture context\n");
+  WindowsProcessRunner Runner;
+  RunGit(Runner, Root, {"git", "init", "--initial-branch", "main"});
+  RunGit(Runner, Root, {"git", "config", "user.name", "WorkflowController CLI Fixture"});
+  RunGit(Runner, Root, {"git", "config", "user.email", "controller-cli@example.invalid"});
+  RunGit(Runner, Root, {"git", "add", "README.md", "Workflow/TaskTemplate.yaml"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "WorkflowController CLI base"});
+  CliFixtureInfo Info;
+  Info.Root = Root;
+  Info.Worktree = Worktree;
+  Info.BaseCommit = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
+  std::ostringstream TaskIndex;
+  TaskIndex << "CurrentReleaseId: Bootstrap\n"
+            << "CommunicationStore:\n"
+            << "  Root: Workflow/Communications\n"
+            << "PhasePlans:\n"
+            << "  - PhaseId: P1\n"
+            << "    Path: Workflow/Plans/P1.yaml\n";
+  WriteText(Root / "Workflow/TaskIndex.yaml", TaskIndex.str());
+  std::ostringstream Plan;
+  Plan << "SchemaVersion: 1\n"
+       << "PhaseId: P1\n"
+       << "Tasks:\n"
+       << "  - TaskId: ED-0002\n"
+       << "    TaskRevision: 2\n"
+       << "    Title: CLI fixture task\n"
+       << "    Goal: Exercise the real WorkflowController command surface\n"
+       << "    State: Ready\n"
+       << "    OwnerAgentId: /root/test-agent\n"
+       << "    ReviewerAgentId: /root/independent-reviewer\n"
+       << "    Branch: Task/ED-0002-WorkflowControllerCliFixture\n"
+       << "    Worktree: \"" << Worktree.generic_string() << "\"\n"
+       << "    BaselineCommit: " << Info.BaseCommit << "\n"
+       << "    DependsOn: []\n"
+       << "    ReadSet: [Workflow/TaskTemplate.yaml]\n"
+       << "    WriteSet: [Tools/WorkflowController/]\n"
+       << "    ForbiddenSet: [Source/**, Architecture/Contracts/**]\n"
+       << "    SharedLocks: []\n"
+       << "    Validation:\n"
+       << "      TargetedBuild: [cmake --version]\n"
+       << "      ContractFixtures: []\n"
+       << "    Deliverable:\n"
+       << "      EventShard: Workflow/Events/Bootstrap/P1.jsonl\n";
+  WriteText(Root / "Workflow/Plans/P1.yaml", Plan.str());
+  RunGit(Runner, Root, {"git", "add", "Workflow/TaskIndex.yaml", "Workflow/Plans/P1.yaml"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "WorkflowController CLI task fixture"});
+  return Info;
+}
+
+ProcessResult RunControllerCli(WindowsProcessRunner& Runner,
+                               const std::filesystem::path& RepositoryRoot,
+                               const std::vector<std::string>& Arguments) {
+  std::vector<std::string> Command{WorkflowControllerExecutable().string()};
+  Command.insert(Command.end(), Arguments.begin(), Arguments.end());
+  return Runner.Run(Command, RepositoryRoot);
+}
+
+void TestControllerCliSurface(const std::filesystem::path& Root) {
+  OwnedTempDirectory Temp;
+  const CliFixtureInfo Fixture = CreateControllerCliFixture(
+      Temp.Path / "CliRepository", Temp.Path / "CliAssignedWorktree");
+  WindowsProcessRunner Runner;
+  const std::string Repo = Fixture.Root.string();
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"query", Repo, "P1", "ED-0002", "2"}).ExitCode == 0,
+        "query command failed on a routed TaskSpec");
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"query", Repo, "P1", "ED-0002", "1"}).ExitCode != 0,
+        "query command accepted a stale TaskRevision");
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"validate-assignment", Repo, "P1", "ED-0002", "2",
+                         "/root/test-agent", "Task/ED-0002-WorkflowControllerCliFixture",
+                         Fixture.Worktree.string(), Fixture.BaseCommit}).ExitCode == 0,
+        "validate-assignment rejected the exact routed assignment");
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"context", Repo, "P1", "ED-0002", "2"}).ExitCode == 0,
+        "context command failed for the frozen ReadSet");
+  const ProcessResult Created = RunControllerCli(
+      Runner, Fixture.Root, {"create-worktree", Repo, "P1", "ED-0002", "2"});
+  Check(Created.ExitCode == 0 &&
+            Created.Output.find("Created=true") != std::string::npos,
+        "create-worktree did not create the assigned isolated worktree");
+  const ProcessResult Verified = RunControllerCli(
+      Runner, Fixture.Root, {"create-worktree", Repo, "P1", "ED-0002", "2"});
+  Check(Verified.ExitCode == 0 &&
+            Verified.Output.find("Created=false") != std::string::npos,
+        "create-worktree did not verify its existing worktree idempotently");
+  const ProcessResult Validation = RunControllerCli(
+      Runner, Fixture.Root, {"run-validation", Repo, "P1", "ED-0002", "2", "0"});
+  Check(Validation.ExitCode == 0 &&
+            Validation.Output.find("ExitCode=0") != std::string::npos &&
+            Validation.Output.find("EvidencePath=") != std::string::npos,
+        "run-validation did not execute the frozen CMake command and record evidence");
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"run-validation", Repo, "P1", "ED-0002", "2", "9"}).ExitCode != 0,
+        "run-validation accepted a command index outside its allowlist");
+  const ProcessResult Saved = RunControllerCli(
+      Runner, Fixture.Root, {"checkpoint-save", Repo, "P1", "ED-0002", "2",
+                             "resume the real CLI fixture"});
+  Check(Saved.ExitCode == 0, "checkpoint-save failed for the assigned task");
+  const ProcessResult Recovered = RunControllerCli(
+      Runner, Fixture.Root, {"checkpoint-recover", Repo, "P1", "ED-0002", "2"});
+  Check(Recovered.ExitCode == 0 &&
+            Recovered.Output.find("resume the real CLI fixture") != std::string::npos,
+        "checkpoint-recover did not restore its task-scoped checkpoint");
+  const ProcessResult Added = RunControllerCli(
+      Runner, Fixture.Root, {"message-add", Repo, "P1", "ED-0002", "2",
+                             "/root/test-agent", "/root/coordinator", "Question",
+                             "CLI fixture question", "Verify message lifecycle"});
+  Check(Added.ExitCode == 0 && Added.Output.find("MessageId=") != std::string::npos,
+        "message-add did not add a routed task communication");
+  const std::size_t MessageStart = Added.Output.find("MessageId=");
+  const std::size_t MessageEnd = Added.Output.find('\n', MessageStart);
+  Check(MessageStart != std::string::npos,
+        "message-add did not return its generated MessageId");
+  const std::string MessageId = TrimText(Added.Output.substr(
+      MessageStart + std::string("MessageId=").size(),
+      MessageEnd == std::string::npos ? std::string::npos
+                                      : MessageEnd - MessageStart -
+                                            std::string("MessageId=").size()));
+  const ProcessResult OpenMessages = RunControllerCli(
+      Runner, Fixture.Root, {"messages", Repo, "P1", "ED-0002"});
+  Check(OpenMessages.ExitCode == 0 &&
+            OpenMessages.Output.find(MessageId) != std::string::npos,
+        "messages did not return an open task-scoped message");
+  const ProcessResult Closed = RunControllerCli(
+      Runner, Fixture.Root, {"message-close", Repo, "P1", "ED-0002", "2",
+                             MessageId, "/root/coordinator"});
+  Check(Closed.ExitCode == 0 &&
+            Closed.Output.find("MessageResolved=" + MessageId) != std::string::npos,
+        "message-close did not resolve the open task-scoped message; id=" + MessageId + std::to_string(Closed.ExitCode) + " output=" + Closed.Output + " shard=" + ReadText(Fixture.Root / "Workflow/Communications/Bootstrap/P1.jsonl"));
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"messages", Repo, "P1", "ED-0002"}).Output.empty(),
+        "messages returned an already resolved task message");
+  Check(RunControllerCli(Runner, Fixture.Root, {}).ExitCode == 2 &&
+            RunControllerCli(Runner, Fixture.Root, {"unknown-command"}).ExitCode == 2,
+        "invalid CLI forms did not return usage status");
+  Check(RunControllerCli(Runner, Fixture.Root,
+                        {"approve-change", "ED-0002", "CR-TEST"}).ExitCode != 0 &&
+            RunControllerCli(Runner, Fixture.Root, {"merge", "ED-0002"}).ExitCode != 0 &&
+            RunControllerCli(Runner, Fixture.Root, {"history"}).ExitCode != 0,
+        "forbidden workflow actions were not rejected by the executable");
+}
+
+
+struct ReviewCliFixtureInfo {
+  std::filesystem::path Root;
+  std::filesystem::path Worktree;
+  std::filesystem::path BundlePath;
+  std::string TaskSpecCommit;
+  std::string TaskSpecBlobId;
+  std::string AssignmentEventCommit;
+  std::string BudgetCorrectionEventCommit;
+  std::string BaseCommit;
+  std::string HeadCommit;
+};
+
+ReviewCliFixtureInfo CreateReviewCliFixture(
+    const std::filesystem::path& Root,
+    const std::filesystem::path& Worktree,
+    const std::filesystem::path& BundlePath) {
+  std::filesystem::create_directories(Root);
+  WriteText(Root / "README.md", "review CLI base\n");
+  WriteText(Root / "Workflow/TaskTemplate.yaml", "TaskTemplate: pinned review context\n");
+  WriteText(Root / "Feature/fixture.txt", "base feature line\n");
+  WindowsProcessRunner Runner;
+  RunGit(Runner, Root, {"git", "init", "--initial-branch", "main"});
+  RunGit(Runner, Root, {"git", "config", "user.name", "Review CLI Fixture"});
+  RunGit(Runner, Root, {"git", "config", "user.email", "review-cli@example.invalid"});
+  RunGit(Runner, Root, {"git", "add", "README.md", "Workflow/TaskTemplate.yaml",
+                        "Feature/fixture.txt"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "review CLI base"});
+  ReviewCliFixtureInfo Info;
+  Info.Root = Root;
+  Info.Worktree = Worktree;
+  Info.BundlePath = BundlePath;
+  Info.BaseCommit = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
+
+  std::ostringstream TaskIndex;
+  TaskIndex << "CurrentReleaseId: Bootstrap\n"
+            << "CommunicationStore:\n"
+            << "  Root: Workflow/Communications\n"
+            << "PhasePlans:\n"
+            << "  - PhaseId: P1\n"
+            << "    Path: Workflow/Plans/P1.yaml\n";
+  WriteText(Root / "Workflow/TaskIndex.yaml", TaskIndex.str());
+  std::ostringstream Plan;
+  Plan << "SchemaVersion: 1\n"
+       << "PhaseId: P1\n"
+       << "Tasks:\n"
+       << "  - TaskId: ED-0002\n"
+       << "    TaskRevision: 4\n"
+       << "    Title: Pinned review CLI fixture\n"
+       << "    Goal: Exercise the pinned ReviewBundle command\n"
+       << "    State: Review\n"
+       << "    OwnerAgentId: /root/review-author\n"
+       << "    ReviewerAgentId: /root/review-checker\n"
+       << "    Branch: Task/ED-0002-ReviewCliFixture\n"
+       << "    Worktree: \"" << Worktree.generic_string() << "\"\n"
+       << "    BaselineCommit: " << Info.BaseCommit << "\n"
+       << "    DependsOn: []\n"
+       << "    ReadSet: [Workflow/TaskTemplate.yaml]\n"
+       << "    WriteSet: [Feature/]\n"
+       << "    ForbiddenSet: [Secrets/**]\n"
+       << "    SharedLocks: []\n"
+       << "    ContextBudgetOverride:\n"
+       << "      TaskId: ED-0002\n"
+       << "      TaskRevision: 4\n"
+       << "      MaxReferenceFiles: 1\n"
+       << "      ApprovedByRole: Coordinator\n"
+       << "      ApprovalEventId: approval-r4\n"
+       << "      Reason: test a pinned budget event\n"
+       << "    Validation:\n"
+       << "      TargetedBuild: [cmake --version]\n"
+       << "      StaticChecks: [\"git diff --check <CodeBaseCommit> <HeadCommit>\"]\n"
+       << "      ContractFixtures: []\n"
+       << "    Deliverable:\n"
+       << "      EventShard: Workflow/Events/Bootstrap/P1.jsonl\n";
+  WriteText(Root / "Workflow/Plans/P1.yaml", Plan.str());
+  RunGit(Runner, Root, {"git", "add", "Workflow/TaskIndex.yaml", "Workflow/Plans/P1.yaml"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "review CLI TaskSpec"});
+  Info.TaskSpecCommit = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
+  Info.TaskSpecBlobId = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse",
+       Info.TaskSpecCommit + ":Workflow/Plans/P1.yaml"}, Root).Output);
+
+  const std::string AssignmentEvent =
+      "{\"EventId\":\"assignment-r4\",\"EventType\":\"TaskReworkStarted\","
+      "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+      "\"TaskId\":\"ED-0002\",\"TaskRevision\":4,"
+      "\"AgentId\":\"/root/coordinator\",\"AgentRole\":\"Coordinator\","
+      "\"Branch\":\"Task/ED-0002-ReviewCliFixture\","
+      "\"TaskSpecCommit\":\"" + Info.TaskSpecCommit + "\","
+      "\"TaskSpecBlobId\":\"" + Info.TaskSpecBlobId + "\","
+      "\"TaskSpecPath\":\"Workflow/Plans/P1.yaml\","
+      "\"CodeBaseCommit\":\"" + Info.BaseCommit + "\","
+      "\"BaseCommit\":\"" + Info.BaseCommit + "\","
+      "\"ContextBudgetApprovalEventId\":\"approval-r4\","
+      "\"OwnerAgentId\":\"/root/review-author\","
+      "\"ReviewerAgentId\":\"/root/review-checker\","
+      "\"Worktree\":\"" + Worktree.generic_string() + "\"}";
+  WriteText(Root / "Workflow/Events/Bootstrap/P1.jsonl", AssignmentEvent + "\n");
+  RunGit(Runner, Root, {"git", "add", "Workflow/Events/Bootstrap/P1.jsonl"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "review CLI assignment event"});
+  Info.AssignmentEventCommit = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
+
+  const std::string ApprovalEvent =
+      "{\"EventId\":\"approval-r4\",\"EventType\":\"ContextBudgetExceptionApproved\","
+      "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+      "\"TaskId\":\"ED-0002\",\"TaskRevision\":4,"
+      "\"AgentId\":\"/root\",\"AgentRole\":\"Coordinator\","
+      "\"Result\":\"Approved\",\"ApprovalReason\":\"old reason\","
+      "\"MaxReferenceFiles\":1,"
+      "\"ReadSetPaths\":[\"Workflow/TaskTemplate.yaml\"]}";
+  const std::string CorrectionEvent =
+      "{\"EventId\":\"correction-r4\",\"EventType\":\"ContextBudgetExceptionCorrection\","
+      "\"ReleaseId\":\"Bootstrap\",\"PhaseId\":\"P1\","
+      "\"TaskId\":\"ED-0002\",\"TaskRevision\":4,"
+      "\"AgentId\":\"/root\",\"AgentRole\":\"Coordinator\","
+      "\"CorrectionOfEventId\":\"approval-r4\",\"CorrectedField\":\"ApprovalReason\","
+      "\"OriginalValue\":\"old reason\",\"CorrectedValue\":\"test a pinned budget event\","
+      "\"TaskSpecCommit\":\"" + Info.TaskSpecCommit + "\","
+      "\"TaskSpecBlobId\":\"" + Info.TaskSpecBlobId + "\","
+      "\"TaskSpecPath\":\"Workflow/Plans/P1.yaml\","
+      "\"AssignmentEventCommit\":\"" + Info.AssignmentEventCommit + "\","
+      "\"AssignmentEventId\":\"assignment-r4\","
+      "\"CodeBaseCommit\":\"" + Info.BaseCommit + "\","
+      "\"ChangeRequestId\":\"CR-ED-0008-003\",\"MaxReferenceFiles\":1,"
+      "\"ReadSetPaths\":[\"Workflow/TaskTemplate.yaml\"],"
+      "\"Result\":\"Corrects reason wording\","
+      "\"EvidenceRefs\":[\"Workflow/Plans/P1.yaml#ED-0002.ContextBudgetOverride\","
+      "\"approval-r4\"]}";
+  {
+    std::ofstream Events(Root / "Workflow/Events/Bootstrap/P1.jsonl",
+                         std::ios::binary | std::ios::app);
+    Events << ApprovalEvent << '\n' << CorrectionEvent << '\n';
+  }
+  RunGit(Runner, Root, {"git", "add", "Workflow/Events/Bootstrap/P1.jsonl"});
+  RunGit(Runner, Root, {"git", "commit", "-m", "review CLI budget correction"});
+  Info.BudgetCorrectionEventCommit = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
+
+  RunGit(Runner, Root, {"git", "worktree", "add", "-b",
+                        "Task/ED-0002-ReviewCliFixture", Worktree.string(),
+                        Info.BaseCommit});
+  WriteText(Worktree / "Feature/fixture.txt", "reviewed feature change\n");
+  RunGit(Runner, Worktree,
+         {"git", "add", "Feature/fixture.txt"});
+  RunGit(Runner, Worktree, {"git", "commit", "-m", "review CLI head"});
+  Info.HeadCommit = TrimText(Runner.Run(
+      {"git", "-C", Worktree.string(), "rev-parse", "HEAD"}, Worktree).Output);
+  return Info;
+}
+
+void TestReviewBundleCli(const std::filesystem::path& Root) {
+  OwnedTempDirectory Temp;
+  const ReviewCliFixtureInfo Fixture = CreateReviewCliFixture(
+      Temp.Path / "ReviewRepository",
+      Temp.Path / "ReviewWorktree",
+      Temp.Path / "ReviewBundles/ED-0002/ReviewBundle.json");
+  WindowsProcessRunner Runner;
+  const std::string Repo = Fixture.Root.string();
+  const std::vector<std::string> Pins{
+      Fixture.TaskSpecCommit, Fixture.TaskSpecBlobId,
+      Fixture.AssignmentEventCommit, "assignment-r4",
+      Fixture.BudgetCorrectionEventCommit, "correction-r4"};
+  std::vector<std::string> ContextArgs{
+      "context", Repo, "P1", "ED-0002", "4"};
+  ContextArgs.insert(ContextArgs.end(), Pins.begin(), Pins.end());
+  const ProcessResult Context = RunControllerCli(Runner, Fixture.Root, ContextArgs);
+  Check(Context.ExitCode == 0 &&
+            Context.Output.find("pinned review context") != std::string::npos,
+        "Pinned context CLI did not load the immutable TaskSpec ReadSet");
+
+  std::vector<std::string> ValidationArgs{
+      "run-validation", Repo, "P1", "ED-0002", "4"};
+  ValidationArgs.insert(ValidationArgs.end(), Pins.begin(), Pins.end());
+  ValidationArgs.push_back("0");
+  const ProcessResult Validation = RunControllerCli(Runner, Fixture.Root, ValidationArgs);
+  Check(Validation.ExitCode == 0 &&
+            Validation.Output.find("ExitCode=0") != std::string::npos &&
+            Validation.Output.find("EvidencePath=") != std::string::npos,
+        "Pinned run-validation CLI failed; exit=" + std::to_string(Validation.ExitCode) + " output=" + Validation.Output);
+
+  std::vector<std::string> ReviewArgs{
+      "review-bundle", Repo, "P1", "ED-0002", "4"};
+  ReviewArgs.insert(ReviewArgs.end(), Pins.begin(), Pins.end());
+  ReviewArgs.push_back("/root/review-checker");
+  ReviewArgs.push_back(Fixture.BundlePath.string());
+  const ProcessResult Review = RunControllerCli(Runner, Fixture.Root, ReviewArgs);
+  Check(Review.ExitCode == 0 &&
+            Review.Output.find("LocalReviewBundle=" + Fixture.BundlePath.string()) !=
+                std::string::npos &&
+            Review.Output.find(Fixture.TaskSpecCommit) != std::string::npos &&
+            Review.Output.find(Fixture.HeadCommit) != std::string::npos &&
+            std::filesystem::is_regular_file(Fixture.BundlePath),
+        "Pinned review-bundle CLI failed; exit=" + std::to_string(Review.ExitCode) + " output=" + Review.Output);
+}
+
 void TestBudgetOverrideEvent(const std::filesystem::path& Root) {
   OwnedTempDirectory Temp;
   RepositoryFixture Fixture(Temp.Path / "Repository");
@@ -1006,12 +1815,27 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
   Bundle.ReviewerAgentId = "/root/independent-reviewer";
   Bundle.ChangedPaths = {"Tools/WorkflowController/WorkflowController.cpp"};
   Bundle.ChangeKinds = {"Modified"};
+
+  const std::string RawHistoricalEvent =
+      "{\"EventId\":\"review-raw-history\",\"EventType\":\"HistoricalSourceRecord\","
+      "\"OccurredAt\":\"2026-10-20T00:00:00Z\",\"ReleaseId\":\"Bootstrap\","
+      "\"PhaseId\":\"P1\",\"TaskId\":\"ED-0002\",\"TaskRevision\":1,"
+      "\"Result\":\"Retained\",\"SourceHeadCommit\":\"abcdef0123456789abcdef0123456789abcdef01\"}";
+  {
+    std::ofstream RawHistory(Fixture.Root / Task.EventShard,
+                             std::ios::binary | std::ios::app);
+    RawHistory << RawHistoricalEvent << '\n';
+  }
+
   Bundle.Events = Events.ReadTaskEvents("ED-0002");
   Bundle.Validations = CollectTaskRevisionValidations(Task, Bundle.Events);
   const auto BundleRoot = Fixture.Root.parent_path() / "ReviewBundles";
   const auto BundlePath = BundleRoot / "ED-0002/ReviewBundle.json";
   WriteLocalReviewBundle(Fixture.Root, Task, Bundle, BundlePath, Events);
   const std::string BundleText = ReadText(BundlePath);
+  Check(BundleText.find("\"SourceHeadCommit\":\"abcdef0123456789abcdef0123456789abcdef01\"") !=
+            std::string::npos,
+        "ReviewBundle did not preserve unknown fields from a selected raw event");
   Check(BundleText.find("LocalReviewBundle") != std::string::npos &&
             BundleText.find("remote_pr_created") != std::string::npos &&
             BundleText.find("\"task_spec_path\":\"" + Task.TaskPlanPath + "\"") !=
@@ -1351,6 +2175,9 @@ int main() {
     TestReadSetYamlFragmentSelectors(Temp.Path / "YamlSelectors");
     TestIsolatedWorktree(Temp.Path / "Unused");
     TestEventsCheckpointsAndTaskScopedMessages(Temp.Path / "Persistence");
+    TestEventIdConflictRecovery(Temp.Path / "EventIdConflictRecovery");
+    TestControllerCliSurface(Temp.Path / "CliSurface");
+    TestReviewBundleCli(Temp.Path / "ReviewBundleCli");
     TestBudgetOverrideEvent(Temp.Path / "Budget");
     TestValidationAndReviewBundle(Temp.Path / "Validation");
     TestReviewBundleRevisionScopedValidations(Temp.Path / "RevisionScopedBundle");

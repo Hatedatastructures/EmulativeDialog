@@ -138,6 +138,18 @@ class WindowsProcessRunner final : public ProcessRunner {
                     const std::filesystem::path& WorkingDirectory) override;
 };
 
+struct EventIdConflictAuthorization;
+
+std::vector<EventIdConflictAuthorization>
+LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
+    const std::filesystem::path& RepositoryRoot,
+    const std::string& PhaseId,
+    const std::string& TaskId,
+    int TaskRevision,
+    const std::string& TaskSpecCommit,
+    const std::string& TaskSpecBlobId,
+    ProcessRunner& Runner);
+
 struct WorktreeRequest {
   std::filesystem::path RepositoryRoot;
   AssignmentRequest Assignment;
@@ -151,9 +163,34 @@ struct WorktreeResult {
   bool Created = false;
 };
 
+struct EventIdConflictAuthorization {
+  std::string EventShard;
+  std::string TargetEventId;
+  std::string TargetReleaseId;
+  std::string TargetPhaseId;
+  std::string TargetTaskId;
+  int TargetTaskRevision = 0;
+  std::size_t ExpectedVariantCount = 0;
+  std::size_t ExpectedOccurrenceCount = 0;
+  std::size_t CanonicalOccurrence = 0;
+  std::string ApprovalReason;
+  std::string ChangeRequestId;
+  std::string ApprovedByAgentId;
+  std::string ApprovedByRole;
+  std::string TaskSpecCommit;
+  std::string TaskSpecBlobId;
+  std::string TaskPlanPath;
+  std::string ResolutionReleaseId;
+  std::string ResolutionPhaseId;
+  std::string ResolutionTaskId;
+  int ResolutionTaskRevision = 0;
+  std::string ResolutionBranch;
+};
+
 struct WorkflowEvent {
   std::string EventId;
   std::string EventType;
+  std::string RawRecord;
   std::string OccurredAt;
   std::string ReleaseId = "Bootstrap";
   std::string PhaseId;
@@ -191,6 +228,14 @@ struct WorkflowEvent {
   std::string Worktree;
   std::string OutputSummary;
   std::vector<std::string> ReadSetPaths;
+  std::string TargetEventId;
+  std::string TargetReleaseId;
+  std::string TargetPhaseId;
+  std::string TargetTaskId;
+  int TargetTaskRevision = 0;
+  std::size_t ExpectedVariantCount = 0;
+  std::size_t ExpectedOccurrenceCount = 0;
+  std::size_t CanonicalOccurrence = 0;
 };
 
 struct Checkpoint {
@@ -312,6 +357,8 @@ class EventStore final {
   explicit EventStore(std::filesystem::path EventPath,
                       std::function<bool()> FlushOperation = {});
   void Append(const WorkflowEvent& Event) const;
+  void ResolveEventIdConflict(
+      const EventIdConflictAuthorization& Authorization) const;
   std::vector<WorkflowEvent> ReadTaskEvents(const std::string& TaskId,
                                             std::size_t MaximumEvents = 1000) const;
   std::optional<VerifiedContextBudgetOverride> FindContextBudgetOverride(

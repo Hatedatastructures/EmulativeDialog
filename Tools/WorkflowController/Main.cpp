@@ -1,5 +1,6 @@
 #include "WorkflowController.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -117,6 +118,7 @@ void PrintUsage() {
       "  review-bundle <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id> <budget-correction-event-commit> <budget-correction-event-id> <reviewer-agent-id> <output-path>\n"
       "  approve-change <task-id> <change-request-id>  (always rejected)\n"
       "  merge <task-id>  (always rejected; IntegrationOwner only)\n"
+      "  resolve-event-id-conflicts <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> [target-event-id]\n"
       "  history  (unscoped query always rejected)\n";
 }
 
@@ -225,6 +227,51 @@ int RunCommand(const std::vector<std::string>& Arguments) {
   }
   if (Command == "history") {
     RejectUnscopedHistoryRead();
+  }
+
+
+  if (Command == "resolve-event-id-conflicts") {
+    if (Arguments.size() != 8 && Arguments.size() != 9) {
+      PrintUsage();
+      return 2;
+    }
+    const auto RepositoryRoot = std::filesystem::absolute(Arguments[2]);
+    const int TaskRevision = ParseRevision(Arguments[5]);
+    WindowsProcessRunner Runner;
+    std::vector<EventIdConflictAuthorization> Authorizations =
+        LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
+            RepositoryRoot, Arguments[3], Arguments[4], TaskRevision,
+            Arguments[6], Arguments[7], Runner);
+    if (Arguments.size() == 9) {
+      const std::string RequestedTarget = Arguments[8];
+      const auto Selected = std::find_if(
+          Authorizations.begin(), Authorizations.end(),
+          [&](const EventIdConflictAuthorization& Authorization) {
+            return Authorization.TargetEventId == RequestedTarget;
+          });
+      if (Selected == Authorizations.end()) {
+        throw WorkflowError("TargetEventId is not authorized by the pinned TaskSpec");
+      }
+      EventIdConflictAuthorization Authorization = *Selected;
+      Authorizations.assign(1, std::move(Authorization));
+    }
+    std::size_t Resolved = 0;
+    for (const EventIdConflictAuthorization& Authorization : Authorizations) {
+      EventStore Events(RepositoryRoot / Authorization.EventShard);
+      Events.ResolveEventIdConflict(Authorization);
+      ++Resolved;
+      std::cout << "ResolvedTargetEventId=" << Authorization.TargetEventId
+                << " CanonicalOccurrence=" << Authorization.CanonicalOccurrence
+                << " TaskSpecCommit=" << Authorization.TaskSpecCommit
+                << " TaskSpecBlobId=" << Authorization.TaskSpecBlobId
+                << " AgentId=" << Authorization.ApprovedByAgentId
+                << " AgentRole=" << Authorization.ApprovedByRole << '\n';
+    }
+    std::cout << "ResolutionCount=" << Resolved << '\n'
+              << "TaskId=" << Arguments[4] << " TaskRevision=" << TaskRevision << '\n'
+              << "TaskSpecCommit=" << Arguments[6]
+              << " TaskSpecBlobId=" << Arguments[7] << '\n';
+    return 0;
   }
 
   if (Command == "query") {

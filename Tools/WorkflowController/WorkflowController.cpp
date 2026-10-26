@@ -687,6 +687,9 @@ std::string NewRecordId() {
 }
 
 std::string SerializeEvent(const WorkflowEvent& Event) {
+  if (!Event.RawRecord.empty()) {
+    return Event.RawRecord;
+  }
   std::ostringstream Output;
   Output << '{'
          << "\"EventId\":" << JsonEscape(RedactSensitiveText(Event.EventId)) << ','
@@ -729,7 +732,15 @@ std::string SerializeEvent(const WorkflowEvent& Event) {
          << "\"ReviewerAgentId\":" << JsonEscape(RedactSensitiveText(Event.ReviewerAgentId)) << ','
          << "\"Worktree\":" << JsonEscape(RedactSensitiveText(Event.Worktree)) << ','
          << "\"OutputSummary\":" << JsonEscape(RedactSensitiveText(Event.OutputSummary)) << ','
-         << "\"ReadSetPaths\":" << JsonStringArray(Event.ReadSetPaths)
+         << "\"ReadSetPaths\":" << JsonStringArray(Event.ReadSetPaths) << ','
+         << "\"TargetEventId\":" << JsonEscape(Event.TargetEventId) << ','
+         << "\"TargetReleaseId\":" << JsonEscape(Event.TargetReleaseId) << ','
+         << "\"TargetPhaseId\":" << JsonEscape(Event.TargetPhaseId) << ','
+         << "\"TargetTaskId\":" << JsonEscape(Event.TargetTaskId) << ','
+         << "\"TargetTaskRevision\":" << Event.TargetTaskRevision << ','
+         << "\"ExpectedVariantCount\":" << Event.ExpectedVariantCount << ','
+         << "\"ExpectedOccurrenceCount\":" << Event.ExpectedOccurrenceCount << ','
+         << "\"CanonicalOccurrence\":" << Event.CanonicalOccurrence
          << '}';
   return Output.str();
 }
@@ -781,11 +792,13 @@ void AtomicReplace(const std::filesystem::path& Path, const std::string& Content
   }
 }
 
-void AppendLocked(const std::filesystem::path& Path,
+bool AppendLocked(const std::filesystem::path& Path,
                   const std::string& Line,
                   const std::function<bool()>* FlushOperation = nullptr,
                   const std::string& UniqueKey = {},
-                  const std::string& UniqueValue = {}) {
+                  const std::string& UniqueValue = {},
+                  const std::function<bool(const std::vector<std::string>&, bool)>&
+                      BeforeAppend = {}) {
   std::filesystem::create_directories(Path.parent_path());
   HANDLE Handle = CreateFileW(Path.c_str(), GENERIC_READ | GENERIC_WRITE,
                               FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_ALWAYS,
@@ -799,7 +812,9 @@ void AppendLocked(const std::filesystem::path& Path,
     throw WorkflowError("Unable to lock append-only log: " + Path.string());
   }
   try {
-    if (!UniqueKey.empty()) {
+    std::vector<std::string> ExistingRecords;
+    bool CompleteTail = true;
+    if (!UniqueKey.empty() || BeforeAppend) {
       LARGE_INTEGER Beginning{};
       if (!SetFilePointerEx(Handle, Beginning, nullptr, FILE_BEGIN)) {
         throw WorkflowError("Unable to seek append-only log for uniqueness check: " +
@@ -815,6 +830,10 @@ void AppendLocked(const std::filesystem::path& Path,
         }
         if (++Scanned > 100000) {
           throw WorkflowError("Event log exceeds the bounded EventId check limit");
+        }
+        ExistingRecords.push_back(Record);
+        if (UniqueKey.empty()) {
+          return;
         }
         YAML::Node Node;
         try {
@@ -835,6 +854,8 @@ void AppendLocked(const std::filesystem::path& Path,
           throw WorkflowError("Duplicate EventId rejected: " + UniqueValue);
         }
       };
+      bool SawBytes = false;
+      bool LastByteWasNewline = true;
       for (;;) {
         DWORD BytesRead = 0;
         if (!ReadFile(Handle, Buffer.data(), static_cast<DWORD>(Buffer.size()),
@@ -845,6 +866,8 @@ void AppendLocked(const std::filesystem::path& Path,
         if (BytesRead == 0) {
           break;
         }
+        SawBytes = true;
+        LastByteWasNewline = Buffer[BytesRead - 1] == '\n';
         PendingLine.append(Buffer.data(), BytesRead);
         if (PendingLine.size() > 4U * 1024U * 1024U &&
             PendingLine.find('\n') == std::string::npos) {
@@ -857,7 +880,17 @@ void AppendLocked(const std::filesystem::path& Path,
           Newline = PendingLine.find('\n');
         }
       }
-      CheckRecord(PendingLine);
+      if (!PendingLine.empty()) {
+        CompleteTail = false;
+        CheckRecord(PendingLine);
+      } else if (SawBytes) {
+        CompleteTail = LastByteWasNewline;
+      }
+    }
+    if (BeforeAppend && !BeforeAppend(ExistingRecords, CompleteTail)) {
+      UnlockFileEx(Handle, 0, MAXDWORD, MAXDWORD, &Overlap);
+      CloseHandle(Handle);
+      return false;
     }
     LARGE_INTEGER End{};
     if (!SetFilePointerEx(Handle, End, nullptr, FILE_END)) {
@@ -884,6 +917,7 @@ void AppendLocked(const std::filesystem::path& Path,
     }
     UnlockFileEx(Handle, 0, MAXDWORD, MAXDWORD, &Overlap);
     CloseHandle(Handle);
+    return true;
   } catch (...) {
     UnlockFileEx(Handle, 0, MAXDWORD, MAXDWORD, &Overlap);
     CloseHandle(Handle);
@@ -1376,6 +1410,160 @@ TaskSpec LoadTaskSpecFromPinnedSnapshot(
   Task.BudgetCorrectionEventCommit = BudgetCorrectionEventCommit;
   Task.BudgetCorrectionEventId = BudgetCorrectionEventId;
   return Task;
+}
+
+
+std::vector<EventIdConflictAuthorization>
+LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
+    const std::filesystem::path& RepositoryRoot,
+    const std::string& PhaseId,
+    const std::string& TaskId,
+    int TaskRevision,
+    const std::string& TaskSpecCommit,
+    const std::string& TaskSpecBlobId,
+    ProcessRunner& Runner) {
+  if (PhaseId != "P1" || TaskId != "ED-0014" || TaskRevision != 8 ||
+      !IsCommitId(TaskSpecCommit) || !IsCommitId(TaskSpecBlobId)) {
+    throw WorkflowError("EventId recovery requires the pinned ED-0014 revision 8 TaskSpec");
+  }
+  const auto Root = CanonicalExistingDirectory(RepositoryRoot);
+  const ProcessResult IndexResult = RunGit(
+      Runner, Root, {"show", TaskSpecCommit + ":Workflow/TaskIndex.yaml"});
+  YAML::Node Index;
+  try {
+    Index = YAML::Load(IndexResult.Output);
+  } catch (const YAML::Exception& Error) {
+    throw WorkflowError("Pinned TaskIndex YAML is invalid: " + std::string(Error.what()));
+  }
+  const YAML::Node Plans = Index["PhasePlans"];
+  if (!Plans || !Plans.IsSequence()) {
+    throw WorkflowError("Pinned TaskIndex has no PhasePlans sequence");
+  }
+  std::string PlanPath;
+  for (const YAML::Node& Plan : Plans) {
+    if (OptionalString(Plan, "PhaseId") == PhaseId) {
+      PlanPath = NormalizeRelativePath(RequiredString(Plan, "Path"));
+      break;
+    }
+  }
+  if (PlanPath.empty() || !PlanPath.starts_with("Workflow/Plans/")) {
+    throw WorkflowError("Pinned TaskIndex does not route P1 to a task plan");
+  }
+  const std::string ActualBlob = TrimCommandOutput(
+      RunGit(Runner, Root, {"rev-parse", TaskSpecCommit + ":" + PlanPath}).Output);
+  if (ActualBlob != TaskSpecBlobId) {
+    throw WorkflowError("Pinned TaskSpec blob does not match TaskSpec commit");
+  }
+  const ProcessResult PlanResult =
+      RunGit(Runner, Root, {"show", TaskSpecCommit + ":" + PlanPath});
+  YAML::Node Plan;
+  try {
+    Plan = YAML::Load(PlanResult.Output);
+  } catch (const YAML::Exception& Error) {
+    throw WorkflowError("Pinned TaskSpec YAML is invalid: " + std::string(Error.what()));
+  }
+  const YAML::Node Task = FindTaskNode(Plan, TaskId);
+  if (OptionalString(Task, "PhaseId", PhaseId) != PhaseId ||
+      Task["TaskRevision"].as<int>(0) != TaskRevision ||
+      OptionalString(Task, "State") != "Ready") {
+    throw WorkflowError("Pinned ED-0014 TaskSpec identity or state is not authorized");
+  }
+  const std::vector<std::pair<std::string, std::string>> ApprovedChanges{
+      {"ChangeRequest", "CR-ED-0014-001"},
+      {"RevisionChangeRequest", "CR-ED-0014-002"},
+      {"AdditionalChangeRequest", "CR-ED-0014-003"},
+      {"FinalChangeRequest", "CR-ED-0014-004"}};
+  for (const auto& [Field, ExpectedId] : ApprovedChanges) {
+    const YAML::Node Change = Task[Field];
+    if (!Change || OptionalString(Change, "ChangeRequestId") != ExpectedId ||
+        OptionalString(Change, "Decision") != "Accepted" ||
+        OptionalString(Change, "ApprovedByRole") != "Coordinator" ||
+        OptionalString(Change, "ApprovedByAgentId") != "/root") {
+      throw WorkflowError("Pinned ED-0014 TaskSpec has an unapproved recovery change request");
+    }
+  }
+  const YAML::Node Rules = Task["Rules"];
+  const YAML::Node Overrides = Rules ? Rules["ApprovedOverrides"] : YAML::Node{};
+  if (!Overrides || !Overrides.IsSequence() || Overrides.size() != 5) {
+    throw WorkflowError("Pinned ED-0014 TaskSpec must contain exactly five conflict approvals");
+  }
+  struct ExpectedTarget {
+    const char* Id;
+    int Revision;
+  };
+  static constexpr ExpectedTarget ExpectedTargets[] = {
+      {"6202e631-52ce-4145-96af-ce6934df7749", 1},
+      {"5d773818-7efa-4055-b2ea-600d0dcaa69d", 1},
+      {"72cc74ea-b68c-4588-95ca-58e0f6c22685", 1},
+      {"4a9507a0-c338-40f0-8871-f15aff82be1c", 1},
+      {"378e2cbe-98e9-4419-8418-287ef16b7c74", 2}};
+  const std::string ExpectedShard = "Workflow/Events/Bootstrap/P1.jsonl";
+  std::vector<EventIdConflictAuthorization> Authorizations;
+  Authorizations.reserve(5);
+  std::unordered_map<std::string, bool> Seen;
+  const std::string ReleaseId = OptionalString(Index, "CurrentReleaseId", "Bootstrap");
+  const std::string Branch = OptionalString(Task, "Branch");
+  for (const YAML::Node& Override : Overrides) {
+    EventIdConflictAuthorization Authorization;
+    Authorization.EventShard =
+        NormalizeRelativePath(RequiredString(Override, "EventShard"));
+    Authorization.TargetEventId = RequiredString(Override, "TargetEventId");
+    const YAML::Node Scope = Override["Scope"];
+    if (!Scope || !Scope.IsMap()) {
+      throw WorkflowError("Conflict approval requires a full target scope");
+    }
+    Authorization.TargetReleaseId = RequiredString(Scope, "ReleaseId");
+    Authorization.TargetPhaseId = RequiredString(Scope, "PhaseId");
+    Authorization.TargetTaskId = RequiredString(Scope, "TaskId");
+    Authorization.TargetTaskRevision = Scope["TaskRevision"].as<int>(0);
+    Authorization.ExpectedVariantCount =
+        Override["ExpectedVariantCount"].as<std::size_t>(0);
+    Authorization.ExpectedOccurrenceCount =
+        Override["ExpectedOccurrenceCount"].as<std::size_t>(0);
+    Authorization.CanonicalOccurrence =
+        Override["CanonicalOccurrence"].as<std::size_t>(0);
+    Authorization.ApprovalReason = RequiredString(Override, "ApprovalReason");
+    Authorization.ChangeRequestId = RequiredString(Override, "ChangeRequestId");
+    Authorization.ApprovedByRole = RequiredString(Override, "ApprovedByRole");
+    Authorization.ApprovedByAgentId = RequiredString(Override, "ApprovedByAgentId");
+    if (RequiredString(Override, "RuleRef") != "EventIdConflictResolution" ||
+        Authorization.ChangeRequestId != "CR-ED-0014-001" ||
+        RequiredString(Override, "ApprovedByRole") != "Coordinator" ||
+        Authorization.ApprovedByAgentId != "/root" ||
+        Authorization.EventShard != ExpectedShard ||
+        Authorization.TargetReleaseId != "Bootstrap" ||
+        Authorization.TargetPhaseId != "P1" ||
+        Authorization.TargetTaskId != "ED-0013" ||
+        (Authorization.ExpectedVariantCount != 2) ||
+        (Authorization.ExpectedOccurrenceCount != 2) ||
+        Authorization.CanonicalOccurrence != 2 ||
+        Authorization.ApprovalReason.empty() ||
+        !Seen.emplace(Authorization.TargetEventId, true).second) {
+      throw WorkflowError("Pinned EventId conflict approval has unexpected scope or values");
+    }
+    const auto Expected = std::find_if(
+        std::begin(ExpectedTargets), std::end(ExpectedTargets),
+        [&](const ExpectedTarget& Target) {
+          return Authorization.TargetEventId == Target.Id;
+        });
+    if (Expected == std::end(ExpectedTargets) ||
+        Authorization.TargetTaskRevision != Expected->Revision) {
+      throw WorkflowError("Pinned TaskSpec contains an unauthorized EventId target");
+    }
+    Authorization.TaskSpecCommit = TaskSpecCommit;
+    Authorization.TaskSpecBlobId = TaskSpecBlobId;
+    Authorization.TaskPlanPath = PlanPath;
+    Authorization.ResolutionReleaseId = ReleaseId;
+    Authorization.ResolutionPhaseId = PhaseId;
+    Authorization.ResolutionTaskId = TaskId;
+    Authorization.ResolutionTaskRevision = TaskRevision;
+    Authorization.ResolutionBranch = Branch;
+    Authorizations.push_back(std::move(Authorization));
+  }
+  if (Seen.size() != std::size(ExpectedTargets)) {
+    throw WorkflowError("Pinned TaskSpec is missing one or more required EventId approvals");
+  }
+  return Authorizations;
 }
 
 std::string LoadTaskState(const std::filesystem::path& RepositoryRoot,
@@ -2010,6 +2198,390 @@ std::string RedactSensitiveText(const std::string& Text) {
   return Result;
 }
 
+
+namespace {
+
+struct EventLogRow {
+  WorkflowEvent Event;
+  std::string RawRecord;
+  std::size_t PhysicalLine = 0;
+};
+
+struct EventLogSnapshot {
+  std::vector<std::string> Records;
+  bool CompleteTail = true;
+};
+
+EventLogSnapshot ReadEventLogSnapshot(const std::filesystem::path& Path) {
+  std::ifstream Input(Path, std::ios::binary);
+  if (!Input) {
+    if (!std::filesystem::exists(Path)) {
+      return {};
+    }
+    throw WorkflowError("Unable to read event log: " + Path.string());
+  }
+  std::string Bytes((std::istreambuf_iterator<char>(Input)),
+                    std::istreambuf_iterator<char>());
+  if (Bytes.size() > 64U * 1024U * 1024U) {
+    throw WorkflowError("Event log exceeds the bounded scan size");
+  }
+  EventLogSnapshot Snapshot;
+  Snapshot.CompleteTail = Bytes.empty() || Bytes.back() == '\n';
+  std::size_t Start = 0;
+  std::size_t PhysicalLine = 0;
+  for (;;) {
+    const std::size_t Newline = Bytes.find('\n', Start);
+    if (Newline == std::string::npos) {
+      if (Start < Bytes.size()) {
+        Snapshot.Records.push_back(Bytes.substr(Start));
+      }
+      break;
+    }
+    Snapshot.Records.push_back(Bytes.substr(Start, Newline - Start));
+    Start = Newline + 1;
+    if (Start == Bytes.size()) {
+      break;
+    }
+  }
+  (void)PhysicalLine;
+  return Snapshot;
+}
+
+WorkflowEvent ParseWorkflowEventRecord(const std::string& SourceRecord) {
+  std::string Record = SourceRecord;
+  if (!Record.empty() && Record.back() == '\r') {
+    Record.pop_back();
+  }
+  YAML::Node Node;
+  try {
+    Node = YAML::Load(Record);
+  } catch (const YAML::Exception& Error) {
+    throw WorkflowError("Invalid JSONL event record: " + std::string(Error.what()));
+  }
+  if (!Node.IsMap()) {
+    throw WorkflowError("Event record must be a JSON object");
+  }
+  WorkflowEvent Event;
+  Event.RawRecord = Record;
+  Event.EventId = OptionalEventString(Node, "EventId", "event_id");
+  if (Event.EventId.empty()) {
+    throw WorkflowError("Structured event is missing its EventId");
+  }
+  Event.EventType = OptionalEventString(Node, "EventType", "event_type");
+  Event.OccurredAt = OptionalEventString(Node, "OccurredAt", "occurred_at");
+  Event.ReleaseId = OptionalEventString(Node, "ReleaseId", "release_id");
+  Event.PhaseId = OptionalEventString(Node, "PhaseId", "phase_id");
+  Event.TaskId = OptionalEventString(Node, "TaskId", "task_id");
+  Event.TaskRevision = EventInteger(Node, "TaskRevision", "task_revision");
+  Event.AgentId = OptionalEventString(Node, "AgentId", "agent_id");
+  Event.AgentRole = OptionalEventString(Node, "AgentRole", "agent_role");
+  Event.Branch = OptionalEventString(Node, "Branch", "branch");
+  Event.CorrelationId = OptionalEventString(Node, "CorrelationId", "correlation_id");
+  Event.Result = OptionalEventString(Node, "Result", "result");
+  const YAML::Node Evidence =
+      Node["EvidenceRefs"] ? Node["EvidenceRefs"] : Node["evidence_refs"];
+  if (Evidence && Evidence.IsSequence()) {
+    for (const YAML::Node& Reference : Evidence) {
+      if (Reference.IsScalar()) {
+        Event.EvidenceRefs.push_back(Reference.as<std::string>());
+      }
+    }
+  }
+  Event.Command = OptionalEventString(Node, "Command", "command");
+  Event.WorkingDirectory = OptionalEventString(Node, "WorkingDirectory", "working_directory");
+  Event.ExitCode = EventLong(Node, "ExitCode", "exit_code");
+  Event.EvidencePath = OptionalEventString(Node, "EvidencePath", "evidence_path");
+  Event.ApprovalReason = OptionalEventString(Node, "ApprovalReason", "approval_reason");
+  Event.MaxReferenceFiles = EventSize(Node, "MaxReferenceFiles", "max_reference_files");
+  Event.TaskSpecPath = OptionalEventString(Node, "TaskSpecPath", "task_spec_path");
+  Event.TaskSpecCommit = OptionalEventString(Node, "TaskSpecCommit", "task_spec_commit");
+  Event.TaskSpecBlobId = OptionalEventString(Node, "TaskSpecBlobId", "task_spec_blob_id");
+  Event.AssignmentEventCommit =
+      OptionalEventString(Node, "AssignmentEventCommit", "assignment_event_commit");
+  Event.AssignmentEventId = OptionalEventString(Node, "AssignmentEventId", "assignment_event_id");
+  Event.CodeBaseCommit = OptionalEventString(Node, "CodeBaseCommit", "code_base_commit");
+  Event.HeadCommit = OptionalEventString(Node, "HeadCommit", "head_commit");
+  Event.BudgetCorrectionEventCommit =
+      OptionalEventString(Node, "BudgetCorrectionEventCommit", "budget_correction_event_commit");
+  Event.BudgetCorrectionEventId =
+      OptionalEventString(Node, "BudgetCorrectionEventId", "budget_correction_event_id");
+  Event.CorrectionOfEventId = OptionalEventString(Node, "CorrectionOfEventId", "correction_of_event_id");
+  Event.CorrectedField = OptionalEventString(Node, "CorrectedField", "corrected_field");
+  Event.OriginalApprovalReason = OptionalEventString(Node, "OriginalValue", "original_value");
+  Event.CorrectedApprovalReason = OptionalEventString(Node, "CorrectedValue", "corrected_value");
+  Event.ChangeRequestId = OptionalEventString(Node, "ChangeRequestId", "change_request_id");
+  Event.ContextBudgetApprovalEventId =
+      OptionalEventString(Node, "ContextBudgetApprovalEventId", "context_budget_approval_event_id");
+  Event.OwnerAgentId = OptionalEventString(Node, "OwnerAgentId", "owner_agent_id");
+  Event.ReviewerAgentId = OptionalEventString(Node, "ReviewerAgentId", "reviewer_agent_id");
+  Event.Worktree = OptionalEventString(Node, "Worktree", "worktree");
+  Event.OutputSummary = OptionalEventString(Node, "OutputSummary", "output_summary");
+  const YAML::Node ReadSetPaths =
+      Node["ReadSetPaths"] ? Node["ReadSetPaths"] : Node["read_set_paths"];
+  if (ReadSetPaths && ReadSetPaths.IsSequence()) {
+    for (const YAML::Node& PathValue : ReadSetPaths) {
+      if (PathValue.IsScalar()) {
+        Event.ReadSetPaths.push_back(PathValue.as<std::string>());
+      }
+    }
+  }
+  Event.TargetEventId = OptionalEventString(Node, "TargetEventId", "target_event_id");
+  Event.TargetReleaseId = OptionalEventString(Node, "TargetReleaseId", "target_release_id");
+  Event.TargetPhaseId = OptionalEventString(Node, "TargetPhaseId", "target_phase_id");
+  Event.TargetTaskId = OptionalEventString(Node, "TargetTaskId", "target_task_id");
+  Event.TargetTaskRevision = EventInteger(Node, "TargetTaskRevision", "target_task_revision");
+  Event.ExpectedVariantCount = EventSize(Node, "ExpectedVariantCount", "expected_variant_count");
+  Event.ExpectedOccurrenceCount =
+      EventSize(Node, "ExpectedOccurrenceCount", "expected_occurrence_count");
+  Event.CanonicalOccurrence = EventSize(Node, "CanonicalOccurrence", "canonical_occurrence");
+  return Event;
+}
+
+std::vector<EventLogRow> ParseEventLogRows(const std::vector<std::string>& Records) {
+  if (Records.size() > 100000) {
+    throw WorkflowError("Event log exceeds the bounded scan limit");
+  }
+  std::vector<EventLogRow> Rows;
+  Rows.reserve(Records.size());
+  std::size_t LineNumber = 0;
+  for (const std::string& Raw : Records) {
+    ++LineNumber;
+    if (Raw.empty() || Raw == "\r") {
+      continue;
+    }
+    if (Raw.size() > 4U * 1024U * 1024U) {
+      throw WorkflowError("Event log record exceeds the bounded record size");
+    }
+    EventLogRow Row;
+    Row.Event = ParseWorkflowEventRecord(Raw);
+    Row.RawRecord = Row.Event.RawRecord;
+    Row.PhysicalLine = LineNumber;
+    Rows.push_back(std::move(Row));
+  }
+  return Rows;
+}
+
+std::string LowerEventKey(std::string Value) {
+  std::transform(Value.begin(), Value.end(), Value.begin(),
+                 [](unsigned char Character) {
+                   return static_cast<char>(std::tolower(Character));
+                 });
+  return Value;
+}
+
+void ValidateResolutionEnvelope(const EventLogRow& Row) {
+  const WorkflowEvent& Event = Row.Event;
+  if (Event.EventType != "EventIdConflictResolution") {
+    return;
+  }
+  if (Event.TaskId != "ED-0014" || Event.TaskRevision != 8 ||
+      Event.AgentId != "/root" || Event.AgentRole != "Coordinator" ||
+      Event.EventId.empty() || Event.ReleaseId != "Bootstrap" ||
+      Event.PhaseId != "P1" || Event.Branch.empty() ||
+      Event.CorrelationId.empty() || Event.Result != "ResolvedOccurrenceSelected" ||
+      Event.TargetEventId.empty() || Event.TargetReleaseId != "Bootstrap" ||
+      Event.TargetPhaseId != "P1" || Event.TargetTaskId != "ED-0013" ||
+      Event.TargetTaskRevision <= 0 || Event.ExpectedVariantCount != 2 ||
+      Event.ExpectedOccurrenceCount != 2 || Event.CanonicalOccurrence != 2 ||
+      !IsCommitId(Event.TaskSpecCommit) || !IsCommitId(Event.TaskSpecBlobId) ||
+      Event.ChangeRequestId != "CR-ED-0014-001" || Event.ApprovalReason.empty() ||
+      Event.TaskSpecPath != "Workflow/Plans/P1.yaml") {
+    throw WorkflowError("EventId conflict resolution envelope or approval pins are invalid");
+  }
+  static const std::unordered_map<std::string, int> TargetRevisions{
+      {"6202e631-52ce-4145-96af-ce6934df7749", 1},
+      {"5d773818-7efa-4055-b2ea-600d0dcaa69d", 1},
+      {"72cc74ea-b68c-4588-95ca-58e0f6c22685", 1},
+      {"4a9507a0-c338-40f0-8871-f15aff82be1c", 1},
+      {"378e2cbe-98e9-4419-8418-287ef16b7c74", 2}};
+  const auto Expected = TargetRevisions.find(Event.TargetEventId);
+  if (Expected == TargetRevisions.end() ||
+      Expected->second != Event.TargetTaskRevision) {
+    throw WorkflowError("EventId conflict resolution names an unapproved target scope");
+  }
+  YAML::Node Node = YAML::Load(Row.RawRecord);
+  for (const auto& Entry : Node) {
+    if (!Entry.first.IsScalar()) {
+      throw WorkflowError("Resolution records cannot contain non-scalar field names");
+    }
+    const std::string Key = LowerEventKey(Entry.first.as<std::string>());
+    if (Key == "rawpayload" || Key == "payload" || Key == "payloadhash" ||
+        Key == "rawpayloadhash" || Key == "chattext" || Key == "commandoutput" ||
+        Key == "originalevent" || Key == "sourceevent") {
+      throw WorkflowError("Resolution record contains prohibited raw payload data");
+    }
+  }
+  if (!Event.Command.empty() || !Event.WorkingDirectory.empty() ||
+      !Event.EvidencePath.empty() || !Event.OutputSummary.empty() ||
+      !Event.ReadSetPaths.empty() || Event.EvidenceRefs.size() != 5 ||
+      std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(),
+                Event.TaskSpecCommit) == Event.EvidenceRefs.end() ||
+      std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(),
+                Event.TaskSpecBlobId) == Event.EvidenceRefs.end() ||
+      std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(),
+                Event.ChangeRequestId) == Event.EvidenceRefs.end() ||
+      std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(),
+                Event.TargetEventId) == Event.EvidenceRefs.end() ||
+      std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(),
+                Event.TaskSpecPath + "#TaskId=ED-0014") == Event.EvidenceRefs.end()) {
+    throw WorkflowError("Resolution record must contain only the pinned safe evidence references");
+  }
+}
+
+bool SameTargetScope(const WorkflowEvent& Left, const WorkflowEvent& Right) {
+  return Left.ReleaseId == Right.ReleaseId && Left.PhaseId == Right.PhaseId &&
+         Left.TaskId == Right.TaskId && Left.TaskRevision == Right.TaskRevision;
+}
+
+struct ResolvedEventProjection {
+  std::vector<EventLogRow> SelectedRows;
+};
+
+ResolvedEventProjection ProjectEventLog(const std::vector<std::string>& Records,
+                                       bool AllowUnresolved) {
+  const std::vector<EventLogRow> Rows = ParseEventLogRows(Records);
+  std::unordered_map<std::string, std::vector<std::size_t>> RowsById;
+  for (std::size_t Index = 0; Index < Rows.size(); ++Index) {
+    RowsById[Rows[Index].Event.EventId].push_back(Index);
+  }
+  std::unordered_map<std::string, std::size_t> ResolutionByTarget;
+  std::unordered_map<std::string, std::size_t> UniqueResolutionById;
+  for (std::size_t Index = 0; Index < Rows.size(); ++Index) {
+    if (Rows[Index].Event.EventType != "EventIdConflictResolution") {
+      continue;
+    }
+    ValidateResolutionEnvelope(Rows[Index]);
+    const auto IdGroup = RowsById.find(Rows[Index].Event.EventId);
+    if (IdGroup == RowsById.end()) {
+      throw WorkflowError("Resolution record disappeared from the EventId scan");
+    }
+    const std::size_t First = IdGroup->second.front();
+    for (const std::size_t DuplicateIndex : IdGroup->second) {
+      if (Rows[DuplicateIndex].RawRecord != Rows[First].RawRecord) {
+        throw WorkflowError("Conflicting records reuse a resolution EventId");
+      }
+    }
+    if (!UniqueResolutionById.emplace(Rows[Index].Event.EventId, Index).second) {
+      continue;
+    }
+    if (!ResolutionByTarget.emplace(Rows[Index].Event.TargetEventId, Index).second) {
+      throw WorkflowError("More than one resolution targets the same EventId");
+    }
+  }
+
+  ResolvedEventProjection Projection;
+  std::unordered_map<std::string, bool> HandledTargets;
+  std::unordered_map<std::string, bool> ProcessedIds;
+  for (const auto& [EventId, Group] : RowsById) {
+    if (!ProcessedIds.emplace(EventId, true).second) {
+      continue;
+    }
+    std::vector<std::string> DistinctVariants;
+    for (const std::size_t Index : Group) {
+      if (std::find(DistinctVariants.begin(), DistinctVariants.end(),
+                    Rows[Index].RawRecord) == DistinctVariants.end()) {
+        DistinctVariants.push_back(Rows[Index].RawRecord);
+      }
+    }
+    if (DistinctVariants.size() > 1 &&
+        Rows[Group.front()].Event.EventType == "EventIdConflictResolution") {
+      throw WorkflowError("Conflicting EventId resolution records cannot be resolved recursively");
+    }
+    const auto Resolution = ResolutionByTarget.find(EventId);
+    if (DistinctVariants.size() == 1) {
+      if (Resolution != ResolutionByTarget.end()) {
+        throw WorkflowError("EventId resolution is stale because its target is no longer conflicted");
+      }
+      Projection.SelectedRows.push_back(Rows[Group.front()]);
+      continue;
+    }
+    if (Resolution == ResolutionByTarget.end()) {
+      if (AllowUnresolved) {
+        continue;
+      }
+      throw WorkflowError("Conflicting records reuse EventId: " + EventId);
+    }
+    const WorkflowEvent& ResolutionEvent = Rows[Resolution->second].Event;
+    std::size_t LastTargetIndex = 0;
+    bool FirstTarget = true;
+    for (const std::size_t Index : Group) {
+      if (FirstTarget || Rows[Index].PhysicalLine > Rows[LastTargetIndex].PhysicalLine) {
+        LastTargetIndex = Index;
+        FirstTarget = false;
+      }
+      if (!SameTargetScope(Rows[Group.front()].Event, Rows[Index].Event)) {
+        throw WorkflowError("Conflicting EventId variants have different scopes");
+      }
+    }
+    if (ResolutionEvent.ExpectedVariantCount != DistinctVariants.size() ||
+        ResolutionEvent.ExpectedOccurrenceCount != Group.size() ||
+        ResolutionEvent.CanonicalOccurrence == 0 ||
+        ResolutionEvent.CanonicalOccurrence > Group.size() ||
+        Rows[Resolution->second].PhysicalLine <= Rows[LastTargetIndex].PhysicalLine) {
+      throw WorkflowError("EventId resolution is stale or precedes a target occurrence");
+    }
+    const EventLogRow& Canonical =
+        Rows[Group[ResolutionEvent.CanonicalOccurrence - 1]];
+    if (Canonical.Event.ReleaseId != ResolutionEvent.TargetReleaseId ||
+        Canonical.Event.PhaseId != ResolutionEvent.TargetPhaseId ||
+        Canonical.Event.TaskId != ResolutionEvent.TargetTaskId ||
+        Canonical.Event.TaskRevision != ResolutionEvent.TargetTaskRevision) {
+      throw WorkflowError("Canonical EventId occurrence does not match the approved target scope");
+    }
+    Projection.SelectedRows.push_back(Canonical);
+    HandledTargets.emplace(EventId, true);
+  }
+  for (const auto& [TargetId, ResolutionIndex] : ResolutionByTarget) {
+    (void)ResolutionIndex;
+    if (HandledTargets.find(TargetId) == HandledTargets.end()) {
+      throw WorkflowError("EventId resolution references a missing or unconflicted target");
+    }
+  }
+  std::sort(Projection.SelectedRows.begin(), Projection.SelectedRows.end(),
+            [](const EventLogRow& Left, const EventLogRow& Right) {
+              return Left.PhysicalLine < Right.PhysicalLine;
+            });
+  return Projection;
+}
+
+bool HasUnsafeResolutionId(const std::vector<EventLogRow>& Rows,
+                           const std::string& EventId) {
+  return std::any_of(Rows.begin(), Rows.end(), [&](const EventLogRow& Row) {
+    return Row.Event.EventId == EventId;
+  });
+}
+
+bool SameResolutionPayload(const WorkflowEvent& Existing,
+                           const WorkflowEvent& Expected) {
+  return Existing.EventId == Expected.EventId &&
+         Existing.EventType == Expected.EventType &&
+         Existing.ReleaseId == Expected.ReleaseId &&
+         Existing.PhaseId == Expected.PhaseId &&
+         Existing.TaskId == Expected.TaskId &&
+         Existing.TaskRevision == Expected.TaskRevision &&
+         Existing.AgentId == Expected.AgentId &&
+         Existing.AgentRole == Expected.AgentRole &&
+         Existing.Branch == Expected.Branch &&
+         Existing.CorrelationId == Expected.CorrelationId &&
+         Existing.Result == Expected.Result &&
+         Existing.EvidenceRefs == Expected.EvidenceRefs &&
+         Existing.TaskSpecPath == Expected.TaskSpecPath &&
+         Existing.TaskSpecCommit == Expected.TaskSpecCommit &&
+         Existing.TaskSpecBlobId == Expected.TaskSpecBlobId &&
+         Existing.ChangeRequestId == Expected.ChangeRequestId &&
+         Existing.ApprovalReason == Expected.ApprovalReason &&
+         Existing.TargetEventId == Expected.TargetEventId &&
+         Existing.TargetReleaseId == Expected.TargetReleaseId &&
+         Existing.TargetPhaseId == Expected.TargetPhaseId &&
+         Existing.TargetTaskId == Expected.TargetTaskId &&
+         Existing.TargetTaskRevision == Expected.TargetTaskRevision &&
+         Existing.ExpectedVariantCount == Expected.ExpectedVariantCount &&
+         Existing.ExpectedOccurrenceCount == Expected.ExpectedOccurrenceCount &&
+         Existing.CanonicalOccurrence == Expected.CanonicalOccurrence;
+}
+
+}
+
 EventStore::EventStore(std::filesystem::path EventPath,
                        std::function<bool()> FlushOperation)
     : EventPath(std::move(EventPath)), FlushOperation(std::move(FlushOperation)) {}
@@ -2027,118 +2599,159 @@ void EventStore::Append(const WorkflowEvent& Event) const {
   }
   const std::string Line = SerializeEvent(Copy) + "\n";
   const auto* Flush = FlushOperation ? &FlushOperation : nullptr;
-  AppendLocked(EventPath, Line, Flush, "EventId", Copy.EventId);
+  AppendLocked(EventPath, Line, Flush, {}, {},
+               [&](const std::vector<std::string>& Existing, bool CompleteTail) {
+                 if (!CompleteTail) {
+                   throw WorkflowError("Event log has an incomplete tail; append refused");
+                 }
+                 const ResolvedEventProjection Projection =
+                     ProjectEventLog(Existing, false);
+                 (void)Projection;
+                 const std::vector<EventLogRow> Rows = ParseEventLogRows(Existing);
+                 if (HasUnsafeResolutionId(Rows, Copy.EventId)) {
+                   throw WorkflowError("Duplicate EventId rejected: " + Copy.EventId);
+                 }
+                 return true;
+               });
+}
+
+void EventStore::ResolveEventIdConflict(
+    const EventIdConflictAuthorization& Authorization) const {
+  if (Authorization.EventShard.empty() || Authorization.TargetEventId.empty() ||
+      Authorization.TargetReleaseId.empty() || Authorization.TargetPhaseId.empty() ||
+      !IsTaskId(Authorization.TargetTaskId) || Authorization.TargetTaskRevision <= 0 ||
+      Authorization.ExpectedVariantCount < 2 ||
+      Authorization.ExpectedOccurrenceCount < 2 ||
+      Authorization.CanonicalOccurrence == 0 ||
+      Authorization.CanonicalOccurrence > Authorization.ExpectedOccurrenceCount ||
+      Authorization.ApprovalReason.empty() ||
+      Authorization.ChangeRequestId != "CR-ED-0014-001" ||
+      Authorization.ApprovedByRole != "Coordinator" ||
+      Authorization.ApprovedByAgentId != "/root" ||
+      !IsCommitId(Authorization.TaskSpecCommit) ||
+      !IsCommitId(Authorization.TaskSpecBlobId) ||
+      Authorization.TaskPlanPath != "Workflow/Plans/P1.yaml" ||
+      Authorization.ResolutionReleaseId != "Bootstrap" ||
+      Authorization.ResolutionPhaseId != "P1" ||
+      Authorization.ResolutionTaskId != "ED-0014" ||
+      Authorization.ResolutionTaskRevision != 8 ||
+      Authorization.ResolutionBranch.empty()) {
+    throw WorkflowError("EventId resolution authorization is incomplete or invalid");
+  }
+  WorkflowEvent Event;
+  Event.EventId = "eventid-conflict-resolution-" + Authorization.TargetEventId;
+  Event.EventType = "EventIdConflictResolution";
+  Event.OccurredAt = UtcNow();
+  Event.ReleaseId = Authorization.ResolutionReleaseId;
+  Event.PhaseId = Authorization.ResolutionPhaseId;
+  Event.TaskId = Authorization.ResolutionTaskId;
+  Event.TaskRevision = Authorization.ResolutionTaskRevision;
+  Event.AgentId = Authorization.ApprovedByAgentId;
+  Event.AgentRole = Authorization.ApprovedByRole;
+  Event.Branch = Authorization.ResolutionBranch;
+  Event.CorrelationId = "ED-0014-R8-" + Authorization.TargetEventId;
+  Event.Result = "ResolvedOccurrenceSelected";
+  Event.EvidenceRefs = {
+      Authorization.TaskPlanPath + "#TaskId=ED-0014",
+      Authorization.TaskSpecCommit,
+      Authorization.TaskSpecBlobId,
+      Authorization.ChangeRequestId,
+      Authorization.TargetEventId};
+  Event.TaskSpecPath = Authorization.TaskPlanPath;
+  Event.TaskSpecCommit = Authorization.TaskSpecCommit;
+  Event.TaskSpecBlobId = Authorization.TaskSpecBlobId;
+  Event.ChangeRequestId = Authorization.ChangeRequestId;
+  Event.ApprovalReason = Authorization.ApprovalReason;
+  Event.TargetEventId = Authorization.TargetEventId;
+  Event.TargetReleaseId = Authorization.TargetReleaseId;
+  Event.TargetPhaseId = Authorization.TargetPhaseId;
+  Event.TargetTaskId = Authorization.TargetTaskId;
+  Event.TargetTaskRevision = Authorization.TargetTaskRevision;
+  Event.ExpectedVariantCount = Authorization.ExpectedVariantCount;
+  Event.ExpectedOccurrenceCount = Authorization.ExpectedOccurrenceCount;
+  Event.CanonicalOccurrence = Authorization.CanonicalOccurrence;
+
+  const std::string Line = SerializeEvent(Event) + "\n";
+  const auto* Flush = FlushOperation ? &FlushOperation : nullptr;
+  AppendLocked(EventPath, Line, Flush, {}, {},
+               [&](const std::vector<std::string>& Existing, bool CompleteTail) {
+                 if (!CompleteTail) {
+                   throw WorkflowError("Event log has a malformed or torn tail; resolution refused");
+                 }
+                 const ResolvedEventProjection Projection =
+                     ProjectEventLog(Existing, true);
+                 (void)Projection;
+                 const std::vector<EventLogRow> Rows = ParseEventLogRows(Existing);
+                 std::vector<const EventLogRow*> TargetRows;
+                 std::vector<const EventLogRow*> ExistingResolutions;
+                 for (const EventLogRow& Row : Rows) {
+                   if (Row.Event.EventId == Authorization.TargetEventId) {
+                     TargetRows.push_back(&Row);
+                   }
+                   if (Row.Event.EventType == "EventIdConflictResolution" &&
+                       Row.Event.TargetEventId == Authorization.TargetEventId) {
+                     ExistingResolutions.push_back(&Row);
+                   }
+                 }
+                 if (ExistingResolutions.size() > 1) {
+                   throw WorkflowError("Multiple resolutions already target this EventId");
+                 }
+                 if (TargetRows.empty()) {
+                   throw WorkflowError("Authorized EventId is missing from the event shard");
+                 }
+                 std::vector<std::string> DistinctVariants;
+                 for (const EventLogRow* Row : TargetRows) {
+                   if (!SameTargetScope(TargetRows.front()->Event, Row->Event) ||
+                       Row->Event.ReleaseId != Authorization.TargetReleaseId ||
+                       Row->Event.PhaseId != Authorization.TargetPhaseId ||
+                       Row->Event.TaskId != Authorization.TargetTaskId ||
+                       Row->Event.TaskRevision != Authorization.TargetTaskRevision) {
+                     throw WorkflowError("EventId variants do not match the approved target scope");
+                   }
+                   if (std::find(DistinctVariants.begin(), DistinctVariants.end(),
+                                 Row->RawRecord) == DistinctVariants.end()) {
+                     DistinctVariants.push_back(Row->RawRecord);
+                   }
+                 }
+                 if (DistinctVariants.size() != Authorization.ExpectedVariantCount ||
+                     TargetRows.size() != Authorization.ExpectedOccurrenceCount ||
+                     Authorization.CanonicalOccurrence > TargetRows.size()) {
+                   throw WorkflowError("EventId conflict counts changed after Coordinator approval");
+                 }
+                 if (!ExistingResolutions.empty()) {
+                   if (SameResolutionPayload(ExistingResolutions.front()->Event, Event)) {
+                     return false;
+                   }
+                   throw WorkflowError("Existing EventId resolution conflicts with the pinned approval");
+                 }
+                 if (HasUnsafeResolutionId(Rows, Event.EventId)) {
+                   throw WorkflowError("Resolution EventId is already used by another event");
+                 }
+                 return true;
+               });
 }
 
 std::vector<WorkflowEvent> EventStore::ReadTaskEvents(const std::string& TaskId,
-                                                     std::size_t MaximumEvents) const {
+                                                      std::size_t MaximumEvents) const {
   if (!IsTaskId(TaskId)) {
     throw WorkflowError("Task-scoped event query requires a valid TaskId");
   }
-  std::ifstream Input(EventPath, std::ios::binary);
-  if (!Input) {
-    if (!std::filesystem::exists(EventPath)) {
-      return {};
-    }
-    throw WorkflowError("Unable to read event log: " + EventPath.string());
+  const EventLogSnapshot Snapshot = ReadEventLogSnapshot(EventPath);
+  if (!Snapshot.CompleteTail) {
+    throw WorkflowError("Event log has a malformed or torn tail");
   }
+  const ResolvedEventProjection Projection =
+      ProjectEventLog(Snapshot.Records, false);
   std::vector<WorkflowEvent> Results;
-  std::unordered_map<std::string, std::string> RawByEventId;
-  std::string Line;
-  std::size_t Scanned = 0;
-  constexpr std::size_t MaximumScannedEvents = 100000;
-  while (std::getline(Input, Line)) {
-    if (++Scanned > MaximumScannedEvents) {
-      throw WorkflowError("Event log exceeds the bounded scan limit");
-    }
-    if (Line.empty()) {
+  for (const EventLogRow& Row : Projection.SelectedRows) {
+    if (Row.Event.TaskId != TaskId) {
       continue;
     }
-    YAML::Node Node;
-    try {
-      Node = YAML::Load(Line);
-    } catch (const YAML::Exception& Error) {
-      throw WorkflowError("Invalid JSONL event record: " + std::string(Error.what()));
-    }
-    const std::string EventId = OptionalEventString(Node, "EventId", "event_id");
-    if (EventId.empty()) {
-      throw WorkflowError("Structured event is missing its EventId");
-    }
-    const auto [Existing, Inserted] = RawByEventId.emplace(EventId, Line);
-    if (!Inserted) {
-      if (Existing->second != Line) {
-        throw WorkflowError("Conflicting records reuse EventId: " + EventId);
-      }
-      continue;
-    }
-    if (OptionalEventString(Node, "TaskId", "task_id") != TaskId) {
-      continue;
-    }
-    WorkflowEvent Event;
-    Event.EventId = EventId;
-    Event.EventType = OptionalEventString(Node, "EventType", "event_type");
-    Event.OccurredAt = OptionalEventString(Node, "OccurredAt", "occurred_at");
-    Event.ReleaseId = OptionalEventString(Node, "ReleaseId", "release_id");
-    Event.PhaseId = OptionalEventString(Node, "PhaseId", "phase_id");
-    Event.TaskId = TaskId;
-    Event.TaskRevision = EventInteger(Node, "TaskRevision", "task_revision");
-    Event.AgentId = OptionalEventString(Node, "AgentId", "agent_id");
-    Event.AgentRole = OptionalEventString(Node, "AgentRole", "agent_role");
-    Event.Branch = OptionalEventString(Node, "Branch", "branch");
-    Event.CorrelationId = OptionalEventString(Node, "CorrelationId", "correlation_id");
-    Event.Result = OptionalEventString(Node, "Result", "result");
-    const YAML::Node Evidence = Node["EvidenceRefs"] ? Node["EvidenceRefs"] : Node["evidence_refs"];
-    if (Evidence && Evidence.IsSequence()) {
-      for (const YAML::Node& Reference : Evidence) {
-        if (Reference.IsScalar()) {
-          Event.EvidenceRefs.push_back(Reference.as<std::string>());
-        }
-      }
-    }
-    Event.Command = OptionalEventString(Node, "Command", "command");
-    Event.WorkingDirectory = OptionalEventString(Node, "WorkingDirectory", "working_directory");
-    Event.ExitCode = EventLong(Node, "ExitCode", "exit_code");
-    Event.EvidencePath = OptionalEventString(Node, "EvidencePath", "evidence_path");
-    Event.ApprovalReason = OptionalEventString(Node, "ApprovalReason", "approval_reason");
-    Event.MaxReferenceFiles = EventSize(Node, "MaxReferenceFiles", "max_reference_files");
-    Event.TaskSpecPath = OptionalEventString(Node, "TaskSpecPath", "task_spec_path");
-    Event.TaskSpecCommit = OptionalEventString(Node, "TaskSpecCommit", "task_spec_commit");
-    Event.TaskSpecBlobId = OptionalEventString(Node, "TaskSpecBlobId", "task_spec_blob_id");
-    Event.AssignmentEventCommit = OptionalEventString(
-        Node, "AssignmentEventCommit", "assignment_event_commit");
-    Event.AssignmentEventId = OptionalEventString(Node, "AssignmentEventId", "assignment_event_id");
-    Event.CodeBaseCommit = OptionalEventString(Node, "CodeBaseCommit", "code_base_commit");
-    Event.HeadCommit = OptionalEventString(Node, "HeadCommit", "head_commit");
-    Event.BudgetCorrectionEventCommit = OptionalEventString(
-        Node, "BudgetCorrectionEventCommit", "budget_correction_event_commit");
-    Event.BudgetCorrectionEventId = OptionalEventString(
-        Node, "BudgetCorrectionEventId", "budget_correction_event_id");
-    Event.CorrectionOfEventId = OptionalEventString(
-        Node, "CorrectionOfEventId", "correction_of_event_id");
-    Event.CorrectedField = OptionalEventString(Node, "CorrectedField", "corrected_field");
-    Event.OriginalApprovalReason = OptionalEventString(Node, "OriginalValue", "original_value");
-    Event.CorrectedApprovalReason = OptionalEventString(Node, "CorrectedValue", "corrected_value");
-    Event.ChangeRequestId = OptionalEventString(Node, "ChangeRequestId", "change_request_id");
-    Event.ContextBudgetApprovalEventId = OptionalEventString(
-        Node, "ContextBudgetApprovalEventId", "context_budget_approval_event_id");
-    Event.OwnerAgentId = OptionalEventString(Node, "OwnerAgentId", "owner_agent_id");
-    Event.ReviewerAgentId = OptionalEventString(Node, "ReviewerAgentId", "reviewer_agent_id");
-    Event.Worktree = OptionalEventString(Node, "Worktree", "worktree");
-    Event.OutputSummary = OptionalEventString(Node, "OutputSummary", "output_summary");
-    const YAML::Node ReadSetPaths = Node["ReadSetPaths"] ? Node["ReadSetPaths"]
-                                                           : Node["read_set_paths"];
-    if (ReadSetPaths && ReadSetPaths.IsSequence()) {
-      for (const YAML::Node& Path : ReadSetPaths) {
-        if (Path.IsScalar()) {
-          Event.ReadSetPaths.push_back(Path.as<std::string>());
-        }
-      }
-    }
-    Results.push_back(std::move(Event));
-    if (Results.size() > MaximumEvents) {
-      Results.erase(Results.begin(), Results.begin() +
-                    static_cast<std::ptrdiff_t>(Results.size() - MaximumEvents));
-    }
+    Results.push_back(Row.Event);
+  }
+  if (Results.size() > MaximumEvents) {
+    Results.erase(Results.begin(),
+                  Results.begin() + static_cast<std::ptrdiff_t>(Results.size() - MaximumEvents));
   }
   return Results;
 }
