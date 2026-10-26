@@ -1,0 +1,396 @@
+{
+  "SchemaVersion": 1,
+  "FixtureSetId": "ED-0012-ContextBudget-V1",
+  "Contract": {
+    "Name": "MemoryContract",
+    "Version": "V1",
+    "ContractCommit": "7745fb1019c6a7afdd8b54f89a9894568fbf38a0"
+  },
+  "SyntheticOnly": true,
+  "Cases": [
+    {
+      "CaseId": "CB-001",
+      "Purpose": "Token-budget truncation counts provider-visible context items only; the trusted ChannelEnvelope remains a Core-only selection input.",
+      "Profile": {
+        "TokenBudget": 36,
+        "MaxBytes": 1000
+      },
+      "Items": [
+        {
+          "ItemId": "fixture-item-system",
+          "PriorityTier": 1,
+          "Kind": "SystemInstructions",
+          "TokenCost": 6,
+          "ByteCost": 30
+        },
+        {
+          "ItemId": "fixture-item-developer",
+          "PriorityTier": 1,
+          "Kind": "DeveloperInstructions",
+          "TokenCost": 6,
+          "ByteCost": 30
+        },
+        {
+          "ItemId": "fixture-item-current-message",
+          "PriorityTier": 2,
+          "Kind": "CurrentCanonicalMessageText",
+          "TokenCost": 8,
+          "ByteCost": 40,
+          "SyntheticTextContentId": "fixture-current-message-content-01",
+          "SyntheticText": "fixture-message-text-alpha"
+        },
+        {
+          "ItemId": "fixture-item-session-context",
+          "PriorityTier": 3,
+          "Kind": "SessionScopeContext",
+          "TokenCost": 4,
+          "ByteCost": 20
+        },
+        {
+          "ItemId": "fixture-item-conversation-history",
+          "PriorityTier": 3,
+          "Kind": "RecentConversationScopeHistory",
+          "TokenCost": 4,
+          "ByteCost": 20,
+          "SourceMessageId": "fixture-message-source-conversation-01",
+          "ScopeType": "ConversationScope",
+          "Provenance": "AuthorizedSummary"
+        },
+        {
+          "ItemId": "fixture-item-active-task",
+          "PriorityTier": 4,
+          "Kind": "AuthorizedActiveChatTask",
+          "TokenCost": 4,
+          "ByteCost": 20,
+          "SourceMessageId": "fixture-message-source-task-01",
+          "ScopeType": "ActiveChatTaskScope",
+          "Provenance": "UserExplicit"
+        },
+        {
+          "ItemId": "fixture-item-user-preference",
+          "PriorityTier": 5,
+          "Kind": "SamePrincipalChannelIdentityPreference",
+          "TokenCost": 4,
+          "ByteCost": 20,
+          "SourceOperationId": "fixture-operation-source-preference-01",
+          "ScopeType": "ChannelIdentityScope",
+          "CreatedAt": "2024-01-01T00:00:00Z",
+          "ExpiresAt": null,
+          "UserConfirmed": true,
+          "Confidence": "High",
+          "Provenance": "UserExplicit"
+        },
+        {
+          "ItemId": "fixture-item-group-memory",
+          "PriorityTier": 6,
+          "Kind": "AuthorizedSameGroupMemory",
+          "TokenCost": 4,
+          "ByteCost": 20,
+          "SourceMessageId": "fixture-message-source-group-01",
+          "ScopeType": "GroupScope",
+          "UserConfirmed": true,
+          "Confidence": "High",
+          "Provenance": "UserConfirmed"
+        },
+        {
+          "ItemId": "fixture-item-linked-memory",
+          "PriorityTier": 7,
+          "Kind": "ExplicitlyLinkedRecord",
+          "TokenCost": 4,
+          "ByteCost": 20,
+          "SourceOperationId": "fixture-operation-source-link-01",
+          "ScopeType": "IdentityLinkScope",
+          "UserConfirmed": true,
+          "Confidence": "High",
+          "Provenance": "UserConfirmed"
+        }
+      ],
+      "ScopeAdmission": {
+        "RejectedMemoryIds": [
+          "fixture-memory-other-principal",
+          "fixture-memory-unlinked-channel"
+        ],
+        "RejectedBeforeBudgetSelection": true
+      },
+      "Expected": {
+        "SelectedItemIds": [
+          "fixture-item-system",
+          "fixture-item-developer",
+          "fixture-item-current-message",
+          "fixture-item-session-context",
+          "fixture-item-conversation-history",
+          "fixture-item-active-task",
+          "fixture-item-user-preference"
+        ],
+        "TruncatedItemIds": [
+          "fixture-item-group-memory",
+          "fixture-item-linked-memory"
+        ],
+        "FilteredMemoryIds": [
+          "fixture-memory-other-principal",
+          "fixture-memory-unlinked-channel"
+        ],
+        "SelectedTokenTotal": 36,
+        "SelectedByteTotal": 180,
+        "SystemAndDeveloperRulesPreserved": true,
+        "CurrentTrustedMessagePreserved": true,
+        "RawChannelEnvelopeSerializedToProvider": false,
+        "ChannelIdSerializedToProvider": false,
+        "AccountIdSerializedToProvider": false,
+        "VerifiedSenderIdSerializedToProvider": false,
+        "CanonicalMessageIdentityMetadataSerializedToProvider": false,
+        "SelectionInputsConsumeProviderBudget": false,
+        "CurrentCanonicalMessageTextSerializedToProvider": true,
+        "CurrentCanonicalMessageProviderVisibleFields": [
+          "SyntheticText"
+        ],
+        "CoreOnlySelectionInputsMayBeUsedForScopeResolution": true,
+        "ConversationIdSerializedToProvider": false,
+        "ConversationKindSerializedToProvider": false
+      },
+      "SelectionInputs": {
+        "ChannelEnvelope": {
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "VerifiedSenderId": "fixture-sender-01",
+          "ConversationId": "fixture-direct-01",
+          "ConversationKind": "Direct"
+        },
+        "CanonicalMessage": {
+          "CanonicalMessageId": "fixture-canonical-message-01",
+          "SyntheticTextContentId": "fixture-current-message-content-01",
+          "SyntheticText": "fixture-message-text-alpha"
+        },
+        "CoreOnly": true,
+        "BudgetedAsProviderContextItem": false,
+        "SerializedToProvider": false
+      }
+    },
+    {
+      "CaseId": "CB-002",
+      "Purpose": "Maximum-byte truncation follows the same priority order when token budget is not binding.",
+      "Profile": {
+        "TokenBudget": 1000,
+        "MaxBytes": 180
+      },
+      "ReusesItemsFromCaseId": "CB-001",
+      "Expected": {
+        "SelectedItemIds": [
+          "fixture-item-system",
+          "fixture-item-developer",
+          "fixture-item-current-message",
+          "fixture-item-session-context",
+          "fixture-item-conversation-history",
+          "fixture-item-active-task",
+          "fixture-item-user-preference"
+        ],
+        "TruncatedItemIds": [
+          "fixture-item-group-memory",
+          "fixture-item-linked-memory"
+        ],
+        "SelectedTokenTotal": 36,
+        "SelectedByteTotal": 180,
+        "SystemAndDeveloperRulesPreserved": true,
+        "CurrentTrustedMessagePreserved": true,
+        "RawChannelEnvelopeSerializedToProvider": false,
+        "ChannelIdSerializedToProvider": false,
+        "AccountIdSerializedToProvider": false,
+        "VerifiedSenderIdSerializedToProvider": false,
+        "CanonicalMessageIdentityMetadataSerializedToProvider": false,
+        "SelectionInputsConsumeProviderBudget": false,
+        "CurrentCanonicalMessageTextSerializedToProvider": true,
+        "CurrentCanonicalMessageProviderVisibleFields": [
+          "SyntheticText"
+        ],
+        "CoreOnlySelectionInputsMayBeUsedForScopeResolution": true,
+        "ConversationIdSerializedToProvider": false,
+        "ConversationKindSerializedToProvider": false
+      },
+      "ReusesSelectionInputsFromCaseId": "CB-001"
+    },
+    {
+      "CaseId": "CB-003",
+      "Purpose": "Current scope filtering occurs before model context assembly and excludes unlinked or foreign scope records.",
+      "CurrentResolvedScopes": [
+        {
+          "ScopeType": "ConversationScope",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "ConversationId": "fixture-direct-01",
+          "ConversationKind": "Direct",
+          "PrincipalId": "fixture-principal-01"
+        },
+        {
+          "ScopeType": "ChannelIdentityScope",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "VerifiedSenderId": "fixture-sender-01",
+          "PrincipalId": "fixture-principal-01"
+        }
+      ],
+      "CandidateMemoryIds": [
+        "fixture-memory-current-conversation",
+        "fixture-memory-current-principal",
+        "fixture-memory-other-principal",
+        "fixture-memory-other-group",
+        "fixture-memory-unlinked-channel"
+      ],
+      "ExplicitIdentityLink": {
+        "Present": true,
+        "AuthorizedMemoryIds": [
+          "fixture-memory-linked-preference"
+        ]
+      },
+      "Expected": {
+        "EligibleMemoryIds": [
+          "fixture-memory-current-conversation",
+          "fixture-memory-current-principal",
+          "fixture-memory-linked-preference"
+        ],
+        "ExcludedMemoryIds": [
+          "fixture-memory-other-principal",
+          "fixture-memory-other-group",
+          "fixture-memory-unlinked-channel"
+        ],
+        "NoForeignScopeItemMayEnterModelRequest": true
+      }
+    },
+    {
+      "CaseId": "CB-004",
+      "Purpose": "History and summaries are low-trust facts, not authority or policy.",
+      "RetrievedHistory": {
+        "ItemId": "fixture-history-override-marker",
+        "SyntheticContentId": "fixture-history-requests-policy-override",
+        "ScopeType": "ConversationScope",
+        "SourceMessageId": "fixture-message-history-01",
+        "Provenance": "AuthorizedSummary",
+        "TrustClass": "LowTrustFactsOnly"
+      },
+      "CurrentTrustedMessageId": "fixture-message-current-02",
+      "Expected": {
+        "HistoryMayGrantPermission": false,
+        "HistoryMayChangeToolAllowlist": false,
+        "HistoryMayOverrideCurrentMessage": false,
+        "CurrentPolicyAndAuthorizationRemainAuthoritative": true
+      }
+    },
+    {
+      "CaseId": "CB-005",
+      "Purpose": "Selected memory context carries scope, source, time, confirmation, confidence, and provenance.",
+      "ContextItems": [
+        {
+          "ItemId": "fixture-item-provenance-user-pref",
+          "ScopeType": "ChannelIdentityScope",
+          "ScopeKey": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "VerifiedSenderId": "fixture-sender-01",
+            "PrincipalId": "fixture-principal-01"
+          },
+          "SourceOperationId": "fixture-operation-preference-01",
+          "CreatedAt": "2024-01-01T00:00:00Z",
+          "ExpiresAt": null,
+          "UserConfirmed": true,
+          "Confidence": "High",
+          "Provenance": "UserExplicit"
+        },
+        {
+          "ItemId": "fixture-item-provenance-summary",
+          "ScopeType": "ConversationScope",
+          "ScopeKey": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "ConversationId": "fixture-direct-01",
+            "ConversationKind": "Direct",
+            "PrincipalId": "fixture-principal-01"
+          },
+          "SourceMessageId": "fixture-message-summary-source-01",
+          "SourceScope": "ExactConversationScope",
+          "CreatedAt": "2024-01-02T00:00:00Z",
+          "ExpiresAt": "2024-02-01T00:00:00Z",
+          "UserConfirmed": false,
+          "Confidence": "Medium",
+          "Provenance": "AuthorizedSummary"
+        }
+      ],
+      "SummaryAttempt": {
+        "SummaryId": "fixture-summary-cross-scope-attempt",
+        "SourceScope": "ExactConversationScope",
+        "SourceMessageIds": [
+          "fixture-message-summary-source-01"
+        ],
+        "IncludedOutOfScopeFactId": "fixture-content-other-principal",
+        "ExpectedAccepted": false
+      },
+      "Expected": {
+        "RequiredContextItemFieldsPresent": [
+          "ScopeKey",
+          "SourceMessageIdOrSourceOperationId",
+          "CreatedAt",
+          "ExpiresAt",
+          "UserConfirmed",
+          "Confidence",
+          "Provenance"
+        ],
+        "SummaryMayContainOutOfScopeFact": false,
+        "SummaryMustIdentifySourceScopeAndReferences": true
+      }
+    },
+    {
+      "CaseId": "CB-006",
+      "Purpose": "SessionScope is ephemeral and SessionOnlyDerived content is never persisted or restored.",
+      "SessionItem": {
+        "ItemId": "fixture-session-only-derived-01",
+        "ScopeType": "SessionScope",
+        "ProcessSessionId": "fixture-process-session-01",
+        "AgentTurnId": "fixture-agent-turn-01",
+        "SyntheticContentId": "fixture-session-context-marker",
+        "Provenance": "SessionOnlyDerived"
+      },
+      "Expected": {
+        "MemoryStoreWriteAllowed": false,
+        "PersistedRecordIds": [],
+        "AvailableAfterProcessRestartItemIds": [],
+        "MayRemainInCurrentProcessSessionContext": true
+      }
+    },
+    {
+      "CaseId": "CB-007",
+      "Purpose": "Sensitive-data candidates are rejected without storing or logging their values.",
+      "SyntheticPayloadProbes": [
+        {
+          "ProbeId": "fixture-sensitive-password",
+          "SensitivityClass": "Password",
+          "CandidateValueIncluded": false
+        },
+        {
+          "ProbeId": "fixture-sensitive-key",
+          "SensitivityClass": "SecretKey",
+          "CandidateValueIncluded": false
+        },
+        {
+          "ProbeId": "fixture-sensitive-token",
+          "SensitivityClass": "AccessToken",
+          "CandidateValueIncluded": false
+        },
+        {
+          "ProbeId": "fixture-sensitive-payment",
+          "SensitivityClass": "PaymentCredential",
+          "CandidateValueIncluded": false
+        },
+        {
+          "ProbeId": "fixture-sensitive-personal-data",
+          "SensitivityClass": "PolicyDisallowedSensitivePersonalData",
+          "CandidateValueIncluded": false
+        }
+      ],
+      "ExpectedForEachProbe": {
+        "DurableWriteAccepted": false,
+        "MemoryRecordCreated": false,
+        "DiagnosticUsesStableErrorCodeOnly": true,
+        "DiagnosticContainsCandidateValue": false,
+        "OperationRecordContainsCandidateValue": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "SchemaVersion": 1,
+  "FixtureSetId": "ED-0012-MemoryContext-V1",
+  "Contract": {
+    "Name": "MemoryContract",
+    "Version": "V1",
+    "ContractCommit": "7745fb1019c6a7afdd8b54f89a9894568fbf38a0"
+  },
+  "SyntheticOnly": true,
+  "CredentialFree": true,
+  "PrivateDataFree": true,
+  "WeChatAcceptanceIncluded": false,
+  "CapabilityEvidencePlans": [
+    {
+      "TaskId": "ED-0103",
+      "CapabilityId": "ContextSelectionAndBudget",
+      "EvidencePlan": "System rules and current trusted message survive truncation; only permitted ConversationScope and explicitly linked memory enter the bounded request.",
+      "FixtureFile": "Tests/Contract/Context/Fixtures/ContextBudgetCases.json",
+      "CaseIds": ["CB-001", "CB-002", "CB-003", "CB-004", "CB-005", "CB-006", "CB-007"]
+    },
+    {
+      "TaskId": "ED-0113",
+      "CapabilityId": "ScopedChatMemory",
+      "EvidencePlan": "Cross-user/group/private-conversation reads fail closed, inferred facts are not silently confirmed, forget tombstones matching scopes and derived summaries, and retrieval respects the context budget.",
+      "FixtureFiles": [
+        "Tests/Contract/Memory/Fixtures/ScopeConsentCases.json",
+        "Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json",
+        "Tests/Contract/Context/Fixtures/ContextBudgetCases.json"
+      ],
+      "CaseIds": {
+        "ScopeConsentCases": ["SC-001", "SC-002", "SC-003", "SC-004", "SC-005", "SC-006", "SC-007", "SC-008", "SC-009", "SC-010", "SC-011"],
+        "ForgetRecoveryCases": ["FR-001", "FR-002", "FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "FR-008"],
+        "ContextBudgetCases": ["CB-001", "CB-002", "CB-003", "CB-004", "CB-005", "CB-006", "CB-007"]
+      }
+    }
+  ],
+  "AcceptanceCoverage": [
+    {
+      "AcceptanceId": "AC-1",
+      "Covers": [
+        "identity/channel/account/conversation/group separation",
+        "explicit direct consent",
+        "specific proposal confirmation",
+        "absent or ambiguous consent",
+        "consent revocation",
+        "identity-link boundaries"
+      ],
+      "FixtureFile": "Tests/Contract/Memory/Fixtures/ScopeConsentCases.json"
+    },
+    {
+      "AcceptanceId": "AC-2",
+      "Covers": [
+        "context priority",
+        "token and byte truncation",
+        "sensitive-data rejection",
+        "provenance",
+        "no durable SessionScope"
+      ],
+      "FixtureFile": "Tests/Contract/Context/Fixtures/ContextBudgetCases.json"
+    },
+    {
+      "AcceptanceId": "AC-3",
+      "Covers": [
+        "precise Forget",
+        "tombstones",
+        "derived cache invalidation",
+        "expiry",
+        "safe recovery"
+      ],
+      "FixtureFile": "Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json"
+    },
+    {
+      "AcceptanceId": "AC-4",
+      "Covers": [
+        "synthetic and credential-free fixture data",
+        "valid JSON",
+        "exact four-file WriteSet"
+      ],
+      "FixtureFiles": [
+        "Tests/Contract/Memory/Fixtures/FixtureIndex.json",
+        "Tests/Contract/Memory/Fixtures/ScopeConsentCases.json",
+        "Tests/Contract/Context/Fixtures/ContextBudgetCases.json",
+        "Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json"
+      ]
+    }
+  ],
+  "WriteSet": [
+    "Tests/Contract/Memory/Fixtures/FixtureIndex.json",
+    "Tests/Contract/Memory/Fixtures/ScopeConsentCases.json",
+    "Tests/Contract/Context/Fixtures/ContextBudgetCases.json",
+    "Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json"
+  ],
+  "SafetyAssertions": {
+    "NoRealIdentities": true,
+    "NoRealMessages": true,
+    "NoCredentialValues": true,
+    "NoSourceOrCppChanges": true
+  }
+}

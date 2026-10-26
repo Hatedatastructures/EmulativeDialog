@@ -1,0 +1,234 @@
+{
+  "SchemaVersion": 1,
+  "FixtureSetId": "ED-0012-ForgetRecovery-V1",
+  "Contract": {
+    "Name": "MemoryContract",
+    "Version": "V1",
+    "ContractCommit": "7745fb1019c6a7afdd8b54f89a9894568fbf38a0"
+  },
+  "SyntheticOnly": true,
+  "Cases": [
+    {
+      "CaseId": "FR-001",
+      "Purpose": "Forget targets are precise and scope matching does not remove adjacent records.",
+      "ForgetTargets": [
+        {
+          "TargetId": "fixture-forget-one-record",
+          "ScopeType": "MemoryRecord",
+          "MemoryId": "fixture-memory-record-01",
+          "ExpectedTombstonedIds": ["fixture-memory-record-01"],
+          "ExpectedUnaffectedIds": ["fixture-memory-record-02"]
+        },
+        {
+          "TargetId": "fixture-forget-session-scope",
+          "ScopeType": "SessionScope",
+          "ProcessSessionId": "fixture-process-session-01",
+          "AgentTurnId": "fixture-agent-turn-01",
+          "ExpectedCurrentSessionItemsRemoved": ["fixture-session-item-01"],
+          "ExpectedDurableRecordChanges": []
+        },
+        {
+          "TargetId": "fixture-forget-conversation",
+          "ScopeType": "ConversationScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "ConversationId": "fixture-direct-01",
+            "ConversationKind": "Direct",
+            "PrincipalId": "fixture-principal-01"
+          },
+          "ExpectedTombstonedIds": [
+            "fixture-memory-conversation-01",
+            "fixture-summary-conversation-01"
+          ],
+          "ExpectedUnaffectedIds": [
+            "fixture-memory-conversation-02",
+            "fixture-memory-channel-identity-01"
+          ]
+        },
+        {
+          "TargetId": "fixture-forget-channel-identity",
+          "ScopeType": "ChannelIdentityScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "VerifiedSenderId": "fixture-sender-01",
+            "PrincipalId": "fixture-principal-01"
+          },
+          "ExpectedTombstonedIds": ["fixture-memory-channel-identity-01"],
+          "ExpectedUnaffectedIds": [
+            "fixture-memory-other-principal-01",
+            "fixture-memory-other-account-01"
+          ]
+        },
+        {
+          "TargetId": "fixture-forget-exact-group",
+          "ScopeType": "GroupScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "GroupConversationId": "fixture-group-01",
+            "PrincipalId": "fixture-principal-01"
+          },
+          "ExpectedTombstonedIds": ["fixture-memory-group-01"],
+          "ExpectedUnaffectedIds": [
+            "fixture-memory-group-02",
+            "fixture-memory-group-other-principal"
+          ]
+        },
+        {
+          "TargetId": "fixture-forget-active-task",
+          "ScopeType": "ActiveChatTaskScope",
+          "ScopeKeyParts": {
+            "PrincipalId": "fixture-principal-01",
+            "ActiveChatTaskId": "fixture-active-task-01",
+            "OriginConversationScope": "fixture-conversation-scope-01"
+          },
+          "ExpectedTombstonedIds": ["fixture-memory-active-task-01"],
+          "ExpectedUnaffectedIds": ["fixture-memory-active-task-02"]
+        },
+        {
+          "TargetId": "fixture-forget-identity-link",
+          "ScopeType": "IdentityLinkScope",
+          "IdentityLinkId": "fixture-identity-link-01",
+          "ExpectedTombstonedIds": [],
+          "ExpectedDerivedDataInvalidatedIds": ["fixture-cache-identity-link-01"],
+          "ExpectedUnaffectedIds": ["fixture-memory-unlinked-01"],
+          "ExpectedLinkAccessAfterForget": false
+        }
+      ],
+      "ExpectedForEveryDurableTarget": {
+        "MatchedRecordsBecomeTombstoned": true,
+        "MatchedIndexesBecomeUnretrievable": true,
+        "DerivedSummaryAndCacheInvalidationRequired": true,
+        "OperationRecordRequired": true,
+        "OperationRecordIncludesScopeConsentActorResultAndTime": true,
+        "OperationRecordContainsFullMessageBody": false
+      }
+    },
+    {
+      "CaseId": "FR-002",
+      "Purpose": "Ambiguous broad Forget request requires clarification and performs no broad deletion.",
+      "RequestFixtureId": "fixture-ambiguous-forget-all",
+      "ResolvedTargetScope": null,
+      "Expected": {
+        "Decision": "Clarify",
+        "MutationStarted": false,
+        "TombstonedRecordIds": [],
+        "DerivedCacheIdsChanged": [],
+        "OperationRecordMayClaimDeletionSucceeded": false
+      }
+    },
+    {
+      "CaseId": "FR-003",
+      "Purpose": "Deleting an IdentityLink invalidates only link-derived records and caches.",
+      "IdentityLinkId": "fixture-identity-link-01",
+      "LinkedRecordIds": ["fixture-memory-link-derived-01"],
+      "DerivedCacheIds": ["fixture-cache-identity-link-01"],
+      "UnlinkedRecordIds": ["fixture-memory-unlinked-01"],
+      "Expected": {
+        "LinkDisabled": true,
+        "LinkedRecordIdsRetrievableThroughLink": false,
+        "DerivedCacheIdsRetrievable": false,
+        "UnlinkedRecordIdsTombstoned": false,
+        "SanitizedOperationRecordRequired": true
+      }
+    },
+    {
+      "CaseId": "FR-004",
+      "Purpose": "A failure while invalidating derived state cannot make tombstoned content retrievable.",
+      "MemoryId": "fixture-memory-record-cache-failure",
+      "IndexId": "fixture-index-record-cache-failure",
+      "DerivedCacheId": "fixture-cache-record-cache-failure",
+      "SimulatedFailure": "fixture-derived-cache-invalidation-failed",
+      "ExpectedSequence": [
+        "RecordAndIndexTombstoned",
+        "DerivedCacheInvalidationAttempted",
+        "SanitizedFailureStateRecorded"
+      ],
+      "Expected": {
+        "MemoryIdRetrievable": false,
+        "IndexIdRetrievable": false,
+        "FailureStateContainsRawContent": false,
+        "OperationRecordStatus": "CleanupFailed",
+        "RecallMustRemainBlocked": true
+      }
+    },
+    {
+      "CaseId": "FR-005",
+      "Purpose": "TTL expiration uses the same tombstone and derived-state cleanup flow.",
+      "CurrentTime": "2025-01-01T00:00:00Z",
+      "Records": [
+        {
+          "MemoryId": "fixture-memory-expired-01",
+          "ExpiresAt": "2024-12-31T23:59:59Z",
+          "ExpectedExpired": true
+        },
+        {
+          "MemoryId": "fixture-memory-valid-01",
+          "ExpiresAt": "2025-01-01T00:00:01Z",
+          "ExpectedExpired": false
+        }
+      ],
+      "Expected": {
+        "TombstonedMemoryIds": ["fixture-memory-expired-01"],
+        "StillReadableMemoryIds": ["fixture-memory-valid-01"],
+        "ExpiredRecordUsesForgetDeletionFlow": true,
+        "SanitizedOperationRecordRequired": true
+      }
+    },
+    {
+      "CaseId": "FR-006",
+      "Purpose": "Backup recovery checks tombstone and version state before returning any record.",
+      "RecoverySource": "SyntheticBackupFixture",
+      "BackupRecords": [
+        {
+          "MemoryId": "fixture-memory-tombstoned-01",
+          "BackupVersion": 1,
+          "TombstoneVersion": 2,
+          "ExpectedRestore": "RejectAsTombstoned"
+        },
+        {
+          "MemoryId": "fixture-memory-current-01",
+          "BackupVersion": 3,
+          "CurrentVersion": 3,
+          "DeleteState": "Active",
+          "ExpectedRestore": "AllowIfConsentStillValid"
+        }
+      ],
+      "Expected": {
+        "TombstoneVersionValidatedBeforeRecall": true,
+        "RevokedConsentRecordsRestored": false,
+        "UnverifiedBackupRecordMayBeReturned": false
+      }
+    },
+    {
+      "CaseId": "FR-007",
+      "Purpose": "Process restart restores active durable data only, never SessionScope.",
+      "BeforeRestart": {
+        "ActiveDurableMemoryIds": ["fixture-memory-durable-valid-01"],
+        "TombstonedMemoryIds": ["fixture-memory-durable-deleted-01"],
+        "SessionItemIds": ["fixture-session-context-01"]
+      },
+      "ExpectedAfterRestart": {
+        "RestoredMemoryIds": ["fixture-memory-durable-valid-01"],
+        "NotRestoredMemoryIds": [
+          "fixture-memory-durable-deleted-01",
+          "fixture-session-context-01"
+        ],
+        "TombstoneAndConsentValidityChecked": true
+      }
+    },
+    {
+      "CaseId": "FR-008",
+      "Purpose": "User-facing Forget outcome does not claim deletion from external platforms.",
+      "ExternalPlatformCopyPresent": true,
+      "LocalMatchingRecordIds": ["fixture-memory-local-01"],
+      "Expected": {
+        "LocalMatchingRecordTombstoned": true,
+        "ExternalPlatformDeletionClaimed": false,
+        "OperationRecordContainsRawExternalMessage": false
+      }
+    }
+  ]
+}
