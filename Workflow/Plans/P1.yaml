@@ -236,10 +236,10 @@ Tasks:
         - AGENTS.md
         - Workflow/CurrentState.md
         - Workflow/TaskIndex.yaml
-        - CMakeLists.txt
+        - Workflow/TaskTemplate.yaml
         - Workflow/TaskLifecycle.md
         - Workflow/AgentExecutionStandard.md
-        - Architecture/ModuleMap.yaml#ShardId=WorkflowTools
+        - CMakeLists.txt
         - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
         - Tools/WorkflowController/WorkflowController.h
         - Tools/WorkflowController/WorkflowController.cpp
@@ -370,9 +370,9 @@ Tasks:
         Supersede R6 before code changes. Bind all gcov commands and reports to the R7 worktree-specific
         CMake binary directory; assert that each resolution serializes the pinned TaskSpec commit/blob and
         derives Actor AgentId/AgentRole from the matching Coordinator ApprovedOverrides entry.
-        Replace Workflow/TaskTemplate.yaml with CMakeLists.txt in the exact 12-file ReadSet to bind the object
-        locations used by gcov; the code task does not edit or need the task-template schema. Keep goal,
-        four-path WriteSet, five occurrence choices and the 80-percent threshold unchanged.
+        Read TaskTemplate.yaml and CMakeLists.txt alongside the exact WorkflowTools module shard; configure
+        directly to the fixed R7 task-local build directory rather than relying on a preset-relative binaryDir.
+        Keep goal, 12-file ReadSet, four-path WriteSet, five occurrence choices and the 80-percent threshold unchanged.
       Reason: >-
         Worker02 verified that the R6 preset output directory is R6-specific, while the task pointed gcov at
         the unrelated integration build. The event evidence must also prove which immutable approval and actor
@@ -428,10 +428,10 @@ Tasks:
     Validation:
       RequiredTargets: [BuildProbe, WorkflowController, WorkflowControllerContractTests]
       TargetedBuild:
-        - cmake --preset windows-mingw -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
-        - cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
+        - cmake -S . -B H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
+        - cmake --build H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
       ContractFixtures:
-        - ctest --preset windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
+        - ctest --test-dir H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
         - Run WorkflowController.exe process-level positive/negative resolution cases with a disposable copied shard and authorization commit S.
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
