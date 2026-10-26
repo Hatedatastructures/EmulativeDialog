@@ -1821,7 +1821,7 @@ Tasks:
         - ED-0113
 
   - TaskId: ED-0013
-    TaskRevision: 6
+    TaskRevision: 7
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
@@ -1834,7 +1834,7 @@ Tasks:
     ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
-    ChangeRequestId: CR-ED-0013-005
+    ChangeRequestId: CR-ED-0013-006
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
@@ -1939,7 +1939,7 @@ Tasks:
       ReviewerAgentId: /root/agent_core
       ReviewerDecision: Blocked
       Reason: "Worker02 readiness review found the R4 nested Context.ReadSet/ForbiddenSet conflict and underspecified MAN-003 AC-5. Worker01 confirmed all six WriteSet paths remained unchanged; no R4 code/document edits began."
-    RevisionChangeRequest:
+    PriorRevisionChangeRequestR6:
       ChangeRequestId: CR-ED-0013-005
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -1967,6 +1967,42 @@ Tasks:
       ReviewerAgentId: /root/agent_core
       ReviewerDecision: Blocked
       Reason: "Worker02 found the nested Context.ReadSet AgentPool path was indented as a child, not a sibling list item; Worker01 confirmed all six WriteSet paths remained untouched."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0013-006
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Preserve Goal, Owner, Reviewer, dependencies, Base, Context, ReadSet, exact six-path WriteSet and AC-1/AC-2/AC-4/AC-6.
+        Refine AC-3/AC-5 and associated MAN-003/document text so bootstrap local review/integration and later product
+        PR/branch-protection obligations have separate pass conditions; separate P1 formal TaskSpec registration
+        from final CODEX-001 C++ implementation/release completion. No product code or new WriteSet path is authorized.
+      Reason: >-
+        Worker02 fixed-Head review found that R6 required formal product PR/branch protection for the P1 bootstrap merge
+        path despite the verified 403 fallback, and made P1 CODEX-001 pass require all later C++ implementation. These
+        conditions deadlock P1; this CR clarifies stage boundaries without weakening product/release gates.
+      PreserveWriteSetAndReviewer: true
+      ChangedAcceptanceIds:
+        - AC-3
+        - AC-5
+    SupersededRevision6Evidence:
+      TaskSpecCommit: 6bdedaf5f31e0da4a4490a1ee2d6002439b3d155
+      P1PlanBlob: be52118044748b2ee7002b397ccb11d183eb59d9
+      State: Ready
+      Disposition: SupersededAfterFixedHeadReview
+      Branch: Task/ED-0013-R6-MultiAgentCollaborationStandard
+      Worktree: H:/Qbot/EmulativeDialog.ED-0013-R6
+      BaseCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
+      HeadCommit: 2ef1f8fe59eb5dd08b2b6c84e25395a707ec7d66
+      ReviewerAgentId: /root/agent_core
+      ReviewerDecision: RequestChanges
+      ReviewFindings:
+        - "Separate P1 local bootstrap ReviewBundle pass from later formal PR/required-checks/branch-protection gates for MERGE-001/002."
+        - "Separate P1 ED-0101..ED-0115 TaskSpec registration from later full C++ completion under CODEX-001."
+        - "Allow Coordinator local bootstrap merge after approved local review without representing it as a GitHub PR."
+      Reason: "Worker02 found two stage-boundary blockers; R6 did not meet the frozen AC-3/AC-5 semantics. R7 resolves these within the six-path WriteSet."
     ParallelGroup: P1GovernanceAndGateEvidence
     Goal: >-
       将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
@@ -1984,7 +2020,7 @@ Tasks:
       - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
       - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
       - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
-      - "CR-ED-0013-005: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 6; R2/R3/R4/R5 were superseded before code."
+      - "CR-ED-0013-006: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 7; R2/R3/R4/R5 were superseded and R6 received Request Changes."
     ContractVersion: Workflow governance only; no product contract changes.
     GoalFrozen: true
     ReadSet:
@@ -2008,9 +2044,9 @@ Tasks:
       - Workflow/EnforcementMatrix.yaml
       - Workflow/MultiAgentCollaborationStandard.md
     WriteSetAuthorization:
-      ChangeRequestId: CR-ED-0013-005
+      ChangeRequestId: CR-ED-0013-006
       ApprovedByRole: Coordinator
-      Scope: This exact TaskRevision 6 only
+      Scope: This exact TaskRevision 7 only
       AuthorizedPaths:
         - AGENTS.md
         - Workflow/AgentExecutionStandard.md
@@ -2081,11 +2117,14 @@ Tasks:
         Evidence: 标准步骤与任务模板字段/现行模块所有权规则一致。
       - AcceptanceId: AC-3
         Description: >-
-          作者完成并验证后提交、推送自己的 task branch 并通知 Coordinator；Coordinator
-          通过 GitHub 插件建立正式 PR、填完整任务摘要、请求独立审查并检查固定 Head；没有
-          远端 PR 能力时记录精确错误，不伪称 PR 或用 ReviewBundle 替代产品 PR。冲突由
+          实现任务完成后，作者提交并推送独立 Task branch，通知 Coordinator；Coordinator 使用 GitHub 插件尝试
+          创建正式 PR、附上完整任务摘要并请求独立固定 Head 审查。若 connector 返回权限错误，必须记录精确错误，
+          不得声称创建了 PR。在 P1/bootstrap 范围内，只有独立 Reviewer 批准本地 ReviewBundle 且 IntegrationOwner
+          复核最终语义差异后，Coordinator 才可本地合并；该 LocalReviewBundle/合并不是 GitHub PR，不能满足
+          LargeScaleProductImplementation 的正式 PR、required checks 或 branch protection 条件。冲突由
           IntegrationOwner 在集成 worktree 处理，重跑受影响验证并请求最终语义复审。
-        Evidence: Markdown 流程和 TaskLifecycle 对齐；远端平台未配置状态明确标出。
+        Evidence: >-
+          Markdown 流程、TaskLifecycle bootstrap 与 product gate 定义、PR 错误和本地审查证据彼此一致，不声称 GitHub PR。
       - AcceptanceId: AC-4
         Description: >-
           新增或改变生产模块代码的 PR 必须报告 line coverage；按模块新增/改变生产代码
@@ -2094,30 +2133,30 @@ Tasks:
         Evidence: 标准包含测量口径、CI/RootBuild 所需 coverage target 门及失败处理。
       - AcceptanceId: AC-5
         Description: >-
-          MAN-003 defines a Bootstrap/P1-only manual enforcement path for every RuleId in EnforcementMatrix.P1Blockers:
-          CODE-001/002, API-001, SEC-001, GOV-001/002/003/004, CTRL-001, CTX-001/002, PAR-001/002, TRACE-001,
-          MAP-001, PLAN-001, SEC-002, MERGE-001/002, and CODEX-001. For each RuleId it names the control, owner,
-          required evidence, evidence status, and a pass/fail criterion. It identifies an independent Coordinator signoff
-          and binds the evaluation to TaskId, TaskRevision, BaseCommit, HeadCommit, SourceCommit, review result, and
-          capability counts where applicable. It distinguishes bootstrap LocalReviewBundle from product PRs, records
-          GitHub PR/branch-protection/required-checks as unavailable where unverified, keeps CODEX-001 implementation
-          work open, and leaves TUI-001/WeChat outside P1. MAN-003 documents paths only; it does not itself pass the
-          P1 ExitGate or claim product AgentRuntime completion.
+          MAN-003 将 P1Blockers 按阶段拆成可判定的 P1/bootstrap obligation 与后续 product/release gate。对
+          MERGE-001/002，P1 PassCondition 可由独立固定 Head ReviewBundle 审查和 IntegrationOwner 本地语义复核满足；
+          Formal PR、required checks、branch protection 仅属于 LargeScaleProductImplementation，并继续标为
+          Blocked/Unverified 当前远端条件，不能成为 P1 bootstrap pass 条件。对 CODEX-001，P1 PassCondition 仅核验
+          ED-0101..ED-0115 完整 TaskSpecs 已登记、每个 Keep/Redesign 任务先于实现分派；完整 C++ 实现、行为验收
+          和产品 PR 仍是 CodexRewriteRelease gate，保持 Open/Planned，不得伪称完成。MAN-003 表须逐 RuleId 绑定
+          RuleCoverage、P1StageStatus/FutureGateStatus、控制措施、责任人、证据与 pass/fail；明确 P1 scope 排除
+          TUI-001 和 WeChat。独立 Coordinator Gate 签署须另行执行；该文档任务不会将 P1 ExitGate 自动标为 Passed。
         Evidence: >-
-          EnforcementMatrix MAN-003 RuleId-by-RuleId table and its linked task/review/build evidence; independent fixed-Head review.
+          EnforcementMatrix MAN-003 对 P1Blockers 中每个 RuleId 逐项区分 bootstrap pass 条件和 future gate；独立
+          Reviewer 复核固定 Head、EvidenceRefs、RuleId union、各阶段结果与 403/branch-protection blocker。
       - AcceptanceId: AC-6
         Description: 仅改动六个精确 WriteSet 路径；无产品代码或外部 GitHub 设置副作用。
         Evidence: 固定 Base..Head 路径核对与 git diff --check。
     Rules:
       MustFollow:
-        - "Only the six paths explicitly delegated by CR-ED-0013-005 may be written; no ModuleMap or product contract changes."
+        - "Only the six paths explicitly delegated by CR-ED-0013-006 may be written; no ModuleMap or product contract changes."
         - "TaskIndex and AgentPool changes are single-task Coordinator delegations and expire at TaskClosed."
         - "P1 ExitGate stays Pending until separate Coordinator evaluation; this task does not start product AgentRuntime code."
       SoftDefaults: []
       ApprovedOverrides:
         - RuleRef: Architecture/ModuleMap.yaml#OwnershipRules.CrossModuleChangesRequireContractOrIntegrationTask
-          ChangeRequestId: CR-ED-0013-005
-          Scope: Exact six-path WriteSet in ED-0013 Revision 6 only
+          ChangeRequestId: CR-ED-0013-006
+          Scope: Exact six-path WriteSet in ED-0013 Revision 7 only
           ApprovedByRole: Coordinator
     Validation:
       RequiredTargets: []
@@ -2136,15 +2175,15 @@ Tasks:
     BaselineCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     CodeBaseCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     HeadCommit: ""
-    TaskSpecCommitPin: Coordinator supplies immutable Revision6 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
-    Branch: Task/ED-0013-R6-MultiAgentCollaborationStandard
-    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R6
+    TaskSpecCommitPin: Coordinator supplies immutable Revision7 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
+    Branch: Task/ED-0013-R7-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R7
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R5 preflight found the nested Context.ReadSet AgentPool path had two extra spaces; CR-ED-0013-005 fixes only that list indentation. All six WriteSet paths remain untouched."
+      CurrentFindingOrFailure: "R6 passed scope/link/static checks but Worker02 identified two MAN-003 stage-boundary issues: local bootstrap merge vs later PR/protection, and P1 TaskSpec registration vs full CODEX-001 release completion. CR-ED-0013-006 refines AC-3/AC-5 before R7 edits."
       TriedApproaches: []
-      NextAction: "Freeze R6 S/blob and confirm the Controller context contains Workflow/AgentPool.yaml. Worker01 then writes only the six authorized paths and requests Worker02 fixed-Head review."
+      NextAction: "Freeze the R7 snapshot and isolated branch, split P1 bootstrap evidence from later product gates in MAN-003 and the workflow prose, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
