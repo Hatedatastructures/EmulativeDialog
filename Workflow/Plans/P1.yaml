@@ -844,3 +844,158 @@ Tasks:
       FollowUpTaskIds:
         - ED-0103
         - ED-0113
+
+  - TaskId: ED-0013
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
+    TaskKind: WorkflowStandard
+    State: Ready
+    Phase: P1
+    OwnerRole: AgentWorkflowOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: "/root/agent_core"
+    CreatedBy: Coordinator
+    ParallelGroup: P1GovernanceAndGateEvidence
+    Goal: >-
+      将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
+      worktree/PR、覆盖率门、Coordinator 集成冲突处理和每模块提交节奏写入可执行的
+      Markdown 工作规范；同时使 AgentExecutionStandard、TaskIndex、AgentPool、
+      EnforcementMatrix 与入口 AGENTS.md 保持一致。
+    OutOfScope:
+      - 修改产品 C++、公共产品合同、CapabilityMap 或模块代码
+      - 修改 GitHub 仓库设置、创建 PR、合并分支或声称平台门已配置
+      - 将本地 ReviewBundle 作为产品代码 PR 的替代物
+    DependsOn:
+      - ED-0006
+      - ED-0008
+    ExternalInputs:
+      - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
+      - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
+      - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
+    ContractVersion: Workflow governance only; no product contract changes.
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Workflow/CurrentState.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/AgentPool.yaml
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/TaskLifecycle.md
+      - Workflow/EnforcementMatrix.yaml
+      - Workflow/TaskReportTemplate.md
+      - Workflow/Plans/P1.yaml#GateId=AgentWorkflowControllerAndCoreContractsVerified
+    WriteSet:
+      - AGENTS.md
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/AgentPool.yaml
+      - Workflow/EnforcementMatrix.yaml
+      - Workflow/MultiAgentCollaborationStandard.md
+    ForbiddenSet:
+      - Source/**
+      - Tests/**
+      - CMakeLists.txt
+      - CMakePresets.json
+      - Architecture/Contracts/**
+      - Workflow/CodexCapabilityMap/**
+      - Workflow/Events/**
+    SharedLocks:
+      - CoordinatorGovernancePolicy
+      - StableAgentPool
+    Context:
+      ModuleId: AgentWorkflowController
+      AlwaysLoad:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+      ReadSet:
+        - Workflow/AgentPool.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Workflow/EnforcementMatrix.yaml
+        - Workflow/TaskReportTemplate.md
+        - Workflow/Plans/P1.yaml#GateId=AgentWorkflowControllerAndCoreContractsVerified
+      OnDemandSet: []
+      ForbiddenSet:
+        - Source/**
+        - Tests/**
+        - Architecture/Contracts/**
+        - Workflow/CodexCapabilityMap/**
+        - Workflow/Events/**
+      Budget:
+        CoreDocumentsTargetPercent: 10
+        TaskReferencesTargetPercent: 25
+        ImplementationContextReserveMinimumPercent: 50
+        MeasurementMode: EstimateUntilTelemetryExists
+        MaxReferenceFiles: 12
+        ExpansionReasonRequired: true
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          Markdown 规范明确定义六个稳定槽，其中 Worker02–Worker05 承担四个可并行产品实现
+          工作流，Worker01/Worker06 承担 RootBuild/Workflow 与 Memory/Context 支持；并行度
+          仍受宿主容量与 Ready 独立任务数量约束，不以重复分析或虚构任务填槽。
+        Evidence: 文档审查、TaskIndex/AgentPool 配置与六槽角色映射一致。
+      - AcceptanceId: AC-2
+        Description: >-
+          每个实现任务先冻结 TaskId/Revision/Owner/Reviewer/ReadSet/WriteSet/依赖/验收/验证
+          命令及 API 合同，再在固定 BaseCommit 创建独立 Task 分支和 worktree；不同任务
+          WriteSet 不重叠，公共合同和根构建保持单写者。
+        Evidence: 标准步骤与任务模板字段/现行模块所有权规则一致。
+      - AcceptanceId: AC-3
+        Description: >-
+          作者完成并验证后提交、推送自己的 task branch 并通知 Coordinator；Coordinator
+          通过 GitHub 插件建立正式 PR、填完整任务摘要、请求独立审查并检查固定 Head；没有
+          远端 PR 能力时记录精确错误，不伪称 PR 或用 ReviewBundle 替代产品 PR。冲突由
+          IntegrationOwner 在集成 worktree 处理，重跑受影响验证并请求最终语义复审。
+        Evidence: Markdown 流程和 TaskLifecycle 对齐；远端平台未配置状态明确标出。
+      - AcceptanceId: AC-4
+        Description: >-
+          新增或改变生产模块代码的 PR 必须报告 line coverage；按模块新增/改变生产代码
+          行覆盖率至少 80%，注明分母、排除项和工具版本。覆盖率报告缺失或低于阈值即
+          不通过；不得缩小范围、排除业务分支或用旧报告代替。
+        Evidence: 标准包含测量口径、CI/RootBuild 所需 coverage target 门及失败处理。
+      - AcceptanceId: AC-5
+        Description: >-
+          MAN-003 为 P1 所需关键 MUST 定义 scoped manual path；明确局部 bootstrap ReviewBundle
+          不等于产品 PR，远端 PR/branch protection/required checks 当前未验证或未配置时
+          保留 blocker；不得将 Codex Keep/Redesign 实现或 CODEX-001 标记完成。
+        Evidence: EnforcementMatrix 与 P1 ExitGate 的覆盖表和范围说明。
+      - AcceptanceId: AC-6
+        Description: 仅改动六个精确 WriteSet 路径；无产品代码或外部 GitHub 设置副作用。
+        Evidence: 固定 Base..Head 路径核对与 git diff --check。
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures: []
+      StaticChecks:
+        - git diff --check BaseCommit HeadCommit
+        - Verify changed paths equal the exact six-path WriteSet.
+        - Verify Markdown links and six-slot/80-percent/PR/conflict rules are internally consistent.
+      LiveSideEffects: Forbidden
+      NotRunReason: Markdown and YAML governance change only; no C++ target is affected.
+    RiskLevel: Medium
+    RiskOwnerRole: Coordinator
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    ReviewerDecision: Pending
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: "TaskSpec registered; awaiting isolated branch assignment and fixed BaseCommit."
+      TriedApproaches: []
+      NextAction: "Coordinator fixes BaseCommit, assigns Worker01, and Reviewer Worker02 reviews fixed Head."
+      OpenMessageIds: []
+      LastValidationResult: "Not run; task has not started."
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: []
