@@ -492,8 +492,6 @@ Tasks:
     MergeCommit: c17a39ce3e4ff3904c7fb4a00e715adedf99d183
     ReviewerDecision: Approved
     ReviewHeadCommit: 6b14deb52c1878fbfee239bc9fb768616bcfd6af
-    ReviewerDecision: Approved
-    ReviewHeadCommit: 6b14deb52c1878fbfee239bc9fb768616bcfd6af
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
       CurrentFindingOrFailure: ""
