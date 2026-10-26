@@ -2201,7 +2201,7 @@ Tasks:
     IntegrationMode: LocalReviewBundle
     MergeTargetBranch: codex/integration
     RemoteHeadBeforeMerge: 18c03eda99b16e24df2809669e2208c804e13db4
-    MergeBaseCommit: 18c03eda99b16e24df2809669e2208c804e13db4
+    MergeBaseCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     MergeCommit: 761b80b6b9082fc9227d63498398e3dfd530ca31
     IntegrationOwnerSemanticReview: Approved
     Checkpoint:
