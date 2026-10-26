@@ -1,11 +1,25 @@
 # 模块地图根索引。每项任务按 ModuleId 查一个域分片，不加载全图。
 SchemaVersion: 2
 ProjectId: EmulativeDialog
-State: Proposed
+State: Frozen
 CodeLanguage: C++
 NamingRule: PascalCase
 ModuleDirectory: Architecture/Modules
 LoadRule: ResolveModuleIdToOneShardThenLoadOnlyThatEntry
+FrozenByTask: ED-0005
+FrozenRevision: 1
+
+CurrentReleaseScope:
+  ProductRuntime: ChatAgent
+  Channel: QQ
+  DeferredModules:
+    - ChannelWeChat
+    - TuiTerminal
+    - TuiRendering
+    - TuiLayoutAndComponents
+    - TuiInputAndEvents
+    - TuiApplication
+  DeferredModulesBlockCodexAgentCore: false
 
 OwnershipRules:
   OnePrimaryOwnerPerModule: true
@@ -30,12 +44,14 @@ ModuleShards:
   - ShardId: Providers
     Path: Architecture/Modules/Providers.yaml
     ModuleIds:
+      - ModelProviderPort
       - ProviderOpenAIResponses
       - ProviderOpenAIChatCompletions
       - ProviderAnthropicMessages
   - ShardId: Channels
     Path: Architecture/Modules/Channels.yaml
     ModuleIds:
+      - ChannelAdapterPort
       - ChannelQQ
       - ChannelWeChat
   - ShardId: MemoryStorage
@@ -69,6 +85,8 @@ ModuleShards:
 
 SharedOwners:
   - Resource: RootCMakeAndPresets
+    OwnerRole: BuildAndDependencyOwner
+  - Resource: DependencyLock
     OwnerRole: BuildAndDependencyOwner
   - Resource: CrossModuleContractVersions
     OwnerRole: ContractOwner

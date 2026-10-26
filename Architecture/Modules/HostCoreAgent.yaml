@@ -9,9 +9,16 @@ Modules:
       - Tests/Contract/AppHost/
     ContractRefs:
       - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/ChannelAdapterContract.md
     DependsOn:
       - Core
+      - AgentRuntime
       - WindowsPlatform
+      - ProviderOpenAIResponses
+      - ProviderOpenAIChatCompletions
+      - ProviderAnthropicMessages
+      - ChannelQQ
     LoadEntry:
       - ProjectOverview.md
       - Architecture/SystemArchitecture.md#命令行与应用宿主
@@ -23,10 +30,13 @@ Modules:
       - Tests/Contract/Core/
     ContractRefs:
       - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
       - Architecture/Contracts/ChannelAdapterContract.md
     DependsOn:
       - WindowsPlatform
       - Storage
+      - ModelProviderPort
+      - ChannelAdapterPort
     LoadEntry:
       - Architecture/SystemArchitecture.md#Core-核心
 
@@ -42,8 +52,6 @@ Modules:
     DependsOn:
       - Core
       - ContextSelector
-      - ProviderOpenAIResponses
-      - ProviderOpenAIChatCompletions
-      - ProviderAnthropicMessages
+      - ModelProviderPort
     LoadEntry:
       - Architecture/SystemArchitecture.md#Agent-运行时

@@ -127,7 +127,12 @@ Rules:
       Evidence: CodexCapabilityMap 覆盖率与未决项清单
       BlockingStage: CodexCorePreparationGate
     OwnerRole: ProductContractOwner
-    Status: BlockedOnSourceBaseline
+    Status: ManualGate
+    AutomationStatus: Planned
+    CurrentEvidence:
+      - Workflow/CodexCapabilityMap.yaml
+      - Workflow/Events/Bootstrap/P0.jsonl#ED-0001-ReviewFindingResolved
+      - ED-0001@1:882b39ccd53077c93ab47a6266956af6e0202031
     Severity: MUST
 
   - RuleId: CODEX-001
@@ -231,6 +236,17 @@ Rules:
     Severity: MUST
 
 ManualGates:
+  - GateId: MAN-002
+    RuleIds:
+      - MAP-001
+    SignerMustBeDifferentFromAuthor: true
+    EvidenceMustReference:
+      - TaskId
+      - TaskRevision
+      - BaseCommit
+      - HeadCommit
+      - SourceCommit
+      - CapabilityCounts
   - GateId: MAN-001
     RuleIds:
       - API-001
@@ -243,3 +259,34 @@ ManualGates:
       - BaseCommit
       - HeadCommit
       - FindingResolution
+
+P1Blockers:
+  ProductAgentImplementation:
+    - BlockerId: P1-CPP20-Windows-Build
+      RuleIds: [CODE-001, CODE-002]
+      RequiredWork: Native C++20 Windows configure/build target and locked approved dependencies.
+      OwnerRole: BuildAndDependencyOwner
+    - BlockerId: P1-Versioned-Contract-Freezes
+      RuleIds: [API-001, SEC-001]
+      RequiredWork: Freeze CoreAgent, ModelProvider, Memory, and mock ChannelAdapter seams with provider/memory fixture matrices.
+      OwnerRole: ContractOwner
+    - BlockerId: P1-AgentWorkflowController
+      RuleIds: [GOV-001, GOV-002, GOV-003, GOV-004, CTRL-001, CTX-001, CTX-002, PAR-001, PAR-002, TRACE-001, MAP-001]
+      RequiredWork: C++ task lookup, revision/state validation, bounded ReadSet context, WriteSet checks, isolated worktree, event/checkpoint recovery, and capability-map manual/automatic gate.
+      OwnerRole: AgentWorkflowOwner
+    - BlockerId: P1-DataAndReviewGates
+      RuleIds: [SEC-002, MERGE-001, MERGE-002]
+      RequiredWork: Independent destructive-change review and auditable local ReviewBundle flow during bootstrap.
+      OwnerRole: IntegrationOwner
+    - BlockerId: P1-Formal-Capability-TaskSpecs
+      RuleIds: [CODEX-001]
+      RequiredWork: Register full TaskSpecs for proposed ED-0101 through ED-0115 before assigning any implementation work.
+      OwnerRole: Coordinator
+  LargeScaleProductImplementation:
+    - BlockerId: PR-Platform-And-Branch-Protection
+      RuleIds: [MERGE-001, MERGE-002]
+      RequiredWork: Configure a formal integration remote, PR target, independent reviewer requirements, and branch protection before large-scale product implementation.
+      OwnerRole: IntegrationOwner
+  NonBlockers:
+    - TUI reference selection blocks only TuiImplementation.
+    - WeChat remains Deferred and is not a dependency of the current QQ chat release.
