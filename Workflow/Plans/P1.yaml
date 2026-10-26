@@ -56,6 +56,7 @@ ExitGate:
     - ED-0007
     - ED-0008
     - ED-0017
+    - ED-0130
     - ED-0127
     - ED-0128
     - ED-0129
@@ -68,6 +69,23 @@ ExitGate:
     - P2
     - P3
   ProductAgentRuntimeCodeAllowedBeforeExit: false
+  ChangeRequests:
+    - ChangeRequestId: CR-P1-EXIT-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Add ED-0130 as a one-line contract-status finalization task required by the existing P1 ExitGate. The task
+        changes only the ModelProviderContract V1.2 status annotation to Frozen after the independently reviewed
+        ED-0017/R4 content and all three R4 fixture sets are merged. Preserve all normative V1.2 semantics and
+        existing fixture pins.
+      Reason: >-
+        P1 ExitGate requires ModelProvider V1.2 to be frozen, but its merged, reviewed contract still labels V1.2
+        as a candidate. The older CoreAgent, Memory and Channel headers explicitly say their frozen-candidate state
+        becomes effective after ED-0007 review/merge, which has already occurred. The provider status annotation
+        needs the same explicit final state before Coordinator signs the P1 gate.
 
 Tasks:
   - TaskId: ED-0006
@@ -3123,5 +3141,97 @@ Tasks:
       TriedApproaches: []
       NextAction: "P1 ExitGate remains pending ED-0127/R4 and ED-0128/R4 fixed-head reviews and merges."
       LastValidationResult: "Post-merge checks passed; task branch refs retired at integration Head b14da1c6; task worktree retained detached."
+      OpenMessageIds: []
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0130
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 明确冻结已审批的 ModelProvider V1.2 合同状态
+    TaskKind: ContractStatusFinalization
+    State: Ready
+    Phase: P1
+    OwnerRole: ContractOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/p1_gov004_luna"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: "/root/p1_code001_luna"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-27"
+    UpdatedAt: "2026-10-27"
+    ChangeRequestId: CR-P1-EXIT-001
+    Goal: >-
+      After ED-0017/R4 and ED-0127/R4 through ED-0129/R4 are merged and independently approved, mark the existing
+      ModelProviderContract V1.2 status as Frozen without changing any normative contract semantics.
+    OutOfScope:
+      - Any change to V1.1 or V1.2 normative request, event, protocol, refusal, security or authorization semantics.
+      - Any C++ source, provider adapter, fixture, CMake, AgentRuntime or channel implementation change.
+      - Changing the three V1.2 fixture pins from ED-0017/R4.
+    DependsOn: [ED-0007, ED-0017, ED-0127, ED-0128, ED-0129]
+    ContractVersion: ModelProviderContract V1.2 at ED-0017/R4
+    Context:
+      ModuleId: ModelProviderPort
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Providers.yaml
+        - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Tests/Contract/Providers/OpenAIResponses/Fixtures/Version1Point2/FixtureIndex.json
+        - Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/Version1Point2/FixtureIndex.json
+        - Tests/Contract/Providers/AnthropicMessages/Fixtures/Version1Point2/FixtureIndex.json
+      ForbiddenSet: [Source/**, CMakeLists.txt, CMakePresets.json]
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Architecture/Contracts/ModelProviderContract.md
+    SharedLocks: [CrossModuleContractVersions]
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: ModelProviderContract V1.2 status is explicitly Frozen and cites the approved ED-0017/R4 content and completed fixture evidence.
+        Evidence: Contract header and merged task/review records.
+      - AcceptanceId: AC-2
+        Description: No normative V1.1/V1.2 contract body changes; only the V1.2 status annotation changes.
+        Evidence: Exact one-path diff and byte comparison of the contract body after excluding the status line.
+      - AcceptanceId: AC-3
+        Description: All three V1.2 fixture indices remain pinned to ED-0017/R4 and all continue to match the unchanged V1.2 semantic body.
+        Evidence: Three fixture indices and ED-0017/R4 body comparison.
+      - AcceptanceId: AC-4
+        Description: Change set is doc-only and within the one-file WriteSet; no build is required.
+        Evidence: git diff --check, exact path check and local ReviewBundle.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures:
+        - Verify current V1.2 status and three fixture contract pins against ED-0017/R4.
+      StaticChecks:
+        - git diff --check <BaselineCommit> <HeadCommit>
+        - Changed paths exactly equal Architecture/Contracts/ModelProviderContract.md.
+        - Compare V1.2 normative body after removing the single status line; it must be byte-identical to BaseCommit.
+        - Confirm no Source/**, Tests/**, or CMake path changed.
+      NotRunReason: "Status-only contract finalization; normative content and executable behavior are unchanged."
+    RiskLevel: Medium
+    RiskOwnerRole: ContractOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: 2e95c848665c5a92b50226f349dea63c1c6339d5
+    HeadCommit: ""
+    MergeBaseCommit: 2e95c848665c5a92b50226f349dea63c1c6339d5
+    Branch: Task/ED-0130-ProviderContractFreezeStatus
+    Worktree: H:/Qbot/EmulativeDialog.ED-0130
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0130-R1
+    MergeTargetBranch: codex/integration
+    ReviewerDecision: Pending
+    ReviewHeadCommit: ""
+    Checkpoint:
+      LastCompletedAcceptance: []
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: "Coordinator records TaskSpec validation, creates the isolated worktree and assigns Worker03."
+      LastValidationResult: "No implementation attempted; Ready after all contract and V1.2 fixture dependencies merged."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
