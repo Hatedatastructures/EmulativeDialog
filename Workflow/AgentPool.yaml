@@ -22,10 +22,11 @@ LifecyclePolicy:
 
 Slots:
   - SlotId: Worker01
-    RoleFamily: AgentWorkflowOwner
+    RoleFamily: BuildAndWorkflowOwner
     AgentId: "/root/workflow_controller"
     HostSessionRef: ""
     ModuleIds:
+      - RootBuildAndDependencies
       - AgentWorkflowController
     CurrentTaskId: ""
     Status: Dormant
@@ -39,31 +40,36 @@ Slots:
     CurrentTaskId: ""
     Status: Dormant
   - SlotId: Worker03
-    RoleFamily: Unassigned
-    AgentId: ""
+    RoleFamily: ResponsesProviderOwner
+    AgentId: "/root/provider_responses"
     HostSessionRef: ""
-    ModuleIds: []
+    ModuleIds:
+      - ProviderOpenAIResponses
     CurrentTaskId: ""
     Status: Dormant
   - SlotId: Worker04
-    RoleFamily: Unassigned
-    AgentId: ""
+    RoleFamily: ChatCompletionsProviderOwner
+    AgentId: "/root/provider_chat"
     HostSessionRef: ""
-    ModuleIds: []
+    ModuleIds:
+      - ProviderOpenAIChatCompletions
     CurrentTaskId: ""
     Status: Dormant
   - SlotId: Worker05
-    RoleFamily: Unassigned
-    AgentId: ""
+    RoleFamily: AnthropicProviderOwner
+    AgentId: "/root/provider_anthropic"
     HostSessionRef: ""
-    ModuleIds: []
+    ModuleIds:
+      - ProviderAnthropicMessages
     CurrentTaskId: ""
     Status: Dormant
   - SlotId: Worker06
-    RoleFamily: Unassigned
-    AgentId: ""
+    RoleFamily: MemoryContextOwner
+    AgentId: "/root/memory_context"
     HostSessionRef: ""
-    ModuleIds: []
+    ModuleIds:
+      - Memory
+      - ContextSelector
     CurrentTaskId: ""
     Status: Dormant
   - SlotId: Worker07

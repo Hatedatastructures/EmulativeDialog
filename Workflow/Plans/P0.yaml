@@ -22,6 +22,11 @@ DomainGates:
       - ED-0005
     Unlocks:
       - P1
+    State: Passed
+    EvidenceRefs:
+      - Workflow/Plans/P0.yaml#ED-0001
+      - Workflow/Plans/P0.yaml#ED-0005
+      - Workflow/Events/Bootstrap/P0.jsonl
   QQChannel:
     RequiredTaskIds:
       - ED-0003
@@ -191,7 +196,7 @@ Tasks:
     EpicId: EP-04
     Title: 冻结 Codex 核心模块 owner、写集边界与治理门
     TaskKind: ArchitectureOwnership
-    State: MergeQueued
+    State: Merged
     OwnerRole: IntegrationOwner
     OwnerAgentId: "/root"
     ReviewerRole: ProductContractOwner
@@ -203,7 +208,8 @@ Tasks:
     HeadCommit: d7a05ccf9ef221242c92a1574cd47587c09b83a1
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0005
     MergeTargetBranch: codex/integration
-    MergeBaseCommit: 38b0bf0f29ab7007b93cb043dd02400b671ed038
+    MergeBaseCommit: 16ac20d469a1ec42259ae986555fc5dcf9421811
+    MergeCommit: 0e527d5af19471d250c1b0d2d03cefda33354a8f
     ReviewerDecision: Approved
     ReviewHeadCommit: d7a05ccf9ef221242c92a1574cd47587c09b83a1
     DependsOn:

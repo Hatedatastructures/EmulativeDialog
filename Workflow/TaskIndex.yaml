@@ -76,8 +76,17 @@ ExecutionGates:
       - ED-0005
     Unlocks:
       - P1
+    State: Passed
+    EvidenceRefs:
+      - Workflow/Plans/P0.yaml#ED-0001
+      - Workflow/Plans/P0.yaml#ED-0005
+      - Workflow/Events/Bootstrap/P0.jsonl
   ProductAgentImplementation:
     RequiredP1Gate: AgentWorkflowControllerAndCoreContractsVerified
+    RequiredTaskIds:
+      - ED-0006
+      - ED-0007
+      - ED-0008
     Unlocks:
       - P2
       - P3
@@ -103,8 +112,8 @@ PhasePlans:
     State: Current
     LoadWhen: ScopeAndEvidenceWorkIsAssigned
   - PhaseId: P1
-    Path: ""
-    State: NotExpanded
+    Path: Workflow/Plans/P1.yaml
+    State: Current
     LoadWhen: CodexCorePreparationGatePassed
   - PhaseId: P2
     Path: ""

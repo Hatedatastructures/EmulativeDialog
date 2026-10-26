@@ -1,0 +1,344 @@
+SchemaVersion: 1
+PhaseId: P1
+PhaseName: Windows C++20 Build, Contract Freeze, AgentWorkflowController
+State: Current
+
+EntryGate:
+  RequiredTaskIds:
+    - ED-0001
+    - ED-0005
+  RequiredStates:
+    ED-0001: Merged
+    ED-0005: Merged
+  EvidenceRefs:
+    - Workflow/Plans/P0.yaml#ED-0001
+    - Workflow/Plans/P0.yaml#ED-0005
+    - Workflow/Events/Bootstrap/P0.jsonl
+
+ParallelGroups:
+  - GroupId: WindowsBuildAndContractFreeze
+    TaskIds:
+      - ED-0006
+      - ED-0007
+    WriteSetsDisjoint: true
+    SharedLocksDisjoint: true
+  - GroupId: AgentWorkflowController
+    TaskIds:
+      - ED-0008
+    DependsOn:
+      - ED-0006
+
+ExitGate:
+  GateId: AgentWorkflowControllerAndCoreContractsVerified
+  RequiredTaskIds:
+    - ED-0006
+    - ED-0007
+    - ED-0008
+  RequiredEvidence:
+    - Windows-native C++20 configure, build, and contract-test output.
+    - Frozen CoreAgent, ModelProvider, Memory, and ChannelAdapter contracts.
+    - Independently reviewed Controller behavior and fault-recovery evidence.
+    - Manual or automated enforcement paths for critical MUST rules.
+  Unlocks:
+    - P2
+    - P3
+  ProductAgentRuntimeCodeAllowedBeforeExit: false
+
+Tasks:
+  - TaskId: ED-0006
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 建立 Windows 原生 C++20 CMake 与依赖基线
+    TaskKind: Build
+    State: Ready
+    Phase: P1
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: Coordinator
+    ReviewerAgentId: "/root"
+    CreatedBy: Coordinator
+    ParallelGroup: WindowsBuildAndContractFreeze
+    Goal: "提供可复用的 Windows 原生 C++20 配置、构建与最小编译验证目标，并固定首批 C++ 依赖。"
+    OutOfScope:
+      - Codex AgentRuntime 产品行为
+      - Provider/Channel/Memory 实现
+      - WSL 构建或验收
+      - 非 C++ 发布运行时
+    DependsOn: []
+    ExternalInputs:
+      - https://www.boost.org/releases/1.92.0/
+      - https://github.com/boostorg/boost/tree/afdfa32505af73e3d208144b3f623f0096cb62b6
+      - https://github.com/jbeder/yaml-cpp/releases/tag/yaml-cpp-0.9.0
+      - https://github.com/jbeder/yaml-cpp/blob/56e3bb550c91fd7005566f19c079cb7a503223cf/LICENSE
+      - https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
+    ContractVersion:
+      - Standards/CppEngineeringStandard.md at BaseCommit
+      - Standards/DependencyPolicy.md at BaseCommit
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Standards/CppEngineeringStandard.md
+      - Standards/DependencyPolicy.md
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/BuildRelease.yaml
+      - Architecture/Modules/Platform.yaml
+      - Workflow/EnforcementMatrix.yaml
+    WriteSet:
+      - CMakeLists.txt
+      - CMakePresets.json
+      - CMake/
+      - Standards/DependencyPolicy.md
+    ForbiddenSet:
+      - Source/**
+      - Tests/**
+      - Tools/**
+    SharedLocks:
+      - RootCMakeAndPresets
+      - DependencyLock
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Configure a Windows-native C++20 build preset using the available MinGW compiler and generator; do not use WSL.
+        Evidence: CMake configure output identifies the native Windows C++ compiler and C++20 target.
+      - AcceptanceId: AC-2
+        Description: Build and execute a small C++20 probe with a compile-time standard assertion; the probe is build verification only and is not a product runtime.
+        Evidence: Build and CTest output for the named BuildProbe target.
+      - AcceptanceId: AC-3
+        Description: Record exact source/version/license/use of Boost 1.92.0 and yaml-cpp 0.9.0; dependency declarations use immutable commit pins.
+        Evidence: DependencyPolicy entries and CMake dependency declarations.
+      - AcceptanceId: AC-4
+        Description: Keep generated build files outside the source worktree.
+        Evidence: CMakePreset binaryDir resolves to a worktree-specific sibling build directory.
+    Validation:
+      RequiredTargets:
+        - BuildProbe
+      TargetedBuild:
+        - cmake --preset windows-mingw
+        - cmake --build --preset windows-mingw
+      ContractFixtures:
+        - ctest --preset windows-mingw --output-on-failure
+      StaticChecks:
+        - C++20 static_assert in BuildProbe.cpp
+        - Dependency versions and immutable hashes match DependencyPolicy.md
+      LiveSideEffects: Forbidden
+      NotRunReason: ""
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Configure the native Windows preset and compile the C++20 BuildProbe.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: []
+
+  - TaskId: ED-0007
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
+    TaskKind: ContractFreeze
+    State: Ready
+    Phase: P1
+    OwnerRole: ContractOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: Coordinator
+    ReviewerAgentId: "/root"
+    CreatedBy: Coordinator
+    ParallelGroup: WindowsBuildAndContractFreeze
+    Goal: "将第一条产品纵向切片依赖的公共身份、回合、Provider、Memory 和 Mock Channel 语义冻结为 V1 合同。"
+    OutOfScope:
+      - C++ Provider/Channel/Memory 实现
+      - 真实 QQ 登录或发送
+      - 微信调研或实现
+      - 通用 MCP、Shell、文件或任意网络工具
+    DependsOn: []
+    ExternalInputs:
+      - https://developers.openai.com/api/docs/guides/streaming-responses
+      - https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
+      - https://platform.claude.com/docs/en/api/versioning
+      - https://platform.claude.com/docs/en/api/migration-2026-10-21
+      - Workflow/Communications/Bootstrap/P1.jsonl
+    ContractVersion: V1
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+      - Workflow/CodexCapabilityMap.yaml
+      - Workflow/CodexCapabilityMap/AgentCore.yaml
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Architecture/Modules/Providers.yaml
+      - Architecture/Modules/Channels.yaml
+      - Architecture/Modules/MemoryStorage.yaml
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/ChannelAdapterContract.md
+      - Standards/SecurityAndPrivacy.md
+      - Workflow/Communications/Bootstrap/P1.jsonl
+    WriteSet:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/ChannelAdapterContract.md
+    ForbiddenSet:
+      - Source/**
+      - Tests/**
+    SharedLocks:
+      - CrossModuleContractVersions
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Freeze trusted ChannelEnvelope identity, Core-only scope/authorization, turn lifecycle, cancellation, error, recovery, and unknown-outcome semantics.
+        Evidence: CoreAgentContract V1 state/action matrix and rejection cases.
+      - AcceptanceId: AC-2
+        Description: Freeze CanonicalModelRequest/Event payloads, stable IDs/sequences, exactly-one provider terminal, tool-call result mapping, retry/unknown-outcome rules, and all three required wire protocol mappings.
+        Evidence: ModelProviderContract V1 request/event tables and per-protocol offline fixture plans.
+      - AcceptanceId: AC-3
+        Description: Pin Anthropic wire version 2026-10-21 and an explicit profile authentication scheme; reject non-default sampling options unsupported by that version and define stop-reason/usage/cancellation semantics.
+        Evidence: ModelProviderContract V1 Anthropic profile with official source references.
+      - AcceptanceId: AC-4
+        Description: Freeze identity/session memory scopes, explicit write consent, provenance, bounded context priority, sensitive-data rejection, and forget/tombstone behavior.
+        Evidence: MemoryContract V1 acceptance/fixture matrix.
+      - AcceptanceId: AC-5
+        Description: Freeze the MockChannel/ChannelAdapter port contract, capability-denied receipts, UnsupportedCapability, and UnknownOutcome; keep real QQ account capabilities behind ED-0003/ED-0004 and WeChat Deferred.
+        Evidence: ChannelAdapterContract V1 MockChannel scenario and scope table.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures:
+        - Independent review of all four versioned contract files against AC-1 through AC-5.
+      StaticChecks:
+        - All cross-module data and state outcomes have one canonical definition.
+        - No protocol-specific fields or authorization policy leak into the wrong module.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Contract-only task; runtime verification belongs to dependent implementation tasks."
+    RiskLevel: High
+    RiskOwnerRole: ContractOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Reconcile the collected protocol and memory findings, freeze the four V1 contracts, and submit the fixed Head for review.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: []
+
+  - TaskId: ED-0008
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 实现 C++ AgentWorkflowController 必要能力
+    TaskKind: CapabilitySlice
+    State: Proposed
+    Phase: P1
+    OwnerRole: AgentWorkflowOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerAgentId: "/root/agent_core"
+    CreatedBy: Coordinator
+    ParallelGroup: ControllerAfterBuild
+    Goal: "交付可实际查询/校验任务、限制上下文与写集、管理隔离 worktree、保存检查点/事件并执行 TaskSpec 验证的 C++ 开发工具。"
+    OutOfScope:
+      - 产品运行时和聊天 Agent 代码
+      - Agent 自行批准 ChangeRequest 或合并代码
+      - 未登记的 Shell、任意文件或网络工具
+    DependsOn:
+      - ED-0006
+    ContractVersion: Workflow/AgentExecutionStandard and Workflow/TaskLifecycle at BaseCommit
+    ReadSet:
+      - AGENTS.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/TaskTemplate.yaml
+      - Workflow/TaskLifecycle.md
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/AgentPool.yaml
+      - Workflow/EnforcementMatrix.yaml
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/WorkflowTools.yaml
+      - CMakeLists.txt
+      - CMakePresets.json
+    WriteSet:
+      - Tools/WorkflowController/
+      - Tests/Contract/WorkflowController/
+    ForbiddenSet:
+      - Source/Core/**
+      - Source/Agent/**
+      - Source/Providers/**
+      - Source/Channels/**
+      - Architecture/Contracts/**
+    SharedLocks: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Query one TaskId from the routed phase plan and reject missing, stale-revision, invalid-state, and unsatisfied-dependency assignments.
+        Evidence: C++ contract fixtures for valid and rejected transitions.
+      - AcceptanceId: AC-2
+        Description: Assemble context only from ReadSet and reject path expansion or writes outside the frozen WriteSet/SharedLocks.
+        Evidence: ReadSet boundary and overlapping-write contract fixtures.
+      - AcceptanceId: AC-3
+        Description: Create and verify the assigned Git branch/worktree and record BaseCommit/HeadCommit; never switch or write the user's original shared worktree.
+        Evidence: Isolated-worktree recovery fixture.
+      - AcceptanceId: AC-4
+        Description: Append structured, redacted task/command/file/review events and save/recover checkpoints after process interruption.
+        Evidence: Event-log and interrupted-controller recovery fixtures.
+      - AcceptanceId: AC-5
+        Description: Execute only Validation commands frozen in TaskSpec and record actual command, working directory, exit code, and evidence path; output a local ReviewBundle when no remote PR exists.
+        Evidence: Validation allowlist and ReviewBundle contract fixtures.
+      - AcceptanceId: AC-6
+        Description: Do not approve scope changes, merge without independent review, or load unrelated task history.
+        Evidence: Rejection fixtures for forbidden controller operations.
+    Validation:
+      RequiredTargets:
+        - WorkflowController
+      TargetedBuild:
+        - cmake --preset windows-mingw
+        - cmake --build --preset windows-mingw --target WorkflowController
+      ContractFixtures:
+        - ctest --preset windows-mingw --output-on-failure
+      StaticChecks:
+        - C++20 and PascalCase checks for new project-owned C++ paths and identifiers.
+        - Verify the task branch diff is contained in the two authorized WriteRoots.
+      LiveSideEffects: Forbidden
+      NotRunReason: ""
+    RiskLevel: High
+    RiskOwnerRole: AgentWorkflowOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Implement the controller after ED-0006 is verified; the P1 ExitGate still requires ED-0007 contract freeze.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: []

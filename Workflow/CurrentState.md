@@ -9,10 +9,10 @@
 - 本轮创建并修订中文治理、产品、合同、路线和平台能力文档；没有创建 C++ 源码、CMake 工程或测试。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
-- P0 候选切片见 Workflow/Plans/P0.yaml；ED-0001 上游能力映射已通过独立复审并合并到本地 `codex/integration`。ED-0005 的 owner、写根、依赖和 P1 阻断清单已通过独立复审，正在等待本地集成；P0 核心门将在 ED-0005 合并后解锁。
-- Workflow/AgentPool.yaml 为八个逻辑槽位中的 Worker01/Worker02 绑定了独立审查与 ED-0001 作者角色；后续 Agent 调用须沿用这两个稳定身份，未声称已结束的会话仍在运行。
+- P0 的 ED-0001 上游能力映射与 ED-0005 模块/治理门均已通过独立审查并合入本地 `codex/integration`；CodexCorePreparationGate 已通过，P1 现为当前 Codex 核心工作阶段。QQ/TUI 仍保留独立领域门。
+- Workflow/AgentPool.yaml 已将 Worker01–Worker06 绑定到用户指定的六个稳定职责与原 AgentId；当前会话均处于 Dormant，后续任务须复用这些逻辑身份，不虚报旧会话仍在运行。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
-- 已只读核验 Codex 上游候选提交与许可证；ED-0001 负责将它记录进能力地图并完成全目标范围映射。能力地图仍为空，不代表映射完成。TUI 参照库仍未锁定，且不阻塞 Agent 核心。
+- `Workflow/CodexCapabilityMap.yaml` 已锁定 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97` 与 Apache-2.0 行为参考边界；24 项能力已分类，15 项 Keep/Redesign 具备拟议 TaskId。正式 P2/P3 TaskSpecs 须在实现分配前登记。TUI 参照库仍未锁定，且不阻塞 Agent 核心。
 - 任何阶段不得把本状态描述为“已实现”或“已构建”。
 
 ## 当前产品解释
@@ -26,16 +26,16 @@
 - 见 Workflow/OpenDecisions.md。
 - QQ 是否是 QQ Bot、个人 QQ 或其他明确授权的模式。
 - 微信账号面留待未来阶段重新开启；当前不属于 P0 未决任务。
-- Codex 上游仓库/提交和 Agent 能力映射仍待 P0 完成；这不再是是否实现 Codex 聊天 Agent 核心的范围问题。
+- Codex 上游基线和 24 项聊天 Agent 能力映射已由 ED-0001 锁定并审查；15 项 Keep/Redesign 已映射到拟议 TaskId，正式 P2/P3 TaskSpecs 会在实现阶段分片登记。
 - QQ 账号面和授权接口仍待核验；微信保持 Deferred。
 - TUI 必须先锁定一个 TypeScript 参照库及精确版本；目标 API 映射覆盖率为 100%，未批准的行为差异为零。JSX 字面语法与原生 C++ 语法的冲突须单独明确，不得借此减少组件能力。
 
 ## 下一步
-1. 按 ADR-0002 固定的聊天 Agent 范围锁定 Codex 上游仓库/提交，建立可追踪到 C++ 模块和验收的能力地图。
-2. 完成 QQ 官方/授权接入证据；TUI 参照库只阻塞 TUI 自身实现，不阻塞 Codex Agent 核心。
-3. 冻结 Codex Agent/Core、三 Provider、Memory/Context 的首批合同与模块写集。
-4. 建立 C++ AgentWorkflowController 和 Windows 构建/PR 门。
-5. 开始 C++ Codex Agent 核心纵向切片；按能力地图逐项实现、审查和更新状态。
+1. P0 的 ED-0001 与 ED-0005 已通过独立审查并合入本地 `codex/integration`；P1 现已打开。
+2. 并行推进 ED-0006 Windows C++20/CMake 基础和 ED-0007 首批 Core/Provider/Memory/Channel 合同冻结。
+3. ED-0008 交付 C++ AgentWorkflowController；P1 ExitGate 通过前不启动产品 AgentRuntime 实现。
+4. P1 通过后登记 ED-0101–ED-0115 的正式 TaskSpecs，再完成 Mock 消息 → Core policy → C++ AgentRuntime → FakeProvider → MockChannel 的可编译行为切片。
+5. QQ 官方/授权接入与 TUI 参照分别按 P4/P5 推进；TUI 不阻塞 Agent 核心，微信继续 Deferred。
 
 ## 验证账本
-目前没有 C++ 源码、构建或真实 QQ 收发证据；微信本阶段不做收发。平台调研摘要见 Research/Platforms/PlatformCapabilityMatrix.md。
+目前还没有 C++ 源码、构建或真实 QQ 收发证据；P1 的 C++ build/controller 任务已就绪，微信本阶段不做收发。平台调研摘要见 Research/Platforms/PlatformCapabilityMatrix.md。
