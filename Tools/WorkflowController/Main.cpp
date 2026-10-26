@@ -515,13 +515,7 @@ int RunCommand(const std::vector<std::string>& Arguments) {
       }
     }
     Bundle.Events = Events.ReadTaskEvents(Task.TaskId);
-    for (const WorkflowEvent& Event : Bundle.Events) {
-      if (Event.EventType == "CommandExecuted") {
-        Bundle.Validations.push_back({Event.Command, Event.WorkingDirectory,
-                                      static_cast<unsigned long>(Event.ExitCode),
-                                      Event.EvidencePath});
-      }
-    }
+    Bundle.Validations = CollectTaskRevisionValidations(Task, Bundle.Events);
     const std::filesystem::path RequestedOutput = std::filesystem::absolute(Arguments[7]);
     WriteLocalReviewBundle(RepositoryRoot, Task, Bundle, RequestedOutput, Events);
     std::cout << "LocalReviewBundle=" << RequestedOutput.string() << '\n'

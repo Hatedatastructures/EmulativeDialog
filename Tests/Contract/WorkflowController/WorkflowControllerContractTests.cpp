@@ -505,6 +505,105 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
   }
 }
 
+void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root) {
+  OwnedTempDirectory Temp;
+  const RepositoryFixture Fixture(Temp.Path / "Repository");
+  TaskSpec Task = LoadTaskSpec(Fixture.Root, "Workflow/TaskIndex.yaml", "P1", "ED-0002");
+  Task.TaskRevision = 3;
+  Task.ReleaseId = "Bootstrap";
+  Task.OwnerAgentId = "/root/test-agent";
+  Task.Branch = "Task/ED-0002-ReviewBundleFixture";
+  Task.BaselineCommit = "b0f5defc2cb14c3e066cd9f7d9ed71bb80a87042";
+  Task.EventShard = "Workflow/Events/Bootstrap/P1.jsonl";
+
+  const std::string R2DiffCommand =
+      "git diff --check c4d2b94e0dbfb82d922634c1b175aab76f545567 "
+      "ddcfac296c1cb50869bd5497bdc0739e8568a56a";
+  const std::string R3Head = "e32bdaf5ce85426504a661cd1ac00cad167014b1";
+  const std::string R3DiffCommand =
+      "git diff --check " + Task.BaselineCommit + " " + R3Head;
+  EventStore Events(Fixture.Root / Task.EventShard);
+
+  WorkflowEvent StaleR2;
+  StaleR2.EventType = "CommandExecuted";
+  StaleR2.PhaseId = Task.PhaseId;
+  StaleR2.TaskId = Task.TaskId;
+  StaleR2.TaskRevision = 2;
+  StaleR2.Command = R2DiffCommand;
+  StaleR2.WorkingDirectory = Fixture.Root.string();
+  StaleR2.EvidencePath = (Fixture.Root.parent_path() / "R2-diff-check.log").string();
+  Events.Append(StaleR2);
+
+  const std::vector<std::string> R3Commands{
+      "cmake --preset windows-mingw",
+      "cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests",
+      "ctest --preset windows-mingw --output-on-failure",
+      R3DiffCommand};
+  for (std::size_t Index = 0; Index < R3Commands.size(); ++Index) {
+    WorkflowEvent Current;
+    Current.EventType = "CommandExecuted";
+    Current.PhaseId = Task.PhaseId;
+    Current.TaskId = Task.TaskId;
+    Current.TaskRevision = 3;
+    Current.Command = R3Commands[Index];
+    Current.WorkingDirectory = Fixture.Root.string();
+    Current.EvidencePath = (Fixture.Root.parent_path() /
+                            ("R3-validation-" + std::to_string(Index) + ".log")).string();
+    Events.Append(Current);
+  }
+  WorkflowEvent OtherTask;
+  OtherTask.EventType = "CommandExecuted";
+  OtherTask.PhaseId = Task.PhaseId;
+  OtherTask.TaskId = "ED-0099";
+  OtherTask.TaskRevision = 3;
+  OtherTask.Command = "ctest --preset unrelated";
+  Events.Append(OtherTask);
+
+  const auto TaskEvents = Events.ReadTaskEvents(Task.TaskId);
+  const auto Validations = CollectTaskRevisionValidations(Task, TaskEvents);
+  Check(Validations.size() == R3Commands.size(),
+        "ReviewBundle validation collection did not isolate the current task revision");
+  Check(std::none_of(Validations.begin(), Validations.end(), [&](const ValidationResult& Value) {
+          return Value.Command == R2DiffCommand;
+        }),
+        "ReviewBundle validation collection included a stale TaskRevision 2 command");
+  Check(std::any_of(Validations.begin(), Validations.end(), [&](const ValidationResult& Value) {
+          return Value.Command == R3DiffCommand;
+        }),
+        "ReviewBundle validation collection omitted the current BaseCommit/HeadCommit diff-check");
+
+  ReviewBundleData Bundle;
+  Bundle.BaseCommit = Task.BaselineCommit;
+  Bundle.HeadCommit = R3Head;
+  Bundle.AuthorAgentId = Task.OwnerAgentId;
+  Bundle.ReviewerAgentId = "/root/independent-reviewer";
+  Bundle.ChangedPaths = {"Tools/WorkflowController/Main.cpp"};
+  Bundle.ChangeKinds = {"Modified"};
+  Bundle.Validations = Validations;
+  Bundle.Events = TaskEvents;
+  const auto BundlePath = Fixture.Root.parent_path() / "ReviewBundles" /
+                          "ED-0002-R3/ReviewBundle.json";
+  WriteLocalReviewBundle(Fixture.Root, Task, Bundle, BundlePath, Events);
+  const std::string BundleText = ReadText(BundlePath);
+  const auto ValidationsStart = BundleText.find("\"validations\":[");
+  const auto EventsStart = BundleText.find("],\"events\":[", ValidationsStart);
+  Check(ValidationsStart != std::string::npos && EventsStart != std::string::npos,
+        "ReviewBundle omitted its validation or event section");
+  const std::string ValidationSection =
+      BundleText.substr(ValidationsStart, EventsStart - ValidationsStart);
+  Check(ValidationSection.find(R2DiffCommand) == std::string::npos,
+        "Serialized ReviewBundle validations included a stale TaskRevision 2 command");
+  Check(ValidationSection.find(R3DiffCommand) != std::string::npos &&
+            BundleText.find("\"base_commit\":\"" + Task.BaselineCommit + "\"") !=
+                std::string::npos &&
+            BundleText.find("\"head_commit\":\"" + R3Head + "\"") !=
+                std::string::npos,
+        "Serialized ReviewBundle omitted exact current BaseCommit/HeadCommit evidence");
+  Check(BundleText.find("\"TaskRevision\":2") != std::string::npos &&
+            BundleText.find("\"TaskRevision\":3") != std::string::npos,
+        "ReviewBundle event history did not preserve historical revisions explicitly");
+}
+
 void TestForbiddenGovernanceOperations() {
   ExpectWorkflowError([] { RejectChangeApproval(); },
                       "Controller approved a ChangeRequest");
@@ -525,6 +624,7 @@ int main() {
     TestEventsCheckpointsAndTaskScopedMessages(Temp.Path / "Persistence");
     TestBudgetOverrideEvent(Temp.Path / "Budget");
     TestValidationAndReviewBundle(Temp.Path / "Validation");
+    TestReviewBundleRevisionScopedValidations(Temp.Path / "RevisionScopedBundle");
     TestForbiddenGovernanceOperations();
     std::cout << "WorkflowController AC-1..AC-6 contract fixtures passed\n";
     return 0;

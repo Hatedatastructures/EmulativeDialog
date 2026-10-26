@@ -141,6 +141,10 @@ struct ValidationResult {
   std::filesystem::path EvidencePath;
 };
 
+std::vector<ValidationResult> CollectTaskRevisionValidations(
+    const TaskSpec& Task,
+    const std::vector<WorkflowEvent>& Events);
+
 struct TaskScopedMessage {
   std::string MessageId;
   std::string TaskId;

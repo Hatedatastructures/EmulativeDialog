@@ -1325,6 +1325,24 @@ std::vector<WorkflowEvent> EventStore::ReadTaskEvents(const std::string& TaskId,
   return Results;
 }
 
+std::vector<ValidationResult> CollectTaskRevisionValidations(
+    const TaskSpec& Task,
+    const std::vector<WorkflowEvent>& Events) {
+  if (!IsTaskId(Task.TaskId) || Task.TaskRevision <= 0) {
+    throw WorkflowError("ReviewBundle validation collection requires a valid TaskId and TaskRevision");
+  }
+  std::vector<ValidationResult> Results;
+  for (const WorkflowEvent& Event : Events) {
+    if (Event.EventType != "CommandExecuted" || Event.TaskId != Task.TaskId ||
+        Event.TaskRevision != Task.TaskRevision) {
+      continue;
+    }
+    Results.push_back({Event.Command, Event.WorkingDirectory,
+                       static_cast<unsigned long>(Event.ExitCode), Event.EvidencePath});
+  }
+  return Results;
+}
+
 std::optional<ContextBudgetOverride> EventStore::FindContextBudgetOverride(
     const TaskSpec& Task) const {
   if (!Task.RegisteredBudgetOverride) {
