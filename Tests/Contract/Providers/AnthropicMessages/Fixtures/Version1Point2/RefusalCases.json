@@ -1,0 +1,482 @@
+{
+  "FixtureSchemaVersion": 1,
+  "Contract": "ModelProviderContract V1.2",
+  "ContractCommit": "c4ce5b8c28e7277e1182c4abec1a76cfae1545ea",
+  "Protocol": "AnthropicMessages",
+  "Profile": {
+    "AuthenticationScheme": "XApiKeyHeader",
+    "AuthenticationHeaderName": "x-api-key",
+    "AnthropicVersion": "2026-10-21",
+    "CredentialMaterialIncluded": false
+  },
+  "DataPolicy": {
+    "SyntheticOnly": true,
+    "CredentialsIncluded": false,
+    "UserPrivateMessagesIncluded": false,
+    "NetworkCaptureIncluded": false
+  },
+  "StopReasonMatrix": [
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_empty_body_known_category_redacts_explanation",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "Refusal",
+        "StopDetails": {
+          "Type": "Refusal",
+          "Category": "GeneralHarms"
+        }
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_category_missing_maps_unclassified",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "Refusal",
+        "StopDetails": {
+          "Type": "Refusal",
+          "Category": "Unclassified"
+        }
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_category_null_maps_unclassified",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "Refusal",
+        "StopDetails": {
+          "Type": "Refusal",
+          "Category": "Unclassified"
+        }
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_category_unknown_maps_unclassified",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "Refusal",
+        "StopDetails": {
+          "Type": "Refusal",
+          "Category": "Unclassified"
+        }
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_after_partial_text_discards_prior_text",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "Refusal",
+        "StopDetails": {
+          "Type": "Refusal",
+          "Category": "GeneralHarms"
+        }
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_details_missing_fails_invalid_stream",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "InvalidStream"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_details_null_fails_invalid_stream",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "InvalidStream"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_details_non_object_fails_invalid_stream",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "InvalidStream"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_details_wrong_type_fails_invalid_stream",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "InvalidStream"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_category_wrong_json_type_fails_invalid_stream",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "InvalidStream"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_explanation_wrong_json_type_fails_invalid_stream",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "InvalidStream"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_details_unknown_field_fails_closed",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "FailureCode": "UnsupportedCapability"
+      }
+    }
+  ],
+  "Cases": [
+    {
+      "CaseId": "refusal_empty_body_known_category_redacts_explanation",
+      "RequestId": "req_refusal_empty_body_known_category_redacts_explanation",
+      "AgentTurnId": "turn_refusal_empty_body_known_category_redacts_explanation",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_empty_known\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"explanation\":\"Synthetic explanation must remain wire-only.\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "Refusal",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 0,
+            "Completeness": "Final"
+          },
+          "StopDetails": {
+            "Type": "Refusal",
+            "Category": "GeneralHarms"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "refusal_category_missing_maps_unclassified",
+      "RequestId": "req_refusal_category_missing_maps_unclassified",
+      "AgentTurnId": "turn_refusal_category_missing_maps_unclassified",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_category_missing\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"explanation\":\"Synthetic explanation with absent category.\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "Refusal",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 0,
+            "Completeness": "Final"
+          },
+          "StopDetails": {
+            "Type": "Refusal",
+            "Category": "Unclassified"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "refusal_category_null_maps_unclassified",
+      "RequestId": "req_refusal_category_null_maps_unclassified",
+      "AgentTurnId": "turn_refusal_category_null_maps_unclassified",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_category_null\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":null,\"explanation\":null}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "Refusal",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 0,
+            "Completeness": "Final"
+          },
+          "StopDetails": {
+            "Type": "Refusal",
+            "Category": "Unclassified"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "refusal_category_unknown_maps_unclassified",
+      "RequestId": "req_refusal_category_unknown_maps_unclassified",
+      "AgentTurnId": "turn_refusal_category_unknown_maps_unclassified",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_category_unknown\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":\"synthetic_unknown_policy\",\"explanation\":\"Synthetic unknown-category explanation.\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "Refusal",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 0,
+            "Completeness": "Final"
+          },
+          "StopDetails": {
+            "Type": "Refusal",
+            "Category": "Unclassified"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "refusal_after_partial_text_discards_prior_text",
+      "RequestId": "req_refusal_after_partial_text_discards_prior_text",
+      "AgentTurnId": "turn_refusal_after_partial_text_discards_prior_text",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_partial_then_refusal\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"partial\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":0}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":1},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"explanation\":\"Synthetic explanation must remain wire-only.\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "TextDelta",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "Refusal",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 1,
+            "Completeness": "Final"
+          },
+          "StopDetails": {
+            "Type": "Refusal",
+            "Category": "GeneralHarms"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "ExpectedPartialTextDelta": "partial",
+      "ExpectedFinalUserVisibleText": "",
+      "PreviouslyEmittedTextMustNotAppearInFinalReply": true
+    },
+    {
+      "CaseId": "refusal_details_missing_fails_invalid_stream",
+      "RequestId": "req_refusal_details_missing_fails_invalid_stream",
+      "AgentTurnId": "turn_refusal_details_missing_fails_invalid_stream",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_details_missing\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details is invalid."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "refusal_details_null_fails_invalid_stream",
+      "RequestId": "req_refusal_details_null_fails_invalid_stream",
+      "AgentTurnId": "turn_refusal_details_null_fails_invalid_stream",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_details_null\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":null}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details is invalid."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "refusal_details_non_object_fails_invalid_stream",
+      "RequestId": "req_refusal_details_non_object_fails_invalid_stream",
+      "AgentTurnId": "turn_refusal_details_non_object_fails_invalid_stream",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_details_scalar\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":\"synthetic scalar\"}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details is invalid."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "refusal_details_wrong_type_fails_invalid_stream",
+      "RequestId": "req_refusal_details_wrong_type_fails_invalid_stream",
+      "AgentTurnId": "turn_refusal_details_wrong_type_fails_invalid_stream",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_details_wrong_type\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"future_refusal_type\",\"category\":\"general_harms\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details is invalid."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "refusal_category_wrong_json_type_fails_invalid_stream",
+      "RequestId": "req_refusal_category_wrong_json_type_fails_invalid_stream",
+      "AgentTurnId": "turn_refusal_category_wrong_json_type_fails_invalid_stream",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_category_number\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":7,\"explanation\":\"Synthetic explanation.\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details is invalid."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "refusal_explanation_wrong_json_type_fails_invalid_stream",
+      "RequestId": "req_refusal_explanation_wrong_json_type_fails_invalid_stream",
+      "AgentTurnId": "turn_refusal_explanation_wrong_json_type_fails_invalid_stream",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_explanation_object\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"explanation\":{\"text\":\"Synthetic nested value.\"}}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details is invalid."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "refusal_details_unknown_field_fails_closed",
+      "RequestId": "req_refusal_details_unknown_field_fails_closed",
+      "AgentTurnId": "turn_refusal_details_unknown_field_fails_closed",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_v12_details_unknown_field\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"vendor_extra\":\"synthetic\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "FailureCode": "UnsupportedCapability",
+          "Retryable": false,
+          "SafeMessage": "Anthropic refusal stop_details contains an unregistered field."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    }
+  ],
+  "TerminalEventPolicy": "Exactly one canonical terminal event per request; no event follows it.",
+  "NotImplementedByThisTask": [
+    "C++ adapter",
+    "provider transport",
+    "network validation",
+    "live smoke"
+  ]
+}

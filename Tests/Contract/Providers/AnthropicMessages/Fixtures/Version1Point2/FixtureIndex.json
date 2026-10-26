@@ -1,0 +1,90 @@
+{
+  "FixtureSchemaVersion": 1,
+  "TaskId": "ED-0129",
+  "TaskRevision": 4,
+  "Protocol": "AnthropicMessages",
+  "Contract": "ModelProviderContract V1.2",
+  "ContractCommit": "c4ce5b8c28e7277e1182c4abec1a76cfae1545ea",
+  "Profile": {
+    "AuthenticationScheme": "XApiKeyHeader",
+    "AuthenticationHeaderName": "x-api-key",
+    "AnthropicVersion": "2026-10-21",
+    "CredentialMaterialIncluded": false
+  },
+  "DataPolicy": {
+    "SyntheticOnly": true,
+    "CredentialsIncluded": false,
+    "UserPrivateMessagesIncluded": false,
+    "NetworkCaptureIncluded": false
+  },
+  "Files": [
+    "FixtureIndex.json",
+    "RefusalCases.json"
+  ],
+  "CoverageMatrix": [
+    {
+      "AcceptanceId": "AC-1",
+      "File": "RefusalCases.json",
+      "CaseIds": [
+        "refusal_empty_body_known_category_redacts_explanation",
+        "refusal_category_missing_maps_unclassified",
+        "refusal_category_null_maps_unclassified",
+        "refusal_category_unknown_maps_unclassified",
+        "refusal_after_partial_text_discards_prior_text",
+        "refusal_details_missing_fails_invalid_stream",
+        "refusal_details_null_fails_invalid_stream",
+        "refusal_details_non_object_fails_invalid_stream",
+        "refusal_details_wrong_type_fails_invalid_stream",
+        "refusal_category_wrong_json_type_fails_invalid_stream",
+        "refusal_explanation_wrong_json_type_fails_invalid_stream",
+        "refusal_details_unknown_field_fails_closed"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-2",
+      "File": "RefusalCases.json",
+      "CaseIds": [
+        "refusal_empty_body_known_category_redacts_explanation",
+        "refusal_category_missing_maps_unclassified",
+        "refusal_category_null_maps_unclassified",
+        "refusal_category_unknown_maps_unclassified",
+        "refusal_details_missing_fails_invalid_stream",
+        "refusal_details_null_fails_invalid_stream",
+        "refusal_details_non_object_fails_invalid_stream",
+        "refusal_details_wrong_type_fails_invalid_stream",
+        "refusal_category_wrong_json_type_fails_invalid_stream",
+        "refusal_explanation_wrong_json_type_fails_invalid_stream",
+        "refusal_details_unknown_field_fails_closed"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-3",
+      "File": "All V1.2 files",
+      "CaseIds": [
+        "all cases use deterministic synthetic values and the legacy V1 fixture files remain unchanged"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-4",
+      "File": "RefusalCases.json",
+      "CaseIds": [
+        "refusal_after_partial_text_discards_prior_text"
+      ]
+    }
+  ],
+  "Cases": [
+    { "CaseId": "refusal_empty_body_known_category_redacts_explanation", "File": "RefusalCases.json", "JsonPointer": "/Cases/0", "Acceptance": ["AC-1", "AC-2"], "Covers": ["stop_reason=refusal", "empty content", "known general_harms category", "wire explanation omitted from canonical StopDetails"] },
+    { "CaseId": "refusal_category_missing_maps_unclassified", "File": "RefusalCases.json", "JsonPointer": "/Cases/1", "Acceptance": ["AC-1", "AC-2"], "Covers": ["category absent maps to Unclassified", "wire explanation omitted"] },
+    { "CaseId": "refusal_category_null_maps_unclassified", "File": "RefusalCases.json", "JsonPointer": "/Cases/2", "Acceptance": ["AC-1", "AC-2"], "Covers": ["category null maps to Unclassified", "wire explanation omitted"] },
+    { "CaseId": "refusal_category_unknown_maps_unclassified", "File": "RefusalCases.json", "JsonPointer": "/Cases/3", "Acceptance": ["AC-1", "AC-2"], "Covers": ["unknown category string maps to Unclassified", "wire explanation omitted"] },
+    { "CaseId": "refusal_after_partial_text_discards_prior_text", "File": "RefusalCases.json", "JsonPointer": "/Cases/4", "Acceptance": ["AC-1", "AC-4"], "Covers": ["partial text precedes stop_reason=refusal", "prior TextDelta is excluded from final user-visible reply", "explanation is absent from canonical data"] },
+    { "CaseId": "refusal_details_missing_fails_invalid_stream", "File": "RefusalCases.json", "JsonPointer": "/Cases/5", "Acceptance": ["AC-1", "AC-2"], "Covers": ["required stop_details object is absent", "ResponseFailed/InvalidStream"] },
+    { "CaseId": "refusal_details_null_fails_invalid_stream", "File": "RefusalCases.json", "JsonPointer": "/Cases/6", "Acceptance": ["AC-1", "AC-2"], "Covers": ["stop_details is null", "ResponseFailed/InvalidStream"] },
+    { "CaseId": "refusal_details_non_object_fails_invalid_stream", "File": "RefusalCases.json", "JsonPointer": "/Cases/7", "Acceptance": ["AC-1", "AC-2"], "Covers": ["stop_details is not an object", "ResponseFailed/InvalidStream"] },
+    { "CaseId": "refusal_details_wrong_type_fails_invalid_stream", "File": "RefusalCases.json", "JsonPointer": "/Cases/8", "Acceptance": ["AC-1", "AC-2"], "Covers": ["stop_details.type is not refusal", "ResponseFailed/InvalidStream"] },
+    { "CaseId": "refusal_category_wrong_json_type_fails_invalid_stream", "File": "RefusalCases.json", "JsonPointer": "/Cases/9", "Acceptance": ["AC-1", "AC-2"], "Covers": ["category is neither string nor null", "ResponseFailed/InvalidStream"] },
+    { "CaseId": "refusal_explanation_wrong_json_type_fails_invalid_stream", "File": "RefusalCases.json", "JsonPointer": "/Cases/10", "Acceptance": ["AC-1", "AC-2"], "Covers": ["explanation is neither string nor null", "ResponseFailed/InvalidStream"] },
+    { "CaseId": "refusal_details_unknown_field_fails_closed", "File": "RefusalCases.json", "JsonPointer": "/Cases/11", "Acceptance": ["AC-1", "AC-2"], "Covers": ["unregistered stop_details field is never passed through", "ResponseFailed/UnsupportedCapability"] }
+  ],
+  "TerminalEventPolicy": "Exactly one canonical terminal event per request; no event follows it."
+}
