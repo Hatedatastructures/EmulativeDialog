@@ -100,6 +100,42 @@ std::string TrimText(std::string Value) {
   return Value;
 }
 
+
+class OwnedBuildTempDirectory final {
+ public:
+  OwnedBuildTempDirectory(const std::filesystem::path& BuildDirectory,
+                          std::string FixtureName)
+      : FixtureName(std::move(FixtureName)) {
+    EvidenceRoot = std::filesystem::absolute(BuildDirectory) /
+                   "WorkflowControllerEvidence" / "ED-0014-R9" / "ContractFixtures";
+    Path = EvidenceRoot / (this->FixtureName + "-" + UniqueSuffix());
+    std::filesystem::create_directories(Path);
+    Marker = Path / "OwnedByWorkflowControllerContractTests.txt";
+    MarkerText = "WorkflowControllerContractTests:" + Path.filename().string();
+    WriteText(Marker, MarkerText);
+  }
+
+  ~OwnedBuildTempDirectory() {
+    try {
+      if (Path.parent_path() == EvidenceRoot &&
+          Path.filename().string().starts_with(FixtureName + "-") &&
+          std::filesystem::is_regular_file(Marker) && ReadText(Marker) == MarkerText) {
+        std::error_code Error;
+        std::filesystem::remove_all(Path, Error);
+      }
+    } catch (...) {
+    }
+  }
+
+  std::filesystem::path Path;
+
+ private:
+  std::string FixtureName;
+  std::filesystem::path EvidenceRoot;
+  std::filesystem::path Marker;
+  std::string MarkerText;
+};
+
 struct RepositoryFixture {
   explicit RepositoryFixture(const std::filesystem::path& Root) : Root(Root) {
     WriteText(Root / "Workflow/TaskIndex.yaml",
@@ -804,83 +840,33 @@ std::vector<std::pair<std::string, int>> RecoveryTargets() {
           {"378e2cbe-98e9-4419-8418-287ef16b7c74", 2}};
 }
 
+
 RecoveryFixtureInfo CreateRecoveryFixtureRepository(
     const std::filesystem::path& Root) {
   std::filesystem::create_directories(Root);
-  std::ostringstream TaskIndex;
-  TaskIndex << "CurrentReleaseId: Bootstrap\n"
-            << "PhasePlans:\n"
-            << "  - PhaseId: P1\n"
-            << "    Path: Workflow/Plans/P1.yaml\n";
-  WriteText(Root / "Workflow/TaskIndex.yaml", TaskIndex.str());
-  std::ostringstream TaskPlan;
-  TaskPlan << "SchemaVersion: 1\n"
-           << "PhaseId: P1\n"
-           << "Tasks:\n"
-           << "  - TaskId: ED-0014\n"
-           << "    TaskRevision: 9\n"
-           << "    State: Ready\n"
-           << "    OwnerAgentId: /root/workflow_controller\n"
-           << "    ReviewerAgentId: /root/agent_core\n"
-           << "    Branch: Task/ED-0014-R9-EventIdConflictRecovery\n"
-           << "    ChangeRequest:\n"
-           << "      ChangeRequestId: CR-ED-0014-001\n"
-           << "      Decision: Accepted\n"
-           << "      ApprovedByRole: Coordinator\n"
-           << "      ApprovedByAgentId: /root\n"
-           << "    RevisionChangeRequest:\n"
-           << "      ChangeRequestId: CR-ED-0014-002\n"
-           << "      Decision: Accepted\n"
-           << "      ApprovedByRole: Coordinator\n"
-           << "      ApprovedByAgentId: /root\n"
-           << "    AdditionalChangeRequest:\n"
-           << "      ChangeRequestId: CR-ED-0014-003\n"
-           << "      Decision: Accepted\n"
-           << "      ApprovedByRole: Coordinator\n"
-           << "      ApprovedByAgentId: /root\n"
-           << "    FinalChangeRequest:\n"
-           << "      ChangeRequestId: CR-ED-0014-004\n"
-           << "      Decision: Accepted\n"
-           << "      ApprovedByRole: Coordinator\n"
-           << "      ApprovedByAgentId: /root\n"
-           << "    ValidationChangeRequest:\n"
-           << "      ChangeRequestId: CR-ED-0014-005\n"
-           << "      Decision: Accepted\n"
-           << "      ApprovedByRole: Coordinator\n"
-           << "      ApprovedByAgentId: /root\n"
-           << "    Rules:\n"
-           << "      ApprovedOverrides:\n";
-  for (const auto& [TargetId, TargetRevision] : RecoveryTargets()) {
-    TaskPlan << "        - RuleRef: EventIdConflictResolution\n"
-             << "          ChangeRequestId: CR-ED-0014-001\n"
-             << "          ApprovedByRole: Coordinator\n"
-             << "          ApprovedByAgentId: /root\n"
-             << "          EventShard: Workflow/Events/Bootstrap/P1.jsonl\n"
-             << "          TargetEventId: " << TargetId << "\n"
-             << "          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: "
-             << TargetRevision << "}\n"
-             << "          ExpectedVariantCount: 2\n"
-             << "          ExpectedOccurrenceCount: 2\n"
-             << "          CanonicalOccurrence: 2\n"
-             << "          ApprovalReason: \"Select occurrence two for " << TargetId
-             << "; preserve the exact selected record without merging variants.\"\n";
-  }
-  WriteText(Root / "Workflow/Plans/P1.yaml", TaskPlan.str());
-
   WindowsProcessRunner Runner;
+  const std::string TaskSpecCommit = "5d8618036a559388bbaefa277a9d3288450e927e";
+  const std::string TaskSpecBlobId = "f3a33ca5631380deb7b8e05d80c7d1e04971a0b7";
+  const std::filesystem::path SourceRepository =
+      "H:/Qbot/EmulativeDialog.ED-0014-R9";
   RunGit(Runner, Root, {"git", "init", "--initial-branch", "main"});
   RunGit(Runner, Root, {"git", "config", "user.name", "ED-0014 Fixture Coordinator"});
   RunGit(Runner, Root, {"git", "config", "user.email", "ed0014-fixture@example.invalid"});
-  RunGit(Runner, Root, {"git", "add", "Workflow/TaskIndex.yaml", "Workflow/Plans/P1.yaml"});
-  RunGit(Runner, Root, {"git", "commit", "-m", "ED-0014 pinned recovery authorization"});
+  RunGit(Runner, Root, {"git", "fetch", "--no-tags", SourceRepository.string(),
+                        TaskSpecCommit});
+  RunGit(Runner, Root, {"git", "checkout", "--detach", TaskSpecCommit});
+  const std::string ActualBlob = TrimText(Runner.Run(
+      {"git", "-C", Root.string(), "rev-parse",
+       TaskSpecCommit + ":Workflow/Plans/P1.yaml"}, Root).Output);
+  Check(ActualBlob == TaskSpecBlobId,
+        "Disposable CLI fixture did not fetch the frozen R9 TaskSpec blob");
+
   RecoveryFixtureInfo Info;
   Info.Root = Root;
-  Info.TaskSpecCommit = TrimText(Runner.Run(
-      {"git", "-C", Root.string(), "rev-parse", "HEAD"}, Root).Output);
-  Info.TaskSpecBlobId = TrimText(Runner.Run(
-      {"git", "-C", Root.string(), "rev-parse",
-       Info.TaskSpecCommit + ":Workflow/Plans/P1.yaml"}, Root).Output);
-  std::filesystem::create_directories(Root / "Workflow/Events/Bootstrap");
+  Info.TaskSpecCommit = TaskSpecCommit;
+  Info.TaskSpecBlobId = TaskSpecBlobId;
+  const auto EventPath = Root / "Workflow/Events/Bootstrap/P1.jsonl";
+  WriteText(EventPath, "");
   for (const auto& [TargetId, TargetRevision] : RecoveryTargets()) {
     Info.TargetIds.push_back(TargetId);
     std::ostringstream First;
@@ -909,8 +895,7 @@ RecoveryFixtureInfo CreateRecoveryFixtureRepository(
     }
     Second << '}';
     Info.CanonicalRecords.push_back(Second.str());
-    std::ofstream Events(Root / "Workflow/Events/Bootstrap/P1.jsonl",
-                         std::ios::binary | std::ios::app);
+    std::ofstream Events(EventPath, std::ios::binary | std::ios::app);
     Events << First.str() << '\n' << Second.str() << '\n';
     Check(static_cast<bool>(Events), "Unable to write disposable EventId conflict shard");
   }
@@ -952,7 +937,7 @@ ProcessResult RunRecoveryCli(WindowsProcessRunner& Runner,
 }
 
 void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
+  OwnedBuildTempDirectory Temp(WorkflowControllerExecutable().parent_path(), "RecoveryCli");
   const RecoveryFixtureInfo Fixture =
       CreateRecoveryFixtureRepository(Temp.Path / "RecoveryRepository");
   const auto EventPath = Fixture.Root / "Workflow/Events/Bootstrap/P1.jsonl";
@@ -1039,7 +1024,7 @@ void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
             Success.Output.find("AgentId=/root AgentRole=Coordinator") != std::string::npos &&
             Success.Output.find("TaskSpecCommit=" + Fixture.TaskSpecCommit) != std::string::npos &&
             Success.Output.find("TaskSpecBlobId=" + Fixture.TaskSpecBlobId) != std::string::npos,
-        "Process-level recovery command did not apply the five pinned Coordinator approvals");
+        "Process-level recovery command failed; exit=" + std::to_string(Success.ExitCode) + " output=" + Success.Output);
   const std::string ResolvedShard = ReadText(EventPath);
   Check(ResolvedShard.starts_with(OriginalShard),
         "Recovery changed the original EventShard byte prefix");
@@ -1384,7 +1369,7 @@ ProcessResult RunControllerCli(WindowsProcessRunner& Runner,
 }
 
 void TestControllerCliSurface(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
+  OwnedBuildTempDirectory Temp(WorkflowControllerExecutable().parent_path(), "ControllerCli");
   const CliFixtureInfo Fixture = CreateControllerCliFixture(
       Temp.Path / "CliRepository", Temp.Path / "CliAssignedWorktree");
   WindowsProcessRunner Runner;
@@ -1624,7 +1609,7 @@ ReviewCliFixtureInfo CreateReviewCliFixture(
 }
 
 void TestReviewBundleCli(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
+  OwnedBuildTempDirectory Temp(WorkflowControllerExecutable().parent_path(), "ReviewBundleCli");
   const ReviewCliFixtureInfo Fixture = CreateReviewCliFixture(
       Temp.Path / "ReviewRepository",
       Temp.Path / "ReviewWorktree",

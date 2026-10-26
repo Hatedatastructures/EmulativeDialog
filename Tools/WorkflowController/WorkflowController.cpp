@@ -1462,13 +1462,77 @@ LoadEventIdConflictAuthorizationsFromPinnedSnapshot(
   if (ActualBlob != TaskSpecBlobId) {
     throw WorkflowError("Pinned TaskSpec blob does not match TaskSpec commit");
   }
-  const ProcessResult PlanResult =
-      RunGit(Runner, Root, {"show", TaskSpecCommit + ":" + PlanPath});
+  const std::string TaskPattern = "  - TaskId: " + TaskId;
+  const ProcessResult TaskMatches = RunGit(
+      Runner, Root, {"grep", "-n", "-F", TaskPattern, TaskSpecCommit, "--", PlanPath});
+  std::istringstream MatchLines(TaskMatches.Output);
+  std::string MatchLine;
+  std::size_t MatchCount = 0;
+  while (std::getline(MatchLines, MatchLine)) {
+    if (!MatchLine.empty()) {
+      ++MatchCount;
+    }
+  }
+  if (MatchCount != 1) {
+    throw WorkflowError("Pinned task plan must contain exactly one current TaskId record");
+  }
+  const ProcessResult TaskEntryResult = RunGit(
+      Runner, Root, {"grep", "-n", "-A", "500", "-F", TaskPattern,
+                     TaskSpecCommit, "--", PlanPath});
+  const std::string MatchPrefix = TaskSpecCommit + ":" + PlanPath + ":";
+  const std::string ContextPrefix = TaskSpecCommit + ":" + PlanPath + "-";
+  std::istringstream EntryLines(TaskEntryResult.Output);
+  std::string EntryLine;
+  std::string TaskYaml;
+  bool FoundTask = false;
+  bool ReachedNextTask = false;
+  while (std::getline(EntryLines, EntryLine)) {
+    if (!EntryLine.empty() && EntryLine.back() == '\r') {
+      EntryLine.pop_back();
+    }
+    std::string SourceLine;
+    if (EntryLine.starts_with(MatchPrefix)) {
+      const std::string NumberAndText = EntryLine.substr(MatchPrefix.size());
+      const std::size_t Separator = NumberAndText.find(':');
+      if (Separator == std::string::npos) {
+        throw WorkflowError("Pinned task selection output is malformed");
+      }
+      SourceLine = NumberAndText.substr(Separator + 1);
+    } else if (EntryLine.starts_with(ContextPrefix)) {
+      const std::string NumberAndText = EntryLine.substr(ContextPrefix.size());
+      const std::size_t Separator = NumberAndText.find('-');
+      if (Separator == std::string::npos) {
+        throw WorkflowError("Pinned task context output is malformed");
+      }
+      SourceLine = NumberAndText.substr(Separator + 1);
+    } else {
+      continue;
+    }
+    if (!FoundTask) {
+      if (SourceLine == TaskPattern) {
+        FoundTask = true;
+        TaskYaml = "Tasks:\n" + SourceLine + "\n";
+      }
+      continue;
+    }
+    if (SourceLine.starts_with("  - TaskId: ")) {
+      if (SourceLine == TaskPattern) {
+        throw WorkflowError("Pinned task plan contains a duplicate current TaskId record");
+      }
+      ReachedNextTask = true;
+      break;
+    }
+    TaskYaml += SourceLine + "\n";
+  }
+  if (!FoundTask || !ReachedNextTask) {
+    throw WorkflowError("Pinned task selection did not capture one complete TaskId record");
+  }
   YAML::Node Plan;
   try {
-    Plan = YAML::Load(PlanResult.Output);
+    Plan = YAML::Load(TaskYaml);
   } catch (const YAML::Exception& Error) {
-    throw WorkflowError("Pinned TaskSpec YAML is invalid: " + std::string(Error.what()));
+    throw WorkflowError("Pinned TaskSpec task record YAML is invalid: " +
+                        std::string(Error.what()));
   }
   const YAML::Node Task = FindTaskNode(Plan, TaskId);
   if (OptionalString(Task, "PhaseId", PhaseId) != PhaseId ||
