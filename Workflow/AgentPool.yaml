@@ -24,54 +24,66 @@ Slots:
   # Worker01/Worker06 为 P1 支持槽；Worker02-Worker05 为四个实现槽。
   - SlotId: Worker01
     RoleFamily: BuildAndWorkflowOwner
-    AgentId: "/root/workflow_controller"
+    AgentId: "/root/p1_trace_events_luna"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
     HostSessionRef: ""
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
     CurrentTaskId: ED-0013
-    Status: Active
+    Status: Review
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
-    AgentId: "/root/agent_core"
+    AgentId: "/root/p1_code001_luna"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
     HostSessionRef: ""
     ModuleIds:
       - AgentRuntime
       - Core
-    CurrentTaskId: ED-0013
+    CurrentTaskId: ED-0017
     Status: Review
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
-    AgentId: "/root/provider_responses"
+    AgentId: "/root/p1_gov004_luna"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0020
+    CurrentTaskId: ED-0017
     Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
-    AgentId: "/root/provider_chat"
+    AgentId: "/root/p2_validation_luna"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0018
-    Status: Verified
+    CurrentTaskId: ED-0105
+    Status: Review
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
-    AgentId: "/root/provider_anthropic"
+    AgentId: "/root/p3_validation_luna"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
     HostSessionRef: ""
     ModuleIds:
       - ProviderAnthropicMessages
-    CurrentTaskId: ED-0015
-    Status: Verified
+    CurrentTaskId: ED-0017
+    Status: Review
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
-    AgentId: "/root/memory_context"
+    AgentId: "/root/p1_par001_luna"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
     HostSessionRef: ""
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0020
+    CurrentTaskId: ED-0015
     Status: Review
 
 AssignmentRules:
