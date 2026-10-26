@@ -32,6 +32,8 @@ Adapter 只能在平台来源与当前 IntegrationMode 验证成功后递交 Cha
 
 与 Envelope 配对的 `CanonicalMessage` 才包含 `MessageParts`、`ReplyToId`、`MentionedIds` 和允许的 `PlatformMetadata`。这些内容均是不可信输入，只保留经允许列表规范化的文本/媒体引用；不把完整原始平台对象、未许可引用、认证信息或个人资料自动加入 ProviderRequest。
 
+`ChannelEnvelope` 不包含 `MemoryWriteConsent` 字段；Adapter 只验证并提供来源元数据，不得推断或代报用户记忆同意。Core 在校验 Envelope、映射当前 Sender 到 Principal 后，才可把当前 `CanonicalMessage` 中明确的用户记忆控制意图识别为同意、确认或撤销。Provider/AgentRuntime 输出、历史授权和正文中的身份/权限声明均不是当前用户同意。
+
 ## CapabilitySet 和动作授权
 
 CapabilitySet 必须关联具体 AccountId、IntegrationMode、SnapshotVersion/时间和取证状态。至少可分别声明 `ReceiveText`、`ReceiveMedia`、`ReceiveSticker`、`SendText`、`SendRichText`、`SendMedia`、`SendSticker`、`AddReaction`、`Poke`、`LookupDisplayName` 与 `SendProactiveMessage`。能力未知或未证实等同于不支持。

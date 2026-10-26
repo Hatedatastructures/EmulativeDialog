@@ -19,12 +19,16 @@ Core 是 scope 的唯一解析者。每个持久范围使用全部必需的 opaq
 
 ## 显式写入授权
 
-Core 只从可信 Envelope 接收 `MemoryWriteConsent`。每项 durable 写入必须引用 `ConsentId`、授予者 Principal、精确目标 scope、授权时间和允许的记录类别；同意只覆盖该 scope 和类别，不能授予 ChannelAction 权限。
+`ChannelEnvelope` 不携带 `MemoryWriteConsent`。Core 先验证当前 Envelope 并映射其 Sender 到 Principal，再从与该 Envelope 绑定的当前 `CanonicalMessage` 识别明确的记忆控制意图；消息正文仍是非可信内容，不能自证身份或权限。正文表达的目标 scope/类别只是请求，Core 必须按 Envelope、Principal 和产品策略解析到精确授权范围，不能接受超出该边界的自称；无法确定时先澄清。Adapter、AgentRuntime 和 Provider 都不能代报或授予同意。
 
-- 用户明确说“记住 X”或明确确认 Agent 提出的具体记忆时，Core 可为对应记录/范围建立一次授权。
-- 用户明确启用一个精确 conversation 的 summary retention 时，Core 可在该 scope 内生成带来源和时间的低信任摘要；未启用时，压缩摘要只作 SessionScope 易失数据。
-- 普通聊天、模型推断、先前的其他 scope 授权、相同昵称/头像、或 Agent 自己的建议均不是写入授权。未经确认的事实/身份/关系/心理状态不得保存为 UserConfirmed。
-- 用户修正、撤销 consent 或 Forget 后，Core 拒绝后续受影响写入，并撤销该 scope 的派生摘要与检索缓存。
+每项 durable 写入必须关联 Core 创建的 `MemoryWriteConsent`：`ConsentId`、已验证的授予者 `PrincipalId`、来源 `ChannelId/AccountId/ConversationId/MessageId`、精确目标 scope、授权时间、允许的记录类别、授权状态和可选的精确候选 `ProposalId`。该授权只覆盖列明的 scope/类别/候选记录，不能授予 ChannelAction 权限。来源正文不能指定授予者 Principal 或越过 Core 解析范围；正文表达的 scope/类别意图须经 Core 校验并落到上述精确字段。
+
+- Agent/Provider 输出的记忆候选只能成为 Core 管理的易失 `MemoryProposal`，至少包含 Core 创建的 `ProposalId`、来源 `AgentTurnId`、待确认的候选内容、精确目标 scope/类别、来源引用和 `Pending/Confirmed/Rejected/Expired` 状态。候选不写入 MemoryStore 或普通日志；模型不能创建/更改 proposal ID、scope 或授权状态。
+- 用户在当前消息中明确要求“记住 X”，Core 可为该明确内容及当前已验证主体对应的精确 scope/类别建立授权；若目标范围或记录类别不明确，Core 必须澄清后再建立授权。
+- 若 Agent 提议记忆，只有用户在当前已验证消息中明确确认一个已向用户展示且仍为 Pending 的具体提议，Core 才能建立授权；授权必须绑定该 `ProposalId`、精确 scope 和类别。若唯一待确认提议刚明确呈现，针对它的肯定答复可作确认；没有对应提议、多个提议无法区分、旧消息中的确认或仅复述建议都不授权，有歧义时先澄清。
+- 用户必须在当前已验证消息中明确启用某个精确 conversation 的 summary retention，Core 才可在该 scope 内生成带来源和时间的低信任摘要；未启用时，压缩摘要只作 SessionScope 易失数据。Provider/AgentRuntime 生成的摘要不能自行授权持久化。
+- 普通聊天、模型推断、Provider/AgentRuntime 输出、先前对其他 scope/类别/候选的授权、相同昵称/头像或 Agent 自己的建议均不是当前写入授权。未经用户明确确认的事实/身份/关系/心理状态不得保存为 `UserConfirmed`。
+- 用户修正、明确撤销对应 `ConsentId` 或执行 Forget 后，Core 将对应授权标为已撤销，拒绝后续受影响写入，并撤销该 scope 的派生摘要与检索缓存；撤销只作用于授权记录明确覆盖的范围。
 - `IdentityLinkScope` 只能通过 Core 已验证的身份链接流程创建；V1 要求两个 identity 均已验证，并有明确授权记录。任何一方撤销即停用链接并清除链接产生的派生索引/缓存。
 - `GroupMemoryConsent` 必须精确绑定 ChannelId/AccountId/GroupConversationId、授权的记录类别和允许召回的 Principal 集合；Core 只允许逐一验证过的授权主体读取。若当前 IntegrationMode 无法证明某成员已授权，则不提供跨成员群记忆。
 
@@ -63,6 +67,10 @@ V1 优先级从高到低：
 ## V1 验收/夹具矩阵
 
 - 不同 Sender、Channel、Account、私聊/群和 GroupScope 不互读；同名或同头像不建立链接。
+- 当前已验证用户明确要求“记住 X”时，Core 将同意绑定到该 Envelope 的 Principal、精确 scope/类别、来源 MessageId、时间和新 `ConsentId`；正文自称的身份/scope 不生效。
+- 用户明确确认 Agent 的具体记忆提议时，Core 只授权该提议 ID、scope 和类别；Agent 提议本身以及含糊的确认不产生授权。
+- 无同意的普通消息、模型/Provider 输出、旧授权或不同 scope/类别的同意均不能创建 durable record。
+- 撤销指定 `ConsentId` 后，该授权不能再写入；受影响的派生摘要与检索缓存不可召回，且不撤销无关 scope 的授权。
 - SessionScope 不写入磁盘或跨进程恢复；无 consent 的普通消息和自动摘要不产生 durable record。
 - 用户一次“记住 X”只授权该主体/scope 的 X；确认、撤销和 identity-link 双边验证均产生可追踪 OperationRecord。
 - 未授权的模型推断、密钥、支付数据或敏感信息写入被拒且日志不包含正文。

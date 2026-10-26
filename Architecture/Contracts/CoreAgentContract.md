@@ -7,6 +7,7 @@
 - `ChannelEnvelope` 的唯一 schema、必需字段和 Adapter 验证职责由 `ChannelAdapterContract.md` 定义。它必须由已登记的 `ChannelAdapterPort` 提交；来源验证失败、账号未登记或必要字段缺失时，不得把事件作为可信聊天请求接纳。
 - AgentRuntime 消费 ChannelAdapterContract 定义的 `CanonicalMessage`，并将正文、引用文本、OCR/转写、附件内容、昵称、Provider 输出、工具参数/结果和记忆全部视为不可信数据。
 - 只有 Core 能把 `(ChannelId, AccountId, SenderId)` 映射到产品主体并解析 `ConversationScope`、`MemoryScope`、策略与授权。模型自报的身份、账号、会话、群、角色或权限字段永远不构成授权。
+- `MemoryWriteConsent` 不是 `ChannelEnvelope` 字段或 Adapter 声明。Core 仅能从绑定到已验证 Envelope、已映射 Principal 的当前 `CanonicalMessage` 中识别明确的记忆同意意图；正文仍是不可信输入，不能自证 Principal 或扩大授权。正文提出的目标 scope/类别只是请求，Core 必须将其解析并校验到该 Envelope 可授权的精确范围，存在歧义时先澄清。Core 必须记录已验证 Principal、精确 scope/类别、来源 MessageId、同意时间和 `ConsentId`。模型输出或 AgentRuntime 提案本身不构成同意。
 - ProviderRequest 只含 Core/ContextSelector 选出的必要文本和内容部分；不发送原始平台对象、凭据、内部授权记录或真实渠道 ID。内部关联 ID 除非某协议映射明示且获准，否则不得进入远端请求。
 
 ## Core 的唯一所有权
@@ -29,7 +30,7 @@ Core 在调用边界解析 SecretRef 并提供 scoped `CredentialLease`。Provid
 AgentRuntime 执行一个 `AgentTurn`：
 
 1. 接受 Core 提交的可信 Envelope 与 CanonicalMessage；拒绝重复的 `StableDeduplicationId` 和无效会话路由。
-2. 从 Core 取得解析后的 `ConversationScope`、当前 capability snapshot、显式允许的记忆记录和本轮策略摘要。
+2. 从 Core 取得解析后的 `ConversationScope`、当前 capability snapshot、显式允许的记忆记录和本轮策略摘要。记忆同意由 Core 根据当前已验证用户消息处理；AgentRuntime 和 Provider 只能提出待用户确认的记忆候选。
 3. 由 ContextSelector 构造有界 ModelRequest；系统/开发规则不能被历史、摘要、模型输出或记忆覆盖。
 4. 只通过 `ModelProviderPort` 发起一个或多个 ProviderRequest；消费规范化流事件和每请求唯一终态。
 5. `ToolCallReady` 只表示完整的模型请求。Provider 终态为 `ResponseCompleted` 后，AgentRuntime 才能把 action proposal 交 Core 校验；Provider function call 从不授权执行。
