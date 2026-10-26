@@ -295,6 +295,14 @@ Tasks:
       - CMakeLists.txt
       - CMakePresets.json
       - CMake/DependencyPins.cmake
+    ContextBudgetOverride:
+      TaskId: ED-0008
+      TaskRevision: 1
+      MaxReferenceFiles: 13
+      ApprovedByRole: Coordinator
+      ApprovalEventId: b5c84bb8-1e17-4d5f-aa53-b1c00e7b1721
+      RuleRef: Workflow/AgentExecutionStandard.md:47-48
+      Reason: All 13 listed files are direct dependencies of AC-1..AC-6 or the authorized Windows/yaml-cpp build; no unrelated task history is loaded.
     WriteSet:
       - CMakeLists.txt
       - Tools/WorkflowController/
@@ -351,7 +359,7 @@ Tasks:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Implement the frozen ED-0008 WriteSet in the assigned worktree; ED-0007 remains a parallel contract task.
+      NextAction: Implement the frozen ED-0008 WriteSet in the assigned worktree; ED-0007 contracts are merged and the 13-file soft-budget exception is recorded.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
