@@ -1,0 +1,245 @@
+# 本矩阵区分“已写成规范”和“已有实际阻断检查”。当前代码仓库无实现门，故全部标为 Planned。
+SchemaVersion: 1
+ProjectId: EmulativeDialog
+AsOf: 2026-10-26
+GlobalGate:
+  LargeProductImplementationMayStartOnlyWhen:
+    - AgentWorkflowControllerIsOperationalForTaskAndPRGates
+    - AllCriticalMustRulesHaveAnEnforcementPath
+    - BranchAndWorktreeIsolationIsOperational
+    - TaskStateAndWriteSetCanBeQueriedByTaskId
+    - PRReviewAndMergeOwnershipAreAssigned
+  BootstrapTasksAllowedBeforeController:
+    - CppBuildSkeleton
+    - ContractFreeze
+    - AgentWorkflowController
+  BootstrapTasksRequireManualControls:
+    - CoordinatorSingleWriter
+    - FrozenTaskRevisionAndWriteSet
+    - IndependentReviewer
+    - EvidenceInTaskReportAndGit
+
+Rules:
+  - RuleId: GOV-001
+    Rule: 任务 Goal/Acceptance/WriteSet 冻结后不可被执行者静默改写
+    Enforcement:
+      Type: CoordinatorStateTransition
+      Evidence: TaskRevision 与 ChangeRequest 关联记录
+      BlockingStage: TaskStateUpdate
+    OwnerRole: Coordinator
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: CTRL-001
+    Rule: 大规模产品实现开始前，C++ AgentWorkflowController 已能执行核心任务/上下文/分支/留痕门
+    Enforcement:
+      Type: ControllerContractAndRecoveryQualification
+      Evidence: TaskId 查询、ReadSet context bundle、写集拒绝、worktree 隔离、检查点恢复和事件审计记录
+      BlockingStage: P2ProductImplementation
+    OwnerRole: AgentWorkflowOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: GOV-002
+    Rule: 每个 PR 的文件差异必须位于批准的 WriteSet
+    Enforcement:
+      Type: AutomatedDiffPolicy
+      Evidence: PR base/head diff 与 TaskSpec.WriteSet 的路径比较结果
+      BlockingStage: PRMerge
+    OwnerRole: BuildAndDependencyOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: GOV-003
+    Rule: 实现 Agent 必须使用独立分支和 worktree
+    Enforcement:
+      Type: AssignmentPreflight
+      Evidence: TaskId、AgentId、branch、worktree、BaseCommit 唯一映射
+      BlockingStage: TaskAssignment
+    OwnerRole: Coordinator
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: GOV-004
+    Rule: Agent 消息不能改变接收任务范围
+    Enforcement:
+      Type: CoordinatorApproval
+      Evidence: TaskRevision 变更必须引用已批准 ChangeRequest
+      BlockingStage: TaskRevision
+    OwnerRole: Coordinator
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: PLAN-001
+    Rule: 阶段只在 ExitGate 全部有证据后升级
+    Enforcement:
+      Type: CoordinatorGateEvaluation
+      Evidence: ExitGate 条目、TaskClosed 事件和 PR/平台证据引用
+      BlockingStage: PhaseTransition
+    OwnerRole: ProductContractOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: CTX-001
+    Rule: 只加载当前任务需要的地图、合同、源码与未解决消息
+    Enforcement:
+      Type: ContextLoadTelemetry
+      Evidence: ContextLoaded / ContextExpanded 事件及扩展原因
+      BlockingStage: TaskReview
+    OwnerRole: AgentWorkflowOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: CTX-002
+    Rule: 任务必需上下文超预算时必须拆分/摘要，不可跳过合同或预载全仓
+    Enforcement:
+      Type: ContextBudgetPreflight
+      Evidence: 常驻文档比例、ReadSet 文件数、上下文扩展事件和例外审批
+      BlockingStage: TaskAssignment
+    OwnerRole: Coordinator
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: PAR-001
+    Rule: 复用稳定 Agent 槽处理相邻职责，不逐个小任务创建/关闭；只用真实独立任务并行
+    Enforcement:
+      Type: AssignmentAndSessionLifecycleAudit
+      Evidence: AgentId、角色、任务队列、创建/关闭原因和并行依赖图
+      BlockingStage: TaskAssignment
+    OwnerRole: Coordinator
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: PAR-002
+    Rule: Ready 任务写集不得重叠；共享文件由单写者排队处理
+    Enforcement:
+      Type: WriteSetConflictDetection
+      Evidence: 所有活动任务的路径交集和 SharedLocks
+      BlockingStage: TaskAssignment
+    OwnerRole: Coordinator
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: MAP-001
+    Rule: 每项目标范围内 Codex Agent 能力都必须映射到决定、C++ 目标模块、实现任务和验收证据
+    Enforcement:
+      Type: CapabilityMapCompletenessGate
+      Evidence: CodexCapabilityMap 覆盖率与未决项清单
+      BlockingStage: CodexCorePreparationGate
+    OwnerRole: ProductContractOwner
+    Status: BlockedOnSourceBaseline
+    Severity: MUST
+
+  - RuleId: CODEX-001
+    Rule: CodexCapabilityMap 中所有 Keep/Redesign 能力必须完成 C++ 实现和验收，能力映射本身不算重写完成
+    Enforcement:
+      Type: CapabilityToCodeTraceabilityGate
+      Evidence: 每项能力对应的 C++ 模块、PR、合同夹具/行为验证和实现状态
+      BlockingStage: CodexRewriteRelease
+    OwnerRole: IntegrationOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: CODE-001
+    Rule: 项目自有路径、类型、方法和变量使用 PascalCase
+    Enforcement:
+      Type: AutomatedLint
+      Evidence: 路径名检查、clang-tidy 命名检查和明确例外清单
+      BlockingStage: ContinuousIntegration
+    OwnerRole: BuildAndDependencyOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: CODE-002
+    Rule: 产品运行逻辑和随包可执行模块使用 C++
+    Enforcement:
+      Type: BuildAndPackageInventory
+      Evidence: 构建语言、链接目标、发行清单与依赖登记
+      BlockingStage: ReleaseCandidate
+    OwnerRole: BuildAndDependencyOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: API-001
+    Rule: 模块只能通过冻结合同跨边界协作
+    Enforcement:
+      Type: ContractVersionAndFixture
+      Evidence: 版本化合同、消费者/提供者夹具、兼容性审查
+      BlockingStage: PRMerge
+    OwnerRole: ContractOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: SEC-001
+    Rule: 身份、授权、凭据、聊天隐私和副作用遵守安全合同
+    Enforcement:
+      Type: AutomatedChecksAndIndependentReview
+      Evidence: 安全静态检查、脱敏检查、策略夹具、Reviewer 签字
+      BlockingStage: PRMerge
+    OwnerRole: SecurityOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: SEC-002
+    Rule: 不得静默删除、重置、迁移或覆盖已有数据
+    Enforcement:
+      Type: DestructiveChangeReview
+      Evidence: 精确删除清单、数据影响、备份/回滚证据
+      BlockingStage: PRMerge
+    OwnerRole: StorageOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: TUI-001
+    Rule: 自研 C++ TUI 对锁定的 TypeScript 参照库达到批准范围内的完整 API/行为对照
+    Enforcement:
+      Type: DifferentialParitySuiteAndIndependentReview
+      Evidence: 参照版本、公开 API 映射、场景夹具、差异报告
+      BlockingStage: TuiReleaseGate
+    OwnerRole: TuiContractOwner
+    Status: BlockedOnReferenceSelection
+    Severity: MUST
+
+  - RuleId: MERGE-001
+    Rule: PR 由作者之外的 Reviewer 审查并经单写者集成队列合并
+    Enforcement:
+      Type: ProtectedBranchAndMergeQueue
+      Evidence: Required review、required checks、merge commit/PR 记录
+      BlockingStage: PRMerge
+    OwnerRole: IntegrationOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: TRACE-001
+    Rule: 任务过程可从结构化事件、Git 和 PR 还原，且日志完成脱敏
+    Enforcement:
+      Type: EventSchemaAndAuditReview
+      Evidence: TaskId 事件序列、Git diff、PR 记录和脱敏检查
+      BlockingStage: TaskClose
+    OwnerRole: AgentWorkflowOwner
+    Status: Planned
+    Severity: MUST
+
+  - RuleId: MERGE-002
+    Rule: 合并冲突必须审查最终语义差异和冲突路径
+    Enforcement:
+      Type: ConflictResolutionReview
+      Evidence: 冲突文件列表、解决 commit、独立 Reviewer 结论
+      BlockingStage: PRMerge
+    OwnerRole: IntegrationOwner
+    Status: Planned
+    Severity: MUST
+
+ManualGates:
+  - GateId: MAN-001
+    RuleIds:
+      - API-001
+      - SEC-001
+      - TUI-001
+    SignerMustBeDifferentFromAuthor: true
+    EvidenceMustReference:
+      - TaskId
+      - TaskRevision
+      - BaseCommit
+      - HeadCommit
+      - FindingResolution

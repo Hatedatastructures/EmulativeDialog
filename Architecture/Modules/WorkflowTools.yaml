@@ -1,0 +1,40 @@
+SchemaVersion: 1
+ShardId: WorkflowTools
+
+Scope:
+  ProductRuntime: false
+  ProjectOwnedCodeLanguage: C++
+  Purpose: 在开发阶段按 TaskId 管理 Agent 工作、上下文、worktree、沟通、检查点和审查证据。
+
+Modules:
+  - ModuleId: AgentWorkflowController
+    OwnerRole: AgentWorkflowOwner
+    WriteRoots:
+      - Tools/WorkflowController/
+      - Tests/Contract/WorkflowController/
+    ContractRefs:
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/TaskLifecycle.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/TaskTemplate.yaml
+      - Workflow/EnforcementMatrix.yaml
+    DependsOn:
+      - WindowsPlatform
+      - RootBuildAndDependencies
+    LoadEntry:
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/TaskLifecycle.md
+    RequiredCapabilities:
+      - QueryOneTaskById
+      - ValidateTaskRevisionAndStateTransition
+      - BuildBoundedContextBundleFromReadSet
+      - DetectWriteSetAndSharedLockConflicts
+      - CreateAndVerifyIsolatedWorktree
+      - PersistCheckpointAndAppendEvents
+      - RouteTaskScopedCoordinationMessages
+      - RecordTargetedValidationAndPRState
+    ForbiddenCapabilities:
+      - SilentlyEditTaskScope
+      - AutoApproveChangeRequests
+      - MergeWithoutRequiredReview
+      - LoadAllHistoryIntoAgentContext

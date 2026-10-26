@@ -1,0 +1,35 @@
+# 上游能力映射根索引。详细条目按上游子系统分片；不在此处复制源码或全文摘要。
+SchemaVersion: 1
+ProjectId: EmulativeDialog
+State: PendingSourceBaseline
+ScopeDecision: Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+SourceRepository: ""
+SourceCommit: ""
+LicenseReview:
+  Status: Pending
+  Evidence: []
+
+UnitOfMapping:
+  - UpstreamSubsystem
+  - PublicBehavior
+  - UserVisibleCapability
+DecisionValues:
+  - Keep
+  - Redesign
+  - Remove
+  - Defer
+
+ShardPolicy:
+  CreateOnDemandByUpstreamSubsystem: true
+  ReadOnlyCurrentCapabilityShards: true
+  NoPerSourceFileNarrativeDocuments: true
+  StoreSourceAnchorsAsPathsSymbolsAndRequiredRanges: true
+
+Coverage:
+  TargetScopeFrozen: true
+  TargetRelevantCapabilities: null
+  MappedCapabilities: null
+  UnmappedTargetCapabilities: null
+  UnknownsRemainExplicitBlockers: true
+
+ShardIndex: []

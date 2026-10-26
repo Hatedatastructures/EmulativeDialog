@@ -1,0 +1,84 @@
+# 模块地图根索引。每项任务按 ModuleId 查一个域分片，不加载全图。
+SchemaVersion: 2
+ProjectId: EmulativeDialog
+State: Proposed
+CodeLanguage: C++
+NamingRule: PascalCase
+ModuleDirectory: Architecture/Modules
+LoadRule: ResolveModuleIdToOneShardThenLoadOnlyThatEntry
+
+OwnershipRules:
+  OnePrimaryOwnerPerModule: true
+  OneWriterPerPathAtATime: true
+  ParentDirectoryIsNotAnAutomaticWriteGrant: true
+  CrossModuleChangesRequireContractOrIntegrationTask: true
+  SharedFilesHaveSingleOwner:
+    - RootBuild
+    - DependencyLock
+    - VersionedContracts
+    - TaskIndex
+    - CurrentState
+    - ReleaseAssembly
+
+ModuleShards:
+  - ShardId: HostCoreAgent
+    Path: Architecture/Modules/HostCoreAgent.yaml
+    ModuleIds:
+      - AppHost
+      - Core
+      - AgentRuntime
+  - ShardId: Providers
+    Path: Architecture/Modules/Providers.yaml
+    ModuleIds:
+      - ProviderOpenAIResponses
+      - ProviderOpenAIChatCompletions
+      - ProviderAnthropicMessages
+  - ShardId: Channels
+    Path: Architecture/Modules/Channels.yaml
+    ModuleIds:
+      - ChannelQQ
+      - ChannelWeChat
+  - ShardId: MemoryStorage
+    Path: Architecture/Modules/MemoryStorage.yaml
+    ModuleIds:
+      - Memory
+      - ContextSelector
+      - Storage
+  - ShardId: Tui
+    Path: Architecture/Modules/Tui.yaml
+    ModuleIds:
+      - TuiTerminal
+      - TuiRendering
+      - TuiLayoutAndComponents
+      - TuiInputAndEvents
+      - TuiApplication
+  - ShardId: Platform
+    Path: Architecture/Modules/Platform.yaml
+    ModuleIds:
+      - WindowsPlatform
+      - NetworkPlatform
+  - ShardId: BuildRelease
+    Path: Architecture/Modules/BuildRelease.yaml
+    ModuleIds:
+      - RootBuildAndDependencies
+      - IntegrationAndRelease
+  - ShardId: WorkflowTools
+    Path: Architecture/Modules/WorkflowTools.yaml
+    ModuleIds:
+      - AgentWorkflowController
+
+SharedOwners:
+  - Resource: RootCMakeAndPresets
+    OwnerRole: BuildAndDependencyOwner
+  - Resource: CrossModuleContractVersions
+    OwnerRole: ContractOwner
+  - Resource: TaskIndexAndTaskState
+    OwnerRole: Coordinator
+  - Resource: IntegrationBranchAndMergeQueue
+    OwnerRole: IntegrationOwner
+  - Resource: ReleaseAssembly
+    OwnerRole: IntegrationOwner
+  - Resource: AgentWorkflowStateAndEventStore
+    OwnerRole: AgentWorkflowOwner
+  - Resource: AgentPoolAndTaskAssignments
+    OwnerRole: Coordinator

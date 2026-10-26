@@ -1,0 +1,37 @@
+# TUI 参照库索引。选择和版本锁定前不开始自研实现。
+SchemaVersion: 1
+State: NotSelected
+Reference:
+  Library: ""
+  VersionOrCommit: ""
+  OfficialRepositoryOrDocs: ""
+  WindowsTerminalAssumptions: []
+  ProductOwnerDecision: Pending
+
+ParityDefinition:
+  ApprovedPublicApiCoveragePercent: 100
+  UnapprovedBehaviorDifferencesAllowed: 0
+  ComparisonDimensions:
+    - PublicComponentsAndProperties
+    - LayoutAndConstraints
+    - InputAndEvents
+    - FocusAndSelection
+    - StylingAndThemes
+    - StreamingAndRedraw
+    - UnicodeAndDisplayWidth
+    - ResizeAndTerminalRestoration
+  JSXSourceGrammar:
+    TypeScriptJsxIsNativeCppSyntax: false
+    AnyTranspilerOrGeneratorMustBeCppOwned: true
+    CapabilityParityMayBeReduced: false
+    RequiresExplicitDecisionIfLiteralSyntaxIsRequired: true
+
+ShardPolicy:
+  SplitApiCatalogByCapabilityWhenNeeded: true
+  LoadOnlyShardsReferencedByCurrentTuiTask: true
+  KeepFixturesAndDifferenceReportsOutsideMarkdown: true
+  ReferenceVersionChangeRequiresChangeRequest: true
+
+ApiShards: []
+ScenarioShards: []
+KnownDifferences: []

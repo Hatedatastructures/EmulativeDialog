@@ -1,0 +1,39 @@
+SchemaVersion: 1
+ShardId: Providers
+
+Modules:
+  - ModuleId: ProviderOpenAIResponses
+    OwnerRole: ResponsesProviderOwner
+    WriteRoots:
+      - Source/Providers/OpenAIResponses/
+      - Tests/Contract/Providers/OpenAIResponses/
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    DependsOn:
+      - NetworkPlatform
+    LoadEntry:
+      - Architecture/Contracts/ModelProviderContract.md#三协议映射
+
+  - ModuleId: ProviderOpenAIChatCompletions
+    OwnerRole: ChatCompletionsProviderOwner
+    WriteRoots:
+      - Source/Providers/OpenAIChatCompletions/
+      - Tests/Contract/Providers/OpenAIChatCompletions/
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    DependsOn:
+      - NetworkPlatform
+    LoadEntry:
+      - Architecture/Contracts/ModelProviderContract.md#三协议映射
+
+  - ModuleId: ProviderAnthropicMessages
+    OwnerRole: AnthropicProviderOwner
+    WriteRoots:
+      - Source/Providers/AnthropicMessages/
+      - Tests/Contract/Providers/AnthropicMessages/
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    DependsOn:
+      - NetworkPlatform
+    LoadEntry:
+      - Architecture/Contracts/ModelProviderContract.md#三协议映射

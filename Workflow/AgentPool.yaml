@@ -1,0 +1,86 @@
+# 稳定工作槽注册表，不代表当前已经启动了这些 Agent。
+SchemaVersion: 1
+MaximumSubagents: 8
+State: Planned
+EffectiveParallelism:
+  Formula: MinimumOfConfiguredSlotsHostCapacityAndReadyIndependentTasks
+
+LifecyclePolicy:
+  KeepLogicalSlotIdentityAcrossTasks: true
+  ReuseAgentForRelatedTasks: true
+  DoNotCreateOrCloseAnAgentForEverySmallTask: true
+  UseTaskCheckpointInsteadOfCarryingUnrelatedConversation: true
+  IfHostCannotKeepSession:
+    PreserveLogicalSlot: true
+    RestoreFromCheckpoint: true
+    NeverClaimOldSessionIsStillRunning: true
+  RetireOnlyWhen:
+    - ResponsibilityIsRemovedOrReassignedByApprovedDecision
+    - AgentCannotSatisfyRequiredQualityOrSecurityBoundary
+    - HostSessionIsUnavailableAndRecoveryWasAttempted
+    - UserOrCoordinatorExplicitlyClosesTheSlot
+
+Slots:
+  - SlotId: Worker01
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker02
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker03
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker04
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker05
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker06
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker07
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+  - SlotId: Worker08
+    RoleFamily: Unassigned
+    AgentId: ""
+    HostSessionRef: ""
+    ModuleIds: []
+    CurrentTaskId: ""
+    Status: Dormant
+
+AssignmentRules:
+  - 每个活动任务必须且只能属于一个 OwnerSlotId。
+  - 一个 Slot 同时最多负责一个有写权限的 Active task。
+  - Reviewer 可以复用空闲槽，但不得审查自己编写的 PR。
+  - 不能用重复分析、无写集工作或低价值任务填满空闲槽。
+  - 每次分派/回收/恢复都追加 AgentSlotAssigned、AgentSlotRecovered 或 AgentSlotRetired 事件。

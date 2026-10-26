@@ -1,0 +1,78 @@
+SchemaVersion: 1
+ShardId: Tui
+
+Epic:
+  EpicId: EP-TUI
+  Status: Proposed
+  ReferenceGate: Research/TuiReferenceMatrix.yaml
+  ParityContract: Architecture/TuiApi.md
+
+Modules:
+  - ModuleId: TuiTerminal
+    OwnerRole: TuiTerminalOwner
+    WriteRoots:
+      - Source/Tui/Terminal/
+      - Tests/Contract/Tui/Terminal/
+    ContractRefs:
+      - Architecture/TuiApi.md
+    DependsOn:
+      - WindowsPlatform
+    LoadEntry:
+      - Architecture/TuiApi.md#终端能力和降级
+
+  - ModuleId: TuiLayoutAndComponents
+    OwnerRole: TuiComponentsOwner
+    WriteRoots:
+      - Source/Tui/Layout/
+      - Source/Tui/Components/
+      - Tests/Contract/Tui/Layout/
+      - Tests/Contract/Tui/Components/
+    ContractRefs:
+      - Architecture/TuiApi.md
+    DependsOn: []
+    LoadEntry:
+      - Architecture/TuiApi.md#C-组件接口
+
+  - ModuleId: TuiRendering
+    OwnerRole: TuiRenderingOwner
+    WriteRoots:
+      - Source/Tui/Rendering/
+      - Tests/Contract/Tui/Rendering/
+    ContractRefs:
+      - Architecture/TuiApi.md
+    DependsOn:
+      - TuiTerminal
+      - TuiLayoutAndComponents
+    LoadEntry:
+      - Architecture/TuiApi.md#渲染模型
+
+  - ModuleId: TuiInputAndEvents
+    OwnerRole: TuiInputOwner
+    WriteRoots:
+      - Source/Tui/Input/
+      - Source/Tui/Events/
+      - Tests/Contract/Tui/Input/
+      - Tests/Contract/Tui/Events/
+    ContractRefs:
+      - Architecture/TuiApi.md
+    DependsOn:
+      - TuiTerminal
+      - TuiLayoutAndComponents
+    LoadEntry:
+      - Architecture/TuiApi.md#必需行为
+
+  - ModuleId: TuiApplication
+    OwnerRole: TuiApplicationOwner
+    WriteRoots:
+      - Source/Tui/Application/
+      - Tests/Contract/Tui/Application/
+    ContractRefs:
+      - Architecture/TuiApi.md
+      - Architecture/Contracts/CoreAgentContract.md
+    DependsOn:
+      - Core
+      - TuiInputAndEvents
+      - TuiLayoutAndComponents
+      - TuiRendering
+    LoadEntry:
+      - Architecture/TuiApi.md

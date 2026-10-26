@@ -1,0 +1,28 @@
+SchemaVersion: 1
+ShardId: Platform
+
+Modules:
+  - ModuleId: WindowsPlatform
+    OwnerRole: WindowsPlatformOwner
+    WriteRoots:
+      - Source/Platform/Windows/
+      - Tests/Contract/Platform/Windows/
+    ContractRefs:
+      - Standards/SecurityAndPrivacy.md
+      - Standards/DependencyPolicy.md
+    DependsOn: []
+    LoadEntry:
+      - Standards/SecurityAndPrivacy.md#本机通信和终端
+
+  - ModuleId: NetworkPlatform
+    OwnerRole: NetworkOwner
+    WriteRoots:
+      - Source/Platform/Network/
+      - Tests/Contract/Platform/Network/
+    ContractRefs:
+      - Standards/DependencyPolicy.md
+      - Architecture/Contracts/ModelProviderContract.md
+    DependsOn:
+      - WindowsPlatform
+    LoadEntry:
+      - Standards/DependencyPolicy.md#Boost-基线

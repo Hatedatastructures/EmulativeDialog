@@ -1,0 +1,38 @@
+SchemaVersion: 1
+ShardId: BuildRelease
+
+Modules:
+  - ModuleId: RootBuildAndDependencies
+    OwnerRole: BuildAndDependencyOwner
+    WriteRoots:
+      - CMakeLists.txt
+      - CMakePresets.json
+      - CMake/
+      - Standards/DependencyPolicy.md
+    ContractRefs:
+      - Standards/CppEngineeringStandard.md
+      - Standards/DependencyPolicy.md
+    DependsOn: []
+    LoadEntry:
+      - Standards/DependencyPolicy.md
+
+  - ModuleId: IntegrationAndRelease
+    OwnerRole: IntegrationOwner
+    WriteRoots:
+      - Packaging/
+      - Release/
+    ContractRefs:
+      - Workflow/TaskLifecycle.md
+      - Workflow/EnforcementMatrix.yaml
+    DependsOn:
+      - AppHost
+      - Core
+      - AgentRuntime
+      - ProviderOpenAIResponses
+      - ProviderOpenAIChatCompletions
+      - ProviderAnthropicMessages
+      - ChannelQQ
+      - ChannelWeChat
+      - TuiApplication
+    LoadEntry:
+      - Workflow/Roadmap.md#P6-集成和发行

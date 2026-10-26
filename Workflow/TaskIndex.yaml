@@ -1,0 +1,128 @@
+# 常驻任务索引：只读此文件的路由与队列字段，不把全部计划和历史读入上下文。
+SchemaVersion: 2
+ProjectId: EmulativeDialog
+CurrentReleaseId: Bootstrap
+CurrentStatePath: Workflow/CurrentState.md
+ModuleMapPath: Architecture/ModuleMap.yaml
+ExecutionStandardPath: Workflow/AgentExecutionStandard.md
+LifecyclePath: Workflow/TaskLifecycle.md
+TaskRecordTemplatePath: Workflow/TaskTemplate.yaml
+AgentPoolPath: Workflow/AgentPool.yaml
+PlanRoot: Workflow/Plans
+EventStore:
+  Format: JSONL
+  Root: Workflow/Events
+  ShardBy:
+    - ReleaseId
+    - PhaseId
+  CreateOnFirstUse: true
+CommunicationStore:
+  Format: JSONL
+  Root: Workflow/Communications
+  ShardBy:
+    - ReleaseId
+    - PhaseId
+  LoadOnlyOpenMessagesForCurrentTask: true
+TaskArchive:
+  Format: StructuredRecords
+  Root: Workflow/Archive
+  LoadOnlyByTaskId: true
+
+Coordination:
+  MaximumSubagents: 8
+  EffectiveParallelism: MinimumOfConfiguredSlotsHostCapacityAndReadyIndependentTasks
+  CoordinatorIsSeparate: true
+  StableRoleSlots: true
+  ReuseAgentSessionAcrossRelatedTasks: true
+  DoNotCloseAgentAfterEverySmallTask: true
+  FillSlotsOnlyWithReadyIndependentTasks: true
+  RequireIndependentWorktrees: true
+  IntegrationBranchSingleWriter: true
+
+LoadPolicy:
+  AlwaysLoad:
+    - AGENTS.md
+    - Workflow/CurrentState.md
+    - Workflow/TaskIndex.yaml
+  ThenLoad:
+    - OneTaskRecordByTaskId
+    - OneModuleEntryByModuleId
+    - ReferencedContractsAndDecisionsOnly
+  NeverAutoLoad:
+    - AllTaskRecords
+    - AllPhasePlans
+    - ClosedCommunicationMessages
+    - HistoricalEventArchives
+    - FullSourceTree
+  GovernanceByRole:
+    Coordinator:
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/TaskLifecycle.md
+      - Workflow/EnforcementMatrix.yaml
+      - Workflow/AgentPool.yaml
+    Implementer:
+      - RelevantSectionsOfWorkflow/AgentExecutionStandard.md
+      - CurrentTaskRecord
+      - CurrentModuleShard
+    Reviewer:
+      - RelevantSectionsOfWorkflow/TaskLifecycle.md
+      - CurrentTaskRecord
+      - CurrentPullRequestDiff
+
+ExecutionGates:
+  CodexCorePreparation:
+    RequiredTaskIds:
+      - ED-0001
+      - ED-0005
+    Unlocks:
+      - P1
+  ProductAgentImplementation:
+    RequiredP1Gate: AgentWorkflowControllerAndCoreContractsVerified
+    Unlocks:
+      - P2
+      - P3
+  QQChannelImplementation:
+    RequiredTaskIds:
+      - ED-0003
+      - ED-0004
+    Unlocks:
+      - P4
+  TuiImplementation:
+    RequiredTaskIds:
+      - ED-0002
+      - ED-0004
+    Unlocks:
+      - P5
+  WeChat:
+    State: Deferred
+    Unlocks: []
+
+PhasePlans:
+  - PhaseId: P0
+    Path: Workflow/Plans/P0.yaml
+    State: Current
+    LoadWhen: ScopeAndEvidenceWorkIsAssigned
+  - PhaseId: P1
+    Path: ""
+    State: NotExpanded
+    LoadWhen: CodexCorePreparationGatePassed
+  - PhaseId: P2
+    Path: ""
+    State: NotExpanded
+    LoadWhen: AgentWorkflowControllerAndCoreContractsVerified
+  - PhaseId: P3
+    Path: ""
+    State: NotExpanded
+    LoadWhen: AgentWorkflowControllerOperationalAndModelProviderContractFrozen
+  - PhaseId: P4
+    Path: ""
+    State: NotExpanded
+    LoadWhen: AgentWorkflowControllerOperationalAndQQChannelGatePassed
+  - PhaseId: P5
+    Path: ""
+    State: NotExpanded
+    LoadWhen: AgentWorkflowControllerOperationalAndTuiReferenceAndParityScopeFrozen
+  - PhaseId: P6
+    Path: ""
+    State: NotExpanded
+    LoadWhen: AllCurrentReleaseGatesPassed

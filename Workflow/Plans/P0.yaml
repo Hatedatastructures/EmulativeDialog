@@ -1,0 +1,182 @@
+# P0 任务按领域门解锁；Codex 核心准备不等待 QQ/TUI 决策。任务不另建逐项 Markdown。
+SchemaVersion: 2
+PhaseId: P0
+PhaseName: Codex 核心映射与独立领域证据
+State: Current
+
+EntryGate:
+  - ADR-0002 已固定 C++ Codex 聊天 Agent 核心重写为主任务。
+  - 微信在本阶段 Deferred，不创建微信调研/实现任务。
+
+ParallelGroups:
+  - GroupId: IndependentEvidence
+    TaskIds:
+      - ED-0001
+      - ED-0002
+      - ED-0003
+
+DomainGates:
+  CodexCorePreparation:
+    RequiredTaskIds:
+      - ED-0001
+      - ED-0005
+    Unlocks:
+      - P1
+  QQChannel:
+    RequiredTaskIds:
+      - ED-0003
+      - ED-0004
+    Unlocks:
+      - P4
+  Tui:
+    RequiredTaskIds:
+      - ED-0002
+      - ED-0004
+    Unlocks:
+      - P5
+  WeChat:
+    State: Deferred
+    CurrentPhaseWork: None
+
+PhaseExitGate:
+  - CodexCorePreparationGate 开放 P1 的 C++ 构建、合同和 AgentWorkflowController 任务。
+  - P1 先交付 C++ AgentWorkflowController；控制器门通过前不得开始大规模并行产品实现。
+  - QQ 和 TUI 分别按自己的 DomainGate 解锁，不得阻塞不依赖它们的 Codex Agent 核心准备工作。
+  - 每个 MUST 规则有自动门或独立签字门；未落地的门标记 Planned，禁止伪称已强制。
+
+Tasks:
+  - TaskId: ED-0001
+    TaskRevision: 1
+    EpicId: EP-00
+    Title: 建立 Codex 聊天 Agent 核心重写能力映射与上游基线
+    TaskKind: SourceMapping
+    State: Proposed
+    OwnerRole: ProductContractOwner
+    DependsOn: []
+    ExternalInputs:
+      - Codex 官方源码仓库位置
+      - 要作为重写基线的上游提交
+    ReadSet:
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+      - Workflow/CodexCapabilityMap.yaml
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Architecture/Modules/Providers.yaml
+      - Architecture/Modules/MemoryStorage.yaml
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/MemoryContract.md
+    WriteSet:
+      - Workflow/CodexCapabilityMap.yaml
+      - Workflow/CodexCapabilityMap/
+    Acceptance:
+      - 锁定官方仓库、提交、许可证边界和 Agent 核心相关子系统入口。
+      - 对目标 Codex Agent 能力逐项决定 Keep、Redesign、Remove 或 Defer，并给出来源。
+      - 每项 Keep/Redesign 映射到目标 C++ 模块、合同、实现任务和验收证据。
+      - 主机命令拦截、主机状态查询、CLI/IDE UI 和任意文件工具标记为当前产品范围外。
+      - 目标相关能力未映射数为零；证据不足项保持显式 Blocker。
+    Validation:
+      - 能力映射和来源证据审阅；不扫描完整源码树、不按行数拆任务、不运行全仓构建。
+
+  - TaskId: ED-0002
+    TaskRevision: 1
+    EpicId: EP-01
+    Title: 调研 TypeScript TUI 参照候选及能力差异
+    TaskKind: Research
+    State: Proposed
+    OwnerRole: TuiContractOwner
+    DependsOn: []
+    ReadSet:
+      - Architecture/TuiApi.md
+      - Standards/CppEngineeringStandard.md
+      - Workflow/OpenDecisions.md
+      - Architecture/Decisions/Adr0001CppRuntime.md
+    WriteSet:
+      - Research/TuiReferenceMatrix.yaml
+      - Research/TuiParity/
+    Acceptance:
+      - 比较可作为唯一参照的 TypeScript TUI 候选及其当前版本。
+      - 逐项记录公开组件、参数、布局、输入/事件、样式、终端支持和生命周期。
+      - 给出推荐对象、版本、证据链接和对照夹具场景；不得代替产品 owner 最终选择。
+      - TUI 参照未决只阻塞 TUI 实现，不阻塞 Codex Agent 核心任务。
+    Validation:
+      - 官方文档/仓库证据审阅；不构建产品代码。
+
+  - TaskId: ED-0003
+    TaskRevision: 1
+    EpicId: EP-02
+    Title: 核实 QQ 授权接入面和平台能力
+    TaskKind: PlatformQualification
+    State: Proposed
+    OwnerRole: QQChannelResearchOwner
+    DependsOn: []
+    ReadSet:
+      - Research/Platforms/PlatformCapabilityMatrix.md
+      - Architecture/Contracts/ChannelAdapterContract.md
+      - Standards/SecurityAndPrivacy.md
+    WriteSet:
+      - Research/Platforms/PlatformCapabilityMatrix.md
+    Acceptance:
+      - QQ 目标账号面、受支持接口、认证/审核条件和允许的收发方向有官方证据。
+      - 昵称、媒体、贴纸/表情、反应、拍一拍、主动消息逐项注明来源和状态。
+      - 明确区分 QQ Bot 与个人 QQ；未知能力标 Unknown，不进入产品承诺。
+      - 不使用 Hook、私有协议或未授权桌面自动化补齐能力。
+      - 微信不属于本任务 WriteSet、调研范围或验收范围。
+    Validation:
+      - 官方资料审阅；不发送真实消息。
+
+  - TaskId: ED-0004
+    TaskRevision: 1
+    EpicId: EP-03
+    Title: 批准 TUI 参照和 QQ 产品面
+    TaskKind: ProductDecision
+    State: Proposed
+    OwnerRole: ProductOwner
+    DependsOn:
+      - ED-0002
+      - ED-0003
+    ReadSet:
+      - Goals/ProductGoals.md
+      - Workflow/OpenDecisions.md
+      - Research/TuiReferenceMatrix.yaml
+      - Research/Platforms/PlatformCapabilityMatrix.md
+    WriteSet:
+      - Goals/ProductGoals.md
+      - Workflow/OpenDecisions.md
+      - Research/TuiReferenceMatrix.yaml
+      - Research/Platforms/PlatformCapabilityMatrix.md
+    Acceptance:
+      - 明确选定 TypeScript TUI 参照库、精确版本和批准 API 范围，或明确暂缓 TUI。
+      - 明确 QQ 目标账号面、首批能力和用户可见限制。
+      - 不能保证的能力保持 Unknown/Unsupported。
+      - 微信保持 Deferred，不列入本阶段验收。
+      - 字面 JSX 源语法与全 C++ 运行时的边界有明确记录。
+    Validation:
+      - 产品 owner 决策记录；不运行代码验证。
+
+  - TaskId: ED-0005
+    TaskRevision: 1
+    EpicId: EP-04
+    Title: 冻结 Codex 核心模块 owner、写集边界与治理门
+    TaskKind: ArchitectureOwnership
+    State: Proposed
+    OwnerRole: IntegrationOwner
+    DependsOn:
+      - ED-0001
+    ReadSet:
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/
+      - Workflow/EnforcementMatrix.yaml
+    WriteSet:
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/
+      - Workflow/EnforcementMatrix.yaml
+    Acceptance:
+      - Codex Agent 核心、Core、三 Provider、Memory/Context、WorkflowController 有唯一 owner、写路径、合同入口和依赖方向。
+      - QQ 和 TUI 各自有独立 owner 与门；微信标记 Deferred。
+      - 根构建、依赖锁、公共合同、任务索引和集成分支有单写者。
+      - 模块依赖图无未批准的环，Ready 任务写集无冲突。
+      - 未实现的治理门标记 Planned，并列入 P1 阻断清单。
+    Validation:
+      - 依赖图和写集静态审阅；不运行产品构建。

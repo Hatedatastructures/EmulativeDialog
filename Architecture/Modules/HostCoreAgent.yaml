@@ -1,0 +1,49 @@
+SchemaVersion: 1
+ShardId: HostCoreAgent
+
+Modules:
+  - ModuleId: AppHost
+    OwnerRole: HostOwner
+    WriteRoots:
+      - Source/AppHost/
+      - Tests/Contract/AppHost/
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+    DependsOn:
+      - Core
+      - WindowsPlatform
+    LoadEntry:
+      - ProjectOverview.md
+      - Architecture/SystemArchitecture.md#命令行与应用宿主
+
+  - ModuleId: Core
+    OwnerRole: CoreOwner
+    WriteRoots:
+      - Source/Core/
+      - Tests/Contract/Core/
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ChannelAdapterContract.md
+    DependsOn:
+      - WindowsPlatform
+      - Storage
+    LoadEntry:
+      - Architecture/SystemArchitecture.md#Core-核心
+
+  - ModuleId: AgentRuntime
+    OwnerRole: AgentRuntimeOwner
+    WriteRoots:
+      - Source/Agent/
+      - Tests/Contract/Agent/
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/MemoryContract.md
+    DependsOn:
+      - Core
+      - ContextSelector
+      - ProviderOpenAIResponses
+      - ProviderOpenAIChatCompletions
+      - ProviderAnthropicMessages
+    LoadEntry:
+      - Architecture/SystemArchitecture.md#Agent-运行时

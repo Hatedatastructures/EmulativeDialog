@@ -1,0 +1,42 @@
+SchemaVersion: 1
+ShardId: MemoryStorage
+
+Modules:
+  - ModuleId: Memory
+    OwnerRole: MemoryOwner
+    WriteRoots:
+      - Source/Memory/
+      - Tests/Contract/Memory/
+    ContractRefs:
+      - Architecture/Contracts/MemoryContract.md
+    DependsOn:
+      - Storage
+      - Core
+    LoadEntry:
+      - Architecture/Contracts/MemoryContract.md
+
+  - ModuleId: ContextSelector
+    OwnerRole: ContextOwner
+    WriteRoots:
+      - Source/Context/
+      - Tests/Contract/Context/
+    ContractRefs:
+      - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+    DependsOn:
+      - Memory
+    LoadEntry:
+      - Architecture/Contracts/MemoryContract.md#ContextSelector-规则
+
+  - ModuleId: Storage
+    OwnerRole: StorageOwner
+    WriteRoots:
+      - Source/Storage/
+      - Tests/Contract/Storage/
+    ContractRefs:
+      - Architecture/SystemArchitecture.md#持久化
+      - Architecture/Contracts/MemoryContract.md
+    DependsOn:
+      - WindowsPlatform
+    LoadEntry:
+      - Architecture/SystemArchitecture.md#持久化

@@ -1,0 +1,80 @@
+# 本模板定义阶段任务分片中的单条记录；不要为每个任务复制成独立 Markdown。
+TaskId: ED-0000
+TaskRevision: 1
+EpicId: EP-0000
+Title: 中文任务标题
+TaskKind: CapabilitySlice
+State: Proposed
+Phase: P0
+OwnerRole: ModuleOwner
+OwnerSlotId: ""
+OwnerAgentId: ""
+CreatedBy: Coordinator
+CreatedAt: ""
+UpdatedAt: ""
+ParallelGroup: ""
+
+Goal: ""
+OutOfScope: []
+DependsOn: []
+ExternalInputs: []
+ContractVersion: V1
+BaselineCommit: ""
+HeadCommit: ""
+Branch: ""
+Worktree: ""
+PullRequest: ""
+
+Context:
+  ModuleId: ""
+  AlwaysLoad:
+    - AGENTS.md
+    - Workflow/CurrentState.md
+    - Workflow/TaskIndex.yaml
+  ReadSet: []
+  OnDemandSet: []
+  ForbiddenSet: []
+  Budget:
+    CoreDocumentsTargetPercent: 10
+    TaskReferencesTargetPercent: 25
+    ImplementationContextReserveMinimumPercent: 50
+    MeasurementMode: EstimateUntilTelemetryExists
+  MaxReferenceFiles: 12
+  ExpansionReasonRequired: true
+
+WriteSet: []
+SharedLocks: []
+Acceptance:
+  - AcceptanceId: AC-1
+    Description: ""
+    Evidence: ""
+Validation:
+  RequiredTargets: []
+  TargetedBuild: []
+  ContractFixtures: []
+  StaticChecks: []
+  LiveSideEffects: Forbidden
+  NotRunReason: ""
+
+RiskLevel: Low
+RiskOwnerRole: ""
+RequiresCredentials: false
+RequiresExternalAccount: false
+Rules:
+  MustFollow: []
+  SoftDefaults: []
+  ApprovedOverrides: []
+
+Checkpoint:
+  LastCompletedAcceptance: ""
+  CurrentFindingOrFailure: ""
+  TriedApproaches: []
+  NextAction: ""
+  OpenMessageIds: []
+  LastValidationResult: ""
+
+Deliverable:
+  PullRequestSummaryRequired: true
+  TaskReportFile: false
+  EventShard: Workflow/Events/
+  FollowUpTaskIds: []

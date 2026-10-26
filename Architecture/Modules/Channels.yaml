@@ -1,0 +1,29 @@
+SchemaVersion: 1
+ShardId: Channels
+
+Modules:
+  - ModuleId: ChannelQQ
+    OwnerRole: QQChannelOwner
+    WriteRoots:
+      - Source/Channels/QQ/
+      - Tests/Contract/Channels/QQ/
+    ContractRefs:
+      - Architecture/Contracts/ChannelAdapterContract.md
+    DependsOn:
+      - Core
+      - NetworkPlatform
+    LoadEntry:
+      - Research/Platforms/PlatformCapabilityMatrix.md#QQ-官方-Bot-当前资料提示
+
+  - ModuleId: ChannelWeChat
+    OwnerRole: WeChatChannelOwner
+    WriteRoots:
+      - Source/Channels/WeChat/
+      - Tests/Contract/Channels/WeChat/
+    ContractRefs:
+      - Architecture/Contracts/ChannelAdapterContract.md
+    DependsOn:
+      - Core
+      - NetworkPlatform
+    LoadEntry:
+      - Research/Platforms/PlatformCapabilityMatrix.md#WeChat-接入决策门
