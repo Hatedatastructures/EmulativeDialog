@@ -482,7 +482,7 @@ Tasks:
     EpicId: EP-05
     Title: 定义 ModelProviderPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
-    State: Ready
+    State: Blocked
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -594,14 +594,17 @@ Tasks:
     RiskOwnerRole: ContractOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: Pending
+    ReviewerDecision: RequestChanges
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: ""
+      CurrentFindingOrFailure: >-
+        Worker05 found that the frozen ModelProviderContract V1 requires Anthropic refusal stop_details but has no
+        typed completion payload, and the current ProviderErrorCode allows terminal-code misuse in ResponseFailed.
+        ED-0017 must freeze the contract correction before ED-0015 can resume on a new task revision.
       TriedApproaches: []
-      NextAction: "Implement the R2 C++20 public port and compile-contract tests in the isolated worktree, then request Worker05 fixed-Head review."
+      NextAction: "Wait for ED-0017 contract merge, then register ED-0015/R3 against ModelProviderContract V1.1 and implement the typed refusal/failure-code API in a new isolated worktree."
       OpenMessageIds: []
-      LastValidationResult: NotRun
+      LastValidationResult: "R2 compile-contract validation passed; fixed-head review returned Request Changes on two canonical API gaps."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -735,6 +738,148 @@ Tasks:
       TaskReportFile: false
       EventShard: Workflow/Events/Bootstrap/P1.jsonl
       FollowUpTaskIds: []
+
+  - TaskId: ED-0017
+    TaskRevision: 1
+    EpicId: EP-05
+    Title: 补齐 Provider refusal details 与终态错误类型合同
+    TaskKind: ContractChange
+    State: Ready
+    Phase: P1
+    OwnerRole: ContractOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/provider_responses"
+    ReviewerRole: AnthropicProviderOwner
+    ReviewerSlotId: Worker05
+    ReviewerAgentId: "/root/provider_anthropic"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-26"
+    UpdatedAt: "2026-10-26"
+    ParallelGroup: P1VersionedContractCorrections
+    Goal: >-
+      通过 CR-ED-0007-005 将 Provider refusal stop_details 的允许字段和分类映射写入公共合同，
+      并把失败码与输出截断、取消、未知结果终态分开，确保 C++ ModelProviderPort 可无歧义表示三协议 V1.1 行为。
+    OutOfScope:
+      - 任一 Provider Adapter 或 AgentRuntime 实现
+      - 更改 OpenAI Responses/Chat refusal wire mapping
+      - 任何工具、权限、MemoryConsent 或 Channel policy 变更
+      - 修改 CapabilityMap、fixtures、CMake 或其他源码路径
+    DependsOn:
+      - ED-0007
+    ExternalInputs:
+      - https://platform.claude.com/docs/en/api/messages/create
+      - https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
+    ChangeRequest:
+      ChangeRequestId: CR-ED-0007-005
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Revise ModelProviderContract to define a typed optional refusal-details projection, drop unstable free-form
+        Anthropic explanation from canonical events, and restrict ResponseFailed to failure-only error codes;
+        preserve dedicated output-limited/cancelled/outcome-unknown terminal variants. Existing Core policy remains unchanged.
+      Reason: >-
+        Fixed ED-0015/R2 review found the V1 Anthropic mapping requires refusal stop_details that the public completion
+        type cannot carry, while ResponseFailed currently accepts codes belonging to other terminal variants.
+    ContractVersion:
+      Before: ModelProviderContract V1
+      After: ModelProviderContract V1.1
+    BaselineCommit: 6b0e71be3952542db372b8a833d2325a9038425d
+    HeadCommit: ""
+    Branch: Task/ED-0017-ProviderRefusalContractV1_1
+    Worktree: H:/Qbot/EmulativeDialog.ED-0017
+    Context:
+      ModuleId: ModelProviderPort
+      ReadSet:
+        - Workflow/TaskTemplate.yaml
+        - Workflow/TaskLifecycle.md
+        - Workflow/AgentExecutionStandard.md
+        - Architecture/ModuleMap.yaml#ShardId=Providers
+        - Architecture/Modules/Providers.yaml#ModuleId=ModelProviderPort
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/CoreAgentContract.md
+        - Tests/Contract/Providers/AnthropicMessages/Fixtures/ErrorCases.json
+        - Tests/Contract/Providers/AnthropicMessages/Fixtures/FixtureIndex.json
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Architecture/Contracts/ModelProviderContract.md
+    SharedLocks:
+      - CrossModuleContractVersions
+    ForbiddenSet:
+      - Workflow/CodexCapabilityMap/**
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/**
+      - Architecture/Contracts/CoreAgentContract.md
+      - Tests/**
+      - Source/**
+      - CMakeLists.txt
+      - CMakePresets.json
+    Rules:
+      MustFollow:
+        - "Define a typed optional RefusalStopDetails on ResponseCompleted(Refusal), available even when no RefusalDelta text was emitted."
+        - "Normalize known Anthropic stop_details.category values to the frozen RefusalCategory enum and map null/unknown values to Unclassified."
+        - "Do not place Anthropic explanation or arbitrary stop_details JSON in the canonical event, prompt, log, Memory or channel output."
+        - "ResponseFailed uses only failure codes; OutputLimitReached, cancellation and unknown outcomes remain their own terminal event variants."
+        - "No change may authorize Provider or AgentRuntime action calls; RefusalStopDetails are informational metadata only."
+        - "Only Architecture/Contracts/ModelProviderContract.md in the exact WriteSet may change."
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          ModelProviderContract V1.1 defines RefusalStopDetails.Type=Refusal and RefusalCategory values
+          Cyber, Bio, FrontierLlm, ReasoningExtraction, GeneralHarms and Unclassified; category is present only
+          when CompletionKind=Refusal and can be represented when refusal text is empty.
+        Evidence: Normative type table and Anthropic mapping table agree.
+      - AcceptanceId: AC-2
+        Description: >-
+          Anthropic explanation remains a wire-only field and is not part of canonical events; absent/null/unknown
+          category values normalize to Unclassified, with no free-form raw JSON passthrough.
+        Evidence: Explicit redaction rule plus synthetic fixture follow-up requirements.
+      - AcceptanceId: AC-3
+        Description: >-
+          ResponseFailed failure codes exclude output limit, cancellation and unknown-outcome codes; those results
+          map only to ResponseOutputLimited, ResponseCancelled and ResponseOutcomeUnknown respectively.
+        Evidence: Terminal/error type matrix is mutually exclusive.
+      - AcceptanceId: AC-4
+        Description: >-
+          ModelProviderContract labels refusal details as informational metadata only; it does not authorize tool
+          calls or become channel output, and the unstable explanation is absent from canonical events.
+        Evidence: RefusalDetails payload contract and existing CoreAgentContract V1 policy remain consistent.
+      - AcceptanceId: AC-5
+        Description: Only ModelProviderContract.md changes; CoreAgentContract, CapabilityMap and fixtures remain separate tasks.
+        Evidence: Fixed Base..Head path audit and git diff --check.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures: []
+      StaticChecks:
+        - git diff --check <BaselineCommit> <HeadCommit>
+        - Verify changed paths equal Architecture/Contracts/ModelProviderContract.md only.
+        - Verify V1.1 refusal/error semantics are internally consistent and do not change CoreAgentContract V1.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Versioned contract prose change only; implementation and fixture successors follow this task."
+    RiskLevel: High
+    RiskOwnerRole: ContractOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    ReviewerDecision: Pending
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: "ED-0015/R2 is RequestChanges until the missing refusal-detail and terminal-code contract semantics are frozen."
+      TriedApproaches: []
+      NextAction: "Update the two versioned contracts under CR-ED-0007-005, request Worker05 fixed-Head review, then resume the ProviderPort task as a new revision."
+      OpenMessageIds: []
+      LastValidationResult: NotRun
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: [ED-0015, ED-0011]
 
   - TaskId: ED-0007
     TaskRevision: 1
