@@ -1324,12 +1324,12 @@ Tasks:
         ProductionSources: []
         MinimumLinePercent: 80
         ReportDirectory: ""
-      RequiredTargets: [AgentRuntimeVerticalSliceTests]
+      RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests]
       TargetedBuild:
         - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0124-R2.build' | Out-Null"
         - "cmake -S 'H:/Qbot/EmulativeDialog.ED-0124-R2' -B 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' -G 'MinGW Makefiles' -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
-        - "cmake --build 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --target AgentRuntimeVerticalSliceTests --parallel 4"
-        - "ctest --test-dir 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --output-on-failure -R 'AgentRuntime.VerticalSlice|WorkflowController'"
+        - "cmake --build 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests --parallel 4"
+        - "ctest --test-dir 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --output-on-failure -R 'AgentRuntime.VerticalSlice|WorkflowController.Contract'"
       ContractFixtures: ["Uses the already frozen FakeProvider and MockChannel synthetic fixtures."]
       StaticChecks:
         - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
