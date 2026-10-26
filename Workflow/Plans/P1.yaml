@@ -850,7 +850,7 @@ Tasks:
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: WorkflowStandard
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -982,16 +982,16 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0013-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "TaskSpec registered; awaiting isolated branch assignment and fixed BaseCommit."
+      CurrentFindingOrFailure: "TaskSpec revision 1 assigned at fixed BaseCommit 1ed077f751dc1850a2a64757f5c6e29aec67356f; isolated worktree creation pending."
       TriedApproaches: []
-      NextAction: "Coordinator fixes BaseCommit, assigns Worker01, and Reviewer Worker02 reviews fixed Head."
+      NextAction: "Worker01 creates the isolated task worktree from the fixed BaseCommit, implements the six-path WriteSet, commits and pushes the task branch, then reports fixed Head for Worker02 review."
       OpenMessageIds: []
       LastValidationResult: "Not run; task has not started."
     Deliverable:
