@@ -1,6 +1,6 @@
-# 模型 Provider 合同 V1.1
+# 模型 Provider 合同 V1.2
 
-状态：V1.1 候选。ED-0007 V1 保持冻结；本文件的 V1.1 修正由 CR-ED-0007-005 提出，独立评审并合入后生效。本版本增加类型化 refusal metadata，并分离失败码与输出截断、取消、未知结果终态；不实现任何 Adapter。
+状态：V1.2 候选。V1.1 是已审查的历史基线；下文保留 V1.1 请求、事件、错误和协议映射语义，V1.2 补充位于文末。V1.2 只补全 Chat Completions 与 Anthropic refusal 的协议映射，不改变 ModelProviderPort C++ 类型、CoreAgentContract V1 或授权行为，也不实现任何 Adapter。
 
 ## 职责和依赖方向
 
@@ -170,3 +170,61 @@ FailureCode 的终态归属互斥：
 - Anthropic：版本/认证头、温度参数全部省略、非默认采样值在网络前拒绝、message/content block 生命周期、累计 usage、stop_reason 全矩阵、tool_use/tool_result 关联顺序、未知 block 拒绝、refusal StopDetails category 映射（含 null/unknown -> Unclassified）和 ResponseFailed failure-code 集合；空拒绝文本仍可带 RefusalStopDetails，explanation 不进入 expected canonical payload。
 - 三 Adapter 与 FakeProvider 都验证同一 `RequestId`、本地单调 SequenceNumber、稳定 ItemId/ToolCallId、terminal exactly-once、取消和 outcome unknown；fixtures 不含真实密钥、用户私聊正文或网络录制。
 - 这些 fixture 是实现任务的验收计划，本合同冻结任务不创建/运行测试，不替代独立 Provider live-smoke。
+
+
+## V1.2 拒绝映射补充
+
+本节是 V1.1 历史基线之上的 V1.2 规范补充。V1.2 profile 按 V1.1 全部公共请求、事件、错误、取消和未知结果规则执行，并采用本节对 Chat Completions 与 Anthropic refusal 的明确映射。未被本节明确修改的 V1.1 语义保持不变；本节不增加 CanonicalModelEvent 或 ModelProviderPort 的 C++ 类型。
+
+### 共享拒绝终态
+
+- `RefusalDelta` 仍是非终态、不可见于 Channel 的拒绝文本增量；它本身既不完成请求，也不授权或禁止任何 Core action。
+- `ResponseCompleted` 的 `CompletionKind=Refusal` 表示 Provider 已明确完成一次拒绝响应，不是传输或 HTTP 失败。只有完整的协议终态才能产生它。
+- `ResponseCompleted.RefusalStopDetails` 仍是可选、类型化 metadata，且只允许随 `CompletionKind=Refusal` 出现。若存在，`Type` 固定为 `Refusal`，`Category` 是封闭的 `RefusalCategory`：`Cyber`、`Bio`、`FrontierLlm`、`ReasoningExtraction`、`GeneralHarms` 或 `Unclassified`。该对象不是文本，也不是授权信号。
+- 不得根据缺失的协议类别猜测原因或合成类别。协议没有提供拒绝类别时，可完成 `CompletionKind=Refusal`，但省略 `RefusalStopDetails`。协议明确要求拒绝详情的映射按下文执行。
+- Anthropic explanation、推荐模型名、未经登记的 `stop_details` 字段及原始 JSON 都是 wire-only；不得把它们存入规范事件、Prompt、日志、Memory 或 Channel 输出。
+
+### Chat Completions V1.2 refusal profile
+
+V1.2 EmulativeDialog Chat Completions profile 延续 `n=1`，只处理 `choice.index=0`。按 chunk 读取 `choices[0].delta.refusal`：
+
+| Wire 值 | 规范行为 |
+|---|---|
+| 字段缺失或 `null` | 不表示拒绝，不建立拒绝标记。 |
+| 非空字符串 | 建立本请求的拒绝标记；把该非空文本映射为稳定 `ItemId` 上的 `RefusalDelta`。 |
+| 空字符串 | 建立本请求的拒绝标记，但不发出空的 `RefusalDelta`。 |
+| 非字符串且非 `null` | `ResponseFailed/InvalidStream`；不把值转换为字符串或透传。 |
+
+`delta.refusal` 是拒绝内容，不是 `finish_reason`。即使已观察到拒绝字段，仍须等待终止 chunk；拒绝标记与干净的 `finish_reason=stop` 同时成立时，才产生一个 `ResponseCompleted(Refusal)`。Chat Completions 没有提供拒绝类别，因此不得为该终态构造 `RefusalStopDetails` 或 `Unclassified` 类别。
+
+整个响应都必须符合单一内容类型：观察到拒绝后，任何 chunk 的非空 `delta.content` 或实际 `tool_calls` 都会与拒绝冲突；在拒绝之前已出现非空内容或工具调用、随后又出现拒绝，也同样冲突。冲突响应以一个 `ResponseFailed/InvalidStream` 终结，不产生 `ResponseCompleted(Refusal)`，也不得产生 `ToolCallReady`。这沿用既有终态与 final-only 交付语义；V1.2 不增加事件撤回或 partial-text rollback 机制。
+
+| 最终状态 | V1.2 规范映射 |
+|---|---|
+| `finish_reason=stop`，未观察到拒绝 | 沿用 V1.1：`ResponseCompleted(FinalAnswer)`。 |
+| `finish_reason=stop`，已观察到拒绝且没有混合内容/工具调用 | `ResponseCompleted(Refusal)`；不合成拒绝类别。 |
+| `finish_reason=length` | 只映射 `ResponseOutputLimited`，不得完成为拒绝。 |
+| `finish_reason=content_filter` | 只映射 `ResponseFailed/ContentFiltered`，不得完成为拒绝。 |
+| `finish_reason=tool_calls`，无拒绝且工具调用完整有效 | 沿用 V1.1：`ResponseCompleted(ToolHandoff)`。若已观察到拒绝，则按上述冲突规则映射 `ResponseFailed/InvalidStream`。 |
+| `finish_reason=function_call`、旧式 `delta.function_call` 或未知终止原因 | `ResponseFailed/InvalidStream`；不得降级成文本完成或工具成功。 |
+| 流缺少完整终止原因 | 沿用 V1.1 的 EOF/未知终态规则；不得仅凭拒绝增量完成响应。 |
+
+结构冲突校验先于成功完成判定。干净响应中的 `length` 只对应 `ResponseOutputLimited`，`content_filter` 只对应 `ResponseFailed/ContentFiltered`；`ResponseFailed` 不承载输出截断、取消或未知结果。每个请求仍恰好产生一个终态事件。
+
+### Anthropic Messages V1.2 refusal profile
+
+Anthropic `stop_reason=refusal` 是正常的 Provider 完成，不是 `ResponseFailed`。Adapter 必须等待 `message_stop` 才发出终态；拒绝的完成映射为一个 `ResponseCompleted(Refusal)`，并提供必需的 `RefusalStopDetails`：
+
+1. V1.2 拒绝的 `message_delta` 必须携带 JSON object 类型的 `stop_details`，其 `type` 必须精确为 `refusal`。详情对象缺失、为 `null`、不是 object 或 `type` 不匹配时，以 `ResponseFailed/InvalidStream` 终止。
+2. 对 `stop_details.category`，`cyber`、`bio`、`frontier_llm`、`reasoning_extraction`、`general_harms` 分别映射到 `Cyber`、`Bio`、`FrontierLlm`、`ReasoningExtraction`、`GeneralHarms`。缺失、`null` 或未知字符串映射为 `Unclassified`；其他 JSON 类型是无效协议值，映射到 `ResponseFailed/InvalidStream`。
+3. `explanation` 只能是 string 或 `null`；其他类型按 `ResponseFailed/InvalidStream` 处理。无论内容如何，合法 `explanation` 都作为 wire-only 值丢弃，不解析、不作为文本发出，也不写入 Prompt、日志、Memory 或 Channel。`recommended_model` 是 fallback 专属 wire 提示；V1.2 不启用 fallback，不使用该值。除 `type`、`category`、`explanation` 和 `recommended_model` 外，`stop_details` 中的未知字段依照 V1 未知字段规则以 `ResponseFailed/UnsupportedCapability` 失败关闭，绝不透传原始 JSON。对非 refusal 的 `stop_reason`，不得把 `stop_details` 转成规范拒绝 metadata；非空的拒绝详情出现在其他 stop reason 上时按 `InvalidStream` 处理。
+
+Anthropic 的 `message_delta` wire object 在 `delta.stop_reason` 之外可包含顶层 `stop_details`。只有在 `message_delta` 的 `delta.stop_reason=refusal`、详情对象有效并且随后收到 `message_stop` 后，才完成拒绝。Stream 在 `message_stop` 前中断时遵循 V1.1 终态/未知结果规则，不得提前生成 `ResponseCompleted`。已完成拒绝的详情仅描述 Provider 的拒绝分类，不构成工具调用、权限判断或出站动作。
+
+### V1.2 官方协议依据
+
+- OpenAI Chat Completions streaming schema：`delta.refusal` 为可选字符串或 `null`；`finish_reason` 与拒绝文本是不同字段。本合同中的混合值失败规则是 EmulativeDialog profile 的 fail-closed 约束。https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
+- Anthropic Messages API `stop_details` schema 与 API version：https://platform.claude.com/docs/en/api/messages/create
+- Anthropic refusal 语义与官方类别 `cyber`、`bio`、`frontier_llm`、`reasoning_extraction`、`general_harms`，以及无类别时的 `null`：https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
+
+V1.2 follow-up fixtures 必须覆盖本节的 Chat refusal 空/非空/缺失/null、终止原因、混合内容/工具调用和非法类型，以及 Anthropic 有效/无效 `stop_details`、类别映射和 explanation 脱敏。本合同任务只修改本文件；fixtures、Adapter、Core policy 和 C++ Port 仍由各自任务负责。
