@@ -1,13 +1,27 @@
-# 上游能力映射根索引。详细条目按上游子系统分片；不在此处复制源码或全文摘要。
+# Upstream capability map index. Decisions and proposed implementation IDs are in subsystem shards;
+# formal TaskSpecs are registered by the Coordinator when phase gates open.
 SchemaVersion: 1
 ProjectId: EmulativeDialog
-State: PendingSourceBaseline
+State: MappedAwaitingReview
 ScopeDecision: Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
-SourceRepository: ""
-SourceCommit: ""
+SourceRepository: https://github.com/openai/codex
+SourceCommit: 970111f6cb62cc02fe36a82ea7d71b37a2889c97
+SourceResolvedAt: 2026-10-26
+SourceResolution:
+  Ref: refs/heads/main
+  Command: git ls-remote https://github.com/openai/codex.git refs/heads/main
+  Result: 970111f6cb62cc02fe36a82ea7d71b37a2889c97
+
 LicenseReview:
-  Status: Pending
-  Evidence: []
+  Status: ReviewedBehavioralReferenceOnly
+  License: Apache-2.0
+  Evidence:
+    - https://github.com/openai/codex/blob/970111f6cb62cc02fe36a82ea7d71b37a2889c97/docs/license.md
+    - https://github.com/openai/codex/blob/970111f6cb62cc02fe36a82ea7d71b37a2889c97/LICENSE
+  ReuseBoundary: >-
+    This map records subsystem paths, symbols, public behaviors, and design evidence only;
+    it copies no Rust source and adds no Rust runtime dependency. Any future literal source reuse
+    requires a separate notice and third-party license review.
 
 UnitOfMapping:
   - UpstreamSubsystem
@@ -26,10 +40,40 @@ ShardPolicy:
   StoreSourceAnchorsAsPathsSymbolsAndRequiredRanges: true
 
 Coverage:
-  TargetScopeFrozen: true
-  TargetRelevantCapabilities: null
-  MappedCapabilities: null
-  UnmappedTargetCapabilities: null
+  TargetScope: ADR-0002 chat Agent core, including explicit scope exclusions
+  TargetRelevantCapabilities: 24
+  DecisionMappedCapabilities: 24
+  MappedCapabilities: 24
+  UnmappedTargetCapabilities: 0
+  KeepOrRedesignCapabilities: 15
+  KeepOrRedesignWithProposedTaskId: 15
+  FormalTaskIdsRegistered: 0
   UnknownsRemainExplicitBlockers: true
+  CapabilityDecisionsComplete: true
+  ImplementationTraceabilityComplete: true
+  TaskRegistrationStatus: DeferredToPhaseExpansion
 
-ShardIndex: []
+TaskRegistration:
+  Status: DeferredToPhaseExpansion
+  FormalTaskSpecsRegistered: 0
+  Reason: >-
+    TaskIndex leaves P1/P2/P3 NotExpanded. The shard assigns stable, unique proposed TaskIds within
+    ED-0001 WriteSet; Coordinator will create the frozen formal TaskSpecs and register those IDs
+    when the phase gates open. Proposed IDs are explicitly not represented as already registered.
+
+KnownBlockers:
+  - BlockerId: QQAccountModeAndCapabilities
+    Affects: ProductionChannelActionImplementation
+    ResolutionTasks: [ED-0003, ED-0004]
+    Evidence: Workflow/Plans/P0.yaml
+    DoesNotBlock: ED-0001 capability mapping or the mock-channel Core/Agent slice
+    State: ExplicitlyUnknownUntilQQGate
+
+ShardIndex:
+  - ShardId: AgentCore
+    Path: Workflow/CodexCapabilityMap/AgentCore.yaml
+    CapabilityCount: 24
+    DecisionMappedCount: 24
+    KeepOrRedesignCount: 15
+    FormalImplementationTaskIds: 0
+    Status: MappedAwaitingIndependentReview
