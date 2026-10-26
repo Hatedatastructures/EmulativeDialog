@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-05
     Title: 建立 Windows 原生 C++20 CMake 与依赖基线
     TaskKind: Build
-    State: Active
+    State: MergeQueued
     Phase: P1
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -127,16 +127,17 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: c0792ea36b443fc984ea04542f6895457d33a569
-    HeadCommit: ""
+    HeadCommit: b8fb2f36b868ee4c14766ace9bd00278121af74a
     Branch: Task/ED-0006-WindowsCpp20Build
     Worktree: H:/Qbot/EmulativeDialog.ED-0006
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0006
     Checkpoint:
-      LastCompletedAcceptance: ""
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Configure the native Windows preset and compile the C++20 BuildProbe.
+      NextAction: Merge the independently reviewed task branch into codex/integration; publish the integration base first because origin has no refs.
+      LastValidationResult: "Root reviewer approved fixed Base/Head; Windows-native configure/build/CTest and diff check exit 0; 1/1 CTest passed."
       OpenMessageIds: []
-      LastValidationResult: ""
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
