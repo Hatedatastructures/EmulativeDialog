@@ -1,0 +1,443 @@
+{
+  "SchemaVersion": 1,
+  "FixtureSetId": "ED-0012-ScopeConsent-V1",
+  "Contract": {
+    "Name": "MemoryContract",
+    "Version": "V1",
+    "ContractCommit": "7745fb1019c6a7afdd8b54f89a9894568fbf38a0"
+  },
+  "SyntheticOnly": true,
+  "Cases": [
+    {
+      "CaseId": "SC-001",
+      "Purpose": "Scope keys separate channel, account, sender, conversation kind, conversation, group, and principal.",
+      "CurrentIdentity": {
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "VerifiedSenderId": "fixture-sender-01",
+        "PrincipalId": "fixture-principal-01"
+      },
+      "CurrentConversation": {
+        "ConversationId": "fixture-direct-01",
+        "ConversationKind": "Direct"
+      },
+      "CandidateRecords": [
+        {
+          "MemoryId": "fixture-memory-exact-channel-identity",
+          "ScopeType": "ChannelIdentityScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "VerifiedSenderId": "fixture-sender-01",
+            "PrincipalId": "fixture-principal-01"
+          }
+        },
+        {
+          "MemoryId": "fixture-memory-other-sender",
+          "ScopeType": "ChannelIdentityScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "VerifiedSenderId": "fixture-sender-02",
+            "PrincipalId": "fixture-principal-02"
+          }
+        },
+        {
+          "MemoryId": "fixture-memory-other-account",
+          "ScopeType": "ChannelIdentityScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-02",
+            "VerifiedSenderId": "fixture-sender-01",
+            "PrincipalId": "fixture-principal-01"
+          }
+        },
+        {
+          "MemoryId": "fixture-memory-other-channel",
+          "ScopeType": "ChannelIdentityScope",
+          "ScopeKeyParts": {
+            "ChannelId": "fixture-channel-02",
+            "AccountId": "fixture-account-01",
+            "VerifiedSenderId": "fixture-sender-01",
+            "PrincipalId": "fixture-principal-01"
+          }
+        },
+        {
+          "MemoryId": "fixture-memory-other-conversation",
+          "ScopeType": "ConversationScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "ConversationId": "fixture-direct-02",
+            "ConversationKind": "Direct",
+            "PrincipalId": "fixture-principal-01"
+          }
+        },
+        {
+          "MemoryId": "fixture-memory-group-scope",
+          "ScopeType": "GroupScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "GroupConversationId": "fixture-group-01",
+            "PrincipalId": "fixture-principal-01"
+          }
+        },
+        {
+          "MemoryId": "fixture-memory-exact-conversation",
+          "ScopeType": "ConversationScope",
+          "ScopeKeyParts": {
+            "ChannelId": "qq",
+            "AccountId": "fixture-account-01",
+            "ConversationId": "fixture-direct-01",
+            "ConversationKind": "Direct",
+            "PrincipalId": "fixture-principal-01"
+          }
+        }
+      ],
+      "Expected": {
+        "ReadableMemoryIds": [
+          "fixture-memory-exact-channel-identity",
+          "fixture-memory-exact-conversation"
+        ],
+        "DeniedMemoryIds": [
+          "fixture-memory-other-sender",
+          "fixture-memory-other-account",
+          "fixture-memory-other-channel",
+          "fixture-memory-other-conversation",
+          "fixture-memory-group-scope"
+        ],
+        "DisplayNameOrAvatarMayLinkIdentities": false
+      }
+    },
+    {
+      "CaseId": "SC-002",
+      "Purpose": "Current verified user explicitly requests one synthetic preference.",
+      "CurrentEnvelope": {
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "VerifiedSenderId": "fixture-sender-01",
+        "ConversationId": "fixture-direct-01",
+        "ConversationKind": "Direct",
+        "MessageId": "fixture-message-explicit-remember-01",
+        "ResolvedPrincipalId": "fixture-principal-01"
+      },
+      "CanonicalMessageContent": "remember fixture-content-preference-alpha",
+      "RequestedScope": {
+        "ScopeType": "ChannelIdentityScope",
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "VerifiedSenderId": "fixture-sender-01",
+        "PrincipalId": "fixture-principal-01"
+      },
+      "RequestedRecord": {
+        "MemoryKind": "Preference",
+        "SyntheticContentId": "fixture-content-preference-alpha"
+      },
+      "Expected": {
+        "Decision": "CreateGrantedConsent",
+        "CreatedConsent": {
+          "ConsentId": "fixture-consent-direct-01",
+          "GrantorPrincipalId": "fixture-principal-01",
+          "SourceChannelId": "qq",
+          "SourceAccountId": "fixture-account-01",
+          "SourceConversationId": "fixture-direct-01",
+          "SourceMessageId": "fixture-message-explicit-remember-01",
+          "TargetScope": "ExactRequestedChannelIdentityScope",
+          "AllowedRecordKinds": ["Preference"],
+          "ProposalId": null,
+          "Status": "Granted"
+        },
+        "DurableCandidateContentId": "fixture-content-preference-alpha",
+        "ConsentMayAuthorizeOtherScopesOrChannelActions": false
+      }
+    },
+    {
+      "CaseId": "SC-003",
+      "Purpose": "Agent proposal remains volatile and pending until the user confirms the exact presented proposal.",
+      "Proposal": {
+        "ProposalId": "fixture-proposal-pending-01",
+        "SourceAgentTurnId": "fixture-turn-01",
+        "ContentId": "fixture-content-inferred-style",
+        "TargetScope": "ExactChannelIdentityScope",
+        "RecordKind": "Preference",
+        "State": "Pending",
+        "PresentedInCurrentConversation": false
+      },
+      "Expected": {
+        "Decision": "KeepPending",
+        "MemoryStoreWriteAllowed": false,
+        "OrdinaryLogWriteAllowed": false,
+        "ConsentCreated": false,
+        "ProposalIdMustRemainCoreCreated": true
+      }
+    },
+    {
+      "CaseId": "SC-004",
+      "Purpose": "Current verified confirmation authorizes only the unique, recently presented proposal.",
+      "CurrentEnvelope": {
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "VerifiedSenderId": "fixture-sender-01",
+        "ConversationId": "fixture-direct-01",
+        "ConversationKind": "Direct",
+        "MessageId": "fixture-message-confirm-proposal-01",
+        "ResolvedPrincipalId": "fixture-principal-01"
+      },
+      "CurrentCanonicalMessageContent": "confirm fixture-proposal-presented-01",
+      "PresentedPendingProposals": [
+        {
+          "ProposalId": "fixture-proposal-presented-01",
+          "TargetScope": "ExactChannelIdentityScope",
+          "RecordKind": "Preference",
+          "ContentId": "fixture-content-preference-beta",
+          "State": "Pending",
+          "PresentedInCurrentConversation": true
+        }
+      ],
+      "Expected": {
+        "Decision": "CreateGrantedConsent",
+        "CreatedConsent": {
+          "ConsentId": "fixture-consent-proposal-01",
+          "GrantorPrincipalId": "fixture-principal-01",
+          "SourceMessageId": "fixture-message-confirm-proposal-01",
+          "ProposalId": "fixture-proposal-presented-01",
+          "TargetScope": "ExactChannelIdentityScope",
+          "AllowedRecordKinds": ["Preference"],
+          "Status": "Granted"
+        },
+        "OtherProposalIdsAuthorized": [],
+        "DurableWriteMayProceed": true
+      }
+    },
+    {
+      "CaseId": "SC-005",
+      "Purpose": "Ambiguous, stale, or unpresented proposal confirmation does not authorize a write.",
+      "CurrentEnvelope": {
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "VerifiedSenderId": "fixture-sender-01",
+        "ConversationId": "fixture-direct-01",
+        "ConversationKind": "Direct",
+        "MessageId": "fixture-message-ambiguous-confirm-01",
+        "ResolvedPrincipalId": "fixture-principal-01"
+      },
+      "CurrentCanonicalMessageContent": "yes",
+      "PresentedPendingProposals": [
+        {
+          "ProposalId": "fixture-proposal-old-01",
+          "State": "Pending",
+          "PresentedInCurrentConversation": false
+        },
+        {
+          "ProposalId": "fixture-proposal-old-02",
+          "State": "Pending",
+          "PresentedInCurrentConversation": false
+        }
+      ],
+      "Expected": {
+        "Decision": "Clarify",
+        "ConsentCreated": false,
+        "DurableWriteAllowed": false,
+        "ProposalStateChanges": []
+      }
+    },
+    {
+      "CaseId": "SC-006",
+      "Purpose": "Ordinary chat, model inference, prior consent, and provider output cannot create new durable consent.",
+      "Inputs": [
+        {
+          "InputId": "fixture-input-ordinary-chat",
+          "Kind": "OrdinaryCurrentMessage",
+          "ExplicitMemoryControlIntent": false
+        },
+        {
+          "InputId": "fixture-input-model-inference",
+          "Kind": "InferredIdentityOrPreference",
+          "ExplicitCurrentUserConfirmation": false
+        },
+        {
+          "InputId": "fixture-input-old-consent",
+          "Kind": "ConsentForDifferentScopeOrCategory",
+          "AppliesToCurrentTarget": false
+        },
+        {
+          "InputId": "fixture-input-provider-output",
+          "Kind": "ProviderGeneratedCandidate",
+          "ExplicitCurrentUserConfirmation": false
+        }
+      ],
+      "Expected": {
+        "Decision": "NoDurableWrite",
+        "ConsentCreated": false,
+        "ProviderCandidateMayRemainVolatileProposal": true,
+        "UserConfirmedMayBeSet": false
+      }
+    },
+    {
+      "CaseId": "SC-007",
+      "Purpose": "Body text cannot claim another principal or expand the scope resolved from the current trusted envelope.",
+      "CurrentEnvelope": {
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "VerifiedSenderId": "fixture-sender-01",
+        "ConversationId": "fixture-direct-01",
+        "ConversationKind": "Direct",
+        "MessageId": "fixture-message-scope-claim-01",
+        "ResolvedPrincipalId": "fixture-principal-01"
+      },
+      "CanonicalMessageContent": "remember fixture-content-alpha for fixture-principal-02",
+      "BodyClaimedPrincipalId": "fixture-principal-02",
+      "Expected": {
+        "ResolvedGrantorPrincipalId": "fixture-principal-01",
+        "BodyClaimMaySetGrantorPrincipal": false,
+        "ConsentCreatedForClaimedPrincipal": false,
+        "Decision": "DenyOrClarify",
+        "DurableWriteAllowed": false
+      }
+    },
+    {
+      "CaseId": "SC-008",
+      "Purpose": "GroupMemoryConsent is exact to channel, account, group, category, and allowed Principal set.",
+      "GroupMemoryConsent": {
+        "ConsentId": "fixture-consent-group-01",
+        "ChannelId": "qq",
+        "AccountId": "fixture-account-01",
+        "GroupConversationId": "fixture-group-01",
+        "AllowedRecordKinds": ["Preference"],
+        "AllowedPrincipalIds": ["fixture-principal-01", "fixture-principal-02"],
+        "Revocable": true
+      },
+      "ReadAttempts": [
+        {
+          "AttemptId": "fixture-group-read-authorized-principal",
+          "PrincipalId": "fixture-principal-02",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "GroupConversationId": "fixture-group-01",
+          "RecordKind": "Preference",
+          "Expected": "Allow"
+        },
+        {
+          "AttemptId": "fixture-group-read-unlisted-principal",
+          "PrincipalId": "fixture-principal-03",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "GroupConversationId": "fixture-group-01",
+          "RecordKind": "Preference",
+          "Expected": "Deny"
+        },
+        {
+          "AttemptId": "fixture-group-read-other-account",
+          "PrincipalId": "fixture-principal-02",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-02",
+          "GroupConversationId": "fixture-group-01",
+          "RecordKind": "Preference",
+          "Expected": "Deny"
+        },
+        {
+          "AttemptId": "fixture-group-read-other-group",
+          "PrincipalId": "fixture-principal-02",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "GroupConversationId": "fixture-group-02",
+          "RecordKind": "Preference",
+          "Expected": "Deny"
+        },
+        {
+          "AttemptId": "fixture-group-read-unlisted-category",
+          "PrincipalId": "fixture-principal-02",
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "GroupConversationId": "fixture-group-01",
+          "RecordKind": "ActiveChatTask",
+          "Expected": "Deny"
+        }
+      ]
+    },
+    {
+      "CaseId": "SC-009",
+      "Purpose": "Explicit two-sided identity link shares only records named in its authorization.",
+      "IdentityLink": {
+        "IdentityLinkId": "fixture-identity-link-01",
+        "IdentityA": {
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "VerifiedSenderId": "fixture-sender-01",
+          "PrincipalId": "fixture-principal-01",
+          "Verified": true
+        },
+        "IdentityB": {
+          "ChannelId": "fixture-channel-02",
+          "AccountId": "fixture-account-b-01",
+          "VerifiedSenderId": "fixture-sender-b-01",
+          "PrincipalId": "fixture-principal-02",
+          "Verified": true
+        },
+        "Authorization": {
+          "ConsentId": "fixture-consent-link-01",
+          "BothSidesExplicitlyAuthorized": true,
+          "SharedMemoryIds": ["fixture-memory-share-preference-01"],
+          "SharedCategories": ["Preference"]
+        },
+        "UnsharedMemoryIds": ["fixture-memory-private-task-01"],
+        "Revocable": true
+      },
+      "Expected": {
+        "LinkMayBeCreated": true,
+        "ReadableThroughLinkMemoryIds": ["fixture-memory-share-preference-01"],
+        "DeniedThroughLinkMemoryIds": ["fixture-memory-private-task-01"],
+        "AllHistoricalRecordsAutomaticallyShared": false
+      }
+    },
+    {
+      "CaseId": "SC-010",
+      "Purpose": "Matching display names or avatars cannot create a cross-channel identity link.",
+      "IdentityCandidates": [
+        {
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "VerifiedSenderId": "fixture-sender-01",
+          "PrincipalId": "fixture-principal-01",
+          "DisplayNameFixtureId": "fixture-display-name-same",
+          "AvatarFixtureId": "fixture-avatar-same",
+          "Verified": true
+        },
+        {
+          "ChannelId": "fixture-channel-02",
+          "AccountId": "fixture-account-b-01",
+          "VerifiedSenderId": "fixture-sender-b-01",
+          "PrincipalId": "fixture-principal-02",
+          "DisplayNameFixtureId": "fixture-display-name-same",
+          "AvatarFixtureId": "fixture-avatar-same",
+          "Verified": true
+        }
+      ],
+      "ExplicitLinkAuthorizationPresent": false,
+      "Expected": {
+        "IdentityLinkCreated": false,
+        "CrossChannelRetrievalAllowed": false
+      }
+    },
+    {
+      "CaseId": "SC-011",
+      "Purpose": "Revoking an identity link blocks recall of linked records and clears only link-derived data.",
+      "IdentityLinkId": "fixture-identity-link-01",
+      "LinkedMemoryIds": ["fixture-memory-share-preference-01"],
+      "DerivedCacheIds": ["fixture-cache-link-01"],
+      "UnrelatedMemoryIds": ["fixture-memory-unlinked-preference-01"],
+      "Revocation": {
+        "SourceOperationId": "fixture-operation-revoke-link-01",
+        "CurrentVerifiedPrincipalId": "fixture-principal-01"
+      },
+      "Expected": {
+        "LinkState": "Revoked",
+        "LinkedMemoryIdsRetrievable": false,
+        "DerivedCacheIdsRetrievable": false,
+        "UnrelatedMemoryIdsTombstoned": false,
+        "SanitizedOperationRecordRequired": true
+      }
+    }
+  ]
+}
