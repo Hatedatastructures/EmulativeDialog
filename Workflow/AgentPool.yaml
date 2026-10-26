@@ -88,8 +88,8 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0129
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。
