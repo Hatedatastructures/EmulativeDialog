@@ -154,7 +154,7 @@ Tasks:
     EpicId: EP-05
     Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
     TaskKind: ContractFreeze
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -242,13 +242,14 @@ Tasks:
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0007
     MergeTargetBranch: codex/integration
     MergeBaseCommit: c0792ea36b443fc984ea04542f6895457d33a569
+    MergeCommit: 7745fb1019c6a7afdd8b54f89a9894568fbf38a0
     ReviewerDecision: Approved
     ReviewHeadCommit: 6a53c8d52f98ce563e38016ee9ed772da72d0a88
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Merge Head 6a53c8d52f98ce563e38016ee9ed772da72d0a88 into codex/integration after confirming a clean four-file contract diff; no source code was produced in this task.
+      NextAction: Merged four V1 contracts at 7745fb1019c6a7afdd8b54f89a9894568fbf38a0; use the frozen contracts for dependent implementation tasks.
       OpenMessageIds: []
       LastValidationResult: "Independent review approved AC-1..AC-5 on fixed Head 6a53c8d52f98ce563e38016ee9ed772da72d0a88; ED-0007-RV-001 resolved; diff check exit 0; contract-only, no build/tests required."
     Deliverable:
