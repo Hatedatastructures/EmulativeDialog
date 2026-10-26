@@ -190,8 +190,28 @@ Tasks:
     TaskKind: ArchitectureOwnership
     State: Proposed
     OwnerRole: IntegrationOwner
+    OwnerAgentId: "/root"
+    ReviewerRole: ProductContractOwner
+    ReviewerAgentId: "/root/agent_core"
     DependsOn:
       - ED-0001
+    Goal: "将 Codex 聊天 Agent 范围的模块 owner、合同入口、写根和依赖方向冻结为可执行边界。"
+    OutOfScope:
+      - C++ 源码或测试实现
+      - Provider、Memory、Channel 公共合同内容修改
+      - QQ 真实账号接入
+      - P1/P2/P3 的 Ready 状态解锁
+    ContractVersion: ModuleMapSchemaV2
+    ForbiddenSet:
+      - Source/**
+      - Tests/**
+      - Workflow/CodexCapabilityMap.yaml
+      - Workflow/CodexCapabilityMap/**
+      - Workflow/Plans/**
+      - Workflow/TaskIndex.yaml
+      - Workflow/AgentPool.yaml
+    RiskLevel: High
+    RiskOwnerRole: IntegrationOwner
     ReadSet:
       - Architecture/ModuleMap.yaml
       - Architecture/Modules/
