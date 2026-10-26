@@ -1,0 +1,714 @@
+{
+  "SchemaVersion": 1,
+  "Protocol": "OpenAIResponses",
+  "ContractVersion": "ModelProviderContract V1",
+  "CredentialFree": true,
+  "Cases": [
+    {
+      "CaseId": "http_authentication_failure",
+      "RequestId": "req-error-auth",
+      "AgentTurnId": "turn-error-auth",
+      "Wire": {
+        "Kind": "HttpResponse",
+        "StatusCode": 401,
+        "ContentType": "application/json",
+        "Body": {
+          "error": {
+            "message": "Synthetic authentication failure.",
+            "type": "invalid_request_error",
+            "code": "invalid_api_key"
+          }
+        }
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-auth",
+          "AgentTurnId": "turn-error-auth",
+          "SequenceNumber": 1,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "AuthenticationFailure",
+            "Retryable": false,
+            "Description": "Synthetic authentication failure."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false,
+      "RawHttpErrorBodyExposed": false
+    },
+    {
+      "CaseId": "http_rate_limited",
+      "RequestId": "req-error-rate-limit",
+      "AgentTurnId": "turn-error-rate-limit",
+      "Wire": {
+        "Kind": "HttpResponse",
+        "StatusCode": 429,
+        "ContentType": "application/json",
+        "Headers": {
+          "Retry-After": "2"
+        },
+        "Body": {
+          "error": {
+            "message": "Synthetic rate limit response.",
+            "type": "rate_limit_error",
+            "code": "rate_limit_exceeded"
+          }
+        }
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-rate-limit",
+          "AgentTurnId": "turn-error-rate-limit",
+          "SequenceNumber": 1,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "RateLimited",
+            "Retryable": true,
+            "Description": "Synthetic rate limit response."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false,
+      "RetryRequiresProfileBudget": true,
+      "RawHttpErrorBodyExposed": false
+    },
+    {
+      "CaseId": "response_failed",
+      "RequestId": "req-error-response-failed",
+      "AgentTurnId": "turn-error-response-failed",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-failed",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.failed",
+          "response": {
+            "id": "resp-synthetic-failed",
+            "status": "failed",
+            "error": {
+              "code": "server_error",
+              "message": "Synthetic provider failure."
+            },
+            "incomplete_details": null,
+            "usage": null
+          },
+          "sequence_number": 2
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-response-failed",
+          "AgentTurnId": "turn-error-response-failed",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-failed"
+          }
+        },
+        {
+          "RequestId": "req-error-response-failed",
+          "AgentTurnId": "turn-error-response-failed",
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "ProviderRejected",
+            "Retryable": false,
+            "Description": "Synthetic provider failure."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false,
+      "RawResponseErrorExposed": false
+    },
+    {
+      "CaseId": "in_band_error",
+      "RequestId": "req-error-in-band",
+      "AgentTurnId": "turn-error-in-band",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-in-band",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "error",
+          "code": "synthetic_stream_error",
+          "message": "Synthetic in-band provider error.",
+          "param": null,
+          "sequence_number": 2
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-in-band",
+          "AgentTurnId": "turn-error-in-band",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-in-band"
+          }
+        },
+        {
+          "RequestId": "req-error-in-band",
+          "AgentTurnId": "turn-error-in-band",
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "ProviderRejected",
+            "Retryable": false,
+            "Description": "Synthetic in-band provider error."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false,
+      "RawProviderErrorExposed": false
+    },
+    {
+      "CaseId": "incomplete_output_limit",
+      "RequestId": "req-error-limit",
+      "AgentTurnId": "turn-error-limit",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-limit",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-limit",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "Synthetic partial output.",
+          "sequence_number": 2
+        },
+        {
+          "type": "response.incomplete",
+          "response": {
+            "id": "resp-synthetic-limit",
+            "status": "incomplete",
+            "incomplete_details": {
+              "reason": "max_output_tokens"
+            },
+            "usage": {
+              "input_tokens": 10,
+              "output_tokens": 4,
+              "total_tokens": 14
+            }
+          },
+          "sequence_number": 3
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-limit",
+          "AgentTurnId": "turn-error-limit",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-limit"
+          }
+        },
+        {
+          "RequestId": "req-error-limit",
+          "AgentTurnId": "turn-error-limit",
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-limit",
+          "Payload": {
+            "Text": "Synthetic partial output."
+          }
+        },
+        {
+          "RequestId": "req-error-limit",
+          "AgentTurnId": "turn-error-limit",
+          "SequenceNumber": 3,
+          "EventType": "ResponseOutputLimited",
+          "Payload": {
+            "LimitKind": "OutputTokens",
+            "UsageSnapshot": {
+              "InputTokens": 10,
+              "OutputTokens": 4,
+              "TotalTokens": 14,
+              "Completeness": "Final"
+            },
+            "SafePartialText": "Synthetic partial output."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "MustNotEmitResponseCompleted": true,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "incomplete_content_filtered",
+      "RequestId": "req-error-filtered",
+      "AgentTurnId": "turn-error-filtered",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-filtered",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.incomplete",
+          "response": {
+            "id": "resp-synthetic-filtered",
+            "status": "incomplete",
+            "incomplete_details": {
+              "reason": "content_filter"
+            },
+            "usage": null
+          },
+          "sequence_number": 2
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-filtered",
+          "AgentTurnId": "turn-error-filtered",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-filtered"
+          }
+        },
+        {
+          "RequestId": "req-error-filtered",
+          "AgentTurnId": "turn-error-filtered",
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "ContentFiltered",
+            "Retryable": false,
+            "Description": "Synthetic content-filter terminal reason."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "incomplete_unknown_reason",
+      "RequestId": "req-error-unknown-incomplete",
+      "AgentTurnId": "turn-error-unknown-incomplete",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-unknown-incomplete",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.incomplete",
+          "response": {
+            "id": "resp-synthetic-unknown-incomplete",
+            "status": "incomplete",
+            "incomplete_details": {
+              "reason": "synthetic_future_reason"
+            },
+            "usage": null
+          },
+          "sequence_number": 2
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-unknown-incomplete",
+          "AgentTurnId": "turn-error-unknown-incomplete",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-unknown-incomplete"
+          }
+        },
+        {
+          "RequestId": "req-error-unknown-incomplete",
+          "AgentTurnId": "turn-error-unknown-incomplete",
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "InvalidStream",
+            "Retryable": false,
+            "Description": "Synthetic unsupported incomplete reason."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "cancel_before_send",
+      "RequestId": "req-error-cancel-before-send",
+      "AgentTurnId": "turn-error-cancel-before-send",
+      "Operation": {
+        "Kind": "LocalCancellation",
+        "RequestSent": false,
+        "ProviderContacted": false
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-cancel-before-send",
+          "AgentTurnId": "turn-error-cancel-before-send",
+          "SequenceNumber": 1,
+          "EventType": "ResponseCancelled",
+          "Payload": {
+            "ReasonCode": "CancelledBeforeSend"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "background_cancel_confirmed",
+      "RequestId": "req-error-cancel-confirmed",
+      "AgentTurnId": "turn-error-cancel-confirmed",
+      "PriorWireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-background-cancel",
+            "status": "in_progress",
+            "background": true
+          },
+          "sequence_number": 1
+        }
+      ],
+      "CancelHttpResponse": {
+        "Kind": "BackgroundResponseCancellation",
+        "Method": "POST",
+        "Path": "/v1/responses/resp-synthetic-background-cancel/cancel",
+        "StatusCode": 200,
+        "Body": {
+          "id": "resp-synthetic-background-cancel",
+          "status": "cancelled",
+          "background": true,
+          "error": null,
+          "incomplete_details": null
+        }
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-cancel-confirmed",
+          "AgentTurnId": "turn-error-cancel-confirmed",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-background-cancel"
+          }
+        },
+        {
+          "RequestId": "req-error-cancel-confirmed",
+          "AgentTurnId": "turn-error-cancel-confirmed",
+          "SequenceNumber": 2,
+          "EventType": "ResponseCancelled",
+          "Payload": {
+            "ReasonCode": "ProviderConfirmedCancellation"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "cancel_after_send_unconfirmed",
+      "RequestId": "req-error-cancel-unconfirmed",
+      "AgentTurnId": "turn-error-cancel-unconfirmed",
+      "WireEventsBeforeCancellation": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-cancel-unconfirmed",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-cancel-unconfirmed",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "Synthetic partial text.",
+          "sequence_number": 2
+        }
+      ],
+      "Operation": {
+        "Kind": "LocalCancellation",
+        "RequestSent": true,
+        "ProviderCancellationConfirmed": false,
+        "TransportAction": "close synchronous response stream"
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-cancel-unconfirmed",
+          "AgentTurnId": "turn-error-cancel-unconfirmed",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-cancel-unconfirmed"
+          }
+        },
+        {
+          "RequestId": "req-error-cancel-unconfirmed",
+          "AgentTurnId": "turn-error-cancel-unconfirmed",
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-cancel-unconfirmed",
+          "Payload": {
+            "Text": "Synthetic partial text."
+          }
+        },
+        {
+          "RequestId": "req-error-cancel-unconfirmed",
+          "AgentTurnId": "turn-error-cancel-unconfirmed",
+          "SequenceNumber": 3,
+          "EventType": "ResponseOutcomeUnknown",
+          "Payload": {
+            "ReasonCode": "OutcomeUnknown"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "eof_after_partial_output",
+      "RequestId": "req-error-eof",
+      "AgentTurnId": "turn-error-eof",
+      "WireEventsBeforeEof": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-eof",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-eof",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "Synthetic partial output before disconnect.",
+          "sequence_number": 2
+        }
+      ],
+      "TransportEnd": "clean EOF before any complete terminal event",
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-eof",
+          "AgentTurnId": "turn-error-eof",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-eof"
+          }
+        },
+        {
+          "RequestId": "req-error-eof",
+          "AgentTurnId": "turn-error-eof",
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-eof",
+          "Payload": {
+            "Text": "Synthetic partial output before disconnect."
+          }
+        },
+        {
+          "RequestId": "req-error-eof",
+          "AgentTurnId": "turn-error-eof",
+          "SequenceNumber": 3,
+          "EventType": "ResponseOutcomeUnknown",
+          "Payload": {
+            "ReasonCode": "OutcomeUnknown"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "completed_without_usage",
+      "RequestId": "req-error-no-usage",
+      "AgentTurnId": "turn-error-no-usage",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-no-usage",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-synthetic-no-usage",
+            "status": "completed",
+            "output": [
+              {
+                "id": "msg-synthetic-no-usage",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "output_text",
+                    "text": "Synthetic response without usage.",
+                    "annotations": []
+                  }
+                ]
+              }
+            ],
+            "usage": null
+          },
+          "sequence_number": 2
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-no-usage",
+          "AgentTurnId": "turn-error-no-usage",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-no-usage"
+          }
+        },
+        {
+          "RequestId": "req-error-no-usage",
+          "AgentTurnId": "turn-error-no-usage",
+          "SequenceNumber": 2,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "FinalAnswer"
+          }
+        }
+      ],
+      "UsageExpectation": "Unavailable; do not synthesize zero-valued UsageUpdated.",
+      "TerminalCount": 1
+    },
+    {
+      "CaseId": "invalid_tool_json",
+      "RequestId": "req-error-invalid-tool-json",
+      "AgentTurnId": "turn-error-invalid-tool-json",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-invalid-tool-json",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "fc-synthetic-invalid-json",
+            "type": "function_call",
+            "status": "in_progress",
+            "call_id": "call-synthetic-invalid-json",
+            "name": "lookup_order",
+            "arguments": ""
+          },
+          "sequence_number": 2
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "item_id": "fc-synthetic-invalid-json",
+          "output_index": 0,
+          "delta": "{\"order_id\":}",
+          "sequence_number": 3
+        },
+        {
+          "type": "response.function_call_arguments.done",
+          "item_id": "fc-synthetic-invalid-json",
+          "output_index": 0,
+          "arguments": "{\"order_id\":}",
+          "sequence_number": 4
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "id": "fc-synthetic-invalid-json",
+            "type": "function_call",
+            "status": "completed",
+            "call_id": "call-synthetic-invalid-json",
+            "name": "lookup_order",
+            "arguments": "{\"order_id\":}"
+          },
+          "sequence_number": 5
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-error-invalid-tool-json",
+          "AgentTurnId": "turn-error-invalid-tool-json",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-invalid-tool-json"
+          }
+        },
+        {
+          "RequestId": "req-error-invalid-tool-json",
+          "AgentTurnId": "turn-error-invalid-tool-json",
+          "SequenceNumber": 2,
+          "EventType": "ToolCallStarted",
+          "ItemId": "fc-synthetic-invalid-json",
+          "ToolCallId": "call-synthetic-invalid-json",
+          "Payload": {
+            "ToolName": "lookup_order"
+          }
+        },
+        {
+          "RequestId": "req-error-invalid-tool-json",
+          "AgentTurnId": "turn-error-invalid-tool-json",
+          "SequenceNumber": 3,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "fc-synthetic-invalid-json",
+          "ToolCallId": "call-synthetic-invalid-json",
+          "Payload": {
+            "JsonText": "{\"order_id\":}"
+          }
+        },
+        {
+          "RequestId": "req-error-invalid-tool-json",
+          "AgentTurnId": "turn-error-invalid-tool-json",
+          "SequenceNumber": 4,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "InvalidStream",
+            "Retryable": false,
+            "Description": "Synthetic function arguments are not valid JSON."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "MustNotEmitToolCallReady": true,
+      "AutomaticResend": false
+    }
+  ]
+}

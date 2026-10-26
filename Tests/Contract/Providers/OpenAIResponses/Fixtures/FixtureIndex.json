@@ -1,0 +1,419 @@
+{
+  "SchemaVersion": 1,
+  "Task": {
+    "TaskId": "ED-0009",
+    "TaskRevision": 1,
+    "Protocol": "OpenAIResponses"
+  },
+  "Contract": {
+    "Path": "Architecture/Contracts/ModelProviderContract.md",
+    "Version": "V1",
+    "Commit": "7745fb1019c6a7afdd8b54f89a9894568fbf38a0"
+  },
+  "CapabilityEvidence": {
+    "CapabilityId": "OpenAIResponsesTransport",
+    "CapabilityMapPath": "Workflow/CodexCapabilityMap/AgentCore.yaml",
+    "Artifact": "Tests/Contract/Providers/OpenAIResponses/RequestAndEventMapping",
+    "Proves": "Responses request fixtures and streamed text, refusal, tool, error, and usage events map to canonical events with stable item IDs and exactly one terminal event."
+  },
+  "DataPolicy": {
+    "SyntheticOnly": true,
+    "ContainsCredentials": false,
+    "ContainsUserConversationData": false,
+    "CapturedFromNetwork": false,
+    "LiveRequestsPermitted": false
+  },
+  "TransportFramingProfile": {
+    "Format": "Each wire event uses an event line and compact UTF-8 JSON data line: event: <type><line ending>data: <json><line ending><line ending>.",
+    "LineEndingVariants": [
+      "LF",
+      "CRLF"
+    ],
+    "ChunkPartitionVariants": [
+      "all_frames_in_one_http_chunk",
+      "one_sse_frame_per_http_chunk",
+      "one_utf8_byte_per_http_chunk",
+      "split_between_CR_and_LF"
+    ],
+    "NoEventFrames": [
+      {
+        "CaseId": "comment_frame_ignored",
+        "RawSse": ": synthetic keepalive\r\n\r\n",
+        "ExpectedParsedEventCount": 0
+      },
+      {
+        "CaseId": "empty_frame_ignored",
+        "RawSse": "\r\n",
+        "ExpectedParsedEventCount": 0
+      }
+    ],
+    "ProbeCaseId": "text_completed_with_usage",
+    "ProbeTextContainsMultibyteUtf8": true,
+    "ExpectedCanonicalEventsIdenticalAcrossVariants": true,
+    "MultiLineDataFrameCase": {
+      "CaseId": "multi_data_line_frame",
+      "RawSse": "event: response.created\r\ndata: {\"type\":\"response.created\",\r\ndata: \"sequence_number\":1,\"response\":{\"id\":\"resp-synthetic-multiline\",\"status\":\"in_progress\"}}\r\n\r\n",
+      "ExpectedParsedWireEvent": {
+        "type": "response.created",
+        "response": {
+          "id": "resp-synthetic-multiline",
+          "status": "in_progress"
+        },
+        "sequence_number": 1
+      }
+    }
+  },
+  "CoverageMatrix": [
+    {
+      "AcceptanceId": "AC-1",
+      "FixtureCases": [
+        "request_text_tool_output_limit",
+        "request_refusal_scenario",
+        "request_tool_result_round_trip"
+      ],
+      "ContractFields": [
+        "CanonicalModelRequest.SystemInstructions",
+        "CanonicalModelRequest.Messages",
+        "CanonicalModelRequest.ToolDefinitions",
+        "CanonicalModelRequest.ModelName",
+        "CanonicalModelRequest.OutputLimit",
+        "Responses.instructions",
+        "Responses.input",
+        "Responses.tools",
+        "Responses.max_output_tokens",
+        "Responses.function_call_output.call_id"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-2",
+      "FixtureCases": [
+        "text_completed_with_usage",
+        "refusal_completed",
+        "interleaved_function_calls_tool_handoff",
+        "exact_duplicate_sequence_ignored",
+        "sequence_gap_rejected",
+        "conflicting_duplicate_sequence_rejected"
+      ],
+      "ContractFields": [
+        "ResponseStarted",
+        "TextDelta",
+        "RefusalDelta",
+        "ToolCallStarted",
+        "ToolArgumentDelta",
+        "ToolCallReady",
+        "UsageUpdated",
+        "ResponseCompleted",
+        "stable ItemId and ToolCallId",
+        "local monotonic SequenceNumber",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-3",
+      "FixtureCases": [
+        "http_authentication_failure",
+        "http_rate_limited",
+        "response_failed",
+        "in_band_error",
+        "incomplete_output_limit",
+        "incomplete_content_filtered",
+        "incomplete_unknown_reason",
+        "cancel_before_send",
+        "background_cancel_confirmed",
+        "cancel_after_send_unconfirmed",
+        "eof_after_partial_output",
+        "completed_without_usage",
+        "invalid_tool_json"
+      ],
+      "ContractFields": [
+        "ResponseFailed",
+        "ResponseOutputLimited",
+        "ResponseCancelled",
+        "ResponseOutcomeUnknown",
+        "stable ErrorCode and Retryable",
+        "missing usage remains unavailable",
+        "unknown outcomes are never automatically resent"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-4",
+      "FixtureCases": [
+        "all cases in CanonicalRequest.json, StreamCases.json, and ErrorCases.json"
+      ],
+      "ContractFields": [
+        "synthetic and credential-free payloads",
+        "valid JSON",
+        "exact four-file WriteSet"
+      ]
+    }
+  ],
+  "CaseFieldMappings": [
+    {
+      "CaseId": "request_text_tool_output_limit",
+      "File": "CanonicalRequest.json",
+      "ContractFields": [
+        "CanonicalModelRequest.SystemInstructions",
+        "CanonicalModelRequest.Messages",
+        "CanonicalModelRequest.ToolDefinitions",
+        "CanonicalModelRequest.OutputLimit",
+        "Responses.instructions",
+        "Responses.input",
+        "Responses.tools",
+        "Responses.max_output_tokens"
+      ]
+    },
+    {
+      "CaseId": "request_refusal_scenario",
+      "File": "CanonicalRequest.json",
+      "ContractFields": [
+        "CanonicalModelRequest.Messages",
+        "Responses.input",
+        "Responses.output refusal mapping"
+      ]
+    },
+    {
+      "CaseId": "request_tool_result_round_trip",
+      "File": "CanonicalRequest.json",
+      "ContractFields": [
+        "CanonicalModelRequest.Messages",
+        "Responses.input function_call",
+        "Responses.function_call_output.call_id"
+      ]
+    },
+    {
+      "CaseId": "text_completed_with_usage",
+      "File": "StreamCases.json",
+      "ContractFields": [
+        "ResponseStarted",
+        "TextDelta.ItemId",
+        "UsageUpdated.UsageSnapshot",
+        "ResponseCompleted.CompletionKind",
+        "local SequenceNumber",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "CaseId": "refusal_completed",
+      "File": "StreamCases.json",
+      "ContractFields": [
+        "RefusalDelta.ItemId",
+        "ResponseCompleted.CompletionKind=Refusal",
+        "refusal is not a provider failure",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "CaseId": "interleaved_function_calls_tool_handoff",
+      "File": "StreamCases.json",
+      "ContractFields": [
+        "ToolCallStarted.ItemId and ToolCallId",
+        "ToolArgumentDelta",
+        "ToolCallReady after complete valid JSON",
+        "ResponseCompleted.CompletionKind=ToolHandoff",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "CaseId": "exact_duplicate_sequence_ignored",
+      "File": "StreamCases.json",
+      "ContractFields": [
+        "Responses upstream sequence_number",
+        "identical duplicate event ignored",
+        "canonical local SequenceNumber"
+      ]
+    },
+    {
+      "CaseId": "sequence_gap_rejected",
+      "File": "StreamCases.json",
+      "ContractFields": [
+        "Responses upstream sequence_number",
+        "InvalidStream",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "CaseId": "conflicting_duplicate_sequence_rejected",
+      "File": "StreamCases.json",
+      "ContractFields": [
+        "same sequence_number with different payload",
+        "InvalidStream",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "CaseId": "http_authentication_failure",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "AuthenticationFailure",
+        "Retryable=false",
+        "sanitized ResponseFailed"
+      ]
+    },
+    {
+      "CaseId": "http_rate_limited",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "RateLimited",
+        "Retryable",
+        "profile retry budget",
+        "no automatic resend"
+      ]
+    },
+    {
+      "CaseId": "response_failed",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "response.failed",
+        "ProviderRejected",
+        "exactly-one terminal"
+      ]
+    },
+    {
+      "CaseId": "in_band_error",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "in-band error event",
+        "ResponseFailed",
+        "sanitized description"
+      ]
+    },
+    {
+      "CaseId": "incomplete_output_limit",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "response.incomplete.reason=max_output_tokens",
+        "ResponseOutputLimited.LimitKind=OutputTokens",
+        "not ResponseCompleted"
+      ]
+    },
+    {
+      "CaseId": "incomplete_content_filtered",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "response.incomplete.reason=content_filter",
+        "ContentFiltered"
+      ]
+    },
+    {
+      "CaseId": "incomplete_unknown_reason",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "unknown incomplete reason",
+        "InvalidStream"
+      ]
+    },
+    {
+      "CaseId": "cancel_before_send",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "ResponseCancelled",
+        "request not sent"
+      ]
+    },
+    {
+      "CaseId": "background_cancel_confirmed",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "provider-confirmed background cancellation",
+        "ResponseCancelled",
+        "ProviderResponseId"
+      ]
+    },
+    {
+      "CaseId": "cancel_after_send_unconfirmed",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "local cancellation after request sent",
+        "ResponseOutcomeUnknown",
+        "no automatic resend"
+      ]
+    },
+    {
+      "CaseId": "eof_after_partial_output",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "disconnect before terminal",
+        "ResponseOutcomeUnknown",
+        "no automatic resend"
+      ]
+    },
+    {
+      "CaseId": "completed_without_usage",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "optional UsageUpdated",
+        "missing usage remains unavailable, not zero",
+        "ResponseCompleted"
+      ]
+    },
+    {
+      "CaseId": "invalid_tool_json",
+      "File": "ErrorCases.json",
+      "ContractFields": [
+        "ToolCallReady requires complete valid JSON",
+        "InvalidStream",
+        "no action handoff on invalid arguments"
+      ]
+    },
+    {
+      "CaseId": "comment_frame_ignored",
+      "File": "FixtureIndex.json",
+      "ContractFields": [
+        "SSE parser ignores comment frames"
+      ]
+    },
+    {
+      "CaseId": "empty_frame_ignored",
+      "File": "FixtureIndex.json",
+      "ContractFields": [
+        "SSE parser ignores empty frames"
+      ]
+    },
+    {
+      "CaseId": "multi_data_line_frame",
+      "File": "FixtureIndex.json",
+      "ContractFields": [
+        "SSE data lines join before JSON parsing"
+      ]
+    }
+  ],
+  "FixtureFiles": [
+    {
+      "Path": "CanonicalRequest.json",
+      "CaseIds": [
+        "request_text_tool_output_limit",
+        "request_refusal_scenario",
+        "request_tool_result_round_trip"
+      ]
+    },
+    {
+      "Path": "StreamCases.json",
+      "CaseIds": [
+        "text_completed_with_usage",
+        "refusal_completed",
+        "interleaved_function_calls_tool_handoff",
+        "exact_duplicate_sequence_ignored",
+        "sequence_gap_rejected",
+        "conflicting_duplicate_sequence_rejected"
+      ]
+    },
+    {
+      "Path": "ErrorCases.json",
+      "CaseIds": [
+        "http_authentication_failure",
+        "http_rate_limited",
+        "response_failed",
+        "in_band_error",
+        "incomplete_output_limit",
+        "incomplete_content_filtered",
+        "incomplete_unknown_reason",
+        "cancel_before_send",
+        "background_cancel_confirmed",
+        "cancel_after_send_unconfirmed",
+        "eof_after_partial_output",
+        "completed_without_usage",
+        "invalid_tool_json"
+      ]
+    }
+  ]
+}

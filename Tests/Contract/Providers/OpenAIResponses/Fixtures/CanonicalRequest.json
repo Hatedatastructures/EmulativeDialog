@@ -1,0 +1,332 @@
+{
+  "SchemaVersion": 1,
+  "Protocol": "OpenAIResponses",
+  "ContractVersion": "ModelProviderContract V1",
+  "CredentialFree": true,
+  "Cases": [
+    {
+      "CaseId": "request_text_tool_output_limit",
+      "Covers": [
+        "text input",
+        "Core-authorized synthetic function tool definition",
+        "output token limit"
+      ],
+      "FixtureMetadata": {
+        "AuthorizedToolDefinition": "SyntheticCoreApprovedBusinessAction"
+      },
+      "CanonicalRequest": {
+        "RequestId": "req-synthetic-001",
+        "AgentTurnId": "turn-synthetic-001",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope-synthetic-local-only",
+        "SystemInstructions": "Use only the supplied synthetic business action when it is needed.",
+        "DeveloperInstructions": "",
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Look up synthetic order ORDER-SYNTH-001."
+              }
+            ]
+          }
+        ],
+        "ContentParts": [],
+        "CancellationToken": {
+          "State": "NotCancelled", "Synthetic": true
+        },
+        "CapabilitySnapshot": {
+          "Streaming": true,
+          "ToolCalls": true,
+          "OutputLimit": true,
+          "Usage": true,
+          "Cancellation": true
+        },
+        "ToolDefinitions": [
+          {
+            "Name": "lookup_order",
+            "Description": "Return a synthetic order status for fixture validation.",
+            "Parameters": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "additionalProperties": false
+            },
+            "Strict": true
+          }
+        ],
+        "ModelName": "synthetic-model",
+        "OutputLimit": {
+          "MaxOutputTokens": 96
+        },
+        "SamplingOptions": {},
+        "ProviderOptions": {}
+      },
+      "ExpectedWireRequest": {
+        "model": "synthetic-model",
+        "instructions": "Use only the supplied synthetic business action when it is needed.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Look up synthetic order ORDER-SYNTH-001."
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "name": "lookup_order",
+            "description": "Return a synthetic order status for fixture validation.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "additionalProperties": false
+            },
+            "strict": true
+          }
+        ],
+        "max_output_tokens": 96,
+        "stream": true
+      },
+      "ExpectedAuthentication": {
+        "Scheme": "Bearer",
+        "HeaderName": "Authorization",
+        "CredentialValueIncluded": false,
+        "CredentialSource": "Core CredentialLease"
+      },
+      "LocalOnlyFieldsOmittedFromWire": [
+        "RequestId",
+        "AgentTurnId",
+        "CreatedAt",
+        "ConversationScopeRef",
+        "CancellationToken",
+        "CapabilitySnapshot"
+      ]
+    },
+    {
+      "CaseId": "request_refusal_scenario",
+      "Covers": [
+        "normal request mapping used by the refusal stream case",
+        "refusal is a response outcome, not a request or transport error"
+      ],
+      "CanonicalRequest": {
+        "RequestId": "req-synthetic-refusal",
+        "AgentTurnId": "turn-synthetic-refusal",
+        "CreatedAt": "2026-10-26T00:00:01Z",
+        "SystemInstructions": "Evaluate this synthetic fixture prompt.",
+        "DeveloperInstructions": "",
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Synthetic refusal mapping fixture input."
+              }
+            ]
+          }
+        ],
+        "ContentParts": [],
+        "CancellationToken": {
+          "State": "NotCancelled", "Synthetic": true
+        },
+        "CapabilitySnapshot": {
+          "Streaming": true,
+          "ToolCalls": true,
+          "OutputLimit": true,
+          "Usage": true,
+          "Cancellation": true
+        },
+        "ToolDefinitions": [],
+        "ModelName": "synthetic-model",
+        "OutputLimit": {
+          "MaxOutputTokens": 64
+        },
+        "SamplingOptions": {},
+        "ProviderOptions": {}
+      },
+      "ExpectedWireRequest": {
+        "model": "synthetic-model",
+        "instructions": "Evaluate this synthetic fixture prompt.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Synthetic refusal mapping fixture input."
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "max_output_tokens": 64,
+        "stream": true
+      },
+      "ExpectedAuthentication": {
+        "Scheme": "Bearer",
+        "HeaderName": "Authorization",
+        "CredentialValueIncluded": false,
+        "CredentialSource": "Core CredentialLease"
+      }
+    },
+    {
+      "CaseId": "request_tool_result_round_trip",
+      "Covers": [
+        "prior function_call item retained in input",
+        "function_call_output uses the exact originating call_id"
+      ],
+      "FixtureMetadata": {
+        "AuthorizedToolDefinition": "SyntheticCoreApprovedBusinessAction"
+      },
+      "CanonicalRequest": {
+        "RequestId": "req-synthetic-followup",
+        "AgentTurnId": "turn-synthetic-followup",
+        "CreatedAt": "2026-10-26T00:00:02Z",
+        "SystemInstructions": "Summarize the synthetic tool result.",
+        "DeveloperInstructions": "",
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Look up synthetic order ORDER-SYNTH-001."
+              }
+            ]
+          },
+          {
+            "Role": "assistant",
+            "FunctionCalls": [
+              {
+                "ToolCallId": "call-synthetic-order-001",
+                "ToolName": "lookup_order",
+                "Arguments": {
+                  "order_id": "ORDER-SYNTH-001"
+                }
+              }
+            ]
+          },
+          {
+            "Role": "tool",
+            "ToolCallId": "call-synthetic-order-001",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "{\"status\":\"ready\",\"reference\":\"RESULT-SYNTH-001\"}"
+              }
+            ]
+          }
+        ],
+        "ContentParts": [],
+        "CancellationToken": {
+          "State": "NotCancelled", "Synthetic": true
+        },
+        "CapabilitySnapshot": {
+          "Streaming": true,
+          "ToolCalls": true,
+          "OutputLimit": true,
+          "Usage": true,
+          "Cancellation": true
+        },
+        "ToolDefinitions": [
+          {
+            "Name": "lookup_order",
+            "Description": "Return a synthetic order status for fixture validation.",
+            "Parameters": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "additionalProperties": false
+            },
+            "Strict": true
+          }
+        ],
+        "ModelName": "synthetic-model",
+        "OutputLimit": {
+          "MaxOutputTokens": 96
+        },
+        "SamplingOptions": {},
+        "ProviderOptions": {}
+      },
+      "ExpectedWireRequest": {
+        "model": "synthetic-model",
+        "instructions": "Summarize the synthetic tool result.",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Look up synthetic order ORDER-SYNTH-001."
+              }
+            ]
+          },
+          {
+            "type": "function_call",
+            "call_id": "call-synthetic-order-001",
+            "name": "lookup_order",
+            "arguments": "{\"order_id\":\"ORDER-SYNTH-001\"}"
+          },
+          {
+            "type": "function_call_output",
+            "call_id": "call-synthetic-order-001",
+            "output": "{\"status\":\"ready\",\"reference\":\"RESULT-SYNTH-001\"}"
+          }
+        ],
+        "tools": [
+          {
+            "type": "function",
+            "name": "lookup_order",
+            "description": "Return a synthetic order status for fixture validation.",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "order_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order_id"
+              ],
+              "additionalProperties": false
+            },
+            "strict": true
+          }
+        ],
+        "max_output_tokens": 96,
+        "stream": true
+      },
+      "ExpectedAuthentication": {
+        "Scheme": "Bearer",
+        "HeaderName": "Authorization",
+        "CredentialValueIncluded": false,
+        "CredentialSource": "Core CredentialLease"
+      }
+    }
+  ]
+}
