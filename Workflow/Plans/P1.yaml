@@ -160,6 +160,248 @@ Tasks:
       EventShard: Workflow/Events/Bootstrap/P1.jsonl
       FollowUpTaskIds: []
 
+  - TaskId: ED-0014
+    TaskRevision: 5
+    EpicId: EP-05
+    Title: 实现 P1 事件 EventId 冲突的协调者授权恢复
+    TaskKind: BootstrapRecovery
+    State: Ready
+    Phase: P1
+    OwnerRole: AgentWorkflowOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: "/root/agent_core"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-26"
+    UpdatedAt: "2026-10-26"
+    ParallelGroup: P1ControllerRecovery
+    Goal: >-
+      在 C++ WorkflowController 中增加受限、追加式 EventId 冲突恢复路径，使冲突事件日志保持原字节，
+      由协调者明确选取原始 occurrence；完全相同重复行继续去重。此任务只修复开发期工作流工具，
+      不实现或替代产品 AgentRuntime。
+    OutOfScope:
+      - 修改或重写 Workflow/Events/Bootstrap/P1.jsonl
+      - 以 EvidenceRefs 合并、JSON 字段合并或自动 first/last 规则解决冲突
+      - 声称有 OS 或密码学协调者认证
+      - 产品 Core、AgentRuntime、Provider、Channel、Memory 代码
+      - P1 ExitGate 评定或 P2 产品任务分派
+    DependsOn:
+      - ED-0006
+      - ED-0008
+    ExternalInputs:
+      - "Coordinator-approved immutable TaskSpec snapshot at TaskSpecFreezeCommit S; the implementation must receive S from the single-writer Coordinator."
+      - "S is the authorization source; the conflicted P1 EventShard must not be used to authorize its own recovery."
+      - "Coordinator has explicitly selected occurrence 2 for each of the five target IDs below after inspecting the raw variants."
+    ChangeRequest:
+      ChangeRequestId: CR-ED-0014-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Add a workflow-declared, single-writer bootstrap recovery command to WorkflowController that reads
+        authorization only from this frozen TaskSpec snapshot and appends explicit EventIdConflictResolution
+        records for the five listed ED-0013 event IDs; do not modify the original event lines.
+      Reason: >-
+        The ordinary P1 EventStore reader and appender fail closed on conflicting EventIds, preventing task
+        context loading and ordinary assignment. An isolated, immutable Coordinator TaskSpec pin provides a
+        non-circular workflow authorization source for a narrowly scoped append-only recovery command.
+      TrustLimit: "Workflow provenance only; not cryptographic or operating-system authentication."
+    PreVerifyIntegrationGate:
+      P1ExitGate: Pending
+      BootstrapControllerRemediationAllowed: true
+      ProductAgentRuntimeMayStart: false
+    BaselineCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
+    HeadCommit: ""
+    Branch: Task/ED-0014-R5-EventIdConflictRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R5
+    Context:
+      ModuleId: AgentWorkflowController
+      ReadSet:
+        - Workflow/TaskTemplate.yaml
+        - Workflow/TaskLifecycle.md
+        - Workflow/AgentExecutionStandard.md
+        - Architecture/ModuleMap.yaml#ShardId=WorkflowTools
+        - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
+        - Tools/WorkflowController/WorkflowController.h
+        - Tools/WorkflowController/WorkflowController.cpp
+        - Tools/WorkflowController/Main.cpp
+        - Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+      BudgetOverride:
+        UniqueFiles: 12
+        Reason: >-
+          Required task schema and lifecycle inputs plus the four-path C++ implementation/test context; the three
+          controller-injected AlwaysLoad files bring the unique context total to exactly 12.
+    WriteSet:
+      - Tools/WorkflowController/WorkflowController.h
+      - Tools/WorkflowController/WorkflowController.cpp
+      - Tools/WorkflowController/Main.cpp
+      - Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp
+    SharedLocks:
+      - AgentWorkflowStateAndEventStore
+    ForbiddenSet:
+      - Workflow/Events/**
+      - Workflow/Plans/**
+      - Workflow/TaskIndex.yaml
+      - Workflow/AgentPool.yaml
+      - CMakeLists.txt
+      - CMakePresets.json
+      - Source/**
+      - Architecture/Contracts/**
+      - Workflow/CodexCapabilityMap/**
+    Rules:
+      MustFollow:
+        - "Preserve every original event line byte-for-byte; recovery appends resolution records and never rewrites, truncates, normalizes, or reorders the shard."
+        - "Load authorization only from the exact Coordinator-pinned ED-0014 TaskSpec snapshot S supplied by the Coordinator; do not read authorization events from the conflicted P1 shard."
+        - "This workflow declaration is a single-writer provenance control, not OS or cryptographic authentication; the command must not accept freeform AgentId or AgentRole as authority."
+        - "Preserve selected raw JSON records, including unknown fields, through read projection and ReviewBundle evidence."
+        - "Resolution events retain the required common event envelope and safe EvidenceRefs; never store raw payload, chat text, command output, payload hashes, or merged EvidenceRefs."
+        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 5; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole from the pinned TaskSpec."
+        - "Only the four exact C++/test paths in WriteSet may change."
+        - "Require at least 80 percent line coverage for changed production translation units and report denominator, exclusions, and gcov version."
+      SoftDefaults: []
+      ApprovedOverrides:
+        - RuleRef: EventIdConflictResolution
+          ChangeRequestId: CR-ED-0014-001
+          ApprovedByRole: Coordinator
+          ApprovedByAgentId: /root
+          EventShard: Workflow/Events/Bootstrap/P1.jsonl
+          TargetEventId: 6202e631-52ce-4145-96af-ce6934df7749
+          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: 1}
+          ExpectedVariantCount: 2
+          ExpectedOccurrenceCount: 2
+          CanonicalOccurrence: 2
+          ApprovalReason: >-
+            Select the later ChangeRequestCreated variant because it directly references the formal Major review
+            finding ED-0013-RV-001; preserve its original EvidenceRefs exactly and do not merge the earlier variant.
+        - RuleRef: EventIdConflictResolution
+          ChangeRequestId: CR-ED-0014-001
+          ApprovedByRole: Coordinator
+          ApprovedByAgentId: /root
+          EventShard: Workflow/Events/Bootstrap/P1.jsonl
+          TargetEventId: 5d773818-7efa-4055-b2ea-600d0dcaa69d
+          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: 1}
+          ExpectedVariantCount: 2
+          ExpectedOccurrenceCount: 2
+          CanonicalOccurrence: 2
+          ApprovalReason: >-
+            Select the later approval occurrence, which follows the recorded ED-0013-RV-001 review finding and
+            the chosen ChangeRequestCreated record; preserve its exact original payload.
+        - RuleRef: EventIdConflictResolution
+          ChangeRequestId: CR-ED-0014-001
+          ApprovedByRole: Coordinator
+          ApprovedByAgentId: /root
+          EventShard: Workflow/Events/Bootstrap/P1.jsonl
+          TargetEventId: 72cc74ea-b68c-4588-95ca-58e0f6c22685
+          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: 1}
+          ExpectedVariantCount: 2
+          ExpectedOccurrenceCount: 2
+          CanonicalOccurrence: 2
+          ApprovalReason: >-
+            Select the later supersession occurrence because it preserves the exact SourceHeadCommit for the R1
+            source branch; retain this unknown field byte-for-byte without interpreting or merging it.
+        - RuleRef: EventIdConflictResolution
+          ChangeRequestId: CR-ED-0014-001
+          ApprovedByRole: Coordinator
+          ApprovedByAgentId: /root
+          EventShard: Workflow/Events/Bootstrap/P1.jsonl
+          TargetEventId: 4a9507a0-c338-40f0-8871-f15aff82be1c
+          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: 1}
+          ExpectedVariantCount: 2
+          ExpectedOccurrenceCount: 2
+          CanonicalOccurrence: 2
+          ApprovalReason: >-
+            Select the later slot-recovery occurrence because it follows the recorded independent review finding;
+            preserve its original timestamp and fields.
+        - RuleRef: EventIdConflictResolution
+          ChangeRequestId: CR-ED-0014-001
+          ApprovedByRole: Coordinator
+          ApprovedByAgentId: /root
+          EventShard: Workflow/Events/Bootstrap/P1.jsonl
+          TargetEventId: 378e2cbe-98e9-4419-8418-287ef16b7c74
+          Scope: {ReleaseId: Bootstrap, PhaseId: P1, TaskId: ED-0013, TaskRevision: 2}
+          ExpectedVariantCount: 2
+          ExpectedOccurrenceCount: 2
+          CanonicalOccurrence: 2
+          ApprovalReason: >-
+            Select the later task approval occurrence because it follows the accepted ChangeRequest and pins the
+            R2 TaskSpec commit/blob; preserve its exact original payload.
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          The recovery command loads the exact ED-0014 TaskSpec from Coordinator-supplied immutable commit S and
+          authorizes only matching ApprovedOverrides; it accepts no arbitrary AgentId/AgentRole flags and fails
+          on an incorrect commit, scope, TaskRevision, ChangeRequestId, or target.
+        Evidence: Positive pinned-authorization fixture plus negative wrong-pin/scope/target fixtures.
+      - AcceptanceId: AC-2
+        Description: >-
+          Normal EventStore reads fail closed on unresolved variants. Recovery uses a raw, same-lock scan and
+          explicit Coordinator choice; byte-identical duplicates remain a single event without resolution.
+        Evidence: Synthetic shard fixtures prove both exact-duplicate and conflicting-variant paths.
+      - AcceptanceId: AC-3
+        Description: >-
+          A resolution binds EventId, full target scope, distinct raw variant count, physical occurrence count,
+          1-based canonical occurrence, approved task snapshot, CR ID, reason and common event envelope; it never
+          merges EvidenceRefs or payload fields.
+        Evidence: Serialized resolution schema tests include required Branch, CorrelationId, safe EvidenceRefs and reject raw payload/hash fields.
+      - AcceptanceId: AC-4
+        Description: >-
+          The selected original event is preserved byte-for-byte, including unknown SourceHeadCommit on the 72cc
+          fixture, in all event reads and ReviewBundle evidence. Original shard bytes remain an unchanged prefix.
+        Evidence: Raw-record round-trip and prefix-preservation fixtures.
+      - AcceptanceId: AC-5
+        Description: >-
+          Any stale count/pin, new occurrence, cross-scope variant, missing/multiple authorization, conflicting
+          resolution payload, malformed or torn tail, partial write, or flush ambiguity remains fail closed;
+          retry is idempotent and never blindly duplicates a possibly committed resolution.
+        Evidence: Negative stale/partial/flush/concurrency and restart fixtures.
+      - AcceptanceId: AC-6
+        Description: Only the four exact WriteSet paths change; no real P1 event, task plan, or product source is modified.
+        Evidence: Fixed BaseCommit..HeadCommit changed-path audit.
+      - AcceptanceId: AC-7
+        Description: >-
+          Changed WorkflowController production translation units achieve at least 80 percent line coverage;
+          report denominator, excluded generated/dependency lines and gcov version.
+        Evidence: Focused Windows MinGW gcov report for changed production translation units.
+    Validation:
+      RequiredTargets: [BuildProbe, WorkflowController, WorkflowControllerContractTests]
+      TargetedBuild:
+        - cmake --preset windows-mingw
+        - cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
+      ContractFixtures:
+        - ctest --preset windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
+      StaticChecks:
+        - git diff --check <BaselineCommit> <HeadCommit>
+        - Verify changed paths equal the exact four-path WriteSet.
+        - Verify C++ production line coverage >= 80 percent with gcov and record denominator, exclusions, tool version.
+      LiveSideEffects: Forbidden
+      NotRunReason: ""
+    RiskLevel: High
+    RiskOwnerRole: Coordinator
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    TaskSpecCommitPin: Coordinator supplies immutable snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
+    ReviewerDecision: Pending
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited."
+      TriedApproaches:
+        - "R4/R5 proposal reviews identified authorization bootstrap cycle, event-envelope omissions, unknown-field loss, and missing append/flush recovery tests; these are incorporated in the frozen AC above."
+      NextAction: "Implement the four-path C++ recovery command in the isolated R5 worktree, run the named native Windows C++20 build/CTest and focused gcov report, then request Worker02 fixed-Head review."
+      OpenMessageIds: []
+      LastValidationResult: NotRun
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds: [ED-0013]
+
   - TaskId: ED-0007
     TaskRevision: 1
     EpicId: EP-05
