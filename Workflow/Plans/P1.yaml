@@ -3149,7 +3149,7 @@ Tasks:
     EpicId: EP-05
     Title: 明确冻结已审批的 ModelProvider V1.2 合同状态
     TaskKind: ContractStatusFinalization
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -3231,7 +3231,7 @@ Tasks:
       LastCompletedAcceptance: []
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "Coordinator records TaskSpec validation, creates the isolated worktree and assigns Worker03."
-      LastValidationResult: "No implementation attempted; Ready after all contract and V1.2 fixture dependencies merged."
+      NextAction: "Owner changes only the ModelProviderContract V1.2 status annotation, then runs the frozen static checks and commits/pushes the task branch."
+      LastValidationResult: "WorkflowController query and validate-assignment succeeded; isolated worktree is clean at BaselineCommit."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}

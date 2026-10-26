@@ -47,8 +47,8 @@ Slots:
     ModuleIds:
       - AgentRuntime
       - Core
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0130
+    Status: Review
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/p1_gov004_luna"
@@ -57,8 +57,8 @@ Slots:
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0130
+    Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/p2_validation_luna"
