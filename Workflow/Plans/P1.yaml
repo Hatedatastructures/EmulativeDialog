@@ -685,7 +685,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Memory 与 ContextSelector 离线夹具
     TaskKind: ContractFixturePreparation
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: MemoryContextOwner
     OwnerSlotId: Worker06
@@ -759,6 +759,9 @@ Tasks:
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0012
     MergeTargetBranch: codex/integration
     MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    MergeCommit: b06fb0e86a9d1160fa3a212661ca748cccaf9ed9
+    ReviewerDecision: Approved
+    ReviewHeadCommit: 8ac50caf67ff6fe240318a33f63bdfe68f3f4525
     ReviewerDecision: Approved
     ReviewHeadCommit: 8ac50caf67ff6fe240318a33f63bdfe68f3f4525
     Checkpoint:

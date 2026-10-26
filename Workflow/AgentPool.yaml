@@ -70,8 +70,8 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0012
-    Status: Review
+    CurrentTaskId: ""
+    Status: Dormant
   - SlotId: Worker07
     RoleFamily: Unassigned
     AgentId: ""
