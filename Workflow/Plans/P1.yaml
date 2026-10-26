@@ -2951,7 +2951,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 Anthropic Messages V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -3090,11 +3090,17 @@ Tasks:
     MergeTargetBranch: codex/integration
     ReviewerDecision: Approve
     ReviewHeadCommit: "d59bd7e0a798352c8b677118660a183952c3693c"
+    IntegrationParentCommit: 8775a10fe17988b4359ee96045e65366c93609dd
+    IntegrationCommit: 24017038074f439025007dfda4116f456abf4721
+    MergeCommit: 24017038074f439025007dfda4116f456abf4721
+    IntegrationMode: LocalReviewBundle
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Checkpoint:
-      LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Independent Worker06 review approved with no findings; P1 LocalReviewBundle complete; GitHub PR creation was denied HTTP 403."
+      LastCompletedAcceptance: [AC-1, AC-2, AC-3, AC-4]
+      CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "IntegrationOwner performs the authorized no-conflict local merge, verifies final two-path diff and post-merge fixture evidence, then retires the merged task branch."
-      LastValidationResult: "Author and independent Reviewer checks passed; see ReviewBundle, ReviewResult and CoordinatorDecision."
+      NextAction: "P1 ExitGate remains pending ED-0127/R4 and ED-0128/R4 fixed-head reviews and merges."
+      LastValidationResult: "Author and independent review passed; post-merge JSON, exact-path, diff-check and four V1 blob checks exited 0."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
