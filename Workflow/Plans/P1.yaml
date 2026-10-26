@@ -2657,30 +2657,37 @@ Tasks:
         - ED-0101
 
   - TaskId: ED-0127
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Blocked
+    State: Ready
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
     OwnerAgentId: "/root/p1_gov004_luna"
-    ReviewerRole: ChatCompletionsProviderOwner
-    ReviewerSlotId: Worker04
-    ReviewerAgentId: "/root/p2_validation_luna"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: "/root/p1_code001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     UpdatedAt: "2026-10-27"
     PreviousRevisionEvidence:
-      TaskRevision: 1
-      TaskSpecCommit: a80651e1370315c9f7a6359320d3c530bd074014
-      TaskSpecBlob: ed80e78c2b05492de663643cefc4a29ecf047f96
-      State: Blocked
-      Disposition: SupersededBeforeAssignment
-      Branch: Task/ED-0127-R1-ResponsesV1_2Fixtures
-      Reason: "WorkflowController rejected the underscore and hyphenated topic in the registered branch; the consumer pin also needs to name the corrected ED-0017/R3 revision."
-    RevisionChangeRequest:
+      - TaskRevision: 1
+        TaskSpecCommit: a80651e1370315c9f7a6359320d3c530bd074014
+        TaskSpecBlob: ed80e78c2b05492de663643cefc4a29ecf047f96
+        State: Blocked
+        Disposition: SupersededBeforeAssignment
+        Branch: Task/ED-0127-R1-ResponsesV1_2Fixtures
+        Reason: "WorkflowController rejected the underscore and hyphenated topic in the registered branch."
+      - TaskRevision: 2
+        TaskSpecCommit: 0a5b57310310446c5843893172ff6055704e098d
+        TaskSpecBlob: e399905f7190e2f8d0ad4cde21e9a4a4d4692f76
+        State: Blocked
+        Disposition: SupersededBeforeAssignment
+        ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
+        Reason: "ED-0017/R4 is the frozen V1.2 contract; the consumer pin must use the merged R4 task revision."
+    PreviousRevisionChangeRequest:
       ChangeRequestId: CR-ED-0127-001
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -2693,16 +2700,29 @@ Tasks:
         blocked fixture task to the ED-0017/R3 V1.2 contract task revision. Preserve its fixture-only Goal, ReadSet,
         WriteSet, acceptance criteria, validation commands, and Blocked state.
       Reason: "Assignment validation rejected the registered branch before any task implementation began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0127-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+      Scope: >-
+        Pin the fixture task to the merged ED-0017/R4 ModelProviderContract V1.2 and assign an independent reviewer
+        slot that is not an owner of another concurrently active fixture task. Preserve this task's exact fixture-only
+        Goal, ReadSet, WriteSet, acceptance criteria, validation commands, and synthetic-data boundary.
+      Reason: "ED-0017/R4 is now merged; reviewer slots are allocated so the three disjoint refusal fixture tasks can run in parallel without owner/reviewer slot collisions."
     ParallelGroup: ProviderRefusalV1_2OfflineFixtures
     Goal: >-
-      在 ED-0017/R3 冻结 ModelProviderContract V1.2 后，为 OpenAI Responses 既有拒绝映射增加独立、完全合成的
+      在 ED-0017/R4 冻结 ModelProviderContract V1.2 后，为 OpenAI Responses 既有拒绝映射增加独立、完全合成的
       V1.2 离线夹具；不实现 Adapter，不修改任何 V1 fixture。
     OutOfScope:
       - Provider Adapter 或 AgentRuntime C++ 实现
       - 网络调用、真实凭据或真实聊天数据
       - 修改 V1 fixtures、公共合同、CMake 或产品源代码
     DependsOn: [ED-0017]
-    ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
+    ContractVersion: ModelProviderContract V1.2 from ED-0017/R4
     Context:
       ModuleId: ProviderOpenAIResponses
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Tests/Contract/Providers/OpenAIResponses/Fixtures/FixtureIndex.json, Tests/Contract/Providers/OpenAIResponses/Fixtures/StreamCases.json]
@@ -2716,7 +2736,7 @@ Tasks:
     SharedLocks: []
     Acceptance:
       - AcceptanceId: AC-1
-        Description: V1.2 fixture index pins the merged ED-0017/R3 contract and references every exact refusal case.
+        Description: V1.2 fixture index pins the merged ED-0017/R4 contract and references every exact refusal case.
         Evidence: Version1Point2/FixtureIndex.json and all JsonPointers resolve.
       - AcceptanceId: AC-2
         Description: Streamed refusal deltas remain RefusalDelta and only response.completed produces one Refusal terminal.
@@ -2744,44 +2764,51 @@ Tasks:
     MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
     Branch: Task/ED-0127-ResponsesV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0127-R2
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R2
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R3
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Blocked until ED-0017/R3 produces and freezes ModelProviderContract V1.2."
+      CurrentFindingOrFailure: "Ready after ED-0017/R4 merged; assignment awaits distinct branch/worktree and event pins."
       TriedApproaches: []
-      NextAction: "After the ED-0017/R3 contract dependency merges, Coordinator pins its V1.2 contract commit and assigns this fixture-only WriteSet."
+      NextAction: "Coordinator pins the ED-0017/R4 contract commit, records assignment, then owner implements the two-file fixture WriteSet."
       LastValidationResult: "Not run; dependency remains Blocked."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0128
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Blocked
+    State: Ready
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
     OwnerAgentId: "/root/p2_validation_luna"
-    ReviewerRole: AnthropicProviderOwner
-    ReviewerSlotId: Worker05
-    ReviewerAgentId: "/root/p3_validation_luna"
+    ReviewerRole: BuildAndWorkflowOwner
+    ReviewerSlotId: Worker01
+    ReviewerAgentId: "/root/p1_trace_events_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     UpdatedAt: "2026-10-27"
     PreviousRevisionEvidence:
-      TaskRevision: 1
-      TaskSpecCommit: a80651e1370315c9f7a6359320d3c530bd074014
-      TaskSpecBlob: ed80e78c2b05492de663643cefc4a29ecf047f96
-      State: Blocked
-      Disposition: SupersededBeforeAssignment
-      Branch: Task/ED-0128-R1-ChatCompletionsV1_2Fixtures
-      Reason: "WorkflowController rejected the underscore and hyphenated topic in the registered branch; the consumer pin also needs to name the corrected ED-0017/R3 revision."
-    RevisionChangeRequest:
+      - TaskRevision: 1
+        TaskSpecCommit: a80651e1370315c9f7a6359320d3c530bd074014
+        TaskSpecBlob: ed80e78c2b05492de663643cefc4a29ecf047f96
+        State: Blocked
+        Disposition: SupersededBeforeAssignment
+        Branch: Task/ED-0128-R1-ChatCompletionsV1_2Fixtures
+        Reason: "WorkflowController rejected the underscore and hyphenated topic in the registered branch."
+      - TaskRevision: 2
+        TaskSpecCommit: 0a5b57310310446c5843893172ff6055704e098d
+        TaskSpecBlob: e399905f7190e2f8d0ad4cde21e9a4a4d4692f76
+        State: Blocked
+        Disposition: SupersededBeforeAssignment
+        ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
+        Reason: "ED-0017/R4 is the frozen V1.2 contract; the consumer pin must use the merged R4 task revision."
+    PreviousRevisionChangeRequest:
       ChangeRequestId: CR-ED-0128-001
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -2794,16 +2821,29 @@ Tasks:
         blocked fixture task to the ED-0017/R3 V1.2 contract task revision. Preserve its fixture-only Goal, ReadSet,
         WriteSet, acceptance criteria, validation commands, and Blocked state.
       Reason: "Assignment validation rejected the registered branch before any task implementation began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0128-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+      Scope: >-
+        Pin the fixture task to the merged ED-0017/R4 ModelProviderContract V1.2 and assign an independent reviewer
+        slot that is not an owner of another concurrently active fixture task. Preserve this task's exact fixture-only
+        Goal, ReadSet, WriteSet, acceptance criteria, validation commands, and synthetic-data boundary.
+      Reason: "ED-0017/R4 is now merged; reviewer slots are allocated so the three disjoint refusal fixture tasks can run in parallel without slot collision."
     ParallelGroup: ProviderRefusalV1_2OfflineFixtures
     Goal: >-
-      在 ED-0017/R3 冻结 ModelProviderContract V1.2 后，为 Chat Completions delta.refusal 的 V1.2 profile 语义
+      在 ED-0017/R4 冻结 ModelProviderContract V1.2 后，为 Chat Completions delta.refusal 的 V1.2 profile 语义
       增加独立、完全合成的离线夹具；不实现 Adapter，不修改任何 V1 fixture。
     OutOfScope:
       - Provider Adapter 或 AgentRuntime C++ 实现
       - 网络调用、真实凭据或真实聊天数据
       - 修改 V1 fixtures、公共合同、CMake 或产品源代码
     DependsOn: [ED-0017]
-    ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
+    ContractVersion: ModelProviderContract V1.2 from ED-0017/R4
     Context:
       ModuleId: ProviderOpenAIChatCompletions
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/FixtureIndex.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/StreamCases.json]
@@ -2817,7 +2857,7 @@ Tasks:
     SharedLocks: []
     Acceptance:
       - AcceptanceId: AC-1
-        Description: V1.2 fixture index pins the merged ED-0017/R3 contract and references every exact refusal case.
+        Description: V1.2 fixture index pins the merged ED-0017/R4 contract and references every exact refusal case.
         Evidence: Version1Point2/FixtureIndex.json and all JsonPointers resolve.
       - AcceptanceId: AC-2
         Description: >-
@@ -2847,44 +2887,51 @@ Tasks:
     MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
     Branch: Task/ED-0128-ChatCompletionsV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0128-R2
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R2
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R3
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Blocked until ED-0017/R3 produces and freezes ModelProviderContract V1.2."
+      CurrentFindingOrFailure: "Ready after ED-0017/R4 merged; assignment awaits distinct branch/worktree and event pins."
       TriedApproaches: []
-      NextAction: "After the ED-0017/R3 contract dependency merges, Coordinator pins its V1.2 contract commit and assigns this fixture-only WriteSet."
+      NextAction: "Coordinator pins the ED-0017/R4 contract commit, records assignment, then owner implements the two-file fixture WriteSet."
       LastValidationResult: "Not run; dependency remains Blocked."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0129
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-05
     Title: 新增 Anthropic Messages V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Blocked
+    State: Ready
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
     OwnerAgentId: "/root/p3_validation_luna"
-    ReviewerRole: ResponsesProviderOwner
-    ReviewerSlotId: Worker03
-    ReviewerAgentId: "/root/p1_gov004_luna"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     UpdatedAt: "2026-10-27"
     PreviousRevisionEvidence:
-      TaskRevision: 1
-      TaskSpecCommit: a80651e1370315c9f7a6359320d3c530bd074014
-      TaskSpecBlob: ed80e78c2b05492de663643cefc4a29ecf047f96
-      State: Blocked
-      Disposition: SupersededBeforeAssignment
-      Branch: Task/ED-0129-R1-AnthropicV1_2Fixtures
-      Reason: "WorkflowController rejected the underscore and hyphenated topic in the registered branch; the consumer pin also needs to name the corrected ED-0017/R3 revision."
-    RevisionChangeRequest:
+      - TaskRevision: 1
+        TaskSpecCommit: a80651e1370315c9f7a6359320d3c530bd074014
+        TaskSpecBlob: ed80e78c2b05492de663643cefc4a29ecf047f96
+        State: Blocked
+        Disposition: SupersededBeforeAssignment
+        Branch: Task/ED-0129-R1-AnthropicV1_2Fixtures
+        Reason: "WorkflowController rejected the underscore and hyphenated topic in the registered branch."
+      - TaskRevision: 2
+        TaskSpecCommit: 0a5b57310310446c5843893172ff6055704e098d
+        TaskSpecBlob: e399905f7190e2f8d0ad4cde21e9a4a4d4692f76
+        State: Blocked
+        Disposition: SupersededBeforeAssignment
+        ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
+        Reason: "ED-0017/R4 is the frozen V1.2 contract; the consumer pin must use the merged R4 task revision."
+    PreviousRevisionChangeRequest:
       ChangeRequestId: CR-ED-0129-001
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -2897,16 +2944,31 @@ Tasks:
         blocked fixture task to the ED-0017/R3 V1.2 contract task revision. Preserve its fixture-only Goal, ReadSet,
         WriteSet, acceptance criteria, validation commands, and Blocked state.
       Reason: "Assignment validation rejected the registered branch before any task implementation began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0129-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+      Scope: >-
+        Pin the fixture task to the merged ED-0017/R4 ModelProviderContract V1.2, allocate an independent reviewer
+        slot distinct from the three concurrently active owners, and add a synthetic mid-stream refusal case that
+        verifies prior partial text is not included in final refusal output. Preserve the two-file fixture WriteSet.
+      Reason: >-
+        ED-0017/R4 adds AC-8 under CR-ED-0007-008; the Anthropic fixture successor must cover that protocol mapping.
+        Worker06 is assigned as independent reviewer so the three disjoint fixture tasks can run in parallel.
     ParallelGroup: ProviderRefusalV1_2OfflineFixtures
     Goal: >-
-      在 ED-0017/R3 冻结 ModelProviderContract V1.2 后，为 Anthropic refusal stop_details 到 canonical
+      在 ED-0017/R4 冻结 ModelProviderContract V1.2 后，为 Anthropic refusal stop_details 到 canonical
       RefusalStopDetails 的 V1.2 语义增加独立、完全合成的离线夹具；不覆盖现有 V1 fixtures。
     OutOfScope:
       - Provider Adapter 或 AgentRuntime C++ 实现
       - 网络调用、真实凭据或真实聊天数据
       - 修改 V1 fixtures、公共合同、CMake 或产品源代码
     DependsOn: [ED-0017]
-    ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
+    ContractVersion: ModelProviderContract V1.2 from ED-0017/R4
     Context:
       ModuleId: ProviderAnthropicMessages
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Tests/Contract/Providers/AnthropicMessages/Fixtures/FixtureIndex.json, Tests/Contract/Providers/AnthropicMessages/Fixtures/ErrorCases.json]
@@ -2920,7 +2982,7 @@ Tasks:
     SharedLocks: []
     Acceptance:
       - AcceptanceId: AC-1
-        Description: V1.2 fixture index pins the merged ED-0017/R3 contract and references every exact refusal case.
+        Description: V1.2 fixture index pins the merged ED-0017/R4 contract and references every exact refusal case.
         Evidence: Version1Point2/FixtureIndex.json and all JsonPointers resolve.
       - AcceptanceId: AC-2
         Description: >-
@@ -2930,6 +2992,11 @@ Tasks:
       - AcceptanceId: AC-3
         Description: All data is synthetic and the existing V1 fixtures remain unchanged.
         Evidence: Exact changed paths equal WriteSet; legacy V1 index/cases remain byte-identical.
+      - AcceptanceId: AC-4
+        Description: >-
+          A synthetic stream case emits partial text before stop_reason=refusal and verifies the refusal terminal does
+          not treat that prior text as final user-visible output; no Explanation is exposed.
+        Evidence: Canonical refusal mapping and the ED-0017/R4 consumer contract pin cover the partial-output discard rule.
     Validation:
       RequiredTargets: []
       TargetedBuild: []
@@ -2950,15 +3017,15 @@ Tasks:
     MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
     Branch: Task/ED-0129-AnthropicV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0129-R2
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0129-R2
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0129-R3
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Blocked until ED-0017/R3 produces and freezes ModelProviderContract V1.2."
+      CurrentFindingOrFailure: "Ready after ED-0017/R4 merged; assignment awaits distinct branch/worktree and event pins."
       TriedApproaches: []
-      NextAction: "After the ED-0017/R3 contract dependency merges, Coordinator pins its V1.2 contract commit and assigns this fixture-only WriteSet."
+      NextAction: "Coordinator pins the ED-0017/R4 contract commit, records assignment, then owner implements the two-file fixture WriteSet."
       LastValidationResult: "Not run; dependency remains Blocked."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
