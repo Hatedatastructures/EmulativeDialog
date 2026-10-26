@@ -1,0 +1,691 @@
+SchemaVersion: 1
+ShardId: AgentCore
+UpstreamSubsystem: CodexAgentCore
+SourceRepository: https://github.com/openai/codex
+SourceCommit: 970111f6cb62cc02fe36a82ea7d71b37a2889c97
+ScopeDecision: Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+ProductRefs:
+  - Goals/ProductGoals.md
+  - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+  - Architecture/Contracts/CoreAgentContract.md
+  - Architecture/Contracts/ModelProviderContract.md
+  - Architecture/Contracts/MemoryContract.md
+
+SubsystemEntryPoints:
+  - codex-rs/core/src/session/turn.rs
+  - codex-rs/core/src/session/session.rs
+  - codex-rs/core/src/state/turn.rs
+  - codex-rs/core/src/client.rs
+  - codex-rs/model-provider-info/src/lib.rs
+  - codex-rs/core/src/stream_events_utils.rs
+  - codex-rs/core/src/tools/spec_plan.rs
+  - codex-rs/core/src/tools/parallel.rs
+  - codex-rs/core/src/responses_retry.rs
+  - codex-rs/core/src/compact.rs
+  - codex-rs/core/src/session/daemon_recovery.rs
+  - codex-rs/core/src/memories/
+  - codex-rs/memories/README.md
+  - codex-rs/cli/src/main.rs
+  - codex-rs/tui/src/app.rs
+  - codex-rs/core/src/tools/hosted_spec.rs
+
+SourceCatalog:
+  - SourceId: TurnLoop
+    Path: codex-rs/core/src/session/turn.rs
+    Symbols:
+      - Name: run_turn
+        RequiredRange: 156-177
+        Behavior: A turn loops over model sampling; a requested function call is executed and its result is sent in a subsequent sample, while an assistant answer completes the turn.
+      - Name: run_turn
+        RequiredRange: 454-565
+        Behavior: The loop selects a step, prepares model input, invokes run_sampling_request, and branches on its result.
+      - Name: run_sampling_request
+        RequiredRange: 1657-1672
+        Behavior: Runs one model sampling request with a turn-scoped client session and cancellation input.
+
+  - SourceId: SessionState
+    Path: codex-rs/core/src/session/session.rs
+    Symbols:
+      - Name: Session
+        RequiredRange: 54-101
+        Behavior: Session holds thread identity, state, active turn, input queue, provider services, and configuration.
+
+  - SourceId: InstructionAssembly
+    Path: codex-rs/core/src/session/session.rs
+    Symbols:
+      - Name: SessionConfiguration
+        RequiredRange: 102-122
+        Behavior: Session configuration separates base instructions from supplemental developer instructions.
+      - Name: Session::new
+        RequiredRange: 770-842
+        Behavior: Session initialization resolves and records instruction provenance for configured or model-derived base instructions.
+
+  - SourceId: PluginsAndSkills
+    Path: codex-rs/core/src/session/session.rs
+    Symbols:
+      - Name: warm_plugins_and_skills_for_session_init
+        RequiredRange: 609-641
+        Behavior: Session initialization can load configured plugins and discover host skills for later model context and tool registration.
+
+  - SourceId: TurnState
+    Path: codex-rs/core/src/state/turn.rs
+    Symbols:
+      - Name: ActiveTurn
+        RequiredRange: 25-32
+        Behavior: Active turn state binds the running task and turn state.
+      - Name: RunningTask
+        RequiredRange: 67-78
+        Behavior: A running task carries a cancellation token, task handle, and turn context.
+      - Name: TurnState
+        RequiredRange: 79-95
+        Behavior: Turn state tracks pending approvals and input waiters, tool calls, and usage state.
+
+  - SourceId: ProviderBoundary
+    Path: codex-rs/model-provider-info/src/lib.rs
+    Symbols:
+      - Name: WireApi
+        RequiredRange: 96-127
+        Behavior: At this commit the provider wire enum contains Responses only; parsing the legacy chat value returns an error.
+    RelatedPath: codex-rs/core/src/client.rs
+    RelatedSymbols:
+      - Name: ModelClientSession
+        RequiredRange: 270-293
+      - Name: stream
+        RequiredRange: 2287-2316
+        Behavior: A per-turn client session carries turn-scoped state and routes the supported Responses stream over HTTP or WebSocket.
+
+  - SourceId: ResponseItemsAndTools
+    Path: codex-rs/core/src/stream_events_utils.rs
+    Symbols:
+      - Name: record_completed_response_item
+        RequiredRange: 72-98
+        Behavior: Completed response items are recorded in conversation history.
+      - Name: handle_output_item_done
+        RequiredRange: 298-344
+        Behavior: Completed model output items are normalized; function calls are recorded and queued for tool execution with a child cancellation token.
+    RelatedPath: codex-rs/core/src/tools/parallel.rs
+    RelatedSymbols:
+      - Name: ToolCallRuntime
+        RequiredRange: 41-60
+      - Name: handle_tool_call
+        RequiredRange: 71-115
+      - Name: handle_tool_call_with_source
+        RequiredRange: 117-145
+        Behavior: Tool calls are routed, recorded, executed, and converted to a success or failure response item.
+
+  - SourceId: ToolInventory
+    Path: codex-rs/core/src/tools/spec_plan.rs
+    Symbols:
+      - Name: build_tool_router
+        RequiredRange: 115-139
+        Behavior: The per-step tool router is built from the session policy, model, environment, and registered integrations.
+      - Name: add_shell_tools
+        RequiredRange: 1174-1205
+        Behavior: The tool registry includes process execution and stdin continuation tools.
+      - Name: add_core_utility_tools
+        RequiredRange: 1223-1349
+        Behavior: The tool registry can include the file patch tool.
+      - Name: add_mcp_resource_tools
+        RequiredRange: 1206-1221
+        Behavior: MCP server resources and templates can be exposed as tools.
+      - Name: add_collaboration_tools
+        RequiredRange: 1373-1504
+        Behavior: The tool registry can expose a subagent spawn tool.
+      - Name: standalone_web_search_enabled
+        RequiredRange: 1144-1152
+        Behavior: Hosted web search can be enabled from provider capabilities and feature policy.
+    RelatedPath: codex-rs/core/src/tools/handlers/apply_patch.rs
+    RelatedSymbols:
+      - Name: ToolExecutor<ToolInvocation> for ApplyPatchHandler
+        RequiredRange: 270-284
+      - Name: CoreToolRuntime for ApplyPatchHandler
+        RequiredRange: 361-381
+
+  - SourceId: RetryAndFailure
+    Path: codex-rs/core/src/responses_retry.rs
+    Symbols:
+      - Name: ResponsesStreamRetryState
+        RequiredRange: 28-41
+      - Name: handle_response_stream_error
+        RequiredRange: 49-142
+        Behavior: Stream retry decisions carry retry counts and distinguish retryable from terminal or exhausted errors.
+
+  - SourceId: ContextCompaction
+    Path: codex-rs/core/src/compact.rs
+    Symbols:
+      - Name: build_compaction_replacement_history
+        RequiredRange: 78-109
+        Behavior: Compacted history is rebuilt with initial context and ordered prefix/context items.
+      - Name: run_inline_auto_compact_task
+        RequiredRange: 110-143
+        Behavior: Automatic compaction submits a summarization request and records the compaction reason and phase.
+
+  - SourceId: MemoryPipeline
+    Path: codex-rs/memories/README.md
+    Symbols:
+      - Name: When it runs
+        RequiredRange: 24-33
+      - Name: Phase 1 Rollout Extraction
+        RequiredRange: 34-67
+        Behavior: Codex extracts per-thread memories from eligible rollouts, with bounded claims, secret redaction, persistence, and retry backoff.
+      - Name: Phase 2 Global Consolidation
+        RequiredRange: 68-80
+        Behavior: Codex consolidates eligible generated memories under a global lock using recency and usage selection.
+
+  - SourceId: InterruptedTurnRecovery
+    Path: codex-rs/core/src/session/daemon_recovery.rs
+    Symbols:
+      - Name: interrupted_turn
+        RequiredRange: 19-52
+        Behavior: A regular, non-cancelled turn can be captured only after its input is recorded and the rollout is flushed; recovery declines unsupported environment configurations.
+
+  - SourceId: CommandAndWorkspaceTools
+    Path: codex-rs/core/src/tools/spec_plan.rs
+    Symbols:
+      - Name: add_shell_tools
+        RequiredRange: 1174-1205
+        Behavior: Registers shell command execution and resumable stdin when policy and feature gates allow them.
+      - Name: add_core_utility_tools
+        RequiredRange: 1223-1349
+        Behavior: May register ApplyPatchHandler and workspace-oriented utility tools.
+    RelatedPath: codex-rs/core/src/session/turn_context.rs
+    RelatedSymbols:
+      - Name: TurnEnvironment
+        RequiredRange: 64-77
+
+  - SourceId: CliAndTui
+    Path: codex-rs/cli/src/main.rs
+    Symbols:
+      - Name: main
+        RequiredRange: 968-989
+    RelatedPath: codex-rs/tui/src/app.rs
+    RelatedSymbols:
+      - Name: App
+        RequiredRange: 514-524
+        Behavior: The upstream TUI owns its top-level application state and event loop.
+
+  - SourceId: AppServerHostSurface
+    Path: codex-rs/app-server/src/lib.rs
+    Symbols:
+      - Name: run_main
+        RequiredRange: 417-437
+        Behavior: The Rust app server starts its host-facing protocol runtime over stdio for an IDE client.
+
+  - SourceId: RealtimeAudio
+    Path: codex-rs/core/src/client.rs
+    Symbols:
+      - Name: create_realtime_call_with_headers
+        RequiredRange: 717-724
+        Behavior: Codex has a separate realtime media call path.
+
+  - SourceId: HostedWebSearch
+    Path: codex-rs/core/src/tools/hosted_spec.rs
+    Symbols:
+      - Name: create_web_search_tool
+        RequiredRange: 7-41
+        Behavior: The upstream tool catalog can declare cached, indexed, or live web search and text or image search content.
+
+Capabilities:
+  - CapabilityId: AgentTurnOrchestration
+    UpstreamSubsystem: CoreTurnLoop
+    PublicBehavior: Sample the model, execute a returned tool call, return its result to the next sample, and finish after a final assistant message.
+    UserVisibleCapability: A message can produce a reply or a bounded action and then continue with its action result.
+    Decision: Keep
+    SourceRefs: [TurnLoop]
+    TargetModules: [AgentRuntime]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0101
+      CandidateWorkstream: AgentRuntimeTurnLoop
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Agent/AgentRuntimeTurnLifecycle
+        State: Planned
+        Proves: A FakeProvider and MockChannel fixture moves a trusted mock message through Core policy and AgentRuntime to one ChannelReceipt; a model-proposed action follows the authorized-action branch and re-enters sampling only after a Core result.
+
+  - CapabilityId: InstructionAssemblyAndPolicyPrecedence
+    UpstreamSubsystem: SessionInstructionAndPromptContext
+    PublicBehavior: Assemble base and developer instructions separately from user conversation history and model-selected turn context.
+    UserVisibleCapability: Stable chat rules and identity disclosure remain higher priority than a message or remembered context.
+    Decision: Redesign
+    SourceRefs: [InstructionAssembly, TurnLoop]
+    TargetModules: [Core, AgentRuntime, ContextSelector]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/MemoryContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0115
+      CandidateWorkstream: TrustedInstructionAndPolicyPrecedence
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Agent/InstructionAndPolicyPrecedence
+        State: Planned
+        Proves: System/developer rules precede current chat context, summaries cannot override current authorization, and prompt text cannot grant or broaden an action allowlist.
+
+  - CapabilityId: SessionAndConversationState
+    UpstreamSubsystem: SessionState
+    PublicBehavior: Bind a conversation thread to mutable session state, one active turn, settings, and ordered input.
+    UserVisibleCapability: Continue the correct conversation with stable turn identity and bounded history.
+    Decision: Redesign
+    SourceRefs: [SessionState, TurnState]
+    TargetModules: [Core, AgentRuntime, Storage]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/MemoryContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0102
+      CandidateWorkstream: CoreConversationAndTurnState
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Core/ConversationScopeAndTurnState
+        State: Planned
+        Proves: Turn IDs, trusted conversation scope, terminal state, and persisted state stay associated with one exact channel/account/conversation.
+
+  - CapabilityId: ContextSelectionAndBudget
+    UpstreamSubsystem: ContextConstructionAndCompaction
+    PublicBehavior: Build bounded model input from system instructions, current input, history, and compaction when the context window is reached.
+    UserVisibleCapability: Preserve the current request and useful conversational context without exceeding configured budgets or crossing scopes.
+    Decision: Redesign
+    SourceRefs: [TurnLoop, ContextCompaction]
+    TargetModules: [ContextSelector, Memory, AgentRuntime]
+    ContractRefs:
+      - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0103
+      CandidateWorkstream: ScopedContextSelection
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Context/ContextScopePriorityAndBudget
+        State: Planned
+        Proves: System rules and current trusted message survive truncation; only permitted ConversationScope and explicitly linked memory enter the bounded request.
+
+  - CapabilityId: OpenAIResponsesTransport
+    UpstreamSubsystem: ModelProviderResponses
+    PublicBehavior: Send Responses requests and consume Responses HTTP/SSE or supported WebSocket streams through a turn-scoped provider client.
+    UserVisibleCapability: Use OpenAI Responses with streaming, cancellation, errors, usage, and output limits.
+    Decision: Keep
+    SourceRefs: [ProviderBoundary]
+    TargetModules: [ProviderOpenAIResponses]
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0104
+      CandidateWorkstream: OpenAIResponsesProvider
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Providers/OpenAIResponses/RequestAndEventMapping
+        State: Planned
+        Proves: Responses request fixture and streamed text/tool/error/usage events map to canonical events with stable item IDs and one terminal event.
+
+  - CapabilityId: OpenAICompatibleChatCompletions
+    UpstreamSubsystem: ProviderProtocolExtension
+    PublicBehavior: Add the separately required Chat Completions protocol behind the common provider boundary.
+    UserVisibleCapability: Configure an OpenAI-compatible Chat Completions provider without leaking wire fields into AgentRuntime.
+    Decision: Redesign
+    SourceRefs: [ProviderBoundary]
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Contracts/ModelProviderContract.md#三协议映射
+    TargetModules: [ProviderOpenAIChatCompletions]
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    UpstreamGap: >-
+      The pinned upstream WireApi has only Responses and rejects wire_api=chat. This adapter is a
+      product-required protocol extension, not a claim that the pinned Codex source implements it.
+    ImplementationTask:
+      ProposedTaskId: ED-0105
+      CandidateWorkstream: OpenAIChatCompletionsProvider
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Providers/OpenAIChatCompletions/RequestAndEventMapping
+        State: Planned
+        Proves: Chat messages, stream chunks, tool-call assembly, finish reason, usage, error, and cancellation map to canonical request/event semantics; unsupported vendor fields fail explicitly.
+
+  - CapabilityId: AnthropicMessagesProtocol
+    UpstreamSubsystem: ProviderProtocolExtension
+    PublicBehavior: Add the separately required Anthropic Messages protocol behind the common provider boundary.
+    UserVisibleCapability: Configure Anthropic Messages while preserving tool_use/tool_result, stop reason, usage, and protocol-specific errors.
+    Decision: Redesign
+    SourceRefs: [ProviderBoundary]
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Contracts/ModelProviderContract.md#三协议映射
+    TargetModules: [ProviderAnthropicMessages]
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    UpstreamGap: >-
+      The pinned upstream provider wire enum contains only Responses. This adapter is an explicit
+      product extension and is not present in the pinned Codex protocol implementation.
+    ImplementationTask:
+      ProposedTaskId: ED-0106
+      CandidateWorkstream: AnthropicMessagesProvider
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Providers/AnthropicMessages/RequestAndEventMapping
+        State: Planned
+        Proves: Anthropic system/messages/tool_use/tool_result/SSE block/stop reason/usage fixtures map to canonical semantics and unsupported fields fail explicitly.
+
+  - CapabilityId: CanonicalStreamedAgentEvents
+    UpstreamSubsystem: ResponseStreamAndItems
+    PublicBehavior: Convert provider response items and deltas into ordered user-visible turn items, persist completed items, and emit tool-call lifecycle events.
+    UserVisibleCapability: Stream reply text and action status without duplicating or omitting the final event.
+    Decision: Redesign
+    SourceRefs: [ResponseItemsAndTools, ProviderBoundary]
+    TargetModules: [AgentRuntime, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/CoreAgentContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0107
+      CandidateWorkstream: CanonicalStreamEventLifecycle
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Agent/CanonicalEventOrdering
+        State: Planned
+        Proves: Sequence numbers are monotonic, item IDs remain stable, partial text precedes completion, and exactly one terminal state is emitted.
+
+  - CapabilityId: ToolCallRoundTrip
+    UpstreamSubsystem: ToolRoutingAndExecution
+    PublicBehavior: Treat a model function call as a request, route it to a registered handler, produce an output item, and continue the turn with that result.
+    UserVisibleCapability: Execute only explicitly registered business actions and explain success, rejection, unsupported capability, or failure.
+    Decision: Redesign
+    SourceRefs: [ResponseItemsAndTools, ToolInventory, TurnLoop]
+    TargetModules: [AgentRuntime, Core]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0108
+      CandidateWorkstream: AuthorizedBusinessActionLifecycle
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Agent/AuthorizedActionRoundTrip
+        State: Planned
+        Proves: The model cannot dispatch an unregistered action; Core validates schema/scope/policy and a mock receipt is required before success is reported.
+
+  - CapabilityId: TrustedIdentityAndActionPolicy
+    UpstreamSubsystem: ToolPolicyAdaptation
+    PublicBehavior: Adapt upstream per-turn tool policy and routed-call checks to trusted channel identity and Core-owned authorization.
+    UserVisibleCapability: Model-supplied identity, account, conversation, role, or permission fields never grant authority.
+    Decision: Redesign
+    SourceRefs: [ToolInventory, ResponseItemsAndTools]
+    ProductRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+    TargetModules: [Core]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+    ContractStatus: Draft
+    UpstreamGap: >-
+      Codex tool policy is workspace/tool oriented. Trusted QQ account and sender identity mapping
+      are product-specific and must be implemented in C++ Core; no model prompt is an authorization boundary.
+    ImplementationTask:
+      ProposedTaskId: ED-0109
+      CandidateWorkstream: CoreTrustedIdentityAndPolicy
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Core/TrustedEnvelopeAuthorization
+        State: Planned
+        Proves: A spoofed model identity is ignored, cross-conversation actions are rejected, and every action is re-authorized against the current trusted envelope and policy.
+
+  - CapabilityId: TurnAndProviderCancellation
+    UpstreamSubsystem: TurnAndRequestCancellation
+    PublicBehavior: Carry cancellation from the active turn into the model request and tool-call future; cancelled work must not appear as successful completion.
+    UserVisibleCapability: A cancelled chat turn stops or reports a deterministic cancelled/unknown outcome.
+    Decision: Redesign
+    SourceRefs: [TurnLoop, TurnState, ResponseItemsAndTools]
+    TargetModules: [AgentRuntime, Core, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0110
+      CandidateWorkstream: AgentTurnCancellation
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Agent/CancellationLifecycle
+        State: Planned
+        Proves: Cancellation propagates through provider and action execution, emits one cancelled or unknown terminal state, and never emits a false successful receipt.
+
+  - CapabilityId: ProviderFailureAndRetrySemantics
+    UpstreamSubsystem: ResponsesRetryAndErrors
+    PublicBehavior: Classify stream failures, apply bounded retries to safe model requests, and surface terminal errors.
+    UserVisibleCapability: Failures are stable, sanitized, and never confused with normal completion.
+    Decision: Redesign
+    SourceRefs: [RetryAndFailure, ProviderBoundary]
+    TargetModules: [AgentRuntime, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/ModelProviderContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0111
+      CandidateWorkstream: ProviderErrorsAndSafeRetry
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Providers/CanonicalErrorAndRetryPolicy
+        State: Planned
+        Proves: Timeout, disconnect, malformed stream, auth failure, output limit, cancellation, and exhausted retry have stable error codes; unsafe side effects are never blindly retried.
+
+  - CapabilityId: InterruptedTurnRecoveryAndUnknownOutcome
+    UpstreamSubsystem: TurnRecoveryAndPersistence
+    PublicBehavior: Capture an eligible interrupted turn only after its input has been recorded, then restore enough turn attribution to resume safely.
+    UserVisibleCapability: Restart recovery preserves conversation scope and does not resend an action whose external result is unknown.
+    Decision: Redesign
+    SourceRefs: [InterruptedTurnRecovery, SessionState, TurnState]
+    TargetModules: [Core, AgentRuntime, Storage]
+    ContractRefs:
+      - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/MemoryContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0112
+      CandidateWorkstream: RecoverableTurnAndOperationOutcome
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Core/UnknownOutcomeRecovery
+        State: Planned
+        Proves: Recovery distinguishes not-sent, completed, failed, and unknown action outcomes; unknown is never resent automatically and can be reconciled by a durable OperationRecord.
+
+  - CapabilityId: ScopedChatMemory
+    UpstreamSubsystem: CodexMemoryPipelineAdaptation
+    PublicBehavior: Adapt upstream bounded memory extraction, retrieval, provenance, and use tracking to explicit channel/account/sender/conversation/group scopes.
+    UserVisibleCapability: Remember user-confirmed preferences and active chat tasks without leaking another identity's or conversation's history.
+    Decision: Redesign
+    SourceRefs: [MemoryPipeline, ContextCompaction, ResponseItemsAndTools]
+    TargetModules: [Memory, ContextSelector, Core, Storage]
+    ContractRefs:
+      - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/CoreAgentContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0113
+      CandidateWorkstream: IdentityScopedChatMemory
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Memory/ScopeProvenanceAndForget
+        State: Planned
+        Proves: Cross-user/group/private-conversation reads fail closed, inferred facts are not silently confirmed, forget tombstones matching scopes and derived summaries, and retrieval respects the context budget.
+
+  - CapabilityId: ProviderUsageAndOutputLimits
+    UpstreamSubsystem: ProviderCapabilitiesAndUsage
+    PublicBehavior: Observe provider capability, token usage, and output/token limits as part of each sampled request.
+    UserVisibleCapability: Respect configured output bounds and report usage/limit completion without claiming a normal answer when output was truncated.
+    Decision: Redesign
+    SourceRefs: [ProviderBoundary, TurnLoop]
+    TargetModules: [ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages, AgentRuntime]
+    ContractRefs:
+      - Architecture/Contracts/ModelProviderContract.md
+      - Architecture/Contracts/CoreAgentContract.md
+    ContractStatus: Draft
+    ImplementationTask:
+      ProposedTaskId: ED-0114
+      CandidateWorkstream: CrossProviderUsageAndLimits
+      TaskRegistration: DeferredToPhaseExpansion
+    AcceptanceEvidencePlan:
+      - Artifact: Tests/Contract/Providers/UsageAndOutputLimitMapping
+        State: Planned
+        Proves: Equivalent usage fields normalize across all providers and limit reached is a non-success terminal condition.
+
+  - CapabilityId: CodexCliIdeAndDesktopSurface
+    UpstreamSubsystem: CliTuiAndAppServer
+    PublicBehavior: Codex exposes CLI commands, TUI application state, and host-facing app-server integrations.
+    UserVisibleCapability: Not part of the chat-only Agent runtime; this product may build its own later TUI as a separate Epic.
+    Decision: Remove
+    SourceRefs: [CliAndTui, AppServerHostSurface]
+    TargetModules: []
+    Rationale: ADR-0002 excludes Codex CLI/IDE surfaces and coding workflow; the project TUI is independent and does not reuse the Codex CLI host.
+    ProductRefs:
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+      - Workflow/TaskIndex.yaml
+
+  - CapabilityId: CodingWorkflowAndPatchEditing
+    UpstreamSubsystem: WorkspaceCodingTools
+    PublicBehavior: Register code execution modes and patch/file-edit actions as model tools.
+    UserVisibleCapability: No code editing workflow, patch application, or development tool is offered in chat.
+    Decision: Remove
+    SourceRefs: [ToolInventory, CommandAndWorkspaceTools]
+    TargetModules: []
+    Rationale: The chat Agent is not a coding agent; adding code editing requires an approved ChangeRequest outside ADR-0002.
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+
+  - CapabilityId: ShellCommandsAndHostCommandInterception
+    UpstreamSubsystem: ProcessExecutionTools
+    PublicBehavior: Offer command execution, process continuation, and shell-oriented handlers to the model.
+    UserVisibleCapability: Chat has no Shell, command interception, process execution, or host command tool.
+    Decision: Remove
+    SourceRefs: [ToolInventory, CommandAndWorkspaceTools]
+    TargetModules: []
+    Rationale: Explicit hard product exclusion; only named business actions reviewed and authorized by Core may be invoked.
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+
+  - CapabilityId: HostEnvironmentAndStateInspection
+    UpstreamSubsystem: WorkspaceEnvironment
+    PublicBehavior: Capture OS/executor/workspace/shell environment details and include them in turn configuration or tool planning.
+    UserVisibleCapability: No host status query, environment inspection, or workspace state is exposed to the chat model.
+    Decision: Remove
+    SourceRefs: [CommandAndWorkspaceTools]
+    TargetModules: []
+    Rationale: Explicitly excluded from the chat Agent; product context comes only from trusted message scopes and approved memory.
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
+
+  - CapabilityId: ArbitraryFilesystemAccess
+    UpstreamSubsystem: WorkspaceFilesystemTools
+    PublicBehavior: Use environment-bound file systems and patch tools to inspect or modify arbitrary workspace paths.
+    UserVisibleCapability: The model cannot read or modify arbitrary local files.
+    Decision: Remove
+    SourceRefs: [CommandAndWorkspaceTools, ToolInventory]
+    TargetModules: []
+    Rationale: Explicit product exclusion; a future business action must be narrowly registered and Core-authorized rather than exposing a filesystem surface.
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md#明确排除
+
+  - CapabilityId: GenericMcpPluginsSkillsAndDeveloperTools
+    UpstreamSubsystem: ExtensibleDeveloperTooling
+    PublicBehavior: Discover or dispatch generic MCP tools, plugins, skills, and extension-provided developer actions.
+    UserVisibleCapability: No generic MCP, plugin, skill, or developer-tool marketplace is available to chat turns.
+    Decision: Remove
+    SourceRefs: [ToolInventory, ResponseItemsAndTools, PluginsAndSkills]
+    TargetModules: []
+    Rationale: Product only allows named business actions with explicit Core authorization; arbitrary extension discovery is outside the chat tool surface.
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Decisions/Adr0002CodexAgentCppRewrite.md#明确排除
+
+  - CapabilityId: ArbitraryNetworkAndWebTools
+    UpstreamSubsystem: NetworkAndHostedTools
+    PublicBehavior: Expose broad network, web search, hosted, or external connector tools to model turns.
+    UserVisibleCapability: There is no arbitrary network or generic web tool; provider HTTPS is a separately configured provider transport.
+    Decision: Remove
+    SourceRefs: [ToolInventory, HostedWebSearch]
+    TargetModules: []
+    Rationale: A provider's fixed HTTPS endpoint is not a general-purpose Agent network tool; only Core-reviewed business actions may cause external effects.
+    ProductRefs:
+      - Goals/ProductGoals.md
+      - Architecture/Contracts/ModelProviderContract.md#安全与可靠性
+
+  - CapabilityId: MultiAgentDelegation
+    UpstreamSubsystem: SubagentOrchestration
+    PublicBehavior: Spawn and manage child agents from a model turn.
+    UserVisibleCapability: Not included in the current chat Agent scope; revisit only if a product decision defines a user-authorized chat delegation scenario.
+    Decision: Defer
+    SourceRefs: [ToolInventory]
+    TargetModules: []
+    Rationale: ADR-0002 does not authorize generic developer-agent delegation and the first product slice has no child-agent action contract.
+    RevisitGate: New approved product task and ChangeRequest if behavior crosses current exclusions.
+
+  - CapabilityId: RealtimeVoiceAndAudioSession
+    UpstreamSubsystem: RealtimeMedia
+    PublicBehavior: Start real-time media calls and retain realtime conversation state.
+    UserVisibleCapability: Not part of the current text-message chat scope; QQ media/audio input remains subject to the separate channel qualification gate.
+    Decision: Defer
+    SourceRefs: [RealtimeAudio]
+    TargetModules: []
+    Rationale: No current product or channel contract authorizes a realtime voice session.
+    RevisitGate: A future product/channel decision; this mapping does not investigate WeChat or promise QQ voice support.
+
+TaskLinkage:
+  FormalTaskIndexPath: Workflow/TaskIndex.yaml
+  FormalTaskIndexWasRead: true
+  FormalTaskIndexWriteAuthorized: false
+  ProductTaskIdsInExpandedPlans: 0
+  ProposedTaskIdsAreFormal: false
+  TaskRegistration: DeferredToPhaseExpansion
+  PhaseExpansionOwner: Coordinator
+  ProposedTaskIdAllocation:
+    - {TaskId: ED-0101, CapabilityId: AgentTurnOrchestration}
+    - {TaskId: ED-0115, CapabilityId: InstructionAssemblyAndPolicyPrecedence}
+    - {TaskId: ED-0102, CapabilityId: SessionAndConversationState}
+    - {TaskId: ED-0103, CapabilityId: ContextSelectionAndBudget}
+    - {TaskId: ED-0104, CapabilityId: OpenAIResponsesTransport}
+    - {TaskId: ED-0105, CapabilityId: OpenAICompatibleChatCompletions}
+    - {TaskId: ED-0106, CapabilityId: AnthropicMessagesProtocol}
+    - {TaskId: ED-0107, CapabilityId: CanonicalStreamedAgentEvents}
+    - {TaskId: ED-0108, CapabilityId: ToolCallRoundTrip}
+    - {TaskId: ED-0109, CapabilityId: TrustedIdentityAndActionPolicy}
+    - {TaskId: ED-0110, CapabilityId: TurnAndProviderCancellation}
+    - {TaskId: ED-0111, CapabilityId: ProviderFailureAndRetrySemantics}
+    - {TaskId: ED-0112, CapabilityId: InterruptedTurnRecoveryAndUnknownOutcome}
+    - {TaskId: ED-0113, CapabilityId: ScopedChatMemory}
+    - {TaskId: ED-0114, CapabilityId: ProviderUsageAndOutputLimits}
+  RegistrationNote: >-
+    These are stable proposed TaskIds mapped from every Keep/Redesign capability. Coordinator will
+    register their frozen TaskSpecs in the relevant phase plan and TaskIndex after the current
+    preparation gates open. This ED-0001 map does not claim those formal task records already exist.
+
+ScopeAccounting:
+  TotalCapabilities: 24
+  Keep: 2
+  Redesign: 13
+  Remove: 7
+  Defer: 2
+  DecisionCoveragePercent: 100
+  KeepOrRedesignProposedTaskIdCoveragePercent: 100
+  FormalTaskSpecRegistrationPercent: 0
+  OutOfScopeExplicitlyTagged:
+    - Codex CLI/IDE and TUI host surface
+    - Coding workflow and patch editing
+    - Shell commands and host command interception
+    - Host state/environment inspection
+    - Arbitrary filesystem access
+    - Generic MCP, plugins, skills, and developer tools
+    - Arbitrary network and web tools
