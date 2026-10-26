@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-00
     Title: 建立 Codex 聊天 Agent 核心重写能力映射与上游基线
     TaskKind: SourceMapping
-    State: Assigned
+    State: Active
     OwnerRole: ProductContractOwner
     OwnerSlotId: Worker02
     OwnerAgentId: "/root/agent_core"
