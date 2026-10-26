@@ -385,7 +385,7 @@ Tasks:
         - "Worker02 fixed-commit R4 review found the Base task record was Revision 1 while R4 claimed Revision 3; the 13-file budget, Branch/Worktree, and R3 validation commands were not frozen at that Base. R4 is superseded."
         - "R4 findings: RV-004 Bearer-token redaction leak; RV-005 EventShard/checkpoint path escape; RV-006 Review-state worktree validation rejects bundle creation; RV-007 validation evidence paths empty; RV-008 public budget override can be forged; RV-009 FlushFileBuffers failure ignored; RV-010 in-repository reparse target bypasses exact ReadSet."
         - "Coordinator also observed four duplicate EventIds across identical R3 CommandExecuted records; Revision 4 must not count duplicate IDs as independent validation evidence and must reject conflicting duplicate IDs."
-      NextAction: Coordinator freeze TaskRevision 4 in a TaskSpec commit and append an assignment event binding TaskSpecCommit, CodeBaseCommit, owner/reviewer, branch and worktree; then Worker01 rebases the task branch onto CodeBaseCommit and fixes RV-003..RV-010.
+      NextAction: Worker01 rebase Task/ED-0008-AgentWorkflowController onto CodeBaseCommit 10a38af152971b782eb422addaba14f4eabb4ba9 and fix RV-003..RV-010 within the original six-path WriteSet; submit R5 bundle at the frozen TaskSpecCommit and assignment event.
       OpenMessageIds:
         - FUP-ED-0008-01
         - ED-0008-RV-001
