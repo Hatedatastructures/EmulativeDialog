@@ -6,7 +6,7 @@
 - 根路径：H:/Qbot/EmulativeDialog。
 - 原始 `main` 仍是 unborn branch，原工作区中的项目目录仍未跟踪。为保护它并提供隔离基线，协调者从只读 workspace snapshot 建立本地 bootstrap commit `6e9b727ab88ae910d70069d9b9f19a9912f2bcb4`；当前集成工作树是 `codex/integration`，原工作区未切换或覆盖。
 - 远端 `origin` 指向公开 GitHub 仓库 `Hatedatastructures/EmulativeDialog`；已发布 `codex/integration` 和 ED-0006 任务分支。创建 PR 时 GitHub connector 返回 `403 Resource not accessible by integration`，`gh auth status` 也显示 CLI 未登录。因此 ED-0006 按 bootstrap 规则使用已批准的本地 ReviewBundle，不声称有远端 PR。
-- ED-0006 已交付并本地合入 Windows 原生 C++20 BuildProbe（merge `71bed25a257b018f1e2a8c6e34ca751133135f30`），post-merge configure/build/CTest 全部通过并获独立审查批准；远端 PR 未创建，原因见仓库/PR 权限记录。ED-0007 正在冻结四份公共合同；Worker01 已复用并在隔离分支启动 ED-0008 C++ WorkflowController 实现。
+- ED-0006 已交付并本地合入 Windows 原生 C++20 BuildProbe（merge `71bed25a257b018f1e2a8c6e34ca751133135f30`），post-merge configure/build/CTest 全部通过并获独立审查批准；远端 PR 未创建，原因见仓库/PR 权限记录。ED-0007 四份合同的固定候选复审发现 MemoryWriteConsent 来源的一个 Major，状态为 Rework；Worker02 正在原写集内修复。Worker01 已复用并在隔离分支启动 ED-0008 C++ WorkflowController 实现。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
 - P0 的 ED-0001 上游能力映射与 ED-0005 模块/治理门均已通过独立审查并合入本地 `codex/integration`；CodexCorePreparationGate 已通过，P1 现为当前 Codex 核心工作阶段。ED-0006 的 Worker01 已在隔离 worktree 开始 C++20 Windows 构建基础，ED-0007 合同冻结由 Worker02 并行执行；QQ/TUI 仍保留独立领域门。

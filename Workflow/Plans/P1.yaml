@@ -154,7 +154,7 @@ Tasks:
     EpicId: EP-05
     Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
     TaskKind: ContractFreeze
-    State: Active
+    State: Rework
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -236,16 +236,17 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: c0792ea36b443fc984ea04542f6895457d33a569
-    HeadCommit: ""
+    HeadCommit: 6d5a2eba610a7f9a9c1e31c7e20f9209fde16621
     Branch: Task/ED-0007-ContractFreeze
     Worktree: H:/Qbot/EmulativeDialog.ED-0007
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0007
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: ""
+      CurrentFindingOrFailure: "ED-0007-RV-001 Major: MemoryWriteConsent must be reconciled with the trusted ChannelEnvelope and explicit current-user message source."
       TriedApproaches: []
-      NextAction: Reconcile the collected protocol and memory findings, freeze the four V1 contracts, and submit the fixed Head for review.
+      NextAction: Rework ED-0007-RV-001 within the four-file WriteSet and resubmit a fixed Head; no code or test files are in scope.
       OpenMessageIds: []
-      LastValidationResult: ""
+      LastValidationResult: "git diff --check Base..Head exit 0; independent contract review found one open Major; no build/tests required."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
