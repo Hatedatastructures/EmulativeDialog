@@ -145,7 +145,8 @@
           "type": "error",
           "code": "synthetic_stream_error",
           "message": "Synthetic in-band provider error.",
-          "param": null
+          "param": null,
+          "sequence_number": 2
         }
       ],
       "ExpectedCanonicalEvents": [
