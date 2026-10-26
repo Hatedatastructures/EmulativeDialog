@@ -835,7 +835,7 @@ Tasks:
     EpicId: EP-05
     Title: 补齐 Provider refusal details 与终态错误类型合同
     TaskKind: ContractChange
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
