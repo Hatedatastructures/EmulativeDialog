@@ -2661,7 +2661,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2791,12 +2791,18 @@ Tasks:
     MergeTargetBranch: codex/integration
     ReviewerDecision: Approve
     ReviewHeadCommit: "039788c1954d826f04f0cf4b58555809c6f5b896"
+    IntegrationParentCommit: 44769466502480f9d82c6cd63bc16bfb331ffcc4
+    IntegrationCommit: 8173b6f3dfb4e6ff37592b82f4bc379d7697aaff
+    MergeCommit: 8173b6f3dfb4e6ff37592b82f4bc379d7697aaff
+    IntegrationMode: LocalReviewBundle
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Checkpoint:
-      LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Independent fixed-head review approved with no findings; P1 LocalReviewBundle complete; GitHub PR creation denied HTTP 403."
+      LastCompletedAcceptance: [AC-1, AC-2, AC-3]
+      CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "IntegrationOwner performs the authorized no-conflict local merge, verifies the final task diff and targeted evidence, then retires the task branch."
-      LastValidationResult: "Author and independent review passed; exact two-path diff, pointers, response.refusal event order, empty refusal, and four V1 blob checks passed."
+      NextAction: "P1 ExitGate remains pending ED-0128/R4 review and merge."
+      LastValidationResult: "Author, independent review, and post-merge fixture checks passed; see LocalReviewBundle."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
