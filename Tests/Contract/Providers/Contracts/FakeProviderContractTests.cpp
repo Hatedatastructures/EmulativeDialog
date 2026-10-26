@@ -245,6 +245,81 @@ void TestFifoScriptsAndEventCorrelation() {
     assert(Lease.SecretReadCount == 0);
 }
 
+void TestPreRequestAndMidDeliveryCancellation() {
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {
+            ResponseStartedEvent{
+                MakeWrongMetadata(90),
+                ProviderResponseId{std::string{"response-cancel-script"}}},
+            TextDeltaEvent{
+                MakeWrongMetadata(91),
+                ItemId{std::string{"item-cancel-script"}},
+                "Synthetic text after start."},
+            UsageUpdatedEvent{
+                MakeWrongMetadata(92),
+                UsageSnapshot{2, 1, 3, std::nullopt, std::nullopt, std::nullopt, UsageCompleteness::Final}}
+        },
+        ResponseCompletedEvent{
+            MakeWrongMetadata(99),
+            CompletionKind::FinalAnswer,
+            std::nullopt,
+            std::nullopt,
+            std::nullopt}));
+
+    const ModelProviderProfile Profile;
+    EmptyCredentialLease Lease;
+    std::vector<CanonicalNonTerminalEvent> DeliveredBeforeStart;
+    const EventSink BeforeStartSink = [&DeliveredBeforeStart](const CanonicalNonTerminalEvent& Event) {
+        DeliveredBeforeStart.push_back(Event);
+    };
+    std::stop_source BeforeStartStop;
+    BeforeStartStop.request_stop();
+
+    const CanonicalModelRequest BeforeStartRequest = MakeSyntheticRequest(20);
+    const CanonicalTerminalEvent BeforeStartTerminal = Provider.StreamTurn(
+        Profile,
+        Lease,
+        BeforeStartRequest,
+        BeforeStartStop.get_token(),
+        BeforeStartSink);
+    assert(std::holds_alternative<ResponseCancelledEvent>(BeforeStartTerminal));
+    assert(GetMetadata(BeforeStartTerminal).Request == BeforeStartRequest.Id);
+    assert(GetMetadata(BeforeStartTerminal).TurnId == BeforeStartRequest.TurnId);
+    assert(GetMetadata(BeforeStartTerminal).SequenceNumber == 1);
+    assert(std::get<ResponseCancelledEvent>(BeforeStartTerminal).Reason.Code.Value == "CancelledBeforeSend");
+    assert(DeliveredBeforeStart.empty());
+    assert(Provider.GetRemainingScriptCount() == 1);
+
+    std::vector<CanonicalNonTerminalEvent> DeliveredDuringStream;
+    std::stop_source DuringStreamStop;
+    const EventSink DuringStreamSink = [&DeliveredDuringStream, &DuringStreamStop](
+        const CanonicalNonTerminalEvent& Event) {
+        DeliveredDuringStream.push_back(Event);
+        if (DeliveredDuringStream.size() == 1) {
+            DuringStreamStop.request_stop();
+        }
+    };
+
+    const CanonicalModelRequest DuringStreamRequest = MakeSyntheticRequest(21);
+    const CanonicalTerminalEvent DuringStreamTerminal = Provider.StreamTurn(
+        Profile,
+        Lease,
+        DuringStreamRequest,
+        DuringStreamStop.get_token(),
+        DuringStreamSink);
+    assert(std::holds_alternative<ResponseCancelledEvent>(DuringStreamTerminal));
+    assert(GetMetadata(DuringStreamTerminal).Request == DuringStreamRequest.Id);
+    assert(GetMetadata(DuringStreamTerminal).TurnId == DuringStreamRequest.TurnId);
+    assert(GetMetadata(DuringStreamTerminal).SequenceNumber == 2);
+    assert(std::get<ResponseCancelledEvent>(DuringStreamTerminal).Reason.Code.Value ==
+        "ProviderConfirmedCancellation");
+    assert(DeliveredDuringStream.size() == 1);
+    assert(std::holds_alternative<ResponseStartedEvent>(DeliveredDuringStream.front()));
+    assert(Provider.GetRemainingScriptCount() == 0);
+    assert(Provider.GetCapturedRequests().size() == 2);
+    assert(Lease.SecretReadCount == 0);
+}
 void TestExhaustedQueueFailsClosed() {
     FakeProvider Provider;
     Provider.EnqueueScript(MakeScript(
@@ -306,5 +381,6 @@ int main() {
     static_assert(!std::is_invocable_v<EventSink, const CanonicalTerminalEvent&>);
     TestProfileQueriesStayOffline();
     TestFifoScriptsAndEventCorrelation();
+    TestPreRequestAndMidDeliveryCancellation();
     TestExhaustedQueueFailsClosed();
 }

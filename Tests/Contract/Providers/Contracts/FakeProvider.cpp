@@ -48,6 +48,15 @@ CanonicalTerminalEvent MakeFailureTerminal(
         ProviderError{Code, false, std::move(Description)}};
 }
 
+CanonicalTerminalEvent MakeCancellationTerminal(
+    const CanonicalModelRequest& Request,
+    std::uint64_t SequenceNumber,
+    std::string Reason) {
+    return ResponseCancelledEvent{
+        ProviderEventMetadata{Request.Id, Request.TurnId, SequenceNumber},
+        CancelReasonCode{StableReasonCode{std::move(Reason)}}};
+}
+
 } // namespace
 
 FakeProvider::FakeProvider(ProviderCapabilities Capabilities)
@@ -94,9 +103,13 @@ FakeProvider::StreamTurn(
     const ModelProviderProfile&,
     const CredentialLease&,
     const CanonicalModelRequest& Request,
-    std::stop_token,
+    std::stop_token CancellationToken,
     const EventSink& Sink) {
     CapturedRequests.push_back(Request);
+
+    if (CancellationToken.stop_requested()) {
+        return MakeCancellationTerminal(Request, 1, "CancelledBeforeSend");
+    }
 
     if (Scripts.empty()) {
         return MakeFailureTerminal(
@@ -110,9 +123,19 @@ FakeProvider::StreamTurn(
 
     std::uint64_t SequenceNumber = 1;
     for (CanonicalNonTerminalEvent& Event : NextScript.NonTerminalEvents) {
+        if (CancellationToken.stop_requested()) {
+            return MakeCancellationTerminal(Request, SequenceNumber, "ProviderConfirmedCancellation");
+        }
         CorrelateEvent(Event, Request, SequenceNumber);
         Sink(Event);
         ++SequenceNumber;
+        if (CancellationToken.stop_requested()) {
+            return MakeCancellationTerminal(Request, SequenceNumber, "ProviderConfirmedCancellation");
+        }
+    }
+
+    if (CancellationToken.stop_requested()) {
+        return MakeCancellationTerminal(Request, SequenceNumber, "ProviderConfirmedCancellation");
     }
 
     CorrelateEvent(NextScript.Terminal, Request, SequenceNumber);
