@@ -362,7 +362,8 @@ Tasks:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
       NextAction: Finish the corrected fixture and run the TaskRevision 2 frozen configure/build/CTest commands in the assigned worktree.
-      OpenMessageIds: []
+      OpenMessageIds:
+        - FUP-ED-0008-01
       LastValidationResult: "Windows CMake configure exit 0; initial controller target build exit 0; CTest exit 1 on fixture setup; later full build exit 0; TaskRevision 2 CTest pending."
     Deliverable:
       PullRequestSummaryRequired: true
