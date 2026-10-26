@@ -288,7 +288,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0110, ED-0111, ED-0114]}
 
   - TaskId: ED-0113
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 实现授权、身份和会话隔离的聊天 Memory
     TaskKind: CapabilitySlice
@@ -302,8 +302,8 @@ Tasks:
     ReviewerAgentId: "/root/agent_core"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0113-R2-ChatMemory
-    Worktree: H:/Qbot/EmulativeDialog.ED-0113-R2
+    Branch: Task/ED-0113-R3-ChatMemory
+    Worktree: H:/Qbot/EmulativeDialog.ED-0113-R3
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -324,11 +324,31 @@ Tasks:
       Scope: "Preserve ED-0113/R1 Goal, WriteSet, dependencies, Acceptance, Owner, and Reviewer. Freeze the absolute task build directory, complete Windows C++20 compile/link/run commands, and per-production-source gcov evidence."
       Reason: "The prior command was descriptive only and did not produce AC-4 gcov evidence."
       PreserveGoalAcceptanceWriteSetDependencies: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: f03408e202b02f7c150f319f1324bc197376786f
+      TaskSpecBlob: 485bda0d109dc030a001e95228957abbc9210bba
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "CR-ED-0126-003 supersedes R2 before code assignment because ScopedChatMemory also requires the versioned CoreAgentContract reference; no code work began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0113/R2 Goal, WriteSet, dependencies, Acceptance, Owner, and Reviewer. Add CoreAgentContract V1 to the version-locked ContractVersion mapping required by ScopedChatMemory while retaining MemoryContract V1."
+      Reason: "The CODEX-001 crosswalk found CoreAgentContract.md in the ScopedChatMemory CapabilityMap ContractRefs and ED-0113 ReadSet, but omitted it from ContractVersion."
+      PreserveGoalAcceptanceWriteSetDependencies: true
     CapabilityIds: [ScopedChatMemory]
     Goal: "按 MemoryContract 实现 User/Session/Conversation/Group scopes、明确同意、确认、撤销、删除和派生缓存清理；无授权内容不得持久化或跨 scope 召回。"
     OutOfScope: ["无限期原始聊天归档", "由模型/Adapter 推断身份或同意", "跨平台 identity link 自动建立", "微信", "主机或任意文件检索"]
     DependsOn: [ED-0007, ED-0008, ED-0012, ED-0102, ED-0103, ED-0109, ED-0123]
-    ContractVersion: Architecture/Contracts/MemoryContract.md V1
+    ContractVersion: [Architecture/Contracts/MemoryContract.md V1, Architecture/Contracts/CoreAgentContract.md V1]
     Context:
       ModuleId: Memory
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/MemoryContract.md, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ChannelAdapterContract.md, Tests/Contract/Memory/FixtureIndex.yaml, Tests/Contract/Context/FixtureIndex.yaml]
@@ -346,18 +366,18 @@ Tasks:
       - {AcceptanceId: AC-4, Description: "Changed production Memory source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
     Validation:
       RequiredTargets: [ConversationMemoryTests]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0113-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0113-R3.build
       Coverage:
         Required: true
         ProductionSources: [Source/Memory/ConversationMemory.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0113-R2.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0113-R3.build/Reports
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0113-R2.build/Objects,H:/Qbot/EmulativeDialog.ED-0113-R2.build/Reports | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Source/Memory/ConversationMemory.cpp -o H:/Qbot/EmulativeDialog.ED-0113-R2.build/Objects/ConversationMemory.o"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Tests/Contract/Memory/ConversationMemoryTests.cpp -o H:/Qbot/EmulativeDialog.ED-0113-R2.build/Objects/ConversationMemoryTests.o"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage H:/Qbot/EmulativeDialog.ED-0113-R2.build/Objects/ConversationMemory.o H:/Qbot/EmulativeDialog.ED-0113-R2.build/Objects/ConversationMemoryTests.o -o H:/Qbot/EmulativeDialog.ED-0113-R2.build/ConversationMemoryTests.exe"
-        - "H:/Qbot/EmulativeDialog.ED-0113-R2.build/ConversationMemoryTests.exe"
+        - "New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0113-R3.build/Objects,H:/Qbot/EmulativeDialog.ED-0113-R3.build/Reports | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Source/Memory/ConversationMemory.cpp -o H:/Qbot/EmulativeDialog.ED-0113-R3.build/Objects/ConversationMemory.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Tests/Contract/Memory/ConversationMemoryTests.cpp -o H:/Qbot/EmulativeDialog.ED-0113-R3.build/Objects/ConversationMemoryTests.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage H:/Qbot/EmulativeDialog.ED-0113-R3.build/Objects/ConversationMemory.o H:/Qbot/EmulativeDialog.ED-0113-R3.build/Objects/ConversationMemoryTests.o -o H:/Qbot/EmulativeDialog.ED-0113-R3.build/ConversationMemoryTests.exe"
+        - "H:/Qbot/EmulativeDialog.ED-0113-R3.build/ConversationMemoryTests.exe"
       ContractFixtures: ["All ED-0012 memory fixtures plus consent, revoke, forget, cache invalidation, and scope isolation cases; assert Storage write/recall call boundaries, SessionScope non-persistence, and consent/tombstone/cache behavior with injected fake Storage."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
@@ -365,7 +385,7 @@ Tasks:
         - "Use injected fake Storage; this Memory unit target has no SQLite ABI or library dependency"
         - "C++20 production and test objects are compiled with --coverage and linked with --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"Push-Location 'H:/Qbot/EmulativeDialog.ED-0113-R2.build/Reports'; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o 'H:/Qbot/EmulativeDialog.ED-0113-R2.build/Objects/ConversationMemory.o' 'H:/Qbot/EmulativeDialog.ED-0113-R2/Source/Memory/ConversationMemory.cpp' } finally { Pop-Location }\""
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"Push-Location 'H:/Qbot/EmulativeDialog.ED-0113-R3.build/Reports'; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o 'H:/Qbot/EmulativeDialog.ED-0113-R3.build/Objects/ConversationMemory.o' 'H:/Qbot/EmulativeDialog.ED-0113-R3/Source/Memory/ConversationMemory.cpp' } finally { Pop-Location }\""
         - "Verify ConversationMemory.cpp is at least 80 percent line-covered with numerator, denominator, exclusions, and gcov version; reports stay under TaskBuildDirectory/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Only synthetic fixtures and an injected fake Storage implementation are used; no user data or external account is accessed."
@@ -559,7 +579,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
 
   - TaskId: ED-0122
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 固定 SQLite Windows 依赖、链接与 Schema 基线
     TaskKind: Build
@@ -573,8 +593,8 @@ Tasks:
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0122-R2-SqliteDependency
-    Worktree: H:/Qbot/EmulativeDialog.ED-0122-R2
+    Branch: Task/ED-0122-R3-SqliteDependency
+    Worktree: H:/Qbot/EmulativeDialog.ED-0122-R3
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -595,6 +615,26 @@ Tasks:
       Scope: "Preserve ED-0122/R1 Goal, WriteSet, dependencies, Acceptance, Owner, and Reviewer. Freeze the absolute task build directory and complete Windows C++20 compile/link/run commands; production coverage is NotApplicable because this task changes no production C++ source."
       Reason: "The prior command was descriptive only; the source-free build task needs an exact executable probe command and explicit NotApplicable coverage state."
       PreserveGoalAcceptanceWriteSetDependencies: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: f03408e202b02f7c150f319f1324bc197376786f
+      TaskSpecBlob: 485bda0d109dc030a001e95228957abbc9210bba
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "CR-ED-0126-002 supersedes R2 before code assignment because the ED-0122 to ED-0123 Storage CMake target producer/consumer contract was not frozen; no code work began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0122/R2 Goal, WriteSet, dependencies, Acceptance, Owner, and Reviewer. Freeze the Storage CMake target contract: one static EmulativeDialogSQLite target, an always-present SQLiteBuildProbe generated only under TaskBuildDirectory/CMake, and the conditional SqliteStoreTests consumer target."
+      Reason: "The independent P3 R2 review found that the dependency task did not define a stable target interface for the dependent Storage implementation and tests."
+      PreserveGoalAcceptanceWriteSetDependencies: true
     Goal: "固定 SQLite 精确版本/来源/license、Windows x64 构建、静态链接和升级/删除路径，并提供只供 Storage 模块使用的离线构建依赖。"
     OutOfScope: ["Memory 语义实现", "数据库迁移/清理真实用户数据", "将 SQLite 用入 WorkflowController", "OpenSSL/TLS"]
     DependsOn: [ED-0006, ED-0007]
@@ -613,8 +653,8 @@ Tasks:
       - {AcceptanceId: AC-1, Description: "SQLite version, source, license, static link mode, Windows build evidence, and update/removal plan are recorded.", Evidence: "Dependency inventory and native build log."}
       - {AcceptanceId: AC-2, Description: "No credentials, private bodies, or SQLite implementation types leak into public Core/Agent APIs.", Evidence: "API include scan and Storage compile target isolation."}
     Validation:
-      RequiredTargets: [SQLiteBuildProbe]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0122-R2.build
+      RequiredTargets: [EmulativeDialogSQLite, SQLiteBuildProbe]
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0122-R3.build
       Coverage:
         Required: false
         NotApplicable: true
@@ -622,18 +662,37 @@ Tasks:
         TestDriverSource: ""
         MinimumLinePercent: 80
         ReportDirectory: ""
+      CMakeTargetContract:
+        DefinitionFile: Tests/Contract/Storage/CMakeLists.txt
+        StaticLibraryTarget: EmulativeDialogSQLite
+        ProbeTarget: SQLiteBuildProbe
+        ProbeSource: H:/Qbot/EmulativeDialog.ED-0122-R3.build/CMake/SQLiteBuildProbe.cpp
+        ProbeSourceGeneratedUnderBuildDirectory: true
+        ProbeInvokes: sqlite3_libversion_number
+        ProbeBehavior: ReturnSuccessOnlyWhenSqlite3LibversionNumberIsPositive
+        ProbeLinksTo: EmulativeDialogSQLite
+        ProbeUsesRepositorySource: false
+        ConditionalStoreTestsTarget: SqliteStoreTests
+        StoreTestsRequireBothSources: [Source/Storage/SqliteStore.cpp, Tests/Contract/Storage/SqliteStoreTests.cpp]
+        StoreTestsLinksTo: EmulativeDialogSQLite
+        StoreTestsCTestName: SqliteStoreTests
+        StoreTestsCTestRegistration: "add_test(NAME SqliteStoreTests COMMAND SqliteStoreTests)"
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Storage -B H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_EXE_LINKER_FLAGS=-static -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake --target SQLiteBuildProbe --parallel 4"
-        - "H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake/SQLiteBuildProbe.exe"
-        - "C:/msys64/ucrt64/bin/objdump.exe -p H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake/SQLiteBuildProbe.exe"
-        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"$dllImports = & 'C:/msys64/ucrt64/bin/objdump.exe' -p 'H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake/SQLiteBuildProbe.exe' | Select-String 'DLL Name'; if ($dllImports -match '(sqlite3|libgcc|libstdc\\+\\+|libwinpthread)') { throw 'SQLiteBuildProbe imports an unapproved third-party runtime DLL' }; $dllImports\""
+        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Storage -B H:/Qbot/EmulativeDialog.ED-0122-R3.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_EXE_LINKER_FLAGS=-static -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0122-R3.build/CMake --target EmulativeDialogSQLite SQLiteBuildProbe --parallel 4"
+        - "H:/Qbot/EmulativeDialog.ED-0122-R3.build/CMake/SQLiteBuildProbe.exe"
+        - "C:/msys64/ucrt64/bin/objdump.exe -p H:/Qbot/EmulativeDialog.ED-0122-R3.build/CMake/SQLiteBuildProbe.exe"
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"$dllImports = & 'C:/msys64/ucrt64/bin/objdump.exe' -p 'H:/Qbot/EmulativeDialog.ED-0122-R3.build/CMake/SQLiteBuildProbe.exe' | Select-String 'DLL Name'; if ($dllImports -match '(sqlite3|libgcc|libstdc\\+\\+|libwinpthread)') { throw 'SQLiteBuildProbe imports an unapproved third-party runtime DLL' }; $dllImports\""
       ContractFixtures: []
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
         - "license/version/source manifest consistency"
         - "Coverage is NotApplicable because ED-0122 changes no production C++ source"
+        - "Tests/Contract/Storage/CMakeLists.txt defines static EmulativeDialogSQLite and always-present SQLiteBuildProbe"
+        - "SQLiteBuildProbe.cpp is generated only at TaskBuildDirectory/CMake/SQLiteBuildProbe.cpp, invokes sqlite3_libversion_number, and links EmulativeDialogSQLite"
+        - "SQLiteBuildProbe returns success only when sqlite3_libversion_number() is positive"
+        - "SqliteStoreTests is defined only when both frozen source paths exist, links EmulativeDialogSQLite, and registers add_test(NAME SqliteStoreTests COMMAND SqliteStoreTests)"
         - "SQLiteBuildProbe.exe imports no unapproved third-party runtime DLL"
       LiveSideEffects: Forbidden
       NotRunReason: "Dependency build probe uses a disposable build tree and does not access persistent data."
@@ -645,7 +704,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0123]}
 
   - TaskId: ED-0123
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 实现隔离事务、作用域和 tombstone 的 SQLite Storage
     TaskKind: CapabilitySlice
@@ -659,8 +718,8 @@ Tasks:
     ReviewerAgentId: "/root/workflow_controller"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0123-R2-SqliteStore
-    Worktree: H:/Qbot/EmulativeDialog.ED-0123-R2
+    Branch: Task/ED-0123-R3-SqliteStore
+    Worktree: H:/Qbot/EmulativeDialog.ED-0123-R3
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -681,6 +740,26 @@ Tasks:
       Scope: "Preserve ED-0123/R1 Goal, WriteSet, dependencies, Acceptance, Owner, and Reviewer. Freeze the absolute task build directory, complete Windows C++20 compile/link/run commands, and one gcov report command for the production source."
       Reason: "The prior command used an undefined TaskBuildDir and did not produce AC-3 per-source gcov evidence."
       PreserveGoalAcceptanceWriteSetDependencies: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: f03408e202b02f7c150f319f1324bc197376786f
+      TaskSpecBlob: 485bda0d109dc030a001e95228957abbc9210bba
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "CR-ED-0126-002 supersedes R2 before code assignment because the ED-0122 to ED-0123 Storage CMake target producer/consumer contract was not frozen; no code work began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0123/R2 Goal, WriteSet, dependencies, Acceptance, Owner, and Reviewer. Consume the R3 Storage target contract from ED-0122, build the same static library and SqliteStoreTests, and freeze the exact CTest name/filter, task-local DB directory, and gcov report command."
+      Reason: "The independent P3 R2 review found no frozen CMake producer/consumer contract for the SQLite library and Storage test target."
+      PreserveGoalAcceptanceWriteSetDependencies: true
     Goal: "实现 Windows SQLite Storage 的隔离事务、scope/version 校验、删除 tombstone、重启恢复和受限备份召回接口。"
     OutOfScope: ["未经授权持久化原始对话", "数据库 schema 自动覆盖/清空", "声称删除平台副本", "memory authorization policy"]
     DependsOn: [ED-0122, ED-0007]
@@ -700,27 +779,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Tombstones, expiry, and version checks prevent revoked/deleted records and derived caches from being recalled.", Evidence: "Temporary-database restart tests."}
       - {AcceptanceId: AC-3, Description: "Changed production Storage source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report per source file."}
     Validation:
-      RequiredTargets: [SqliteStoreTests]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0123-R2.build
+      RequiredTargets: [EmulativeDialogSQLite, SqliteStoreTests]
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0123-R3.build
       Coverage:
         Required: true
         ProductionSources: [Source/Storage/SqliteStore.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0123-R2.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0123-R3.build/Reports
+      CMakeTargetContractRef: ED-0122/R3-CMakeTargetContract
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake --target SQLiteBuildProbe --parallel 4"
-        - "H:/Qbot/EmulativeDialog.ED-0122-R2.build/CMake/SQLiteBuildProbe.exe"
-        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Storage -B H:/Qbot/EmulativeDialog.ED-0123-R2.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0123-R2.build/CMake --target SqliteStoreTests --parallel 4"
-        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0123-R2.build/Data' | Out-Null; $env:TEMP='H:/Qbot/EmulativeDialog.ED-0123-R2.build/Data'; $env:TMP=$env:TEMP; & 'I:/cmake/bin/ctest.exe' --test-dir 'H:/Qbot/EmulativeDialog.ED-0123-R2.build/CMake' --output-on-failure\""
+        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Storage -B H:/Qbot/EmulativeDialog.ED-0123-R3.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0123-R3.build/CMake --target EmulativeDialogSQLite SqliteStoreTests --parallel 4"
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0123-R3.build/Data' | Out-Null; $env:EMULATIVEDIALOG_TEST_DATA_DIR='H:/Qbot/EmulativeDialog.ED-0123-R3.build/Data'; $env:TEMP=$env:EMULATIVEDIALOG_TEST_DATA_DIR; $env:TMP=$env:TEMP; & 'I:/cmake/bin/ctest.exe' --test-dir 'H:/Qbot/EmulativeDialog.ED-0123-R3.build/CMake' --output-on-failure -R '^SqliteStoreTests$'\""
       ContractFixtures: ["Synthetic scopes, schema versions, tombstones, expiry, and rollback cases."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
-        - "Temporary DB files are confined to TaskBuildDirectory/Data; no user data is accessed or deleted"
+        - "SqliteStoreTests reads EMULATIVEDIALOG_TEST_DATA_DIR and creates temporary DB files only under TaskBuildDirectory/Data; no user data is accessed or deleted"
+        - "Tests/Contract/Storage/CMakeLists.txt exposes SqliteStoreTests only when both producer/consumer source paths exist; the test target links EmulativeDialogSQLite"
+        - "ctest uses exact test name and filter ^SqliteStoreTests$"
         - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0123-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0123-R2.build/Reports'; try { $gcno = Get-ChildItem -LiteralPath 'H:/Qbot/EmulativeDialog.ED-0123-R2.build/CMake' -Recurse -Filter 'SqliteStore.cpp.gcno' | Select-Object -First 1; if ($null -eq $gcno) { throw 'Missing SqliteStore.cpp.gcno' }; & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o ($gcno.FullName -replace '\\.gcno$','') 'H:/Qbot/EmulativeDialog.ED-0123-R2/Source/Storage/SqliteStore.cpp' } finally { Pop-Location }\""
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0123-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0123-R3.build/Reports'; try { $gcno = Get-ChildItem -LiteralPath 'H:/Qbot/EmulativeDialog.ED-0123-R3.build/CMake' -Recurse -Filter 'SqliteStore.cpp.gcno' | Select-Object -First 1; if ($null -eq $gcno) { throw 'Missing SqliteStore.cpp.gcno' }; & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o ($gcno.FullName -replace '\\.gcno$','') 'H:/Qbot/EmulativeDialog.ED-0123-R3/Source/Storage/SqliteStore.cpp' } finally { Pop-Location }\""
         - "Verify SqliteStore.cpp is at least 80 percent line-covered with numerator, denominator, exclusions, and gcov version; reports stay under TaskBuildDirectory/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "All database files are generated inside the task build directory and removed only by test cleanup."
