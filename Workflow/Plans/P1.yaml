@@ -27,6 +27,17 @@ ParallelGroups:
       - ED-0008
     DependsOn:
       - ED-0006
+  - GroupId: FrozenContractOfflineFixturePreparation
+    TaskIds:
+      - ED-0009
+      - ED-0010
+      - ED-0011
+      - ED-0012
+    DependsOn:
+      - ED-0007
+    WriteSetsDisjoint: true
+    SharedLocksDisjoint: true
+    NonBlockingForP1ExitGate: true
 
 ExitGate:
   GateId: AgentWorkflowControllerAndCoreContractsVerified
@@ -384,3 +395,361 @@ Tasks:
         ApprovedCommand: cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
         Reason: A clean task-specific binary directory must build BuildProbe and WorkflowControllerContractTests before CTest; the TaskRevision 1 target built only WorkflowController, so registered tests were skipped or unavailable.
         PreserveBranchAndWorktree: true
+
+  - TaskId: ED-0009
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 准备 OpenAI Responses 离线协议夹具
+    TaskKind: ContractFixturePreparation
+    State: Proposed
+    Phase: P1
+    OwnerRole: ResponsesProviderOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/provider_responses"
+    ReviewerRole: ChatCompletionsProviderOwner
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: "/root/provider_chat"
+    CreatedBy: Coordinator
+    ParallelGroup: FrozenContractOfflineFixturePreparation
+    Goal: "按冻结的 ModelProviderContract V1 生成可复用的 Responses 请求、流事件和错误离线 fixture 数据。"
+    OutOfScope:
+      - C++ ProviderPort 或 Adapter 实现
+      - 修改公共合同或根构建
+      - 网络请求、真实凭据或真实私聊内容
+    DependsOn:
+      - ED-0007
+    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1 at 7745fb1019c6a7afdd8b54f89a9894568fbf38a0
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/Plans/P1.yaml#ED-0009
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/Providers.yaml#ProviderOpenAIResponses
+      - Architecture/Contracts/ModelProviderContract.md#三协议规范化映射
+      - Workflow/CodexCapabilityMap/AgentCore.yaml#OpenAIResponsesTransport
+    WriteSet:
+      - Tests/Contract/Providers/OpenAIResponses/Fixtures/FixtureIndex.json
+      - Tests/Contract/Providers/OpenAIResponses/Fixtures/CanonicalRequest.json
+      - Tests/Contract/Providers/OpenAIResponses/Fixtures/StreamCases.json
+      - Tests/Contract/Providers/OpenAIResponses/Fixtures/ErrorCases.json
+    ForbiddenSet:
+      - Source/**
+      - CMakeLists.txt
+      - Architecture/Contracts/**
+      - Workflow/CodexCapabilityMap/**
+    SharedLocks: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Provide canonical request and Responses wire request cases for text, refusal, output limits, and an authorized function-tool definition.
+        Evidence: FixtureIndex maps every case to ModelProviderContract V1 fields.
+      - AcceptanceId: AC-2
+        Description: Cover ordered streamed text, refusal, multiple function calls, output-item completion, terminal events, and sequence duplicate/gap rejection.
+        Evidence: StreamCases contain deterministic event arrays and expected canonical outcomes.
+      - AcceptanceId: AC-3
+        Description: Cover HTTP/in-band errors, response.failed, response.incomplete reasons, cancellation, usage absence, and unknown outcomes without automatic resend.
+        Evidence: ErrorCases contain explicit expected terminal/error semantics.
+      - AcceptanceId: AC-4
+        Description: Keep all data synthetic and credential-free, valid JSON, and confined to the four exact fixture files.
+        Evidence: PowerShell JSON parse and fixed Base/Head path check.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures:
+        - "Get-ChildItem -LiteralPath 'Tests/Contract/Providers/OpenAIResponses/Fixtures' -Filter '*.json' -File -Recurse | ForEach-Object { $null = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $_.FullName -Raw) -Depth 100 }"
+        - Independent review of FixtureIndex coverage and synthetic/redacted content.
+      StaticChecks:
+        - git diff --check BaseCommit HeadCommit
+        - Verify all changed paths equal the four frozen WriteSet files.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Data-only fixture preparation; no Responses C++ target exists yet and no live provider request is permitted."
+    RiskLevel: Low
+    RiskOwnerRole: ResponsesProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds:
+        - ED-0104
+
+  - TaskId: ED-0010
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 准备 Chat Completions 离线协议夹具
+    TaskKind: ContractFixturePreparation
+    State: Proposed
+    Phase: P1
+    OwnerRole: ChatCompletionsProviderOwner
+    OwnerSlotId: Worker04
+    OwnerAgentId: "/root/provider_chat"
+    ReviewerRole: AnthropicProviderOwner
+    ReviewerSlotId: Worker05
+    ReviewerAgentId: "/root/provider_anthropic"
+    CreatedBy: Coordinator
+    ParallelGroup: FrozenContractOfflineFixturePreparation
+    Goal: "按冻结的 ModelProviderContract V1 生成可复用的 Chat Completions 请求、chunk、tool-call 和错误离线 fixture 数据。"
+    OutOfScope:
+      - C++ ProviderPort 或 Adapter 实现
+      - 修改公共合同或根构建
+      - 网络请求、真实凭据或真实私聊内容
+    DependsOn:
+      - ED-0007
+    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1 at 7745fb1019c6a7afdd8b54f89a9894568fbf38a0
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/Plans/P1.yaml#ED-0010
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/Providers.yaml#ProviderOpenAIChatCompletions
+      - Architecture/Contracts/ModelProviderContract.md#三协议规范化映射
+      - Workflow/CodexCapabilityMap/AgentCore.yaml#OpenAICompatibleChatCompletions
+    WriteSet:
+      - Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/FixtureIndex.json
+      - Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/CanonicalRequest.json
+      - Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/StreamCases.json
+      - Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/ErrorCases.json
+    ForbiddenSet:
+      - Source/**
+      - CMakeLists.txt
+      - Architecture/Contracts/**
+      - Workflow/CodexCapabilityMap/**
+    SharedLocks: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Cover n=1 request mapping, roles, output limit, registered compatibility fields, and matching tool results.
+        Evidence: CanonicalRequest cases map fields to the V1 Chat profile.
+      - AcceptanceId: AC-2
+        Description: Cover chunk boundaries, interleaved tool-call indexes, first-fragment ID/name/type behavior, finish reasons, and the empty-choices usage trailer.
+        Evidence: StreamCases contain deterministic chunk arrays and expected canonical events.
+      - AcceptanceId: AC-3
+        Description: Cover missing usage after disconnect, HTTP/stream failures, cancellation/unknown outcomes, and rejection of legacy function_call and unsupported fields.
+        Evidence: ErrorCases state exact terminal and unsupported outcomes.
+      - AcceptanceId: AC-4
+        Description: Keep all data synthetic and credential-free, valid JSON, and confined to the four exact fixture files.
+        Evidence: PowerShell JSON parse and fixed Base/Head path check.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures:
+        - "Get-ChildItem -LiteralPath 'Tests/Contract/Providers/OpenAIChatCompletions/Fixtures' -Filter '*.json' -File -Recurse | ForEach-Object { $null = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $_.FullName -Raw) -Depth 100 }"
+        - Independent review of FixtureIndex coverage and synthetic/redacted content.
+      StaticChecks:
+        - git diff --check BaseCommit HeadCommit
+        - Verify all changed paths equal the four frozen WriteSet files.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Data-only fixture preparation; no Chat Completions C++ target exists yet and no live provider request is permitted."
+    RiskLevel: Low
+    RiskOwnerRole: ChatCompletionsProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds:
+        - ED-0105
+
+  - TaskId: ED-0011
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 准备 Anthropic Messages 离线协议夹具
+    TaskKind: ContractFixturePreparation
+    State: Proposed
+    Phase: P1
+    OwnerRole: AnthropicProviderOwner
+    OwnerSlotId: Worker05
+    OwnerAgentId: "/root/provider_anthropic"
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: "/root/provider_responses"
+    CreatedBy: Coordinator
+    ParallelGroup: FrozenContractOfflineFixturePreparation
+    Goal: "按冻结的 ModelProviderContract V1 生成可复用的 Anthropic Messages 请求、SSE block、usage/stop reason 和错误离线 fixture 数据。"
+    OutOfScope:
+      - C++ ProviderPort 或 Adapter 实现
+      - 修改公共合同或根构建
+      - 网络请求、真实凭据或真实私聊内容
+    DependsOn:
+      - ED-0007
+    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1 at 7745fb1019c6a7afdd8b54f89a9894568fbf38a0
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/Plans/P1.yaml#ED-0011
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/Providers.yaml#ProviderAnthropicMessages
+      - Architecture/Contracts/ModelProviderContract.md#三协议规范化映射
+      - Workflow/CodexCapabilityMap/AgentCore.yaml#AnthropicMessagesProtocol
+    WriteSet:
+      - Tests/Contract/Providers/AnthropicMessages/Fixtures/FixtureIndex.json
+      - Tests/Contract/Providers/AnthropicMessages/Fixtures/CanonicalRequest.json
+      - Tests/Contract/Providers/AnthropicMessages/Fixtures/StreamCases.json
+      - Tests/Contract/Providers/AnthropicMessages/Fixtures/ErrorCases.json
+    ForbiddenSet:
+      - Source/**
+      - CMakeLists.txt
+      - Architecture/Contracts/**
+      - Workflow/CodexCapabilityMap/**
+    SharedLocks: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Cover pinned anthropic-version, XApiKeyHeader profile, parameter omission and non-default sampling rejection.
+        Evidence: CanonicalRequest cases assert headers and exact omitted/rejected fields.
+      - AcceptanceId: AC-2
+        Description: Cover message/content block lifecycle, UTF-8/chunk boundaries, partial JSON assembly, stable tool_use IDs, and tool_result order.
+        Evidence: StreamCases contain deterministic wire frame arrays and expected canonical events.
+      - AcceptanceId: AC-3
+        Description: Cover cumulative usage snapshots, all frozen stop reasons, refusal, output limits, server-tool rejection, stream errors, cancellation, and unknown outcomes.
+        Evidence: ErrorCases state exact terminal and unsupported outcomes.
+      - AcceptanceId: AC-4
+        Description: Keep all data synthetic and credential-free, valid JSON, and confined to the four exact fixture files.
+        Evidence: PowerShell JSON parse and fixed Base/Head path check.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures:
+        - "Get-ChildItem -LiteralPath 'Tests/Contract/Providers/AnthropicMessages/Fixtures' -Filter '*.json' -File -Recurse | ForEach-Object { $null = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $_.FullName -Raw) -Depth 100 }"
+        - Independent review of FixtureIndex coverage and synthetic/redacted content.
+      StaticChecks:
+        - git diff --check BaseCommit HeadCommit
+        - Verify all changed paths equal the four frozen WriteSet files.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Data-only fixture preparation; no Anthropic C++ target exists yet and no live provider request is permitted."
+    RiskLevel: Low
+    RiskOwnerRole: AnthropicProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds:
+        - ED-0106
+
+  - TaskId: ED-0012
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 准备 Memory 与 ContextSelector 离线夹具
+    TaskKind: ContractFixturePreparation
+    State: Proposed
+    Phase: P1
+    OwnerRole: MemoryContextOwner
+    OwnerSlotId: Worker06
+    OwnerAgentId: "/root/memory_context"
+    ReviewerRole: Coordinator
+    ReviewerAgentId: "/root"
+    CreatedBy: Coordinator
+    ParallelGroup: FrozenContractOfflineFixturePreparation
+    Goal: "按冻结的 MemoryContract V1 生成作用域、同意、来源、预算与 Forget/Tombstone 的可复用离线 fixture 数据。"
+    OutOfScope:
+      - C++ Memory/ContextSelector 或 Storage 实现
+      - 修改公共合同或根构建
+      - 真实聊天历史、真实身份或敏感个人数据
+    DependsOn:
+      - ED-0007
+    ContractVersion: Architecture/Contracts/MemoryContract.md V1 at 7745fb1019c6a7afdd8b54f89a9894568fbf38a0
+    GoalFrozen: true
+    ReadSet:
+      - AGENTS.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/Plans/P1.yaml#ED-0012
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/MemoryStorage.yaml#Memory
+      - Architecture/Modules/MemoryStorage.yaml#ContextSelector
+      - Architecture/Contracts/MemoryContract.md
+      - Workflow/CodexCapabilityMap/AgentCore.yaml#ContextSelectionAndBudget
+      - Workflow/CodexCapabilityMap/AgentCore.yaml#ScopedChatMemory
+    WriteSet:
+      - Tests/Contract/Memory/Fixtures/FixtureIndex.json
+      - Tests/Contract/Memory/Fixtures/ScopeConsentCases.json
+      - Tests/Contract/Context/Fixtures/ContextBudgetCases.json
+      - Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json
+    ForbiddenSet:
+      - Source/**
+      - CMakeLists.txt
+      - Architecture/Contracts/**
+      - Workflow/CodexCapabilityMap/**
+    SharedLocks: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: Cover identity/channel/account/conversation/group scope separation, explicit direct consent, proposal confirmation, absent consent, revocation and identity-link boundaries.
+        Evidence: ScopeConsentCases enumerate expected allowed/denied scope keys and consent records.
+      - AcceptanceId: AC-2
+        Description: Cover context priority, token/byte truncation, sensitive-data rejection, provenance and no durable SessionScope.
+        Evidence: ContextBudgetCases provide synthetic inputs and expected selected/truncated item IDs.
+      - AcceptanceId: AC-3
+        Description: Cover precise Forget, tombstones, derived cache invalidation, expiry, and safe recovery rules.
+        Evidence: ForgetRecoveryCases state expected tombstone/retrieval outcomes.
+      - AcceptanceId: AC-4
+        Description: Keep all data synthetic and credential-free, valid JSON, and confined to the four exact fixture files.
+        Evidence: PowerShell JSON parse and fixed Base/Head path check.
+    Validation:
+      RequiredTargets: []
+      TargetedBuild: []
+      ContractFixtures:
+        - "Get-ChildItem -LiteralPath 'Tests/Contract/Memory/Fixtures','Tests/Contract/Context/Fixtures' -Filter '*.json' -File -Recurse | ForEach-Object { $null = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $_.FullName -Raw) -Depth 100 }"
+        - Independent review of FixtureIndex coverage and synthetic/redacted content.
+      StaticChecks:
+        - git diff --check BaseCommit HeadCommit
+        - Verify all changed paths equal the four frozen WriteSet files.
+      LiveSideEffects: Forbidden
+      NotRunReason: "Data-only fixture preparation; no C++ Memory/Context target exists yet and no real user content is permitted."
+    RiskLevel: Low
+    RiskOwnerRole: MemoryContextOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    BaselineCommit: ""
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    Checkpoint:
+      LastCompletedAcceptance: ""
+      CurrentFindingOrFailure: ""
+      TriedApproaches: []
+      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      OpenMessageIds: []
+      LastValidationResult: ""
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/Bootstrap/P1.jsonl
+      FollowUpTaskIds:
+        - ED-0103
+        - ED-0113
