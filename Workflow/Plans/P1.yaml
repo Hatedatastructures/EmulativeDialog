@@ -2661,7 +2661,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2782,7 +2782,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -2905,7 +2905,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 Anthropic Messages V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
