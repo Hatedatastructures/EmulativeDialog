@@ -191,7 +191,7 @@ Tasks:
     EpicId: EP-04
     Title: 冻结 Codex 核心模块 owner、写集边界与治理门
     TaskKind: ArchitectureOwnership
-    State: Verified
+    State: MergeQueued
     OwnerRole: IntegrationOwner
     OwnerAgentId: "/root"
     ReviewerRole: ProductContractOwner
@@ -202,6 +202,8 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0005
     HeadCommit: d7a05ccf9ef221242c92a1574cd47587c09b83a1
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0005
+    MergeTargetBranch: codex/integration
+    MergeBaseCommit: 38b0bf0f29ab7007b93cb043dd02400b671ed038
     ReviewerDecision: Approved
     ReviewHeadCommit: d7a05ccf9ef221242c92a1574cd47587c09b83a1
     DependsOn:
