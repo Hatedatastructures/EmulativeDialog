@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-00
     Title: 建立 Codex 聊天 Agent 核心重写能力映射与上游基线
     TaskKind: SourceMapping
-    State: MergeQueued
+    State: Merged
     OwnerRole: ProductContractOwner
     OwnerSlotId: Worker02
     OwnerAgentId: "/root/agent_core"
@@ -63,7 +63,8 @@ Tasks:
     HeadCommit: 882b39ccd53077c93ab47a6266956af6e0202031
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0001
     MergeTargetBranch: codex/integration
-    MergeBaseCommit: c7690dcd69f3f5cb21dc77a540dd82ec396b9413
+    MergeBaseCommit: 50f5a4f8ab5b6836520e9929b3d174127bc3433f
+    MergeCommit: a5ad8757c1d7fe3ade6fb58a6b58b9bb8adad0d6
     ReviewerDecision: Approved
     ReviewHeadCommit: 882b39ccd53077c93ab47a6266956af6e0202031
     DependsOn: []
@@ -190,7 +191,7 @@ Tasks:
     EpicId: EP-04
     Title: 冻结 Codex 核心模块 owner、写集边界与治理门
     TaskKind: ArchitectureOwnership
-    State: Proposed
+    State: Ready
     OwnerRole: IntegrationOwner
     OwnerAgentId: "/root"
     ReviewerRole: ProductContractOwner
