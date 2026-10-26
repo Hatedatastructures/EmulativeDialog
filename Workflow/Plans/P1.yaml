@@ -2293,7 +2293,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现首条 AgentRuntime 切片用的 C++ FakeProvider 测试替身
     TaskKind: TestSupport
-    State: Active
+    State: Merged
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2304,7 +2304,7 @@ Tasks:
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     CreatedAt: "2026-10-26"
-    UpdatedAt: "2026-10-26"
+    UpdatedAt: "2026-10-27"
     RevisionChangeRequest:
       ChangeRequestId: CR-ED-0020-001
       RequestedByRole: Coordinator
@@ -2356,9 +2356,17 @@ Tasks:
     GoalFrozen: true
     BaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
     CodeBaseCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
-    HeadCommit: 85bb946e9602f65442cb228d77b993429211cf09
+    HeadCommit: 745f6b49eb6a7371dfa82c9043a99547ce1597fa
     Branch: Task/ED-0020-FakeProviderTestSupport
     Worktree: H:/Qbot/EmulativeDialog.ED-0020
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0020-R2-CancelFix/ReviewBundle.json
+    ReviewBundleSHA256SUMS: DD7CE0C1089E080C979202472BCCAF3DD9DFB11F19FB005A9C825F2B5B0D7C37
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector create-pull-request returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
+    MergeBaseCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+    MergeCommit: 70e4462bb5e65a8dd22e96e0304928e990ef9b0b
+    MergeTargetBranch: codex/integration
+    IntegrationMode: LocalReviewBundle
     TaskSpecCommitPin: "Coordinator pins this immutable ED-0020/R2 TaskSpec snapshot and P1.yaml blob after the plan commit; CodeBaseCommit, branch, worktree, and WriteSet remain unchanged."
     Context:
       ModuleId: ModelProviderPort
@@ -2438,15 +2446,16 @@ Tasks:
     RiskOwnerRole: ResponsesProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: RequestChanges
+    ReviewerDecision: Approve
+    ReviewHeadCommit: 745f6b49eb6a7371dfa82c9043a99547ce1597fa
     ReviewHeadCommit: 85bb946e9602f65442cb228d77b993429211cf09
     Checkpoint:
-      LastCompletedAcceptance: AC-1, AC-2, AC-4, AC-5, AC-6
-      CurrentFindingOrFailure: "Worker06 fixed-Head review found one Major: StreamTurn ignores stop_token and can continue emitting scripted events/ResponseCompleted after local cancellation."
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
+      CurrentFindingOrFailure: "Worker06 approved fixed Head 745f6b49; the cancellation-token Major is resolved. The exact three-path test-support task was locally integrated at 70e4462 after the GitHub plugin returned 403."
       TriedApproaches: []
-      NextAction: "Within the existing three-path WriteSet, make StreamTurn stop immediately on pre-requested or mid-delivery cancellation, return exactly one request/turn-correlated ResponseCancelledEvent, add both tests, rerun R2 validations, and request Worker06 fixed-Head review."
+      NextAction: "ED-0020 is merged and verified; keep product AgentRuntime work gated on P1 ExitGate and the complete ED-0101..ED-0115 TaskSpecs."
       OpenMessageIds: []
-      LastValidationResult: "Worker03 reports R2 strict C++20 object compilation/link/contract executable and corrected gcov exited 0, FakeProvider.cpp 152/152 (100%) with gcov 16.1.0 and no source-tree .gcov; Worker06 did not rerun them. ReviewBundle/Head is superseded pending cancellation fix."
+      LastValidationResult: "R2 strict native C++20 object compile/link/contract executable exit0; gcov exit0 with FakeProvider.cpp 162/164 executable lines=98.78%, gcov16.1.0, zero exclusions; source-tree .gcov count0; integration-tree direct compile/link/test repeated exit0 with same coverage; exact three-path Base..Head and diff-check pass; Worker06 Approve; GitHub PR request 403; local merge 70e4462."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
