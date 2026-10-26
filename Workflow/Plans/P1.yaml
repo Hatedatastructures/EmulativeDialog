@@ -161,7 +161,7 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0014
-    TaskRevision: 7
+    TaskRevision: 8
     EpicId: EP-05
     Title: 实现 P1 事件 EventId 冲突的协调者授权恢复
     TaskKind: BootstrapRecovery
@@ -188,6 +188,11 @@ Tasks:
         TaskSpecBlob: 8f5d155516a9d8c95519794dbe8aac5042ade96d
         Disposition: SupersededBeforeCodeChanges
         Reason: "R6 gcov paths pointed at the integration build instead of the fixed task worktree build; its event evidence assertions did not explicitly require the TaskSpec commit/blob and Coordinator actor values."
+      - TaskRevision: 7
+        TaskSpecCommit: ad36a30fa607fcda5e07f5ef1d5c1d83896d962e
+        TaskSpecBlob: a49d9037873e23fab73001a2d3d71ac900d62cd3
+        Disposition: SupersededBeforeCodeChanges
+        Reason: "R7 configured a task-local build but did not explicitly disable GNU language extensions, unlike the frozen C++20 preset."
     ParallelGroup: P1ControllerRecovery
     Goal: >-
       在 C++ WorkflowController 中增加受限、追加式 EventId 冲突恢复路径，使冲突事件日志保持原字节，
@@ -228,8 +233,8 @@ Tasks:
       ProductAgentRuntimeMayStart: false
     BaselineCommit: de48c7899c5b2fa7b3c0674040db10cd6660106d
     HeadCommit: ""
-    Branch: Task/ED-0014-R7-EventIdConflictRecovery
-    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R7
+    Branch: Task/ED-0014-R8-EventIdConflictRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0014-R8
     Context:
       ModuleId: AgentWorkflowController
       ReadSet:
@@ -271,7 +276,7 @@ Tasks:
         - "This workflow declaration is a single-writer provenance control, not OS or cryptographic authentication; the command must not accept freeform AgentId or AgentRole as authority."
         - "Preserve selected raw JSON records, including unknown fields, through read projection and ReviewBundle evidence."
         - "Resolution events retain the required common event envelope and safe EvidenceRefs; never store raw payload, chat text, command output, payload hashes, or merged EvidenceRefs."
-        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 7; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole specifically from the matching ApprovedOverrides ApprovedByAgentId/ApprovedByRole (Coordinator /root), never from the ED-0014 Worker01 task owner."
+        - "The resolution event's common TaskId/TaskRevision identify ED-0014/revision 8; the original event's full ReleaseId/PhaseId/TaskId/TaskRevision appear only in the nested target-scope payload. Derive event AgentId/AgentRole specifically from the matching ApprovedOverrides ApprovedByAgentId/ApprovedByRole (Coordinator /root), never from the ED-0014 Worker01 task owner."
         - "Only the four exact C++/test paths in WriteSet may change."
         - "Require at least 80 percent line coverage for changed production translation units and report denominator, exclusions, and gcov version."
       SoftDefaults: []
@@ -377,6 +382,15 @@ Tasks:
         Worker02 verified that the R6 preset output directory is R6-specific, while the task pointed gcov at
         the unrelated integration build. The event evidence must also prove which immutable approval and actor
         produced each resolution, rather than only testing that authorization was accepted.
+    FinalChangeRequest:
+      ChangeRequestId: CR-ED-0014-004
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Supersede R7 before code changes and add -DCMAKE_CXX_EXTENSIONS=OFF to the task-local native MinGW configure command; all other task fields remain unchanged."
+      Reason: "The frozen Windows C++20 preset disables GNU language extensions; the direct task-local coverage configure must preserve that strict C++20 mode."
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
@@ -428,18 +442,18 @@ Tasks:
     Validation:
       RequiredTargets: [BuildProbe, WorkflowController, WorkflowControllerContractTests]
       TargetedBuild:
-        - cmake -S . -B H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
-        - cmake --build H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
+        - cmake -S . -B H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw -G "MinGW Makefiles" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
+        - cmake --build H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
       ContractFixtures:
-        - ctest --test-dir H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
+        - ctest --test-dir H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw -R "^WorkflowController.Contract$" --output-on-failure
         - Run WorkflowController.exe process-level positive/negative resolution cases with a disposable copied shard and authorization commit S.
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
         - Verify changed paths equal the exact four-path WriteSet.
         - gcov --version
-        - From H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw/CMakeFiles/WorkflowControllerCore.dir/Tools/WorkflowController/WorkflowController.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R7/Tools/WorkflowController/WorkflowController.cpp.
-        - From H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw/CMakeFiles/WorkflowController.dir/Tools/WorkflowController/Main.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R7/Tools/WorkflowController/Main.cpp.
-        - Retain generated .gcov reports under H:/Qbot/EmulativeDialog.ED-0014-R7.build/windows-mingw.
+        - From H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw/CMakeFiles/WorkflowControllerCore.dir/Tools/WorkflowController/WorkflowController.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R8/Tools/WorkflowController/WorkflowController.cpp.
+        - From H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw, run gcov --relative-only --branch-counts -o H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw/CMakeFiles/WorkflowController.dir/Tools/WorkflowController/Main.cpp.obj H:/Qbot/EmulativeDialog.ED-0014-R8/Tools/WorkflowController/Main.cpp.
+        - Retain generated .gcov reports under H:/Qbot/EmulativeDialog.ED-0014-R8.build/windows-mingw.
         - Verify combined changed-production-source line coverage >= 80 percent and record denominator, executable count, exclusions, and gcov version.
       LiveSideEffects: Forbidden
       NotRunReason: ""
@@ -447,14 +461,14 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    TaskSpecCommitPin: Coordinator supplies immutable R7 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
+    TaskSpecCommitPin: Coordinator supplies immutable R8 snapshot commit S at assignment; source path Workflow/Plans/P1.yaml#ED-0014.
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5 and R6 were superseded before code edits after fixed reviewers found ReadSet and coverage evidence path gaps."
+      CurrentFindingOrFailure: "P1 EventStore fails closed on five EventId collision groups; no original event lines may be edited. R5-R7 were superseded before code edits after fixed reviewers found ReadSet, isolated coverage path, and strict C++20 configuration gaps."
       TriedApproaches:
         - "R4/R5 proposal reviews identified authorization bootstrap cycle, event-envelope omissions, unknown-field loss, and missing append/flush recovery tests; these are incorporated in the frozen AC above."
-      NextAction: "Create the isolated R7 worktree from the fixed code baseline, implement the four-path C++ recovery command, run the named native Windows C++20 build/CTest and worktree-local gcov report, then request Worker02 fixed-Head review."
+      NextAction: "Create the isolated R8 worktree from the fixed code baseline, implement the four-path C++ recovery command, run the named native Windows C++20 build/CTest and worktree-local gcov report, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
