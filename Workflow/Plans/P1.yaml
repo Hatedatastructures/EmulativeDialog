@@ -498,11 +498,11 @@ Tasks:
       FollowUpTaskIds: [ED-0013]
 
   - TaskId: ED-0015
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-05
     Title: 定义 ModelProviderPort 的 C++20 公共类型接口
     TaskKind: ContractFreeze
-    State: Blocked
+    State: Ready
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -515,14 +515,22 @@ Tasks:
     CreatedAt: "2026-10-26"
     UpdatedAt: "2026-10-26"
     PreviousRevisionEvidence:
-      TaskRevision: 1
-      TaskSpecCommit: b94fc9aa2de7d89b298948b398133b77bfd6ae30
-      TaskSpecBlob: 8f5d155516a9d8c95519794dbe8aac5042ade96d
-      Disposition: SupersededBeforeCodeChanges
-      Reason: "R1 compiled its test executable into the shared integration build directory, creating cross-task artifact contention."
+      - TaskRevision: 1
+        TaskSpecCommit: b94fc9aa2de7d89b298948b398133b77bfd6ae30
+        TaskSpecBlob: 8f5d155516a9d8c95519794dbe8aac5042ade96d
+        Disposition: SupersededBeforeCodeChanges
+        Reason: "R1 compiled its test executable into the shared integration build directory, creating cross-task artifact contention."
+      - TaskRevision: 2
+        TaskSpecCommit: 6b0e71be3952542db372b8a833d2325a9038425d
+        TaskSpecBlob: 6900ef924c55cd177be50b9a05f05282c96ee005
+        PriorHeadCommit: 01f2a628373b1dd678c9ccb724ae5e853b0afa59
+        ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0015-R2
+        ReviewerDecision: RequestChanges
+        Disposition: SupersededAfterFixedReview
+        Reason: "Worker05 found V1 refusal-details and ResponseFailed-code expressibility blockers; CR-ED-0007-005 now freezes ModelProviderContract V1.1."
     ParallelGroup: P1CppContractPorts
     Goal: >-
-      将已冻结 ModelProviderContract V1 投影为可编译的 C++20 ModelProviderPort 公共 API；只冻结类型与
+      将已冻结 ModelProviderContract V1.1 投影为可编译的 C++20 ModelProviderPort 公共 API；只冻结类型与
       方法签名，供后续三种 Provider Adapter 和 AgentRuntime 使用，不实现任何协议或网络行为。
     OutOfScope:
       - OpenAI Responses、Chat Completions 或 Anthropic wire adapter 行为
@@ -531,6 +539,10 @@ Tasks:
       - 修改 ModelProviderContract.md、ModuleMap、CMake 或其他模块文件
     DependsOn:
       - ED-0007
+      - ED-0017
+    ExternalInputs:
+      - "Local integration-candidate Base 7ca75f72f4fdaaf3ed1f578ed5546a68958123a9 contains the reviewed ED-0017 V1.1 contract and ED-0016/R2 ChannelAdapterPort."
+      - "ED-0015/R2 Head 01f2a628373b1dd678c9ccb724ae5e853b0afa59 is unapproved prior code included only as a correction seed; R3 must be independently reviewed in full."
     RevisionChangeRequest:
       ChangeRequestId: CR-ED-0015-001
       RequestedByRole: Coordinator
@@ -540,21 +552,36 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Supersede R1 before code changes and route compile/test outputs to a task-specific H-drive sibling build directory; goal, contracts, ReadSet, WriteSet and acceptance remain unchanged."
       Reason: "Independent concurrent tasks must not write the same integration build directory."
-    BaselineCommit: 32b9092cf75b86885671dcdf8bf2652ff5e9638e
+    AdditionalRevisionChangeRequest:
+      ChangeRequestId: CR-ED-0015-002
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Supersede R2 RequestChanges and rebuild the public ProviderPort surface against ModelProviderContract V1.1;
+        add typed optional RefusalStopDetails with normalized category, restrict ResponseFailed to failure-only codes,
+        and add compile-contract tests for empty-body refusal and mutually exclusive terminal variants.
+      Reason: "ED-0017 froze CR-ED-0007-005 and Worker05 identified these exact gaps in the R2 fixed Head."
+    ContractVersion: ModelProviderContract V1.1 at a69f784d3b194aaa8b729a2f10b9891797a52725
+    PriorImplementationHead: 01f2a628373b1dd678c9ccb724ae5e853b0afa59
+    BaselineCommit: 7ca75f72f4fdaaf3ed1f578ed5546a68958123a9
     HeadCommit: ""
-    Branch: Task/ED-0015-R2-ModelProviderPortCpp
-    Worktree: H:/Qbot/EmulativeDialog.ED-0015-R2
+    Branch: Task/ED-0015-R3-ModelProviderPortCpp
+    Worktree: H:/Qbot/EmulativeDialog.ED-0015-R3
     Context:
       ModuleId: ModelProviderPort
       ReadSet:
-        - Workflow/TaskTemplate.yaml
+        - Workflow/Plans/P1.yaml#TaskId=ED-0015
         - Workflow/TaskLifecycle.md
         - Workflow/AgentExecutionStandard.md
-        - Architecture/ModuleMap.yaml#ShardId=Providers
         - Architecture/Modules/Providers.yaml#ModuleId=ModelProviderPort
         - Architecture/Contracts/ModelProviderContract.md
         - Standards/CppEngineeringStandard.md
-        - Workflow/Plans/P1.yaml#TaskId=ED-0007
+        - Tests/Contract/Providers/AnthropicMessages/Fixtures/ErrorCases.json
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - Tests/Contract/Providers/Contracts/ModelProviderPortContractTests.cpp
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
     WriteSet:
@@ -575,9 +602,11 @@ Tasks:
       - CMakePresets.json
     Rules:
       MustFollow:
-        - "Represent only ModelProviderContract V1 canonical request, event, terminal, and error semantics; do not add vendor passthrough fields."
+        - "Represent only ModelProviderContract V1.1 canonical request, event, terminal, and error semantics; do not add vendor passthrough fields."
         - "Keep the API C++20-only, credential-free in request/event values, and independent of HTTP/network libraries."
         - "This is a declaration-only contract task; do not claim a provider adapter or AgentRuntime behavior is implemented."
+        - "ResponseCompleted(Refusal) may carry typed RefusalStopDetails even when no RefusalDelta exists; do not expose explanation or arbitrary provider JSON."
+        - "ResponseFailed failure codes must exclude output-limit, cancellation and unknown-outcome terminal categories."
         - "Keep the write set to the exact header and compile-contract test paths."
       SoftDefaults: []
       ApprovedOverrides: []
@@ -585,26 +614,30 @@ Tasks:
       - AcceptanceId: AC-1
         Description: >-
           The header declares canonical request/event/terminal/error value types and a ModelProviderPort streaming
-          seam that can represent every V1 public event without provider-specific JSON fields.
-        Evidence: Independent type-to-contract review and compile-time coverage of the public API.
+          seam that represents every ModelProviderContract V1.1 public event without provider-specific JSON fields;
+          ResponseCompleted(Refusal) carries optional typed details even when the refusal body is empty.
+        Evidence: Compile-contract cases for present/absent refusal details and category normalization.
       - AcceptanceId: AC-2
         Description: >-
-          The interface exposes cancellation and an event sink without allowing a second terminal event or treating
-          ToolCallReady as Core authorization; types do not carry raw credentials or channel identity.
-        Evidence: Contract tests and fixed-head reviewer assertions.
+          ResponseFailed uses a closed failure-only code type that cannot carry OutputLimitReached, Cancelled or OutcomeUnknown;
+          those states are represented only by their dedicated terminal variants.
+        Evidence: Compile-contract assertions cover mutually exclusive terminal types and failure codes.
       - AcceptanceId: AC-3
+        Description: The API exposes cancellation/event sequencing, does not treat ToolCallReady as Core authorization, and carries no credentials or channel identity in request/event values.
+        Evidence: Contract tests and fixed-head reviewer assertions.
+      - AcceptanceId: AC-4
         Description: Header and test compile with native Windows C++20 and warnings-as-errors; no non-standard runtime dependency is introduced.
         Evidence: Exact MinGW g++ compile/run command and exit code.
-      - AcceptanceId: AC-4
+      - AcceptanceId: AC-5
         Description: Only the two exact WriteSet paths change.
         Evidence: Fixed BaseCommit..HeadCommit changed-path audit.
     Validation:
       RequiredTargets: []
       TargetedBuild:
-        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0015-R2.build
-        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic -I. Tests/Contract/Providers/Contracts/ModelProviderPortContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0015-R2.build/ModelProviderPortContractTests.exe
+        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0015-R3.build
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic -I. Tests/Contract/Providers/Contracts/ModelProviderPortContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0015-R3.build/ModelProviderPortContractTests.exe
       ContractFixtures:
-        - Run H:/Qbot/EmulativeDialog.ED-0015-R2.build/ModelProviderPortContractTests.exe
+        - Run H:/Qbot/EmulativeDialog.ED-0015-R3.build/ModelProviderPortContractTests.exe
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
         - Verify changed paths equal the exact two-path WriteSet.
@@ -614,17 +647,15 @@ Tasks:
     RiskOwnerRole: ContractOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: RequestChanges
+    TaskSpecCommitPin: Coordinator supplies immutable ED-0015/R3 task snapshot S at assignment; source path Workflow/Plans/P1.yaml#ED-0015.
+    ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: >-
-        Worker05 found that the frozen ModelProviderContract V1 requires Anthropic refusal stop_details but has no
-        typed completion payload, and the current ProviderErrorCode allows terminal-code misuse in ResponseFailed.
-        ED-0017 must freeze the contract correction before ED-0015 can resume on a new task revision.
+      CurrentFindingOrFailure: "R2 RequestChanges is preserved in PreviousRevisionEvidence; R3 now targets ModelProviderContract V1.1 from the local reviewed port base."
       TriedApproaches: []
-      NextAction: "Wait for ED-0017 contract merge, then register ED-0015/R3 against ModelProviderContract V1.1 and implement the typed refusal/failure-code API in a new isolated worktree."
+      NextAction: "Create the isolated R3 worktree from the reviewed local port base, repair typed refusal details and failure-only codes, run the task-local compile contract, then request Worker05 fixed-Head review."
       OpenMessageIds: []
-      LastValidationResult: "R2 compile-contract validation passed; fixed-head review returned Request Changes on two canonical API gaps."
+      LastValidationResult: NotRun
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -768,7 +799,7 @@ Tasks:
     EpicId: EP-05
     Title: 补齐 Provider refusal details 与终态错误类型合同
     TaskKind: ContractChange
-    State: Ready
+    State: Verified
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -812,9 +843,12 @@ Tasks:
       Before: ModelProviderContract V1
       After: ModelProviderContract V1.1
     BaselineCommit: 6b0e71be3952542db372b8a833d2325a9038425d
-    HeadCommit: ""
+    HeadCommit: a69f784d3b194aaa8b729a2f10b9891797a52725
     Branch: Task/ED-0017-ProviderRefusalContractV1_1
     Worktree: H:/Qbot/EmulativeDialog.ED-0017
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0017
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector create-pull-request returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Context:
       ModuleId: ModelProviderPort
       ReadSet:
@@ -891,14 +925,15 @@ Tasks:
     RiskOwnerRole: ContractOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
+    ReviewHeadCommit: a69f784d3b194aaa8b729a2f10b9891797a52725
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "ED-0015/R2 is RequestChanges until the missing refusal-detail and terminal-code contract semantics are frozen."
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5
+      CurrentFindingOrFailure: "Worker05 approved the fixed ModelProviderContract V1.1 Head. GitHub PR creation returned 403; the local ReviewBundle is a review artifact only, not a PR or merge."
       TriedApproaches: []
-      NextAction: "Update the two versioned contracts under CR-ED-0007-005, request Worker05 fixed-Head review, then resume the ProviderPort task as a new revision."
+      NextAction: "Register ED-0015/R3 against ProviderContract V1.1 and fix the typed refusal-details and failure-code API; update ED-0011 fixtures as a separate successor task."
       OpenMessageIds: []
-      LastValidationResult: NotRun
+      LastValidationResult: "Fixed contract diff-check and exact one-path WriteSet checks passed; independent Worker05 review approved. No build or fixture tests apply to the prose-only contract change."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
