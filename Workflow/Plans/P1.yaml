@@ -603,7 +603,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Anthropic Messages 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Review
+    State: Rework
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -676,11 +676,11 @@ Tasks:
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0011
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
-      CurrentFindingOrFailure: ""
+      CurrentFindingOrFailure: "ED-0011-RV-001 Major: four Anthropic stop-reason cases have cumulative message_delta usage.output_tokens=0 after message_start usage.output_tokens=1, violating the frozen cumulative snapshot rule."
       TriedApproaches: []
-      NextAction: Independent fixed-commit review by Worker03; author must not change Head during review.
+      NextAction: Make the four follow-up output_tokens snapshots nondecreasing and synchronize expected canonical usage, then submit a new fixed Head for focused re-review.
       OpenMessageIds: []
-      LastValidationResult: "TaskSpec JSON parse, diff check, exact WriteSet and offline frame/terminal/UTF-8 fixture checks all exit 0; fixture-only, no network/live request."
+      LastValidationResult: "Initial JSON parse, diff check, exact WriteSet, SSE frame, terminal and UTF-8 checks passed; fixed-commit review found one open Major; fixture-only, no live request."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -768,8 +768,6 @@ Tasks:
     MergeTargetBranch: codex/integration
     MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
     MergeCommit: b06fb0e86a9d1160fa3a212661ca748cccaf9ed9
-    ReviewerDecision: Approved
-    ReviewHeadCommit: 8ac50caf67ff6fe240318a33f63bdfe68f3f4525
     ReviewerDecision: Approved
     ReviewHeadCommit: 8ac50caf67ff6fe240318a33f63bdfe68f3f4525
     Checkpoint:
