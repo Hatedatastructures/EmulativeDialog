@@ -560,7 +560,9 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   Events.Append(OtherTask);
 
   const auto TaskEvents = Events.ReadTaskEvents(Task.TaskId);
-  const auto Validations = CollectTaskRevisionValidations(Task, TaskEvents);
+  auto MixedEvents = TaskEvents;
+  MixedEvents.push_back(OtherTask);
+  const auto Validations = CollectTaskRevisionValidations(Task, MixedEvents);
   Check(Validations.size() == R3Commands.size(),
         "ReviewBundle validation collection did not isolate the current task revision");
   Check(std::none_of(Validations.begin(), Validations.end(), [&](const ValidationResult& Value) {
