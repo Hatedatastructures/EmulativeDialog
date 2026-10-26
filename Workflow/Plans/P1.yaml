@@ -835,7 +835,7 @@ Tasks:
     EpicId: EP-05
     Title: 补齐 Provider refusal details 与终态错误类型合同
     TaskKind: ContractChange
-    State: Review
+    State: MergeQueued
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker03
@@ -967,7 +967,7 @@ Tasks:
     MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
     MergeCommit: ""
     MergeTargetBranch: codex/integration
-    IntegrationMode: PendingReview
+    IntegrationMode: LocalReviewBundle
     Branch: Task/ED-0017-ProviderContractV12
     Worktree: H:/Qbot/EmulativeDialog.ED-0017-R3
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0017-R4-V1_2
@@ -1074,15 +1074,17 @@ Tasks:
     RiskOwnerRole: ContractOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
     ReviewHeadCommit: c632c574c957f122924a449f45e56b017f36d3e4
+    ReviewStatus: Verified
+    RemotePRBlocker: "GitHub plugin github_create_pull_request returned HTTP 403 FORBIDDEN: Resource not accessible by integration; no PR was created."
     Checkpoint:
-      LastCompletedAcceptance: "R4 AC-1..AC-8; fixed Head awaits independent Worker02 review"
-      CurrentFindingOrFailure: "GitHub PR creation returned HTTP 403 Resource not accessible by integration; LocalReviewBundle is active, not a PR."
+      LastCompletedAcceptance: "R4 AC-1..AC-8; Worker02 fixed-Head review Approve/Verified"
+      CurrentFindingOrFailure: "GitHub PR creation returned HTTP 403; P1 LocalReviewBundle is approved and queued for local integration. Existing V1 fixture mismatch remains a separate follow-up."
       TriedApproaches: []
-      NextAction: "Complete independent review of the fixed R4 Base..Head, resolve findings through a new ChangeRequest if needed, then request Coordinator integration review."
+      NextAction: "IntegrationOwner merges the approved fixed Head through the P1 LocalReviewBundle path, then pins and assigns the three V1.2 fixture tasks."
       OpenMessageIds: []
-      LastValidationResult: "R4 static checks passed; exact one-file WriteSet; branch push exit 0; GitHub PR attempt 403."
+      LastValidationResult: "R4 static checks exit 0; exact one-file WriteSet; branch push exit 0; Worker02 Approve/Verified; PR API 403."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
