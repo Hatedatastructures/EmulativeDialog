@@ -10,9 +10,9 @@
   "Cases": [
     {
       "CaseId": "CB-001",
-      "Purpose": "Token-budget truncation removes the lowest-priority eligible items first and preserves rules and the current trusted message.",
+      "Purpose": "Token-budget truncation counts provider-visible context items only; the trusted ChannelEnvelope remains a Core-only selection input.",
       "Profile": {
-        "TokenBudget": 40,
+        "TokenBudget": 36,
         "MaxBytes": 1000
       },
       "Items": [
@@ -31,18 +31,13 @@
           "ByteCost": 30
         },
         {
-          "ItemId": "fixture-item-envelope",
-          "PriorityTier": 2,
-          "Kind": "CurrentTrustedChannelEnvelope",
-          "TokenCost": 4,
-          "ByteCost": 20
-        },
-        {
           "ItemId": "fixture-item-current-message",
           "PriorityTier": 2,
-          "Kind": "CurrentCanonicalMessage",
+          "Kind": "CurrentCanonicalMessageText",
           "TokenCost": 8,
-          "ByteCost": 40
+          "ByteCost": 40,
+          "SyntheticTextContentId": "fixture-current-message-content-01",
+          "SyntheticText": "fixture-message-text-alpha"
         },
         {
           "ItemId": "fixture-item-session-context",
@@ -121,7 +116,6 @@
         "SelectedItemIds": [
           "fixture-item-system",
           "fixture-item-developer",
-          "fixture-item-envelope",
           "fixture-item-current-message",
           "fixture-item-session-context",
           "fixture-item-conversation-history",
@@ -136,10 +130,40 @@
           "fixture-memory-other-principal",
           "fixture-memory-unlinked-channel"
         ],
-        "SelectedTokenTotal": 40,
-        "SelectedByteTotal": 200,
+        "SelectedTokenTotal": 36,
+        "SelectedByteTotal": 180,
         "SystemAndDeveloperRulesPreserved": true,
-        "CurrentTrustedMessagePreserved": true
+        "CurrentTrustedMessagePreserved": true,
+        "RawChannelEnvelopeSerializedToProvider": false,
+        "ChannelIdSerializedToProvider": false,
+        "AccountIdSerializedToProvider": false,
+        "VerifiedSenderIdSerializedToProvider": false,
+        "CanonicalMessageIdentityMetadataSerializedToProvider": false,
+        "SelectionInputsConsumeProviderBudget": false,
+        "CurrentCanonicalMessageTextSerializedToProvider": true,
+        "CurrentCanonicalMessageProviderVisibleFields": [
+          "SyntheticText"
+        ],
+        "CoreOnlySelectionInputsMayBeUsedForScopeResolution": true,
+        "ConversationIdSerializedToProvider": false,
+        "ConversationKindSerializedToProvider": false
+      },
+      "SelectionInputs": {
+        "ChannelEnvelope": {
+          "ChannelId": "qq",
+          "AccountId": "fixture-account-01",
+          "VerifiedSenderId": "fixture-sender-01",
+          "ConversationId": "fixture-direct-01",
+          "ConversationKind": "Direct"
+        },
+        "CanonicalMessage": {
+          "CanonicalMessageId": "fixture-canonical-message-01",
+          "SyntheticTextContentId": "fixture-current-message-content-01",
+          "SyntheticText": "fixture-message-text-alpha"
+        },
+        "CoreOnly": true,
+        "BudgetedAsProviderContextItem": false,
+        "SerializedToProvider": false
       }
     },
     {
@@ -147,14 +171,13 @@
       "Purpose": "Maximum-byte truncation follows the same priority order when token budget is not binding.",
       "Profile": {
         "TokenBudget": 1000,
-        "MaxBytes": 200
+        "MaxBytes": 180
       },
       "ReusesItemsFromCaseId": "CB-001",
       "Expected": {
         "SelectedItemIds": [
           "fixture-item-system",
           "fixture-item-developer",
-          "fixture-item-envelope",
           "fixture-item-current-message",
           "fixture-item-session-context",
           "fixture-item-conversation-history",
@@ -165,11 +188,25 @@
           "fixture-item-group-memory",
           "fixture-item-linked-memory"
         ],
-        "SelectedTokenTotal": 40,
-        "SelectedByteTotal": 200,
+        "SelectedTokenTotal": 36,
+        "SelectedByteTotal": 180,
         "SystemAndDeveloperRulesPreserved": true,
-        "CurrentTrustedMessagePreserved": true
-      }
+        "CurrentTrustedMessagePreserved": true,
+        "RawChannelEnvelopeSerializedToProvider": false,
+        "ChannelIdSerializedToProvider": false,
+        "AccountIdSerializedToProvider": false,
+        "VerifiedSenderIdSerializedToProvider": false,
+        "CanonicalMessageIdentityMetadataSerializedToProvider": false,
+        "SelectionInputsConsumeProviderBudget": false,
+        "CurrentCanonicalMessageTextSerializedToProvider": true,
+        "CurrentCanonicalMessageProviderVisibleFields": [
+          "SyntheticText"
+        ],
+        "CoreOnlySelectionInputsMayBeUsedForScopeResolution": true,
+        "ConversationIdSerializedToProvider": false,
+        "ConversationKindSerializedToProvider": false
+      },
+      "ReusesSelectionInputsFromCaseId": "CB-001"
     },
     {
       "CaseId": "CB-003",
@@ -279,7 +316,9 @@
       "SummaryAttempt": {
         "SummaryId": "fixture-summary-cross-scope-attempt",
         "SourceScope": "ExactConversationScope",
-        "SourceMessageIds": ["fixture-message-summary-source-01"],
+        "SourceMessageIds": [
+          "fixture-message-summary-source-01"
+        ],
         "IncludedOutOfScopeFactId": "fixture-content-other-principal",
         "ExpectedAccepted": false
       },
