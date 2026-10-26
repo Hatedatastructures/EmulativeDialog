@@ -1821,7 +1821,7 @@ Tasks:
         - ED-0113
 
   - TaskId: ED-0013
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
@@ -1834,7 +1834,7 @@ Tasks:
     ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
-    ChangeRequestId: CR-ED-0013-003
+    ChangeRequestId: CR-ED-0013-004
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
@@ -1874,7 +1874,7 @@ Tasks:
       Worktree: H:/Qbot/EmulativeDialog.ED-0013-R2
       HeadCommit: ""
       Reason: "ED-0019 had not yet resolved the P1 event collisions needed by R2 context loading; no implementation worktree or code changes existed."
-    RevisionChangeRequest:
+    PriorRevisionChangeRequestR4:
       ChangeRequestId: CR-ED-0013-003
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -1904,6 +1904,41 @@ Tasks:
       Worktree: H:/Qbot/EmulativeDialog.ED-0013-R3
       HeadCommit: ""
       Reason: "R3 was registered but never branched or written; coordinator's current AgentPool changes are in R3 WriteSet, so R4 uses the current integration commit as Base."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0013-004
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Preserve Goal, AC-1..AC-4, AC-6, Owner, Reviewer, dependencies, and exact six-path WriteSet. Remove the P1
+        EventShard from nested Context.ForbiddenSet while retaining it in the task-level write ForbiddenSet; remove
+        the nonessential TaskTemplate ReadSet reference to keep total context references within 12; tighten AC-5 to
+        require RuleId-by-RuleId MAN-003 coverage, explicit independent signoff/evidence bindings, and unpassed-gate
+        limitations. No product scope or WriteSet expansion is authorized.
+      Reason: >-
+        Worker02 fixed-S readiness review found that the required read-only P1 EventShard was simultaneously forbidden
+        in Context and that AC-5 did not make MAN-003 coverage/signoff/evidence independently testable. These are
+        readiness blockers; fix them before any R5 source/document edits.
+      PreserveGoalAndWriteSet: true
+      PreserveOwnerAndReviewer: true
+      ChangedContextPaths:
+        - Workflow/TaskTemplate.yaml
+        - Workflow/Events/Bootstrap/P1.jsonl
+      ChangedAcceptanceIds:
+        - AC-5
+    SupersededRevision4Evidence:
+      TaskSpecCommit: df100cccb435f9e9d33a0107bc35b612c7b60075
+      P1PlanBlob: b62a07b40f2c5de317ea61e030166d9ae0d86d06
+      State: Ready
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0013-R4-MultiAgentCollaborationStandard
+      Worktree: H:/Qbot/EmulativeDialog.ED-0013-R4
+      HeadCommit: ""
+      ReviewerAgentId: /root/agent_core
+      ReviewerDecision: Blocked
+      Reason: "Worker02 readiness review found the R4 nested Context.ReadSet/ForbiddenSet conflict and underspecified MAN-003 AC-5. Worker01 confirmed all six WriteSet paths remained unchanged; no R4 code/document edits began."
     ParallelGroup: P1GovernanceAndGateEvidence
     Goal: >-
       将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
@@ -1921,7 +1956,7 @@ Tasks:
       - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
       - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
       - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
-      - "CR-ED-0013-003: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 4; R2/R3 were superseded before code."
+      - "CR-ED-0013-004: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 5; R2/R3/R4 were superseded before code."
     ContractVersion: Workflow governance only; no product contract changes.
     GoalFrozen: true
     ReadSet:
@@ -1930,7 +1965,6 @@ Tasks:
       - Workflow/TaskIndex.yaml
       - Architecture/ModuleMap.yaml
       - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
-      - Workflow/TaskTemplate.yaml
       - Workflow/AgentPool.yaml
       - Workflow/AgentExecutionStandard.md
       - Workflow/TaskLifecycle.md
@@ -1946,9 +1980,9 @@ Tasks:
       - Workflow/EnforcementMatrix.yaml
       - Workflow/MultiAgentCollaborationStandard.md
     WriteSetAuthorization:
-      ChangeRequestId: CR-ED-0013-003
+      ChangeRequestId: CR-ED-0013-004
       ApprovedByRole: Coordinator
-      Scope: This exact TaskRevision 4 only
+      Scope: This exact TaskRevision 5 only
       AuthorizedPaths:
         - AGENTS.md
         - Workflow/AgentExecutionStandard.md
@@ -1984,8 +2018,7 @@ Tasks:
       ReadSet:
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/WorkflowTools.yaml#ModuleId=AgentWorkflowController
-        - Workflow/TaskTemplate.yaml
-        - Workflow/AgentPool.yaml
+          - Workflow/AgentPool.yaml
         - Workflow/AgentExecutionStandard.md
         - Workflow/TaskLifecycle.md
         - Workflow/EnforcementMatrix.yaml
@@ -1998,7 +2031,6 @@ Tasks:
         - Tests/**
         - Architecture/Contracts/**
         - Workflow/CodexCapabilityMap/**
-        - Workflow/Events/**
       Budget:
         CoreDocumentsTargetPercent: 10
         TaskReferencesTargetPercent: 25
@@ -2034,23 +2066,30 @@ Tasks:
         Evidence: 标准包含测量口径、CI/RootBuild 所需 coverage target 门及失败处理。
       - AcceptanceId: AC-5
         Description: >-
-          MAN-003 为 P1 所需关键 MUST 定义 scoped manual path；明确局部 bootstrap ReviewBundle
-          不等于产品 PR，远端 PR/branch protection/required checks 当前未验证或未配置时
-          保留 blocker；不得将 Codex Keep/Redesign 实现或 CODEX-001 标记完成。
-        Evidence: EnforcementMatrix 与 P1 ExitGate 的覆盖表和范围说明。
+          MAN-003 defines a Bootstrap/P1-only manual enforcement path for every RuleId in EnforcementMatrix.P1Blockers:
+          CODE-001/002, API-001, SEC-001, GOV-001/002/003/004, CTRL-001, CTX-001/002, PAR-001/002, TRACE-001,
+          MAP-001, PLAN-001, SEC-002, MERGE-001/002, and CODEX-001. For each RuleId it names the control, owner,
+          required evidence, evidence status, and a pass/fail criterion. It identifies an independent Coordinator signoff
+          and binds the evaluation to TaskId, TaskRevision, BaseCommit, HeadCommit, SourceCommit, review result, and
+          capability counts where applicable. It distinguishes bootstrap LocalReviewBundle from product PRs, records
+          GitHub PR/branch-protection/required-checks as unavailable where unverified, keeps CODEX-001 implementation
+          work open, and leaves TUI-001/WeChat outside P1. MAN-003 documents paths only; it does not itself pass the
+          P1 ExitGate or claim product AgentRuntime completion.
+        Evidence: >-
+          EnforcementMatrix MAN-003 RuleId-by-RuleId table and its linked task/review/build evidence; independent fixed-Head review.
       - AcceptanceId: AC-6
         Description: 仅改动六个精确 WriteSet 路径；无产品代码或外部 GitHub 设置副作用。
         Evidence: 固定 Base..Head 路径核对与 git diff --check。
     Rules:
       MustFollow:
-        - "Only the six paths explicitly delegated by CR-ED-0013-003 may be written; no ModuleMap or product contract changes."
+        - "Only the six paths explicitly delegated by CR-ED-0013-004 may be written; no ModuleMap or product contract changes."
         - "TaskIndex and AgentPool changes are single-task Coordinator delegations and expire at TaskClosed."
         - "P1 ExitGate stays Pending until separate Coordinator evaluation; this task does not start product AgentRuntime code."
       SoftDefaults: []
       ApprovedOverrides:
         - RuleRef: Architecture/ModuleMap.yaml#OwnershipRules.CrossModuleChangesRequireContractOrIntegrationTask
-          ChangeRequestId: CR-ED-0013-003
-          Scope: Exact six-path WriteSet in ED-0013 Revision 4 only
+          ChangeRequestId: CR-ED-0013-004
+          Scope: Exact six-path WriteSet in ED-0013 Revision 5 only
           ApprovedByRole: Coordinator
     Validation:
       RequiredTargets: []
@@ -2069,15 +2108,15 @@ Tasks:
     BaselineCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     CodeBaseCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     HeadCommit: ""
-    TaskSpecCommitPin: Coordinator supplies immutable Revision4 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
-    Branch: Task/ED-0013-R4-MultiAgentCollaborationStandard
-    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R4
+    TaskSpecCommitPin: Coordinator supplies immutable Revision5 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
+    Branch: Task/ED-0013-R5-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R5
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R3 was superseded before code because its Base predates Coordinator changes to the in-scope AgentPool.yaml; no branch/worktree or code edit was started."
+      CurrentFindingOrFailure: "R4 preflight review found a nested Context forbidden/read conflict for the P1 EventShard and AC-5 did not require a testable RuleId/signoff/evidence mapping. CR-ED-0013-004 authorizes these limited fixes before any WriteSet edit."
       TriedApproaches: []
-      NextAction: "Create the isolated R4 worktree from Base ae13196829f9ac639f375c9afa07b0566340e3d8, implement only the six authorized governance paths, define MAN-003 P1 manual paths, then request Worker02 fixed-Head review."
+      NextAction: "Freeze the R5 snapshot, assemble bounded ReadSet context with P1 EventShard read-only, implement MAN-003 P1 RuleId coverage and collaboration docs on the six-path branch, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
@@ -2222,11 +2261,11 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0020
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现首条 AgentRuntime 切片用的 C++ FakeProvider 测试替身
     TaskKind: TestSupport
-    State: Ready
+    State: Active
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2238,6 +2277,37 @@ Tasks:
     CreatedBy: Coordinator
     CreatedAt: "2026-10-26"
     UpdatedAt: "2026-10-26"
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0020-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Keep Goal, AC-1..AC-6, Owner, Reviewer, ReadSet, exact three-path WriteSet, dependencies, CodeBaseCommit,
+        branch, and worktree unchanged. Correct only validation syntax: remove trailing periods from executable paths
+        and git diff arguments; run gcov from the task-specific sibling build directory so generated .gcov reports
+        stay outside the source worktree and approved WriteSet.
+      Reason: >-
+        Worker06 readiness review found that R1's gcov source path and git diff-check command included terminal periods,
+        and gcov's default report output would otherwise be placed in the source worktree. Worker03 has already written
+        three authorized test-support paths; validation must be precise and keep all generated coverage output in the build directory.
+      PreserveGoalAcceptanceWriteSet: true
+      PreserveOwnerReviewerBaseAndIsolation: true
+    PreviousRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: df100cccb435f9e9d33a0107bc35b612c7b60075
+      TaskSpecBlob: b62a07b40f2c5de317ea61e030166d9ae0d86d06
+      Branch: Task/ED-0020-FakeProviderTestSupport
+      Worktree: H:/Qbot/EmulativeDialog.ED-0020
+      Disposition: ValidationCommandsSupersededBeforeCommit
+      SourceStatus: "Three untracked files present, all inside the exact authorized WriteSet; no commit or push yet."
+      OwnerReportedValidation:
+        - "R1 strict C++20 compile/link/test reported exit 0."
+        - "R1 gcov reported FakeProvider.cpp 154/154 executable lines (100%), but the command string and output directory were not correctly frozen."
+      ReviewerDecision: Blocked
+      Reason: "Worker06 fixed-TaskSpec readiness review found malformed command strings and unspecified gcov output directory; no code finding was raised."
     ParallelGroup: P1FirstSliceTestSupport
     Goal: >-
       在冻结的 ModelProviderPort V1.1 C++ 接口上交付确定性、完全离线的 FakeProvider，供后续 AgentRuntime
@@ -2261,7 +2331,7 @@ Tasks:
     HeadCommit: ""
     Branch: Task/ED-0020-FakeProviderTestSupport
     Worktree: H:/Qbot/EmulativeDialog.ED-0020
-    TaskSpecCommitPin: "Coordinator pins this immutable P1 TaskSpec snapshot and P1.yaml blob after the plan commit; code worktree is created from CodeBaseCommit."
+    TaskSpecCommitPin: "Coordinator pins this immutable ED-0020/R2 TaskSpec snapshot and P1.yaml blob after the plan commit; CodeBaseCommit, branch, worktree, and WriteSet remain unchanged."
     Context:
       ModuleId: ModelProviderPort
       ReadSet:
@@ -2328,11 +2398,12 @@ Tasks:
         - "g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Providers/Contracts/FakeProviderContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.o"
         - "g++ --coverage H:/Qbot/EmulativeDialog.ED-0020.build/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.o -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.exe"
       ContractFixtures:
-        - "Run H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.exe."
+        - "Run H:/Qbot/EmulativeDialog.ED-0020.build/FakeProviderContractTests.exe"
       StaticChecks:
-        - "gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0020.build/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0020/Tests/Contract/Providers/Contracts/FakeProvider.cpp."
+        - >-
+          powershell -NoProfile -Command "Push-Location 'H:/Qbot/EmulativeDialog.ED-0020.build'; try { gcov --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0020.build/FakeProvider.o' 'H:/Qbot/EmulativeDialog.ED-0020/Tests/Contract/Providers/Contracts/FakeProvider.cpp' } finally { Pop-Location }"
         - "Verify line coverage is at least 80 percent for FakeProvider.cpp and changed paths equal the exact three-path WriteSet."
-        - "git diff --check <CodeBaseCommit> <HeadCommit>."
+        - "git diff --check <CodeBaseCommit> <HeadCommit>"
       LiveSideEffects: Forbidden
       NotRunReason: "Offline test-support implementation; no production network adapter is in scope."
     RiskLevel: Low
@@ -2341,12 +2412,12 @@ Tasks:
     RequiresExternalAccount: false
     ReviewerDecision: Pending
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "Ready after ModelProviderContract V1.1 and ModelProviderPort V1.1 code were independently reviewed and locally integrated."
+      LastCompletedAcceptance: "R1 implementation files exist only as the three authorized untracked WriteSet paths; R2 validation commands pending."
+      CurrentFindingOrFailure: "Worker06 found R1 gcov/diff-check command strings contained trailing periods and did not freeze gcov output working directory; CR-ED-0020-001 corrects validation only."
       TriedApproaches: []
-      NextAction: "Create the isolated Worker03 branch/worktree from CodeBaseCommit, implement only FakeProvider test support, run strict C++20 contract tests and gcov, then request Worker02 fixed-Head review."
+      NextAction: "Preserve the three existing WriteSet files, load the R2 TaskSpec pin, rerun strict C++20 compile/link/tests and the corrected build-directory gcov command, then request Worker06 fixed-Head review."
       OpenMessageIds: []
-      LastValidationResult: NotRun
+      LastValidationResult: "Worker03 reports prior R1 strict compile/link/test exit 0 and FakeProvider.cpp 154/154 lines; these are superseded validation evidence, not R2 acceptance. Reviewer did not rerun tests."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
