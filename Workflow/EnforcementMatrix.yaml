@@ -1,4 +1,4 @@
-# 本矩阵区分“已写成规范”和“已有实际阻断检查”。当前代码仓库无实现门，故全部标为 Planned。
+# 本矩阵区分规范要求与实际检查。多数自动化仍为 Planned；MAN-003 是 P1 范围的人工证据登记，其状态为 Pending。
 SchemaVersion: 1
 ProjectId: EmulativeDialog
 AsOf: 2026-10-26
@@ -19,6 +19,41 @@ GlobalGate:
     - IndependentReviewer
     - EvidenceInTaskReportAndGit
 
+P1ExitGate:
+  GateId: AgentWorkflowControllerAndCoreContractsVerified
+  Status: Pending
+  StatusSource: Workflow/Plans/P1.yaml
+  DocumentationOrEvidenceCollectionAlonePassesGate: false
+
+PlatformSnapshot:
+  VerifiedAt: 2026-10-26
+  Repository: Hatedatastructures/EmulativeDialog
+  Visibility: Public
+  DefaultBranch: codex/integration
+  PullRequestsEnabledInRepositoryMetadata: true
+  PullRequestConnector:
+    Result: AccessDenied
+    HttpStatus: 403
+    Message: "Resource not accessible by integration"
+  GhCliAuthenticated: false
+  BranchProtection:
+    Branch: codex/integration
+    Protected: false
+    ProtectionEnabled: false
+    RequiredChecksEnforcement: "off"
+    RequiredContexts: []
+    RequiredChecks: []
+  Rulesets:
+    Count: 0
+  DetailedProtectionQuery:
+    Result: AccessDenied
+    HttpStatus: 403
+    Message: "Resource not accessible by integration"
+  EvidenceRefs:
+    - Workflow/CurrentState.md
+    - Workflow/Plans/P1.yaml#TaskId=ED-0019
+    - Workflow/Events/Bootstrap/P1.jsonl#TaskId=ED-0019
+  LargeScaleProductImplementationReady: false
 Rules:
   - RuleId: GOV-001
     Rule: 任务 Goal/Acceptance/WriteSet 冻结后不可被执行者静默改写
@@ -260,6 +295,341 @@ ManualGates:
       - HeadCommit
       - FindingResolution
 
+  - GateId: MAN-003
+    Purpose: P1 范围内按不同阻塞 RuleId 登记人工证据和通过条件；不代表自动强制。
+    AppliesToBlockerGroups:
+      - ProductAgentImplementation
+      - LargeScaleProductImplementation
+    Status: Pending
+    StatusSource: Workflow/Plans/P1.yaml#GateId=AgentWorkflowControllerAndCoreContractsVerified
+    DocumentationOrEvidenceCollectionAlonePassesGate: false
+    IndependentReviewerMustDifferFromAuthor: true
+    CoordinatorSignoffAuthorityRole: Coordinator
+    CoordinatorMustNotBeTaskAuthor: true
+    CoordinatorSignoffMustBeDifferentFromReviewer: true
+    CoordinatorSignoffRequiredAfterIndependentReview: true
+    RuleOwnerMayProvideEvidenceButCannotSelfApprove: true
+    UnresolvedBlockerKeepsGateOpen: true
+    EvidenceMustReference:
+      - ReleaseId
+      - PhaseId
+      - TaskId
+      - TaskRevision
+      - BaseCommit
+      - HeadCommit
+      - SourceCommit
+      - RuleId
+      - RuleOwnerRole
+      - EvidenceRefs
+      - CapabilityCounts
+      - ValidationCommand
+      - ExitCode
+      - FindingIdsAndDisposition
+      - ReviewerAgentId
+      - ReviewerDecision
+      - CoordinatorAgentId
+      - CoordinatorSignoffEventId
+      - SignoffDecision
+    RuleIds:
+      - CODE-001
+      - CODE-002
+      - API-001
+      - SEC-001
+      - GOV-001
+      - GOV-002
+      - GOV-003
+      - GOV-004
+      - CTRL-001
+      - CTX-001
+      - CTX-002
+      - PAR-001
+      - PAR-002
+      - TRACE-001
+      - MAP-001
+      - PLAN-001
+      - SEC-002
+      - MERGE-001
+      - MERGE-002
+      - CODEX-001
+    RuleCoverage:
+      - RuleId: CODE-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-CPP20-Windows-Build]
+        OwnerRole: BuildAndDependencyOwner
+        Control: "检查变更生产代码中的项目命名和路径规则。"
+        PassCondition: "所有变更路径与标识符符合 PascalCase，或有精确且获批的例外。"
+        RequiredEvidence: ["Windows 原生构建报告", "命名/路径静态检查报告", "获批例外引用"]
+        RelatedManualGate: MAN-003
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: CODE-002
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-CPP20-Windows-Build]
+        OwnerRole: BuildAndDependencyOwner
+        Control: "核实产品逻辑与随包可执行模块使用 C++，且依赖均已批准。"
+        PassCondition: "所有目标均以原生 C++ 构建，发行目标和依赖清单符合已批准范围。"
+        RequiredEvidence: ["Windows C++20 configure/build 输出", "目标与发行包清单", "依赖策略"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: API-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-Versioned-Contract-Freezes]
+        OwnerRole: ContractOwner
+        Control: "核实每个跨模块边界都有冻结的版本化合同及 Provider/Memory 夹具。"
+        PassCondition: "所有必需合同均已冻结，且对应 Provider/Memory 夹具通过。"
+        RequiredEvidence: ["CoreAgent 合同", "ModelProvider 合同", "Memory 合同", "ChannelAdapter 合同与夹具结果"]
+        RelatedManualGate: MAN-001
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: SEC-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-Versioned-Contract-Freezes]
+        OwnerRole: SecurityOwner
+        Control: "审查身份、授权、凭据、聊天隐私及外部副作用合同和夹具。"
+        PassCondition: "身份、策略、隐私和副作用审查通过，且没有未处置的安全 Finding。"
+        RequiredEvidence: ["安全合同条款", "身份/策略夹具", "密钥与隐私评审 Finding"]
+        RelatedManualGate: MAN-001
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: GOV-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: Coordinator
+        Control: "对照不可变的已批准 TaskRevision 和 ChangeRequest，核验实际任务字段。"
+        PassCondition: "实际 Goal/Acceptance/WriteSet 与固定版本一致；任何范围变化都有获批的新 Revision。"
+        RequiredEvidence: ["固定 TaskSpec commit/blob", "TaskRevision 与 ChangeRequest 事件链接", "Finding/变更处置"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: GOV-002
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: BuildAndDependencyOwner
+        Control: "将 BaseCommit..HeadCommit 的变更路径与冻结 WriteSet 对照。"
+        PassCondition: "Base..Head 的每个变更路径都包含在已批准 WriteSet 中。"
+        RequiredEvidence: ["固定 Base/Head diff name-status", "WriteSet 对照输出", "如有获批范围变更则附其记录"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: GOV-003
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: Coordinator
+        Control: "核实分派将唯一 TaskId/AgentId/BaseCommit 绑定到隔离分支和 worktree。"
+        PassCondition: "分派与分支/worktree/BaseCommit 一一对应，且不存在共享可写 worktree。"
+        RequiredEvidence: ["TaskAssigned 事件", "分支与 worktree 身份", "BaseCommit 核验", "未共享可写 worktree 的证据"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: GOV-004
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: Coordinator
+        Control: "将消息与冻结任务对照；任何范围变化都必须有获批 ChangeRequest。"
+        PassCondition: "沟通消息没有改变冻结范围；如范围变化，必须先批准 ChangeRequest 并发布新 Revision。"
+        RequiredEvidence: ["TaskRevision 快照", "相关消息引用", "ChangeRequest 批准或无范围变化的审查结论"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: CTRL-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: AgentWorkflowOwner
+        Control: "实测任务查询与校验、上下文、写边界、隔离、恢复和审计行为。"
+        PassCondition: "合同行为和故障恢复测试通过；无效状态、越界读取/写入和不安全恢复均被拒绝。"
+        RequiredEvidence: ["ED-0008 固定 Head 评审结论", "Windows 原生 Controller 合同测试输出", "失败/恢复夹具"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: CTX-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: AgentWorkflowOwner
+        Control: "将已加载上下文路径与 TaskSpec ReadSet 及获批的按需扩展对照。"
+        PassCondition: "上下文仅含 AlwaysLoad、ReadSet 和获批的按需引用，不含 ForbiddenSet 路径。"
+        RequiredEvidence: ["ContextLoaded 事件", "ReadSet 对照", "如有 ContextExpanded，则附理由和批准依据"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: CTX-002
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: Coordinator
+        Control: "统计 ReadSet 引用数，并核验超过 12 项的任务是否有明确批准例外。"
+        PassCondition: "ReadSet 不超过 12 项，或在加载前存在精确、有效、任务范围内的批准例外。"
+        RequiredEvidence: ["ReadSet 数量", "超出 12 项时的预算决定事件与理由", "实际加载路径报告"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: PAR-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: Coordinator
+        Control: "审查稳定槽复用、任务队列、依赖图、宿主容量和独立 Ready 任务。"
+        PassCondition: "仅分派依赖满足且独立的 Ready 任务，有效并行度符合三项最小值公式，未制造填槽任务。"
+        RequiredEvidence: ["AgentPool 分派/恢复事件", "Ready 任务依赖图", "有效并行度计算"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: PAR-002
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: Coordinator
+        Control: "分派前核验活动任务 WriteSet 交集和登记的 SharedLocks。"
+        PassCondition: "没有未解决的 WriteSet 冲突；共享资源由登记的单一 owner 串行处理。"
+        RequiredEvidence: ["活动 TaskSpec WriteSet", "冲突检查结果", "共享 owner 队列或获批串行安排"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: TRACE-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: AgentWorkflowOwner
+        Control: "从事件和 Git 还原任务活动，同时避免暴露凭据、私聊正文或 Prompt。"
+        PassCondition: "事件与 Git 可还原任务变化，脱敏检查通过且日志不含密钥、私聊正文或完整 Prompt。"
+        RequiredEvidence: ["任务事件序列", "Base/Head Git diff", "脱敏测试", "PR 或明确标为本地的评审记录"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: MAP-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-AgentWorkflowController]
+        OwnerRole: ProductContractOwner
+        Control: "审查目标范围能力决策，以及模块、合同、任务和证据追踪的完整性。"
+        PassCondition: "能力决策分母完整；每项 Keep/Redesign 均关联模块、合同、实现任务和验收证据并通过独立审查。"
+        RequiredEvidence: ["CodexCapabilityMap 分母与计数", "Keep/Redesign 追踪行", "独立能力映射评审"]
+        RelatedManualGate: MAN-002
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: PLAN-001
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-PhaseTransitionGate]
+        OwnerRole: ProductContractOwner
+        Control: "依据已验证的任务与独立评审证据逐项评估 P1 ExitGate 条件。"
+        PassCondition: "所有 P1 ExitGate 条件均有通过证据和 Coordinator 评估；存在 Pending 条件时不得升级阶段。"
+        RequiredEvidence: ["门条件检查表", "每项条件对应的通过任务/评审证据", "Coordinator 阶段门决定事件"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: SEC-002
+        P1StageStatus: PendingCoordinatorEvaluation
+        FutureGateStatus: Planned
+        BlockerIds: [P1-DataAndReviewGates]
+        OwnerRole: StorageOwner
+        Control: "审查破坏性变更、精确数据影响及备份/回滚或恢复证据。"
+        PassCondition: "变更获得独立审查，数据影响与恢复方案明确，且没有未经记录的删除/重置/覆盖。"
+        RequiredEvidence: ["删除/迁移差异", "数据影响说明", "备份/回滚或恢复核验"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: MERGE-001
+        P1StageStatus: PendingBootstrapReview
+        FutureGateStatus: BlockedUnverified
+        BlockerIds: [P1-DataAndReviewGates, PR-Platform-And-Branch-Protection]
+        OwnerRole: IntegrationOwner
+        Control: "分别评估 P1/bootstrap 的本地独立评审和 LargeScaleProductImplementation 的正式 PR/保护要求。"
+        PassCondition: "P1 bootstrap 与 LargeScale 产品阶段分别按对应 blocker 条件评估；本地 ReviewBundle 不计为正式 PR。"
+        RequiredEvidence: ["固定 Base/Head ReviewBundle 及独立审查", "IntegrationOwner 最终语义复核", "正式 PR/required checks/branch protection 查询"]
+        StageCriteria:
+          - BlockerId: P1-DataAndReviewGates
+            Stage: P1Bootstrap
+            Status: PendingCoordinatorEvaluation
+            Control: "无远端 PR 权限时，对 bootstrap 任务执行固定 Base/Head 的本地 ReviewBundle 独立评审，并由 IntegrationOwner 复核最终语义差异。"
+            PassCondition: "Reviewer 批准 ReviewBundle，IntegrationOwner 复核最终语义差异，Coordinator 按 TaskLifecycle 批准本地集成；记录明确说明这不是 GitHub PR。"
+            RequiredEvidence: ["ReviewBundle path/hash", "固定 Base/Head diff", "Reviewer decision", "IntegrationOwner semantic review", "Coordinator local-merge decision"]
+          - BlockerId: PR-Platform-And-Branch-Protection
+            Stage: LargeScaleProductImplementation
+            Status: BlockedUnverified
+            Control: "核验正式 GitHub PR、作者外 Reviewer、required checks 和分支保护/ruleset。"
+            PassCondition: "正式 PR 可创建并通过独立评审、required checks 和已验证的分支保护。"
+            RequiredEvidence: ["PR URL", "Reviewer decision", "required check results", "branch protection/ruleset query"]
+            CurrentBlocker: "PlatformSnapshot reports PR creation HTTP 403, codex/integration unprotected, checks enforcement off, and no rulesets."
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: MERGE-002
+        P1StageStatus: PendingBootstrapReview
+        FutureGateStatus: BlockedUnverified
+        BlockerIds: [P1-DataAndReviewGates, PR-Platform-And-Branch-Protection]
+        OwnerRole: IntegrationOwner
+        Control: "分别核验 bootstrap 本地集成冲突处理和后续正式 PR/受保护集成队列。"
+        PassCondition: "P1 bootstrap 的冲突/无冲突结论与 LargeScale 产品阶段的正式集成结果分别通过；本地审查不代表保护门已满足。"
+        RequiredEvidence: ["固定 Base/Head 对", "冲突路径或 no-conflict 记录", "解决提交", "最终语义评审", "正式 PR/required checks/branch protection 证据"]
+        StageCriteria:
+          - BlockerId: P1-DataAndReviewGates
+            Stage: P1Bootstrap
+            Status: PendingCoordinatorEvaluation
+            Control: "审查 bootstrap 集成分支上的冲突路径或明确的无冲突结论、解决提交和最终语义差异。"
+            PassCondition: "冲突路径及解决提交可追溯，或记录无冲突；IntegrationOwner 与独立 Reviewer 均确认最终语义差异。"
+            RequiredEvidence: ["固定 Base/Head 对", "冲突路径或 no-conflict finding", "解决提交", "最终语义评审", "bootstrap ReviewBundle"]
+          - BlockerId: PR-Platform-And-Branch-Protection
+            Stage: LargeScaleProductImplementation
+            Status: BlockedUnverified
+            Control: "在配置好的正式 PR 与受保护集成目标上运行冲突处理和最终语义评审。"
+            PassCondition: "正式 PR、required checks 和保护规则已验证，冲突解决后的最终集成差异由独立 Reviewer 批准。"
+            RequiredEvidence: ["PR URL", "required check results", "branch protection/ruleset query", "冲突记录/解决提交", "最终 Reviewer decision"]
+            CurrentBlocker: "PlatformSnapshot reports PR creation HTTP 403, codex/integration unprotected, checks enforcement off, and no rulesets."
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
+      - RuleId: CODEX-001
+        P1StageStatus: PendingTaskSpecRegistration
+        FutureGateStatus: Open
+        BlockerIds: [P1-Formal-Capability-TaskSpecs]
+        OwnerRole: IntegrationOwner
+        Control: "P1 只核验所有 Keep/Redesign 能力对应的完整实现 TaskSpec 已登记，并在实现分派前冻结。"
+        PassCondition: "ED-0101 至 ED-0115 的完整 TaskSpec 均已登记并冻结；这只通过 P1 Formal-Capability-TaskSpecs blocker，不代表 CODEX-001 的最终实现门通过。"
+        RequiredEvidence: ["15 个 TaskSpec 的 TaskId/Revision/Owner/ReadSet/WriteSet/Acceptance/Validation", "TaskSpec freeze commits/blobs", "实现分派前的依赖核验"]
+        FutureGate:
+          GateId: CodexRewriteRelease
+          Status: Open
+          Control: "对每个 Keep/Redesign 能力核验已完成的 C++ 实现、合同/行为验收和产品 PR。"
+          PassCondition: "所有 Keep/Redesign 能力都有 C++ 实现、通过的合同/行为验证和独立产品 PR 评审；仅登记 TaskSpec 或能力映射不能通过。"
+          RequiredEvidence: ["逐能力 C++ diff", "合同与行为验收", "产品 PR URL 与独立 Review", "完成状态"]
+        EvidenceStatus: Pending
+        IndependentReviewStatus: Pending
+        CoordinatorSignoffStatus: Pending
+        Result: Blocking
 P1Blockers:
   ProductAgentImplementation:
     - BlockerId: P1-CPP20-Windows-Build

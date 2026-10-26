@@ -1,6 +1,6 @@
 # 稳定工作槽注册表，不代表当前已经启动了这些 Agent。
 SchemaVersion: 1
-MaximumSubagents: 8
+MaximumSubagents: 6
 State: Active
 EffectiveParallelism:
   Formula: MinimumOfConfiguredSlotsHostCapacityAndReadyIndependentTasks
@@ -21,6 +21,7 @@ LifecyclePolicy:
     - UserOrCoordinatorExplicitlyClosesTheSlot
 
 Slots:
+  # Worker01/Worker06 为 P1 支持槽；Worker02-Worker05 为四个实现槽。
   - SlotId: Worker01
     RoleFamily: BuildAndWorkflowOwner
     AgentId: "/root/workflow_controller"
@@ -72,20 +73,6 @@ Slots:
       - ContextSelector
     CurrentTaskId: ED-0020
     Status: Review
-  - SlotId: Worker07
-    RoleFamily: Unassigned
-    AgentId: ""
-    HostSessionRef: ""
-    ModuleIds: []
-    CurrentTaskId: ""
-    Status: Dormant
-  - SlotId: Worker08
-    RoleFamily: Unassigned
-    AgentId: ""
-    HostSessionRef: ""
-    ModuleIds: []
-    CurrentTaskId: ""
-    Status: Dormant
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。
