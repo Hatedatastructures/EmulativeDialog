@@ -156,12 +156,6 @@
           "Cancellation"
         ]
       },
-      "RegisteredResponseFields": [
-        "choices",
-        "usage.prompt_tokens",
-        "usage.completion_tokens",
-        "usage.total_tokens"
-      ],
       "WireResponse": {
         "id": "chatcmpl_fixture_unknown_field",
         "object": "chat.completion",
@@ -199,7 +193,28 @@
         }
       ],
       "ExpectedTerminalEventType": "ResponseFailed",
-      "TerminalExactlyOnce": true
+      "TerminalExactlyOnce": true,
+      "RegisteredStandardResponseEnvelopeFields": [
+        "id",
+        "object",
+        "created",
+        "model"
+      ],
+      "StandardEnvelopeCanonicalMappings": [
+        {
+          "WirePath": "id",
+          "CanonicalTarget": "ResponseStarted.ProviderResponseId"
+        }
+      ],
+      "RegisteredCanonicalResponseFields": [
+        "choices",
+        "usage.prompt_tokens",
+        "usage.completion_tokens",
+        "usage.total_tokens"
+      ],
+      "UnsupportedVendorExtensions": [
+        "x_vendor_trace"
+      ]
     },
     {
       "CaseId": "ERROR-006-legacy-function-call-rejected",
