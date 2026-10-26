@@ -221,6 +221,8 @@ Anthropic `stop_reason=refusal` 是正常的 Provider 完成，不是 `ResponseF
 
 Anthropic 的 `message_delta` wire object 在 `delta.stop_reason` 之外可包含顶层 `stop_details`。只有在 `message_delta` 的 `delta.stop_reason=refusal`、详情对象有效并且随后收到 `message_stop` 后，才完成拒绝。Stream 在 `message_stop` 前中断时遵循 V1.1 终态/未知结果规则，不得提前生成 `ResponseCompleted`。已完成拒绝的详情仅描述 Provider 的拒绝分类，不构成工具调用、权限判断或出站动作。
 
+若 Anthropic 在同一响应中先前已产生一个或多个 `TextDelta`，随后以有效 `stop_reason=refusal` 完成，则此前文本增量都是不完整拒绝响应的一部分，必须从最终回复文本累积中丢弃；不得拼入 final reply、不得据此创建或发送 `ChannelAction`。已发出的 nonterminal `TextDelta` 不被修改或重写；V1.2 不增加 rollback event、撤回事务或新 C++ event/type。Provider 终态仍是一个 `ResponseCompleted(Refusal)`，Core/Channel 不把之前的部分文本当作可发送的答案。
+
 ### V1.2 官方协议依据
 
 - OpenAI Chat Completions streaming schema：`delta.refusal` 为可选字符串或 `null`；`finish_reason` 与拒绝文本是不同字段。本合同中的混合值失败规则是 EmulativeDialog profile 的 fail-closed 约束。https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events
