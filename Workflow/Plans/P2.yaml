@@ -88,6 +88,24 @@ ChangeRequests:
       that 80-percent coverage acceptances could not be produced by the frozen commands. A literal build path and exact
       instrumentation/report procedure are required before any implementation task is assigned.
 
+  - ChangeRequestId: CR-ED-0126-003
+    RequestedBy: Coordinator
+    ApprovedBy: Coordinator
+    Decision: Accepted
+    TaskIds: [ED-0107, ED-0110, ED-0111]
+    TaskRevisionTransitions:
+      - {TaskId: ED-0107, FromRevision: 2, ToRevision: 3}
+      - {TaskId: ED-0110, FromRevision: 3, ToRevision: 4}
+      - {TaskId: ED-0111, FromRevision: 2, ToRevision: 3}
+    Scope: >-
+      Add Architecture/Contracts/CoreAgentContract.md V1 to ContractVersion for ED-0107, ED-0110, and ED-0111 to
+      match each existing CapabilityMap ContractRefs entry. The contract is already included in each ReadSet. Preserve
+      Goal, Owner, Reviewer, ReadSet, WriteSet, dependencies, and Acceptance; only advance each TaskRevision and update
+      its revision-specific Branch, Worktree, TaskBuildDirectory, and command path references. No product source work.
+    Reason: >-
+      The capability map requires the CoreAgent V1 contract for these tasks, but their frozen P2 ContractVersion fields
+      listed only ModelProvider V1.1. Correcting the mapping before implementation prevents an incomplete contract scope.
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -651,7 +669,7 @@ Tasks:
     Rules: {MustFollow: [SEC-001, CTX-001, CTX-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0113, ED-0115]}
   - TaskId: ED-0107
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 实现规范化流式 Agent 事件投影与终态门
     TaskKind: CapabilitySlice
@@ -665,8 +683,8 @@ Tasks:
     ReviewerAgentId: "/root/provider_anthropic"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0107-R2-AgentEventProjector
-    Worktree: H:/Qbot/EmulativeDialog.ED-0107-R2
+    Branch: Task/ED-0107-R3-AgentEventProjector
+    Worktree: H:/Qbot/EmulativeDialog.ED-0107-R3
     CapabilityIds: [CanonicalStreamedAgentEvents]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -687,10 +705,31 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0107/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: 814c040afaccd8780d03a97580b4ef04188672b0
+      TaskSpecBlob: 5e6e1929b8baba5e382bd4dbf55522b9ed04373f
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "ContractVersion omitted CoreAgentContract V1 despite the capability map reference; the revision was corrected before any product source write or implementation worktree was created."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0107/R2 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Add Architecture/Contracts/CoreAgentContract.md V1 to ContractVersion because it is present in CapabilityMap.ContractRefs and existing ReadSet; update only revision-specific Branch/Worktree/TaskBuildDirectory and Validation path references."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "把三协议规范事件投影为 Agent 生命周期事件，校验 request/turn/sequence 关联，并确保终态唯一且先于工具 dispatch 门。"
     OutOfScope: ["修改 ModelProviderContract", "原始 reasoning/thinking 透传", "直接向 Channel 流式发送", "TUI"]
     DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106]
-    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1.1
+    ContractVersion:
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/ModelProviderContract.md V1.1
     Context:
       ModuleId: AgentRuntime
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ModelProviderContract.md, Source/Providers/Contracts/ModelProviderPort.h, Source/Core/AgentRuntimePort.h]
@@ -706,28 +745,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Out-of-order, duplicate, wrong-request, and second-terminal events fail closed.", Evidence: "Contract tests assert stable error codes and no action."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0107-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0107-R3.build
       Coverage:
         Required: true
         ProductionSources: [Source/Agent/AgentEventProjector.cpp]
         TestDriverSource: Tests/Contract/Agent/AgentEventProjectorTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0107-R3.build/Reports
       RequiredTargets: [AgentEventProjectorTests]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports' | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0107-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0107-R2/Source/Agent/AgentEventProjector.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjector.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0107-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0107-R2/Tests/Contract/Agent/AgentEventProjectorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjectorTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjector.o\" \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjectorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/AgentEventProjectorTests.exe\""
-        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0107-R2'; & 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/AgentEventProjectorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0107-R3.build/Objects','H:/Qbot/EmulativeDialog.ED-0107-R3.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0107-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0107-R3/Source/Agent/AgentEventProjector.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R3.build/Objects/AgentEventProjector.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0107-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0107-R3/Tests/Contract/Agent/AgentEventProjectorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R3.build/Objects/AgentEventProjectorTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0107-R3.build/Objects/AgentEventProjector.o\" \"H:/Qbot/EmulativeDialog.ED-0107-R3.build/Objects/AgentEventProjectorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R3.build/AgentEventProjectorTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0107-R3'; & 'H:/Qbot/EmulativeDialog.ED-0107-R3.build/AgentEventProjectorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic V1.1 normal, refusal, usage, malformed sequence, and duplicate terminal events."]
       StaticChecks:
         - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
         - "Changed paths exactly equal frozen WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjector.o' 'H:/Qbot/EmulativeDialog.ED-0107-R2/Source/Agent/AgentEventProjector.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/AgentEventProjector.cpp' }; } finally { Pop-Location }\""
-        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports."
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0107-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0107-R3.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0107-R3.build/Objects/AgentEventProjector.o' 'H:/Qbot/EmulativeDialog.ED-0107-R3/Source/Agent/AgentEventProjector.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/AgentEventProjector.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0107-R3.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Events are synthetic and no external channels/providers are invoked."
     RiskLevel: High
@@ -826,7 +865,7 @@ Tasks:
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0110
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-06
     Title: 实现 turn 与三协议 Provider 统一取消生命周期
     TaskKind: CapabilitySlice
@@ -840,8 +879,8 @@ Tasks:
     ReviewerAgentId: "/root/provider_anthropic"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0110-R3-TurnCancellation
-    Worktree: H:/Qbot/EmulativeDialog.ED-0110-R3
+    Branch: Task/ED-0110-R4-TurnCancellation
+    Worktree: H:/Qbot/EmulativeDialog.ED-0110-R4
     ChangeRequestId: CR-ED-0110-001
     ValidationChangeRequestId: CR-ED-0126-001
     CapabilityIds: [TurnAndProviderCancellation]
@@ -864,10 +903,31 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0110/R2 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
+    SupersededRevision3Evidence:
+      TaskRevision: 3
+      TaskSpecCommit: 814c040afaccd8780d03a97580b4ef04188672b0
+      TaskSpecBlob: 5e6e1929b8baba5e382bd4dbf55522b9ed04373f
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "ContractVersion omitted CoreAgentContract V1 despite the capability map reference; the revision was corrected before any product source write or implementation worktree was created."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0110/R3 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Add Architecture/Contracts/CoreAgentContract.md V1 to ContractVersion because it is present in CapabilityMap.ContractRefs and existing ReadSet; update only revision-specific Branch/Worktree/TaskBuildDirectory and Validation path references."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "把 Core turn 的 stop_token 传播到 AgentRuntime，并正确归一化三个 Provider adapter 的取消终态；各协议实际 I/O 取消由 ED-0104/0105/0106 实现和测试。"
     OutOfScope: ["各 Provider 的 transport cancellation implementation/tests（由 ED-0104/0105/0106 承担）", "新增协议", "自动重试未知结果", "取消已确认完成的 Channel 副作用"]
     DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
-    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1.1
+    ContractVersion:
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/ModelProviderContract.md V1.1
     Context:
       ModuleId: AgentRuntime
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ModelProviderContract.md, Source/Core/AgentRuntimePort.h]
@@ -883,28 +943,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Cancellation never retries a possibly accepted request or dispatches an incomplete tool call.", Evidence: "Provider call-count and channel action-count assertions."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage per changed module.", Evidence: "Fresh gcov reports per adapter and AgentRuntime source."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0110-R3.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0110-R4.build
       Coverage:
         Required: true
         ProductionSources: [Source/Agent/TurnCancellationCoordinator.cpp]
         TestDriverSource: Tests/Contract/Agent/TurnCancellationTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0110-R4.build/Reports
       RequiredTargets: [TurnCancellationTests]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects','H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports' | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0110-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0110-R3/Source/Agent/TurnCancellationCoordinator.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationCoordinator.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0110-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0110-R3/Tests/Contract/Agent/TurnCancellationTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationCoordinator.o\" \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/TurnCancellationTests.exe\""
-        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0110-R3'; & 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/TurnCancellationTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0110-R4.build/Objects','H:/Qbot/EmulativeDialog.ED-0110-R4.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0110-R4\" -c \"H:/Qbot/EmulativeDialog.ED-0110-R4/Source/Agent/TurnCancellationCoordinator.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R4.build/Objects/TurnCancellationCoordinator.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0110-R4\" -c \"H:/Qbot/EmulativeDialog.ED-0110-R4/Tests/Contract/Agent/TurnCancellationTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R4.build/Objects/TurnCancellationTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0110-R4.build/Objects/TurnCancellationCoordinator.o\" \"H:/Qbot/EmulativeDialog.ED-0110-R4.build/Objects/TurnCancellationTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R4.build/TurnCancellationTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0110-R4'; & 'H:/Qbot/EmulativeDialog.ED-0110-R4.build/TurnCancellationTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Pre-send, during-event, after-terminal, and ambiguous remote outcome cases; protocol transport-specific cancellation fixtures live in ED-0104/0105/0106."]
       StaticChecks:
         - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
         - "Changed paths exactly equal frozen WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationCoordinator.o' 'H:/Qbot/EmulativeDialog.ED-0110-R3/Source/Agent/TurnCancellationCoordinator.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/TurnCancellationCoordinator.cpp' }; } finally { Pop-Location }\""
-        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports."
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0110-R4.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0110-R4.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0110-R4.build/Objects/TurnCancellationCoordinator.o' 'H:/Qbot/EmulativeDialog.ED-0110-R4/Source/Agent/TurnCancellationCoordinator.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/TurnCancellationCoordinator.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0110-R4.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Cancellation scenarios use fake transport/provider/channel only."
     RiskLevel: High
@@ -914,7 +974,7 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0111
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 实现 Provider 失败分类与有界重试策略
     TaskKind: CapabilitySlice
@@ -928,8 +988,8 @@ Tasks:
     ReviewerAgentId: "/root/provider_responses"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0111-R2-ProviderOutcomePolicy
-    Worktree: H:/Qbot/EmulativeDialog.ED-0111-R2
+    Branch: Task/ED-0111-R3-ProviderOutcomePolicy
+    Worktree: H:/Qbot/EmulativeDialog.ED-0111-R3
     CapabilityIds: [ProviderFailureAndRetrySemantics]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -950,10 +1010,31 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0111/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: 814c040afaccd8780d03a97580b4ef04188672b0
+      TaskSpecBlob: 5e6e1929b8baba5e382bd4dbf55522b9ed04373f
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "ContractVersion omitted CoreAgentContract V1 despite the capability map reference; the revision was corrected before any product source write or implementation worktree was created."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0111/R2 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Add Architecture/Contracts/CoreAgentContract.md V1 to ContractVersion because it is present in CapabilityMap.ContractRefs and existing ReadSet; update only revision-specific Branch/Worktree/TaskBuildDirectory and Validation path references."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "统一显式 retry policy 和 ProviderError/终态分类；对可能已被远端接受的请求保持 OutcomeUnknown 且不得自动重发。"
     OutOfScope: ["修改协议 wire contract", "修改外部服务商策略", "对副作用型工具/Channel 动作自动重试"]
     DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
-    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1.1
+    ContractVersion:
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/ModelProviderContract.md V1.1
     Context:
       ModuleId: AgentRuntime
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/CoreAgentContract.md, Source/Providers/Contracts/ModelProviderPort.h]
@@ -969,28 +1050,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Retry occurs only for explicitly retryable no-side-effect failures within the configured budget.", Evidence: "Attempt-count tests prove no retry for OutcomeUnknown, partial output, cancellation, or tool handoff."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0111-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0111-R3.build
       Coverage:
         Required: true
         ProductionSources: [Source/Agent/ProviderOutcomePolicy.cpp]
         TestDriverSource: Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0111-R3.build/Reports
       RequiredTargets: [ProviderOutcomePolicyTests]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports' | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0111-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0111-R2/Source/Agent/ProviderOutcomePolicy.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicy.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0111-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0111-R2/Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicyTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicy.o\" \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicyTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/ProviderOutcomePolicyTests.exe\""
-        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0111-R2'; & 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/ProviderOutcomePolicyTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0111-R3.build/Objects','H:/Qbot/EmulativeDialog.ED-0111-R3.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0111-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0111-R3/Source/Agent/ProviderOutcomePolicy.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R3.build/Objects/ProviderOutcomePolicy.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0111-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0111-R3/Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R3.build/Objects/ProviderOutcomePolicyTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0111-R3.build/Objects/ProviderOutcomePolicy.o\" \"H:/Qbot/EmulativeDialog.ED-0111-R3.build/Objects/ProviderOutcomePolicyTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R3.build/ProviderOutcomePolicyTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0111-R3'; & 'H:/Qbot/EmulativeDialog.ED-0111-R3.build/ProviderOutcomePolicyTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic provider terminal outcomes and retry budgets."]
       StaticChecks:
         - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
         - "Changed paths exactly equal frozen WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicy.o' 'H:/Qbot/EmulativeDialog.ED-0111-R2/Source/Agent/ProviderOutcomePolicy.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/ProviderOutcomePolicy.cpp' }; } finally { Pop-Location }\""
-        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports."
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0111-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0111-R3.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0111-R3.build/Objects/ProviderOutcomePolicy.o' 'H:/Qbot/EmulativeDialog.ED-0111-R3/Source/Agent/ProviderOutcomePolicy.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/ProviderOutcomePolicy.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0111-R3.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "No real provider calls or retrying side effects are allowed."
     RiskLevel: High
