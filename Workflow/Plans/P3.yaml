@@ -1,0 +1,417 @@
+SchemaVersion: 1
+PhaseId: P3
+PhaseName: Provider Protocols and Durable Memory
+State: PendingP1AndP2ExitGates
+
+EntryGate:
+  RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
+  RequiredState: Passed
+  RequiredP2GateId: FirstCppAgentRuntimeVerticalSliceVerified
+  RequiredP2State: Passed
+  RequiredAdditionalContracts:
+    - HttpTransportContract V1 (ED-0120)
+  State: Pending
+
+TaskSpecRegistration:
+  RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123]
+  AllTaskSpecsFrozenBeforeAssignment: true
+
+ParallelGroups:
+  - GroupId: DurableMemory
+    TaskIds: [ED-0122, ED-0123, ED-0113]
+    OrderedDependencies: [ED-0122, ED-0123, ED-0113]
+  - GroupId: WindowsTransportAndProviderAdapters
+    TaskIds: [ED-0121, ED-0104, ED-0105, ED-0106]
+    DependsOn: [ED-0120, ED-0015]
+    WriteSetsDisjoint: true
+    SharedLocksDisjoint: true
+  - GroupId: CrossProviderOutputLimits
+    TaskIds: [ED-0114]
+    DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
+
+Tasks:
+  - TaskId: ED-0104
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 OpenAI Responses C++ Provider Adapter
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P3
+    OwnerRole: ResponsesProviderOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/provider_responses"
+    ReviewerRole: ChatCompletionsProviderOwner
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: "/root/provider_chat"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [OpenAIResponsesTransport]
+    Goal: "实现 ModelProviderPort 到 OpenAI Responses wire protocol 的 Windows-native 流式 Adapter，完整映射 V1.1 请求、事件、usage、refusal、取消和错误语义。"
+    OutOfScope: ["Rust/Node/Python runtime", "任意 URL/网络工具", "host tools", "直接渠道发送", "微信"]
+    DependsOn: [ED-0015, ED-0009, ED-0120]
+    ContractVersion: [Architecture/Contracts/ModelProviderContract.md V1.1, Architecture/Contracts/HttpTransportContract.md V1]
+    Context:
+      ModuleId: ProviderOpenAIResponses
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/HttpTransportContract.md, Source/Providers/Contracts/ModelProviderPort.h, Tests/Contract/Providers/OpenAIResponses/FixtureIndex.yaml]
+      OnDemandSet: [Tests/Contract/Providers/OpenAIResponses/Fixtures/PR-001.json]
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Providers/OpenAIResponses/OpenAIResponsesProvider.h, Source/Providers/OpenAIResponses/OpenAIResponsesProvider.cpp, Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp, Tests/Contract/Providers/OpenAIResponses/CMakeLists.txt]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Request serialization, SSE/event parsing, response correlation, and terminal semantics match ModelProviderContract V1.1.", Evidence: "All applicable PR-001+ fixtures parse and the focused adapter contract suite passes."}
+      - {AcceptanceId: AC-2, Description: "Reasoning/internal content is filtered, credentials stay in the lease, redirects and retries follow the frozen HttpTransport contract, and no unknown outcome is retried.", Evidence: "Synthetic sentinel, auth-header, redirect, cancellation, and retry-count tests."}
+      - {AcceptanceId: AC-3, Description: "Changed production adapter source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
+    Validation:
+      RequiredTargets: [OpenAIResponsesProviderTests]
+      TargetedBuild: ["cmake -S Tests/Contract/Providers/OpenAIResponses -B <TaskBuildDir> -DCMAKE_CXX_STANDARD=20", "cmake --build <TaskBuildDir> --target OpenAIResponsesProviderTests --parallel 4", "ctest --test-dir <TaskBuildDir> --output-on-failure"]
+      ContractFixtures: ["All ED-0009 Responses fixtures plus cancellation/refusal/unknown-outcome extensions in the task WriteSet."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Adapter tests use offline scripted HttpTransport; no provider key or real API call is allowed."
+    RiskLevel: High
+    RiskOwnerRole: ResponsesProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0110, ED-0111, ED-0114]}
+
+  - TaskId: ED-0105
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 OpenAI-compatible Chat Completions C++ Provider Adapter
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P3
+    OwnerRole: ChatCompletionsProviderOwner
+    OwnerSlotId: Worker04
+    OwnerAgentId: "/root/provider_chat"
+    ReviewerRole: AnthropicProviderOwner
+    ReviewerSlotId: Worker05
+    ReviewerAgentId: "/root/provider_anthropic"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [OpenAICompatibleChatCompletions]
+    Goal: "实现与 Responses 分离的 Chat Completions adapter，区分标准语义与注册服务商差异，并遵守公共 ModelProviderPort V1.1。"
+    OutOfScope: ["任意服务商猜测", "无注册的 extension 字段", "Rust/Node/Python runtime", "直接渠道发送", "微信"]
+    DependsOn: [ED-0015, ED-0010, ED-0120]
+    ContractVersion: [Architecture/Contracts/ModelProviderContract.md V1.1, Architecture/Contracts/HttpTransportContract.md V1]
+    Context:
+      ModuleId: ProviderOpenAIChatCompletions
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/HttpTransportContract.md, Source/Providers/Contracts/ModelProviderPort.h, Tests/Contract/Providers/ChatCompletions/FixtureIndex.yaml]
+      OnDemandSet: [Tests/Contract/Providers/ChatCompletions/Fixtures/PC-001.json]
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.h, Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Tests/Contract/Providers/ChatCompletions/ChatCompletionsProviderTests.cpp, Tests/Contract/Providers/ChatCompletions/CMakeLists.txt]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Standard request/stream/error/refusal fields map to the canonical contract, while service-specific fields require a declared CompatibilityProfile.", Evidence: "Fixtures cover standard mode and each registered extension independently."}
+      - {AcceptanceId: AC-2, Description: "Tool names/arguments remain canonical, cancellation and unknown outcomes are safe, and no unregistered provider field is silently accepted.", Evidence: "Fixture and negative-schema tests plus no-retry assertions."}
+      - {AcceptanceId: AC-3, Description: "Changed production adapter source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
+    Validation:
+      RequiredTargets: [ChatCompletionsProviderTests]
+      TargetedBuild: ["cmake -S Tests/Contract/Providers/ChatCompletions -B <TaskBuildDir> -DCMAKE_CXX_STANDARD=20", "cmake --build <TaskBuildDir> --target ChatCompletionsProviderTests --parallel 4", "ctest --test-dir <TaskBuildDir> --output-on-failure"]
+      ContractFixtures: ["All ED-0010 fixtures and the declared compatibility-profile extensions."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Adapter tests use offline scripted HttpTransport and synthetic profiles."
+    RiskLevel: High
+    RiskOwnerRole: ChatCompletionsProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0110, ED-0111, ED-0114]}
+
+  - TaskId: ED-0106
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 Anthropic Messages C++ Provider Adapter
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P3
+    OwnerRole: AnthropicProviderOwner
+    OwnerSlotId: Worker05
+    OwnerAgentId: "/root/provider_anthropic"
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: "/root/provider_responses"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [AnthropicMessagesProtocol]
+    Goal: "实现 Anthropic Messages 到共同 Provider 合同的流式 adapter，保留协议专有 content block、stop reason、refusal、usage 和认证头语义。"
+    OutOfScope: ["OpenAI wire types", "Rust/Node/Python runtime", "host tools", "直接渠道发送", "微信"]
+    DependsOn: [ED-0015, ED-0011, ED-0120]
+    ContractVersion: [Architecture/Contracts/ModelProviderContract.md V1.1, Architecture/Contracts/HttpTransportContract.md V1]
+    Context:
+      ModuleId: ProviderAnthropicMessages
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/HttpTransportContract.md, Source/Providers/Contracts/ModelProviderPort.h, Tests/Contract/Providers/AnthropicMessages/FixtureIndex.yaml]
+      OnDemandSet: [Tests/Contract/Providers/AnthropicMessages/Fixtures/PA-001.json]
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Providers/AnthropicMessages/AnthropicMessagesProvider.h, Source/Providers/AnthropicMessages/AnthropicMessagesProvider.cpp, Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp, Tests/Contract/Providers/AnthropicMessages/CMakeLists.txt]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Anthropic request headers/body, streaming blocks, stop reasons, refusals, usage, and terminal states map without losing protocol-only semantics required by V1.1.", Evidence: "All ED-0011 fixtures and protocol-specific block/stop tests."}
+      - {AcceptanceId: AC-2, Description: "Reasoning content is filtered, credentials use the approved lease/header path, and cancellation/unknown outcomes do not retry.", Evidence: "Synthetic secret sentinel and transport outcome tests."}
+      - {AcceptanceId: AC-3, Description: "Changed production adapter source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
+    Validation:
+      RequiredTargets: [AnthropicMessagesProviderTests]
+      TargetedBuild: ["cmake -S Tests/Contract/Providers/AnthropicMessages -B <TaskBuildDir> -DCMAKE_CXX_STANDARD=20", "cmake --build <TaskBuildDir> --target AnthropicMessagesProviderTests --parallel 4", "ctest --test-dir <TaskBuildDir> --output-on-failure"]
+      ContractFixtures: ["All ED-0011 fixtures and Anthropic content-block/stop-reason cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Adapter tests use offline scripted HttpTransport and synthetic profiles."
+    RiskLevel: High
+    RiskOwnerRole: AnthropicProviderOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0110, ED-0111, ED-0114]}
+
+  - TaskId: ED-0113
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现授权、身份和会话隔离的聊天 Memory
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P3
+    OwnerRole: MemoryOwner
+    OwnerSlotId: Worker06
+    OwnerAgentId: "/root/memory_context"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: "/root/agent_core"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [ScopedChatMemory]
+    Goal: "按 MemoryContract 实现 User/Session/Conversation/Group scopes、明确同意、确认、撤销、删除和派生缓存清理；无授权内容不得持久化或跨 scope 召回。"
+    OutOfScope: ["无限期原始聊天归档", "由模型/Adapter 推断身份或同意", "跨平台 identity link 自动建立", "微信", "主机或任意文件检索"]
+    DependsOn: [ED-0007, ED-0008, ED-0012, ED-0102, ED-0103, ED-0109, ED-0123]
+    ContractVersion: Architecture/Contracts/MemoryContract.md V1
+    Context:
+      ModuleId: Memory
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/MemoryContract.md, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ChannelAdapterContract.md, Tests/Contract/Memory/FixtureIndex.yaml, Tests/Contract/Context/FixtureIndex.yaml]
+      OnDemandSet: [Tests/Contract/Memory/Fixtures/MB-001.json]
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/*", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Memory/ConversationMemory.h, Source/Memory/ConversationMemory.cpp, Tests/Contract/Memory/ConversationMemoryTests.cpp]
+    SharedLocks: [SQLiteMemorySchemaV1]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Reads/writes are filtered by verified Principal and exact scope/category/ConsentId; denied or ambiguous requests do not mutate storage.", Evidence: "MB-001 fixtures and cross-scope/cross-identity tests."}
+      - {AcceptanceId: AC-2, Description: "Explicit confirm/revoke/forget semantics invalidate affected derived summaries and caches without affecting unrelated scopes.", Evidence: "Consent lifecycle and tombstone tests."}
+      - {AcceptanceId: AC-3, Description: "SessionScope remains volatile; unconsented summaries and raw private bodies never become durable records.", Evidence: "Restart, persistence-boundary, and private-sentinel tests."}
+      - {AcceptanceId: AC-4, Description: "Changed production Memory source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
+    Validation:
+      RequiredTargets: [ConversationMemoryTests]
+      TargetedBuild: ["Build and run the isolated Windows-native C++20 memory contract target against a fresh temporary SQLite database."]
+      ContractFixtures: ["All ED-0012 memory fixtures plus consent, revoke, forget, cache invalidation, and scope isolation cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Temporary DB path stays under TaskBuildDir", "Memory production coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Only synthetic fixtures and a disposable test database are used; no user data is accessed."
+    RiskLevel: High
+    RiskOwnerRole: MemoryOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, CTX-001, CTX-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0112, ED-0115]}
+
+  - TaskId: ED-0114
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 Provider usage 归一化与输出预算闭环
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P3
+    OwnerRole: ProviderIntegrationOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/provider_responses"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [ProviderUsageAndOutputLimits]
+    ModuleIds: [AgentRuntime, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    Goal: "保留三协议 usage completeness/缓存/推理 token 语义，并由 AgentRuntime 按模型预算区分正常完成、可安全续跑与 OutputLimitReached。"
+    OutOfScope: ["未由协议提供的 token 数推算", "把内部 reasoning 暴露给用户/渠道", "对未知结果盲目续跑"]
+    DependsOn: [ED-0101, ED-0103, ED-0104, ED-0105, ED-0106, ED-0107]
+    ContractVersion: [Architecture/Contracts/ModelProviderContract.md V1.1, Architecture/Contracts/CoreAgentContract.md V1]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/CoreAgentContract.md, Source/Providers/Contracts/ModelProviderPort.h]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Agent/OutputBudgetController.h, Source/Agent/OutputBudgetController.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.h, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.h, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.h, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Providers/UsageNormalizationTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Provider usage maps preserve Partial/Final/Unavailable and protocol-specific fields without false precision.", Evidence: "One fixture group per protocol with absent/partial/final usage."}
+      - {AcceptanceId: AC-2, Description: "Output-limit handling never dispatches incomplete tool calls and only resumes with a new RequestId after Core-approved context compression.", Evidence: "Boundary, continuation, no-budget, and tool-call truncation tests."}
+      - {AcceptanceId: AC-3, Description: "Changed production modules meet at least 80 percent coverage per module.", Evidence: "Fresh gcov report for AgentRuntime and each provider normalizer source."}
+    Validation:
+      RequiredTargets: [OutputBudgetControllerTests, UsageNormalizationTests]
+      TargetedBuild: ["Build only output-budget and usage-normalization C++20 targets; run the named CTest cases."]
+      ContractFixtures: ["Synthetic protocol usage and output-limited/tool-argument truncation cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Per-module production coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "No real provider request or user conversation is used."
+    RiskLevel: High
+    RiskOwnerRole: ProviderIntegrationOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, CTX-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0121
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 Windows WinHTTP/Schannel Transport
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P3
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Goal: "实现 HttpTransportContract V1 的 Windows WinHTTP/Schannel adapter；把 HTTPS endpoint、证书链、超时、有界流式读取、取消和终态交给公共 C++ Port。"
+    OutOfScope: ["Provider wire protocol", "外部网络访问测试", "loopback listener", "自动 redirect", "OpenSSL", "任意网络工具"]
+    DependsOn: [ED-0120, ED-0006]
+    ContractVersion: Architecture/Contracts/HttpTransportContract.md V1
+    ExternalInputs:
+      - "Microsoft WinHTTP API reference for request/response and callbacks; exact official links are recorded in ADR-0003."
+      - "Windows Schannel system trust behavior; exact official links are recorded in ADR-0003."
+    Context:
+      ModuleId: NetworkPlatform
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Platform.yaml, Architecture/Contracts/HttpTransportContract.md, Source/Platform/Network/HttpTransportPort.h, Standards/SecurityAndPrivacy.md]
+      OnDemandSet: [Architecture/Decisions/Adr0003WindowsHttpTransport.md]
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Platform/Network/WinHttpTransport.h, Source/Platform/Network/WinHttpTransport.cpp, Tests/Contract/Platform/Network/WinHttpTransportTests.cpp, Tests/Contract/Platform/Network/CMakeLists.txt]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "WinHttpTransport implements the frozen Port, uses system Schannel validation, and fails closed on non-HTTPS, redirect, certificate, and endpoint mismatch cases.", Evidence: "Native Windows C++20 target, injected WinHTTP API tests, and official platform references."}
+      - {AcceptanceId: AC-2, Description: "Streaming is bounded; timeout and stop_token terminate the request; errors are sanitized and unknown outcomes are never retried.", Evidence: "Offline callback/failure tests cover chunks, timeout, cancellation, and ambiguous completion."}
+      - {AcceptanceId: AC-3, Description: "Changed production NetworkPlatform source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator, exclusions, and tool version."}
+    Validation:
+      RequiredTargets: [WinHttpTransportTests]
+      TargetedBuild: ["cmake -S Tests/Contract/Platform/Network -B <TaskBuildDir> -DCMAKE_CXX_STANDARD=20", "cmake --build <TaskBuildDir> --target WinHttpTransportTests --parallel 4", "ctest --test-dir <TaskBuildDir> --output-on-failure"]
+      ContractFixtures: ["Synthetic TLS failure, redirect denial, timeout, cancellation, chunk limit, oversized body, and unknown outcome."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "No third-party TLS dependency", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Injected WinHTTP tests are offline and never make external requests."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
+
+  - TaskId: ED-0122
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 固定 SQLite Windows 依赖、链接与 Schema 基线
+    TaskKind: Build
+    State: Blocked
+    Phase: P3
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: MemoryOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Goal: "固定 SQLite 精确版本/来源/license、Windows x64 构建、静态链接和升级/删除路径，并提供只供 Storage 模块使用的离线构建依赖。"
+    OutOfScope: ["Memory 语义实现", "数据库迁移/清理真实用户数据", "将 SQLite 用入 WorkflowController", "OpenSSL/TLS"]
+    DependsOn: [ED-0006, ED-0007]
+    ContractVersion: Architecture/Contracts/MemoryContract.md V1
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/BuildRelease.yaml, Standards/DependencyPolicy.md, Standards/SecurityAndPrivacy.md, Architecture/Contracts/MemoryContract.md, CMake/DependencyPins.cmake]
+      OnDemandSet: [Workflow/OpenDecisions.md]
+      ForbiddenSet: ["Source/Memory/", "Source/Providers/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [CMake/DependencyPins.cmake, CMakeLists.txt, Standards/DependencyPolicy.md, Tests/Contract/Storage/CMakeLists.txt]
+    SharedLocks: [RootCmakeAndDependencyLock]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "SQLite version, source, license, static link mode, Windows build evidence, and update/removal plan are recorded.", Evidence: "Dependency inventory and native build log."}
+      - {AcceptanceId: AC-2, Description: "No credentials, private bodies, or SQLite implementation types leak into public Core/Agent APIs.", Evidence: "API include scan and Storage compile target isolation."}
+    Validation:
+      RequiredTargets: [SQLiteBuildProbe]
+      TargetedBuild: ["Windows-native configure and build the SQLite-only probe; verify no unapproved runtime DLL is required."]
+      ContractFixtures: []
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "license/version/source manifest consistency"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Dependency build probe uses a disposable build tree and does not access persistent data."
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0123]}
+
+  - TaskId: ED-0123
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现隔离事务、作用域和 tombstone 的 SQLite Storage
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P3
+    OwnerRole: StorageOwner
+    OwnerSlotId: Worker06
+    OwnerAgentId: "/root/memory_context"
+    ReviewerRole: BuildAndDependencyOwner
+    ReviewerSlotId: Worker01
+    ReviewerAgentId: "/root/workflow_controller"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Goal: "实现 Windows SQLite Storage 的隔离事务、scope/version 校验、删除 tombstone、重启恢复和受限备份召回接口。"
+    OutOfScope: ["未经授权持久化原始对话", "数据库 schema 自动覆盖/清空", "声称删除平台副本", "memory authorization policy"]
+    DependsOn: [ED-0122, ED-0007]
+    ContractVersion: Architecture/Contracts/MemoryContract.md V1
+    Context:
+      ModuleId: Storage
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/MemoryContract.md, Standards/DependencyPolicy.md, CMake/DependencyPins.cmake]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/*", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Storage/SqliteStore.h, Source/Storage/SqliteStore.cpp, Tests/Contract/Storage/SqliteStoreTests.cpp]
+    SharedLocks: [SQLiteMemorySchemaV1]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Transactions are scoped, atomic, versioned, and fail closed on schema/version conflict without destructive fallback.", Evidence: "Rollback and migration-conflict tests on temporary databases."}
+      - {AcceptanceId: AC-2, Description: "Tombstones, expiry, and version checks prevent revoked/deleted records and derived caches from being recalled.", Evidence: "Temporary-database restart tests."}
+      - {AcceptanceId: AC-3, Description: "Changed production Storage source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report per source file."}
+    Validation:
+      RequiredTargets: [SqliteStoreTests]
+      TargetedBuild: ["Windows-native C++20 storage target; run against fresh disposable DB files under TaskBuildDir only."]
+      ContractFixtures: ["Synthetic scopes, schema versions, tombstones, expiry, and rollback cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "No deletion outside TaskBuildDir", "Storage production coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "All database files are generated inside the task build directory and removed only by test cleanup."
+    RiskLevel: High
+    RiskOwnerRole: StorageOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, TRACE-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0112, ED-0113]}

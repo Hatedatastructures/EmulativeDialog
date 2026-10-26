@@ -91,6 +91,23 @@ ExecutionGates:
     Unlocks:
       - P2
       - P3
+    RequiredRegisteredTaskSpecs:
+      - ED-0101
+      - ED-0102
+      - ED-0103
+      - ED-0104
+      - ED-0105
+      - ED-0106
+      - ED-0107
+      - ED-0108
+      - ED-0109
+      - ED-0110
+      - ED-0111
+      - ED-0112
+      - ED-0113
+      - ED-0114
+      - ED-0115
+    State: PendingP1GateEvaluation
   QQChannelImplementation:
     RequiredTaskIds:
       - ED-0003
@@ -117,13 +134,13 @@ PhasePlans:
     State: Current
     LoadWhen: CodexCorePreparationGatePassed
   - PhaseId: P2
-    Path: ""
-    State: NotExpanded
+    Path: Workflow/Plans/P2.yaml
+    State: RegisteredPendingP1Gate
     LoadWhen: AgentWorkflowControllerAndCoreContractsVerified
   - PhaseId: P3
-    Path: ""
-    State: NotExpanded
-    LoadWhen: AgentWorkflowControllerOperationalAndModelProviderContractFrozen
+    Path: Workflow/Plans/P3.yaml
+    State: RegisteredPendingP1AndP2Gates
+    LoadWhen: AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerifiedAndHttpTransportContractFrozen
   - PhaseId: P4
     Path: ""
     State: NotExpanded

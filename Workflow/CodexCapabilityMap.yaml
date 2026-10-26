@@ -1,8 +1,8 @@
-# Upstream capability map index. Decisions and proposed implementation IDs are in subsystem shards;
-# formal TaskSpecs are registered by the Coordinator when phase gates open.
+# Upstream capability map index. Capability decisions and formal TaskSpecs are in subsystem shards;
+# product implementation remains gated by the signed phase exit record.
 SchemaVersion: 1
 ProjectId: EmulativeDialog
-State: MappedAwaitingReview
+State: MappedReviewedAndTaskSpecsRegisteredPendingP1ExitGate
 ScopeDecision: Architecture/Decisions/Adr0002CodexAgentCppRewrite.md
 SourceRepository: https://github.com/openai/codex
 SourceCommit: 970111f6cb62cc02fe36a82ea7d71b37a2889c97
@@ -47,19 +47,19 @@ Coverage:
   UnmappedTargetCapabilities: 0
   KeepOrRedesignCapabilities: 15
   KeepOrRedesignWithProposedTaskId: 15
-  FormalTaskIdsRegistered: 0
+  FormalTaskIdsRegistered: 15
   UnknownsRemainExplicitBlockers: true
   CapabilityDecisionsComplete: true
   ImplementationTraceabilityComplete: true
-  TaskRegistrationStatus: DeferredToPhaseExpansion
+  TaskRegistrationStatus: RegisteredAndFrozenPendingP1ExitGate
 
 TaskRegistration:
-  Status: DeferredToPhaseExpansion
-  FormalTaskSpecsRegistered: 0
+  Status: RegisteredAndFrozenPendingP1ExitGate
+  FormalTaskSpecsRegistered: 15
   Reason: >-
-    TaskIndex leaves P1/P2/P3 NotExpanded. The shard assigns stable, unique proposed TaskIds within
-    ED-0001 WriteSet; Coordinator will create the frozen formal TaskSpecs and register those IDs
-    when the phase gates open. Proposed IDs are explicitly not represented as already registered.
+    The Coordinator registered and froze ED-0101 through ED-0115 in Workflow/Plans/P2.yaml and
+    Workflow/Plans/P3.yaml. All remain blocked until the P1 ExitGate is signed; registration does
+    not claim that product code has started or that any capability is implemented.
 
 KnownBlockers:
   - BlockerId: QQAccountModeAndCapabilities
@@ -75,5 +75,5 @@ ShardIndex:
     CapabilityCount: 24
     DecisionMappedCount: 24
     KeepOrRedesignCount: 15
-    FormalImplementationTaskIds: 0
-    Status: MappedAwaitingIndependentReview
+    FormalImplementationTaskIds: 15
+    Status: MappedReviewedAndTaskSpecsRegisteredPendingP1ExitGate

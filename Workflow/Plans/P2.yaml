@@ -1,0 +1,782 @@
+SchemaVersion: 1
+PhaseId: P2
+PhaseName: Core Identity, AgentRuntime, and First Product Slice
+State: PendingP1ExitGate
+
+EntryGate:
+  RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
+  RequiredState: Passed
+  ProductAgentRuntimeCodeAllowed: false
+  State: Pending
+
+TaskSpecRegistration:
+  CapabilityMapSource: Workflow/CodexCapabilityMap/AgentCore.yaml
+  RequiredCapabilityTaskIds:
+    - ED-0101
+    - ED-0102
+    - ED-0103
+    - ED-0107
+    - ED-0108
+    - ED-0109
+    - ED-0110
+    - ED-0111
+    - ED-0112
+    - ED-0115
+  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124]
+  AllTaskSpecsFrozenBeforeAssignment: true
+
+ChangeRequests:
+  - ChangeRequestId: CR-ED-0018-002
+    TargetTaskId: ED-0018
+    TargetTaskRevision: 2
+    RequestedBy: Coordinator
+    ApprovedBy: Coordinator
+    Decision: Accepted
+    Scope: >-
+      Preserve MockChannel's deterministic, one-shot, receipt-correlation behavior while replacing
+      test-only object-address matching with exact ActionId/OperationId matching. This lets Core
+      create the action inside the product path and the fixture return only its pre-scripted,
+      correlated receipt. No real channel behavior, retry, or authorization rule changes.
+
+ParallelGroups:
+  - GroupId: FirstProductSlice
+    TaskIds: [ED-0109, ED-0101, ED-0124]
+    DependsOn: [ED-0006, ED-0007, ED-0008, ED-0015, ED-0016, ED-0018, ED-0020]
+    OrderedDependencies:
+      - ED-0109
+      - ED-0101
+      - ED-0124
+  - GroupId: IndependentContractPreparation
+    TaskIds: [ED-0120]
+    WriteSetsDisjoint: true
+    SharedLocksDisjoint: true
+  - GroupId: SessionStateFollowup
+    TaskIds: [ED-0102]
+    DependsOn: [ED-0101]
+  - GroupId: ContextSelectionFollowup
+    TaskIds: [ED-0103]
+    DependsOn: [ED-0101]
+  - GroupId: AgentRuntimeFollowups
+    TaskIds: [ED-0107, ED-0108, ED-0110, ED-0111, ED-0112, ED-0115]
+    DependsOn:
+      - ED-0101
+      - ED-0109
+      - ED-0104
+      - ED-0105
+      - ED-0106
+
+ExitGate:
+  GateId: FirstCppAgentRuntimeVerticalSliceVerified
+  RequiredTaskIds: [ED-0109, ED-0101, ED-0124]
+  RequiredEvidence:
+    - Windows-native C++20 build target compiles Core and AgentRuntime product sources.
+    - Root CMake exposes and builds AgentRuntimeVerticalSliceTests, and the focused CTest case passes.
+    - Mock ingress passes Core trusted identity and policy checks before AgentRuntime runs.
+    - AgentRuntime runs one complete turn through FakeProvider and returns only a completed final answer.
+    - Core sends one authorized text action and verifies the correlated MockChannel receipt.
+    - Unauthorized identity, duplicate inbound, provider failure, and mismatched receipt do not report success.
+    - Changed production Core and AgentRuntime modules each meet at least 80 percent line coverage.
+    - Independent fixed-Head review and local ReviewBundle are recorded; GitHub PR attempt is recorded separately.
+  Unlocks:
+    - P2FollowupTasks
+    - P3ProviderAndMemoryTasks
+  State: Pending
+
+Tasks:
+  - TaskId: ED-0109
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现可信身份映射与 Core 聊天策略入口
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P2
+    OwnerRole: CoreOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    ChangeRequestId: CR-ED-0018-002
+    CapabilityIds: [TrustedIdentityAndActionPolicy]
+    ModuleIds: [Core, ChannelAdapterPort]
+    Goal: >-
+      实现 Core 的可信 ChannelEnvelope 身份映射、会话范围和文本动作授权；拒绝由正文或 Provider 输出
+      自称的身份/权限；只在 AgentRuntime 返回完整最终文字后创建 CoreAuthorizedAction，并验证唯一回执。
+    OutOfScope:
+      - Provider wire protocol 或真实网络
+      - 持久会话、durable memory 或数据库迁移
+      - 真实 QQ 登录、发送或微信
+      - 工具执行、Shell、任意文件和通用 MCP
+    DependsOn: [ED-0007, ED-0016, ED-0018, ED-0015]
+    ContractVersion:
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/ChannelAdapterContract.md V1
+      - Architecture/Contracts/ModelProviderContract.md V1.1
+    Context:
+      ModuleId: Core
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Modules/Channels.yaml
+        - Architecture/Contracts/CoreAgentContract.md
+        - Architecture/Contracts/ChannelAdapterContract.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Source/Channels/Contracts/ChannelAdapterPort.h
+        - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
+        - Tests/Contract/Channels/Contracts/MockChannelContractTests.cpp
+      OnDemandSet: []
+      ForbiddenSet:
+        - Workflow/Plans/P1.yaml
+        - Workflow/Events/Bootstrap/P1.jsonl
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Channels/QQ/
+      Budget:
+        CoreDocumentsTargetPercent: 10
+        TaskReferencesTargetPercent: 25
+        ImplementationContextReserveMinimumPercent: 50
+        MeasurementMode: EstimateUntilTelemetryExists
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Source/Core/CredentialLease.h
+      - Source/Core/CoreAuthorizedAction.h
+      - Source/Core/AgentRuntimePort.h
+      - Source/Core/IdentityPolicy.h
+      - Source/Core/IdentityPolicy.cpp
+      - Source/Core/CoreChatService.h
+      - Source/Core/CoreChatService.cpp
+      - Tests/Contract/Core/IdentityPolicyTests.cpp
+      - Tests/Contract/Core/CoreChatServiceContractTests.cpp
+      - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
+      - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
+      - Tests/Contract/Channels/Contracts/MockChannelContractTests.cpp
+      - Tests/Contract/Channels/Contracts/CoreAuthorizedActionTestFactory.h
+    SharedLocks: [MockChannelCoreAuthorizationSeam]
+    ApiDesign:
+      AuthorizedTurnContext: "Core-only construction; immutable mapped PrincipalId, exact ConversationScope, AgentTurnId, and canonical messages."
+      AgentRuntimePort: "Agent implements Core::AgentRuntimePort::RunTurn(const AuthorizedTurnContext&, Providers::ModelProviderPort&, const Providers::ModelProviderProfile&, const Providers::CredentialLease&, std::stop_token) -> AgentTurnResult; the interface exposes no Channel identity or authorization constructor."
+      AgentTurnResult: "Typed status Completed/Refused/Failed/Cancelled/UnknownOutcome plus final text only for a completed answer/refusal; partial text is never a sendable result."
+      CoreCredentialLease: "Core::CredentialLease is a noncopyable borrowed secret interface used only for ChannelAdapterPort calls; Provider::CredentialLease remains a distinct port type."
+      CoreAuthorizedAction: "Core-only construction; immutable ActionId, OperationId, IdempotencyKey, exact target conversation, SendText kind, text payload, and AuthorizationRef."
+      ReceiptRule: "Core reports send success only for one Succeeded ChannelReceipt whose ActionId and OperationId exactly match the issued action; UnknownOutcome is never retried."
+      MockMigration: "Replace the test-only stand-in action type with the Core type. Scripted receipts match exact ActionId/OperationId values, not object addresses, so an end-to-end Core-created action can be acknowledged without fabricating an uncorrelated result."
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: "Registered account and sender map only from the trusted ChannelEnvelope to one Principal and exact ConversationScope."
+        Evidence: "Contract tests cover valid mapping, unknown sender/account, route mismatch, empty identifiers, and duplicate StableDeduplicationId."
+      - AcceptanceId: AC-2
+        Description: "Core does not run AgentRuntime or send a channel action for rejected, duplicate, or unsupported messages."
+        Evidence: "Fake AgentRuntime and MockChannel counters remain zero on each rejection path."
+      - AcceptanceId: AC-3
+        Description: "Only a completed final AgentRuntime result can produce a private CoreAuthorizedAction; Provider or message fields cannot grant identity or permission."
+        Evidence: "Tests assert authorization object construction boundary and no send on refused, failed, cancelled, limited, or unknown outcome."
+      - AcceptanceId: AC-4
+        Description: "Core checks SendText capability evidence and exact receipt correlation and does not retry UnknownOutcome."
+        Evidence: "Tests cover unsupported/unverified capability, mismatched IDs, rejection, and unknown receipt."
+      - AcceptanceId: AC-5
+        Description: "All changed production Core sources meet at least 80 percent line coverage with the task-pinned compiler and gcov version."
+        Evidence: "Fresh task build, per-source gcov report, denominator, exclusions, and tool version in ReviewBundle."
+    Validation:
+      RequiredTargets: [CoreChatServiceContractTests, MockChannelContractTests]
+      TargetedBuild:
+        - "Windows PowerShell: g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Core/IdentityPolicy.cpp Source/Core/CoreChatService.cpp Tests/Contract/Core/IdentityPolicyTests.cpp Tests/Contract/Core/CoreChatServiceContractTests.cpp Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp Tests/Contract/Channels/Contracts/MockChannelContractTests.cpp -o <TaskBuildDir>/CoreChatServiceContractTests.exe"
+        - "<TaskBuildDir>/CoreChatServiceContractTests.exe"
+      ContractFixtures: ["Trusted envelope, sender mapping, deduplication, verified SendText, receipt correlation, and no-retry cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Changed paths exactly equal frozen WriteSet", "C++20 warnings-as-errors build", "Core production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "No network, provider credentials, real QQ account, or user data is permitted in this slice."
+    RiskLevel: High
+    RiskOwnerRole: CoreOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules:
+      MustFollow: [SEC-001, GOV-001, API-001, PAR-002]
+      SoftDefaults: []
+      ApprovedOverrides: ["CR-ED-0018-002 changes only the MockChannel test receipt key from object identity to exact action/operation ID matching."]
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/CodexRewrite/P2.jsonl
+      FollowUpTaskIds: [ED-0101, ED-0108, ED-0110, ED-0111, ED-0115]
+
+  - TaskId: ED-0101
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 C++ AgentRuntime 首轮循环与产品纵向切片
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [AgentTurnOrchestration]
+    Goal: >-
+      实现一个完整 C++ AgentRuntime turn：消费 Core 授权的上下文，调用 ModelProviderPort，校验事件关联与唯一终态，
+      并交付 Mock ingress -> Core identity/policy -> AgentRuntime -> FakeProvider -> CoreAuthorizedAction -> MockChannel receipt 的可编译行为切片。
+    OutOfScope: ["真实 Provider/QQ 网络", "工具执行", "持久化会话/记忆", "CLI/IDE/开发工具", "微信"]
+    DependsOn: [ED-0109, ED-0015, ED-0016, ED-0018, ED-0020]
+    ContractVersion:
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/ModelProviderContract.md V1.1
+      - Architecture/Contracts/ChannelAdapterContract.md V1
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Contracts/CoreAgentContract.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Source/Core/AgentRuntimePort.h
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - Tests/Contract/Providers/Contracts/FakeProvider.h
+      OnDemandSet: [Tests/Contract/Channels/Contracts/MockChannelAdapter.h]
+      ForbiddenSet: ["Workflow/Plans/P1.yaml", "Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget:
+        CoreDocumentsTargetPercent: 10
+        TaskReferencesTargetPercent: 25
+        ImplementationContextReserveMinimumPercent: 50
+        MeasurementMode: EstimateUntilTelemetryExists
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Source/Agent/AgentRuntime.h
+      - Source/Agent/AgentRuntime.cpp
+      - Tests/Contract/Agent/AgentRuntimeContractTests.cpp
+      - Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp
+      - Tests/Contract/Agent/CMakeLists.txt
+    SharedLocks: []
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: "AgentRuntime creates one provider request from the Core-authorized context and enforces request/turn/sequence correlation."
+        Evidence: "FakeProvider captured request and contract assertions for malformed, duplicate, or mismatched events."
+      - AcceptanceId: AC-2
+        Description: "Partial text is never sent; only ResponseCompleted with an allowed final/refusal result can reach Core as final text."
+        Evidence: "Failure, cancellation, output limit, unknown outcome, incomplete tool handoff, and invalid stream tests produce no Channel.SendAction call."
+      - AcceptanceId: AC-3
+        Description: "A Windows-native C++20 build target executes the complete Mock-to-Mock vertical slice and verifies a correlated Succeeded receipt."
+        Evidence: "AgentRuntimeVerticalSliceTests CTest output covers inbound identity, provider turn, action correlation, and one receipt."
+      - AcceptanceId: AC-4
+        Description: "Changed production Agent sources meet at least 80 percent line coverage."
+        Evidence: "Fresh build gcov report with per-source denominator, exclusions, and tool version in ReviewBundle."
+    Validation:
+      RequiredTargets: [AgentRuntimeVerticalSliceTests]
+      TargetedBuild:
+        - "cmake -S Tests/Contract/Agent -B <TaskBuildDir> -DCMAKE_CXX_STANDARD=20 -DBUILD_TESTING=ON"
+        - "cmake --build <TaskBuildDir> --target AgentRuntimeVerticalSliceTests --parallel 4"
+        - "ctest --test-dir <TaskBuildDir> --output-on-failure -R AgentRuntime.VerticalSlice"
+      ContractFixtures: ["FakeProvider final/failed/cancelled/unknown events; MockChannel trusted ingress and correlated receipt."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Changed paths exactly equal frozen WriteSet", "AgentRuntime.cpp line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "The test uses only synthetic MockChannel/FakeProvider fixtures and no credentials or external accounts."
+    RiskLevel: High
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules:
+      MustFollow: [SEC-001, API-001, PAR-002, TRACE-001]
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/CodexRewrite/P2.jsonl
+      FollowUpTaskIds: [ED-0107, ED-0108, ED-0110, ED-0111, ED-0114, ED-0115]
+
+  - TaskId: ED-0102
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现隔离的会话与对话状态管理
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P2
+    OwnerRole: CoreOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: AnthropicProviderOwner
+    ReviewerSlotId: Worker05
+    ReviewerAgentId: "/root/provider_anthropic"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [SessionAndConversationState]
+    Goal: "实现按已授权 ConversationScope 隔离的进程内 SessionState、消息顺序、turn 状态及显式结束行为；持久化恢复另由 ED-0112 完成。"
+    OutOfScope: ["跨进程持久化", "原始平台对象/身份字段持久化", "MemoryConsent 或跨 scope 召回", "TUI", "微信"]
+    DependsOn: [ED-0007, ED-0015, ED-0101]
+    ContractVersion: [Architecture/Contracts/CoreAgentContract.md V1, Architecture/Contracts/MemoryContract.md V1]
+    Context:
+      ModuleId: Core
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/MemoryContract.md, Source/Core/AgentRuntimePort.h]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Core/ConversationSessionState.h, Source/Core/ConversationSessionState.cpp, Tests/Contract/Core/ConversationSessionStateTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Sessions are keyed by exact ConversationScope and cannot read or mutate another scope.", Evidence: "Cross-sender, cross-channel, and cross-conversation contract tests."}
+      - {AcceptanceId: AC-2, Description: "Messages and turn outcomes preserve order and distinguish active, completed, cancelled, and unknown outcomes.", Evidence: "State-transition tests include duplicate message and invalid transition rejection."}
+      - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
+    Validation:
+      RequiredTargets: [ConversationSessionStateTests]
+      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Core/ConversationSessionState.cpp Tests/Contract/Core/ConversationSessionStateTests.cpp -o <TaskBuildDir>/ConversationSessionStateTests.exe", "<TaskBuildDir>/ConversationSessionStateTests.exe"]
+      ContractFixtures: ["Synthetic scope isolation and turn lifecycle cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "In-memory state-only implementation; persistence is ED-0112."
+    RiskLevel: Medium
+    RiskOwnerRole: CoreOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112, ED-0113]}
+
+  - TaskId: ED-0103
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现有界且尊重信任层级的 ContextSelector
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P2
+    OwnerRole: ContextOwner
+    OwnerSlotId: Worker06
+    OwnerAgentId: "/root/memory_context"
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: "/root/agent_core"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [ContextSelectionAndBudget]
+    Goal: "实现 Core 已授权输入上的上下文优先级、预算裁剪、摘要占位和来源元数据保留；不从消息正文推导身份或权限。"
+    OutOfScope: ["Durable memory writes", "Provider wire serialization", "任意文件/RAG/网络检索", "TUI", "微信"]
+    DependsOn: [ED-0007, ED-0012, ED-0101]
+    ContractVersion: [Architecture/Contracts/MemoryContract.md V1, Architecture/Contracts/ModelProviderContract.md V1.1]
+    Context:
+      ModuleId: ContextSelector
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/MemoryContract.md, Architecture/Contracts/ModelProviderContract.md, Tests/Contract/Context/FixtureIndex.yaml]
+      OnDemandSet: [Tests/Contract/Context/Fixtures/CB-001.json, Tests/Contract/Context/Fixtures/CB-002.json]
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/*", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Context/ContextSelector.h, Source/Context/ContextSelector.cpp, Tests/Contract/Context/ContextSelectorTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Selection is deterministic by priority and respects byte/token budgets without cutting UTF-8 code points.", Evidence: "Fixture-based boundary tests for exact-fit, overflow, empty, and multibyte text."}
+      - {AcceptanceId: AC-2, Description: "Untrusted history and summaries never override system/developer rules or grant identity/permissions.", Evidence: "Trust-order and spoofed-role contract tests."}
+      - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh per-source gcov report."}
+    Validation:
+      RequiredTargets: [ContextSelectorTests]
+      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Context/ContextSelector.cpp Tests/Contract/Context/ContextSelectorTests.cpp -o <TaskBuildDir>/ContextSelectorTests.exe", "<TaskBuildDir>/ContextSelectorTests.exe"]
+      ContractFixtures: [CB-001, CB-002]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "No external retrieval or user data is used."
+    RiskLevel: Medium
+    RiskOwnerRole: ContextOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, CTX-001, CTX-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0113, ED-0115]}
+
+  - TaskId: ED-0107
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现规范化流式 Agent 事件投影与终态门
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: AnthropicProviderOwner
+    ReviewerSlotId: Worker05
+    ReviewerAgentId: "/root/provider_anthropic"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [CanonicalStreamedAgentEvents]
+    Goal: "把三协议规范事件投影为 Agent 生命周期事件，校验 request/turn/sequence 关联，并确保终态唯一且先于工具 dispatch 门。"
+    OutOfScope: ["修改 ModelProviderContract", "原始 reasoning/thinking 透传", "直接向 Channel 流式发送", "TUI"]
+    DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106]
+    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1.1
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ModelProviderContract.md, Source/Providers/Contracts/ModelProviderPort.h, Source/Core/AgentRuntimePort.h]
+      OnDemandSet: []
+      ForbiddenSet: ["Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Agent/AgentEventProjector.h, Source/Agent/AgentEventProjector.cpp, Tests/Contract/Agent/AgentEventProjectorTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Only documented V1.1 public events reach clients; private reasoning never reaches context or channel.", Evidence: "Event mapping tests for text, refusal, usage, and filtered internal data."}
+      - {AcceptanceId: AC-2, Description: "Out-of-order, duplicate, wrong-request, and second-terminal events fail closed.", Evidence: "Contract tests assert stable error codes and no action."}
+      - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report."}
+    Validation:
+      RequiredTargets: [AgentEventProjectorTests]
+      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Agent/AgentEventProjector.cpp Tests/Contract/Agent/AgentEventProjectorTests.cpp -o <TaskBuildDir>/AgentEventProjectorTests.exe", "<TaskBuildDir>/AgentEventProjectorTests.exe"]
+      ContractFixtures: ["Synthetic V1.1 normal, refusal, usage, malformed sequence, and duplicate terminal events."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Events are synthetic and no external channels/providers are invoked."
+    RiskLevel: High
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0108, ED-0110, ED-0114]}
+
+  - TaskId: ED-0108
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现受 Core 授权的业务工具调用往返
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: ChatCompletionsProviderOwner
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: "/root/provider_chat"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [ToolCallRoundTrip]
+    ModuleIds: [AgentRuntime, Core]
+    Goal: "实现 Core 登记的显式业务动作 schema、完整 ToolCallReady 验证、一次性授权与回执闭环；模型输出本身不构成授权。"
+    OutOfScope: ["Shell/命令执行", "任意文件/网络/MCP 工具", "Provider 对话框自授权", "真实 QQ 动作"]
+    DependsOn: [ED-0101, ED-0107, ED-0109]
+    ContractVersion: [Architecture/Contracts/CoreAgentContract.md V1, Architecture/Contracts/ModelProviderContract.md V1.1, Architecture/Contracts/ChannelAdapterContract.md V1]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/ChannelAdapterContract.md, Source/Core/AgentRuntimePort.h]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Agent/ToolCallCoordinator.h, Source/Agent/ToolCallCoordinator.cpp, Source/Core/BusinessActionRegistry.h, Source/Core/BusinessActionRegistry.cpp, Tests/Contract/Agent/ToolCallRoundTripTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "ToolCallReady is considered only after a valid ResponseCompleted terminal and full argument JSON/schema validation.", Evidence: "FakeProvider tests with incomplete, duplicate, malformed, and handoff sequences."}
+      - {AcceptanceId: AC-2, Description: "Core rechecks ToolCallId, tool name, scope, active turn, identity, and capability before one execution.", Evidence: "Unauthorized and replay tests assert zero business-action calls."}
+      - {AcceptanceId: AC-3, Description: "No generic developer tools are registered; every business action returns correlated status without blind retry on unknown outcome.", Evidence: "Registry allowlist and receipt lifecycle tests."}
+      - {AcceptanceId: AC-4, Description: "Changed production Core and Agent sources meet at least 80 percent line coverage.", Evidence: "Fresh per-source gcov report."}
+    Validation:
+      RequiredTargets: [ToolCallRoundTripTests]
+      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Agent/ToolCallCoordinator.cpp Source/Core/BusinessActionRegistry.cpp Tests/Contract/Agent/ToolCallRoundTripTests.cpp -o <TaskBuildDir>/ToolCallRoundTripTests.exe", "<TaskBuildDir>/ToolCallRoundTripTests.exe"]
+      ContractFixtures: ["Synthetic registered business action schemas and malformed/untrusted tool calls."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80% per changed module"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Only synthetic registered business actions are used."
+    RiskLevel: High
+    RiskOwnerRole: CoreOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
+
+  - TaskId: ED-0110
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 turn 与三协议 Provider 统一取消生命周期
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: AnthropicProviderOwner
+    ReviewerSlotId: Worker05
+    ReviewerAgentId: "/root/provider_anthropic"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [TurnAndProviderCancellation]
+    ModuleIds: [AgentRuntime, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    Goal: "把 stop_token 从 Core turn 到 AgentRuntime/三种 Provider transport 传播，确保取消时不泄漏后续事件、不启动工具或重发 side effect。"
+    OutOfScope: ["新增 provider protocol", "自动重试未知结果", "取消已确认完成的 Channel 副作用"]
+    DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
+    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1.1
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ModelProviderContract.md, Source/Core/AgentRuntimePort.h]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Agent/TurnCancellationCoordinator.h, Source/Agent/TurnCancellationCoordinator.cpp, Tests/Contract/Agent/TurnCancellationTests.cpp, Tests/Contract/Providers/OpenAIResponses/ProviderCancellationTests.cpp, Tests/Contract/Providers/OpenAIChatCompletions/ProviderCancellationTests.cpp, Tests/Contract/Providers/AnthropicMessages/ProviderCancellationTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Pre-send cancellation and in-stream cancellation terminate once with correlated ResponseCancelled and no later event.", Evidence: "Deterministic stop-token and event-sink cancellation tests across FakeProvider and all three adapters."}
+      - {AcceptanceId: AC-2, Description: "Cancellation never retries a possibly accepted request or dispatches an incomplete tool call.", Evidence: "Provider call-count and channel action-count assertions."}
+      - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage per changed module.", Evidence: "Fresh gcov reports per adapter and AgentRuntime source."}
+    Validation:
+      RequiredTargets: [TurnCancellationTests, ProviderCancellationTests]
+      TargetedBuild: ["Build only AgentRuntime cancellation and the three provider cancellation targets with Windows C++20; run their focused CTest names."]
+      ContractFixtures: ["Pre-send, during-event, after-terminal, and ambiguous remote outcome cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Per-module production coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Cancellation scenarios use fake transport/provider/channel only."
+    RiskLevel: High
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
+
+  - TaskId: ED-0111
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 Provider 失败分类与有界重试策略
+    TaskKind: CapabilitySlice
+    State: Blocked
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: "/root/provider_responses"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [ProviderFailureAndRetrySemantics]
+    Goal: "统一显式 retry policy 和 ProviderError/终态分类；对可能已被远端接受的请求保持 OutcomeUnknown 且不得自动重发。"
+    OutOfScope: ["修改协议 wire contract", "修改外部服务商策略", "对副作用型工具/Channel 动作自动重试"]
+    DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
+    ContractVersion: Architecture/Contracts/ModelProviderContract.md V1.1
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/CoreAgentContract.md, Source/Providers/Contracts/ModelProviderPort.h]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Agent/ProviderOutcomePolicy.h, Source/Agent/ProviderOutcomePolicy.cpp, Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Failure, refusal, output-limited, cancelled, and unknown outcomes remain distinguishable and map to stable AgentTurn results.", Evidence: "Contract tests for every terminal kind and empty/partial stream."}
+      - {AcceptanceId: AC-2, Description: "Retry occurs only for explicitly retryable no-side-effect failures within the configured budget.", Evidence: "Attempt-count tests prove no retry for OutcomeUnknown, partial output, cancellation, or tool handoff."}
+      - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
+    Validation:
+      RequiredTargets: [ProviderOutcomePolicyTests]
+      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Agent/ProviderOutcomePolicy.cpp Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp -o <TaskBuildDir>/ProviderOutcomePolicyTests.exe", "<TaskBuildDir>/ProviderOutcomePolicyTests.exe"]
+      ContractFixtures: ["Synthetic provider terminal outcomes and retry budgets."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "No real provider calls or retrying side effects are allowed."
+    RiskLevel: High
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
+
+  - TaskId: ED-0112
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现中断回合恢复与未知副作用状态隔离
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P2
+    OwnerRole: CoreOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: BuildAndWorkflowOwner
+    ReviewerSlotId: Worker01
+    ReviewerAgentId: "/root/workflow_controller"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [InterruptedTurnRecoveryAndUnknownOutcome]
+    ModuleIds: [Core, Storage]
+    Goal: "保存可恢复的安全回合检查点和副作用状态；重启后恢复确定状态，不重发未知 Provider/Channel 操作。"
+    OutOfScope: ["无限期原始聊天归档", "删除/重置现有用户数据", "任何自动重发 UnknownOutcome", "微信"]
+    DependsOn: [ED-0101, ED-0102, ED-0108, ED-0109, ED-0110, ED-0111]
+    ContractVersion: [Architecture/Contracts/CoreAgentContract.md V1, Architecture/Contracts/ChannelAdapterContract.md V1, Architecture/Contracts/MemoryContract.md V1]
+    Context:
+      ModuleId: Storage
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ChannelAdapterContract.md, Architecture/Contracts/MemoryContract.md]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/*", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Storage/TurnCheckpointStore.h, Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.h, Source/Core/TurnRecoveryCoordinator.cpp, Tests/Contract/Storage/TurnCheckpointStoreTests.cpp, Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp]
+    SharedLocks: [StorageSchema]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Restart recovery restores scoped messages and deterministic state without restoring revoked/deleted/tombstoned data.", Evidence: "Temporary-store round-trip tests and scope isolation checks."}
+      - {AcceptanceId: AC-2, Description: "Unknown Provider/Channel outcome is surfaced and never reissued automatically.", Evidence: "Recovery tests assert operation count unchanged after restart."}
+      - {AcceptanceId: AC-3, Description: "Logs and checkpoints contain no secrets, raw private bodies, or prompt dumps.", Evidence: "Synthetic secret/body sentinel scan over persisted fixture and redacted event output."}
+      - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh per-module gcov reports."}
+    Validation:
+      RequiredTargets: [TurnCheckpointStoreTests, TurnRecoveryCoordinatorTests]
+      TargetedBuild: ["Build and run only the two Windows-native C++20 storage/recovery targets in an isolated temporary data directory."]
+      ContractFixtures: ["Synthetic restart checkpoints, revoked scope, deleted record, and unknown action outcome."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "No real user-data mutation", "Per-module line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "All persistence fixtures are synthetic and the temporary database is isolated to TaskBuildDir."
+    RiskLevel: High
+    RiskOwnerRole: StorageOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, TRACE-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0115
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现指令组装与策略优先级
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/agent_core"
+    ReviewerRole: ContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CapabilityIds: [InstructionAssemblyAndPolicyPrecedence]
+    ModuleIds: [Core, AgentRuntime, ContextSelector]
+    Goal: "按冻结优先级组装 system/developer instructions 和当前已授权对话；低信任正文、历史、Provider 输出和摘要不能覆盖 Core policy。"
+    OutOfScope: ["persona 冒充真实个人", "隐藏 AI 身份", "prompt 中放置密钥", "TUI/CLI/IDE"]
+    DependsOn: [ED-0101, ED-0103, ED-0109]
+    ContractVersion: [Architecture/Contracts/CoreAgentContract.md V1, Architecture/Contracts/MemoryContract.md V1, Architecture/Contracts/ModelProviderContract.md V1.1]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/MemoryContract.md, Architecture/Contracts/ModelProviderContract.md]
+      OnDemandSet: []
+      ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Core/InstructionPolicy.h, Source/Core/InstructionPolicy.cpp, Source/Agent/InstructionAssembler.h, Source/Agent/InstructionAssembler.cpp, Tests/Contract/Agent/InstructionAssemblerTests.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Instruction precedence matches the CoreAgent/Memory contracts and is deterministic.", Evidence: "Tests assert system > developer policy > current user > historical/summarized content ordering."}
+      - {AcceptanceId: AC-2, Description: "Secrets, sender claims, prompt injection in history, and model output cannot alter policy or identity.", Evidence: "Sentinel and spoofing contract tests."}
+      - {AcceptanceId: AC-3, Description: "The assistant remains transparent about being an AI and cannot assert unapproved persona identity.", Evidence: "Identity-policy and prompt-output fixture tests."}
+      - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh gcov report per module."}
+    Validation:
+      RequiredTargets: [InstructionAssemblerTests]
+      TargetedBuild: ["Build and run the isolated Windows-native C++20 instruction contract target."]
+      ContractFixtures: ["Synthetic prompt injection, persona, secret sentinel, and conflicting priority cases."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Per-module line coverage >=80%"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Only synthetic instructions and message fixtures are used."
+    RiskLevel: High
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, CTX-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0120
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 冻结 Windows 原生 HTTPS Provider Transport 合同与 C++ Port
+    TaskKind: ContractFreeze
+    State: Blocked
+    Phase: P2
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: "/root/provider_responses"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Goal: "解决 OD-0007 的 Windows TLS 选择并冻结三种 Provider 共用的 C++ HTTP streaming Port 与 V1 合同；只接受注册 Provider 显式配置的 HTTPS endpoint。"
+    OutOfScope: ["WinHTTP 实现代码", "任意网络工具", "loopback listener", "自动 redirect 到未批准 host", "凭据日志", "Provider wire schemas"]
+    DependsOn: [ED-0006, ED-0007]
+    ContractVersion: HttpTransportContract V1 (created and frozen in this task)
+    Context:
+      ModuleId: NetworkPlatform
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Platform.yaml, Standards/DependencyPolicy.md, Standards/SecurityAndPrivacy.md, Architecture/Contracts/ModelProviderContract.md]
+      OnDemandSet: [Workflow/OpenDecisions.md, CMake/DependencyPins.cmake]
+      ForbiddenSet: ["Source/Providers/OpenAIResponses/", "Source/Providers/OpenAIChatCompletions/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Workflow/OpenDecisions.md, Architecture/Decisions/Adr0003WindowsHttpTransport.md, Architecture/Contracts/HttpTransportContract.md, Source/Platform/Network/HttpTransportPort.h, Tests/Contract/Platform/Network/HttpTransportPortTests.cpp]
+    SharedLocks: [OD-0007, HttpTransportContractV1, WindowsTlsPolicy]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "OD-0007 records WinHTTP/Schannel, system trust roots, certificate failure, proxy, timeout, redirect denial, and cancellation policy." , Evidence: "ADR-0003 cites official Windows API documentation and records tradeoffs."}
+      - {AcceptanceId: AC-2, Description: "HttpTransportContract V1 defines typed request/stream/terminal results, limits, cancellation, sanitization, timeout, and unknown-outcome behavior without exposing WinHTTP types." , Evidence: "Contract review covers normal, TLS failure, redirect, timeout, cancellation, and ambiguous-result examples."}
+      - {AcceptanceId: AC-3, Description: "A compiled C++20 HttpTransportPort can be substituted by an offline fake without exposing arbitrary URL, credentials, or generic network tools." , Evidence: "Port compile/contract target and negative API tests."}
+    Validation:
+      RequiredTargets: [HttpTransportPortTests]
+      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Tests/Contract/Platform/Network/HttpTransportPortTests.cpp -o <TaskBuildDir>/HttpTransportPortTests.exe", "<TaskBuildDir>/HttpTransportPortTests.exe"]
+      ContractFixtures: ["Typed HTTPS endpoint, bounded body/chunk, timeout, cancellation, redirect-denied, and unknown-result examples."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "No WinHTTP platform type leaks through HttpTransportPort.h"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Contract and Port freeze only; WinHTTP implementation behavior is ED-0121 and uses offline tests."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106, ED-0121]}
+
+  - TaskId: ED-0124
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
+    TaskKind: Build
+    State: Blocked
+    Phase: P2
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/workflow_controller"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/memory_context"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Goal: "把已独立验证的 Core/AgentRuntime 纵向切片 C++ target 加入根 Windows CMake/CTest，使常规根构建能执行其行为验收。"
+    OutOfScope: ["修改 Core/AgentRuntime 源码", "增加 Provider/Channel 运行时", "全仓重构 CMake", "修改依赖版本"]
+    DependsOn: [ED-0101, ED-0109]
+    ContractVersion: "Root CMake/C++20 baseline ED-0006; AgentRuntimeVerticalSliceTests TaskRevision 1"
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/BuildRelease.yaml, Architecture/Modules/HostCoreAgent.yaml, CMakeLists.txt, Tests/Contract/Agent/CMakeLists.txt]
+      OnDemandSet: [Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp]
+      ForbiddenSet: ["Source/Core/", "Source/Agent/", "Workflow/Events/Bootstrap/P1.jsonl", "CMake/DependencyPins.cmake"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [CMakeLists.txt]
+    SharedLocks: [RootCmakeAndCtestRegistry]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Existing Windows root configuration builds AgentRuntimeVerticalSliceTests without changing dependency pins or unrelated targets.", Evidence: "Native CMake configure/build output for only the new product test target."}
+      - {AcceptanceId: AC-2, Description: "Root CTest discovers and passes the focused AgentRuntime.VerticalSlice test.", Evidence: "Targeted CTest output and unchanged prior focused Controller test."}
+    Validation:
+      RequiredTargets: [AgentRuntimeVerticalSliceTests]
+      TargetedBuild: ["cmake --preset win-ucrt64-debug", "cmake --build --preset win-ucrt64-debug --target AgentRuntimeVerticalSliceTests --parallel 4", "ctest --preset win-ucrt64-debug -R AgentRuntime.VerticalSlice --output-on-failure"]
+      ContractFixtures: ["Uses the already frozen FakeProvider and MockChannel synthetic fixtures."]
+      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact single-file WriteSet", "No dependency pin changes"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "The integration target is offline and uses only synthetic test support."
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}

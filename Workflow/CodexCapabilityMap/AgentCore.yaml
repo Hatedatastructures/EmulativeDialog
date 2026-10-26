@@ -243,7 +243,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0101
       CandidateWorkstream: AgentRuntimeTurnLoop
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Agent/AgentRuntimeTurnLifecycle
         State: Planned
@@ -263,7 +263,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0115
       CandidateWorkstream: TrustedInstructionAndPolicyPrecedence
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Agent/InstructionAndPolicyPrecedence
         State: Planned
@@ -283,7 +283,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0102
       CandidateWorkstream: CoreConversationAndTurnState
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Core/ConversationScopeAndTurnState
         State: Planned
@@ -303,7 +303,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0103
       CandidateWorkstream: ScopedContextSelection
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Context/ContextScopePriorityAndBudget
         State: Planned
@@ -322,7 +322,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0104
       CandidateWorkstream: OpenAIResponsesProvider
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Providers/OpenAIResponses/RequestAndEventMapping
         State: Planned
@@ -347,7 +347,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0105
       CandidateWorkstream: OpenAIChatCompletionsProvider
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Providers/OpenAIChatCompletions/RequestAndEventMapping
         State: Planned
@@ -372,7 +372,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0106
       CandidateWorkstream: AnthropicMessagesProvider
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Providers/AnthropicMessages/RequestAndEventMapping
         State: Planned
@@ -392,7 +392,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0107
       CandidateWorkstream: CanonicalStreamEventLifecycle
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Agent/CanonicalEventOrdering
         State: Planned
@@ -412,7 +412,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0108
       CandidateWorkstream: AuthorizedBusinessActionLifecycle
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Agent/AuthorizedActionRoundTrip
         State: Planned
@@ -436,7 +436,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0109
       CandidateWorkstream: CoreTrustedIdentityAndPolicy
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Core/TrustedEnvelopeAuthorization
         State: Planned
@@ -456,7 +456,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0110
       CandidateWorkstream: AgentTurnCancellation
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Agent/CancellationLifecycle
         State: Planned
@@ -476,7 +476,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0111
       CandidateWorkstream: ProviderErrorsAndSafeRetry
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Providers/CanonicalErrorAndRetryPolicy
         State: Planned
@@ -496,7 +496,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0112
       CandidateWorkstream: RecoverableTurnAndOperationOutcome
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Core/UnknownOutcomeRecovery
         State: Planned
@@ -516,7 +516,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0113
       CandidateWorkstream: IdentityScopedChatMemory
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Memory/ScopeProvenanceAndForget
         State: Planned
@@ -536,7 +536,7 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0114
       CandidateWorkstream: CrossProviderUsageAndLimits
-      TaskRegistration: DeferredToPhaseExpansion
+      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Providers/UsageAndOutputLimitMapping
         State: Planned
@@ -650,9 +650,9 @@ TaskLinkage:
   FormalTaskIndexPath: Workflow/TaskIndex.yaml
   FormalTaskIndexWasRead: true
   FormalTaskIndexWriteAuthorized: false
-  ProductTaskIdsInExpandedPlans: 0
-  ProposedTaskIdsAreFormal: false
-  TaskRegistration: DeferredToPhaseExpansion
+  ProductTaskIdsInExpandedPlans: 15
+  ProposedTaskIdsAreFormal: true
+  TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
   PhaseExpansionOwner: Coordinator
   ProposedTaskIdAllocation:
     - {TaskId: ED-0101, CapabilityId: AgentTurnOrchestration}
@@ -671,9 +671,9 @@ TaskLinkage:
     - {TaskId: ED-0113, CapabilityId: ScopedChatMemory}
     - {TaskId: ED-0114, CapabilityId: ProviderUsageAndOutputLimits}
   RegistrationNote: >-
-    These are stable proposed TaskIds mapped from every Keep/Redesign capability. Coordinator will
-    register their frozen TaskSpecs in the relevant phase plan and TaskIndex after the current
-    preparation gates open. This ED-0001 map does not claim those formal task records already exist.
+    The 15 Keep/Redesign capabilities map to frozen TaskSpecs ED-0101 through ED-0115 in P2/P3.
+    They are registered for the P1 exit condition but remain blocked from code assignment until
+    the Coordinator signs the P1 ExitGate. Task registration does not imply implementation.
 
 ScopeAccounting:
   TotalCapabilities: 24
@@ -683,7 +683,7 @@ ScopeAccounting:
   Defer: 2
   DecisionCoveragePercent: 100
   KeepOrRedesignProposedTaskIdCoveragePercent: 100
-  FormalTaskSpecRegistrationPercent: 0
+  FormalTaskSpecRegistrationPercent: 100
   OutOfScopeExplicitlyTagged:
     - Codex CLI/IDE and TUI host surface
     - Coding workflow and patch editing
