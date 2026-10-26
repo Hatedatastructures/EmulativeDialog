@@ -2661,7 +2661,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2787,16 +2787,16 @@ Tasks:
     MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0127-ResponsesV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0127-R2
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R3
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R4
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "R3 superseded before implementation because its fixed baseline omitted the merged ED-0017/R4 contract."
+      CurrentFindingOrFailure: "R4 assignment validated against the merged contract baseline; implementation not started."
       TriedApproaches: []
-      NextAction: "Coordinator fast-forwards the clean isolated branch to BaselineCommit and revalidates assignment for R4."
-      LastValidationResult: "No owner implementation started; R4 awaits clean-base assignment."
+      NextAction: "Owner implements the two-file refusal fixture WriteSet, validates JSON pointers and exact paths, then commits and pushes this task branch."
+      LastValidationResult: "WorkflowController query and validate-assignment both succeeded at BaselineCommit."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
@@ -2805,7 +2805,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -2933,16 +2933,16 @@ Tasks:
     MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0128-ChatCompletionsV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0128-R2
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R3
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R4
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "R3 superseded before implementation because its fixed baseline omitted the merged ED-0017/R4 contract."
+      CurrentFindingOrFailure: "R4 assignment validated against the merged contract baseline; implementation not started."
       TriedApproaches: []
-      NextAction: "Coordinator fast-forwards the clean isolated branch to BaselineCommit and revalidates assignment for R4."
-      LastValidationResult: "No owner implementation started; R4 awaits clean-base assignment."
+      NextAction: "Owner implements the two-file refusal fixture WriteSet, validates JSON pointers and exact paths, then commits and pushes this task branch."
+      LastValidationResult: "WorkflowController query and validate-assignment both succeeded at BaselineCommit."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
@@ -2951,7 +2951,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 Anthropic Messages V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Ready
+    State: Assigned
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -3086,15 +3086,15 @@ Tasks:
     MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0129-AnthropicV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0129-R2
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0129-R3
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0129-R4
     MergeTargetBranch: codex/integration
     ReviewerDecision: Pending
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "R3 superseded before implementation because its fixed baseline omitted the merged ED-0017/R4 contract."
+      CurrentFindingOrFailure: "R4 assignment validated against the merged contract baseline; implementation not started."
       TriedApproaches: []
-      NextAction: "Coordinator fast-forwards the clean isolated branch to BaselineCommit and revalidates assignment for R4."
-      LastValidationResult: "No owner implementation started; R4 awaits clean-base assignment."
+      NextAction: "Owner implements the two-file refusal fixture WriteSet, validates JSON pointers and exact paths, then commits and pushes this task branch."
+      LastValidationResult: "WorkflowController query and validate-assignment both succeeded at BaselineCommit."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
