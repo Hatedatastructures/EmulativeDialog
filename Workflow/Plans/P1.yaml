@@ -2661,7 +2661,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Review
+    State: MergeQueued
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2789,14 +2789,14 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0127-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R4
     MergeTargetBranch: codex/integration
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
     ReviewHeadCommit: "039788c1954d826f04f0cf4b58555809c6f5b896"
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Fixed Head pushed; independent review in progress. GitHub PR creation returned HTTP 403."
+      CurrentFindingOrFailure: "Independent fixed-head review approved with no findings; P1 LocalReviewBundle complete; GitHub PR creation denied HTTP 403."
       TriedApproaches: []
-      NextAction: "Reviewer completes the fixed Base..Head review; Coordinator closes findings and verifies the final diff before bootstrap integration."
-      LastValidationResult: "JSON parsing, JSON Pointer resolution (2/2), diff check, exact two-path WriteSet, and four V1 fixture byte comparisons passed; commit/push succeeded and worktree is clean."
+      NextAction: "IntegrationOwner performs the authorized no-conflict local merge, verifies the final task diff and targeted evidence, then retires the task branch."
+      LastValidationResult: "Author and independent review passed; exact two-path diff, pointers, response.refusal event order, empty refusal, and four V1 blob checks passed."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
@@ -2805,7 +2805,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Review
+    State: MergeQueued
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -2935,14 +2935,14 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0128-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R4
     MergeTargetBranch: codex/integration
-    ReviewerDecision: Pending
+    ReviewerDecision: Approve
     ReviewHeadCommit: "354164fdb2fd73079b3ef7ff8646061b58b2ba15"
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Fixed Head pushed; independent review in progress. GitHub PR creation returned HTTP 403."
+      CurrentFindingOrFailure: "Independent fixed-head review approved with no findings; P1 LocalReviewBundle complete; GitHub PR creation denied HTTP 403."
       TriedApproaches: []
-      NextAction: "Reviewer completes the fixed Base..Head review; Coordinator closes findings and verifies the final diff before bootstrap integration."
-      LastValidationResult: "TaskSpec JSON parse, R4 pin/12-case matrix/JsonPointer/terminal checks, diff check, exact WriteSet, and four V1 fixture byte comparisons passed; commit/push succeeded and worktree is clean."
+      NextAction: "IntegrationOwner performs the authorized no-conflict local merge, verifies the final task diff and targeted evidence, then retires the task branch."
+      LastValidationResult: "Author and independent review passed; exact two-path diff, R4 pin, 12-case conflict matrix, terminal exactly-once, no ToolCallReady on failures, and four V1 blobs passed."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 

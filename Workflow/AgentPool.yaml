@@ -36,8 +36,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0127
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
@@ -47,8 +47,8 @@ Slots:
     ModuleIds:
       - AgentRuntime
       - Core
-    CurrentTaskId: ED-0128
-    Status: Review
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/p1_gov004_luna"
