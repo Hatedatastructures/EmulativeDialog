@@ -1,0 +1,835 @@
+{
+  "SchemaVersion": 1,
+  "Protocol": "OpenAIResponses",
+  "ContractVersion": "ModelProviderContract V1",
+  "WireEventFields": {
+    "TypeField": "type",
+    "UpstreamSequenceField": "sequence_number",
+    "CanonicalSequenceStartsAt": 1,
+    "CanonicalSequencePolicy": "Adapter emits contiguous local numbers only for delivered canonical events."
+  },
+  "SseEncoding": {
+    "FrameTemplate": "event: <type><line-ending>data: <compact UTF-8 JSON><line-ending><line-ending>",
+    "ChunkingVariants": [
+      "all_frames_in_one_http_chunk",
+      "one_sse_frame_per_http_chunk",
+      "one_utf8_byte_per_http_chunk"
+    ],
+    "LineEndingVariants": [
+      "LF",
+      "CRLF"
+    ],
+    "NoEventFrames": [
+      ": synthetic keepalive comment",
+      "empty frame"
+    ],
+    "TextProbeCaseId": "text_completed_with_usage",
+    "TextProbeContainsMultibyteUtf8": true,
+    "ExpectedCanonicalEventsIdenticalForEveryVariant": true
+  },
+  "Cases": [
+    {
+      "CaseId": "text_completed_with_usage",
+      "RequestId": "req-stream-text",
+      "AgentTurnId": "turn-stream-text",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-text",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "msg-synthetic-text",
+            "type": "message",
+            "status": "in_progress",
+            "role": "assistant",
+            "content": []
+          },
+          "sequence_number": 2
+        },
+        {
+          "type": "response.content_part.added",
+          "item_id": "msg-synthetic-text",
+          "output_index": 0,
+          "content_index": 0,
+          "part": {
+            "type": "output_text",
+            "text": "",
+            "annotations": []
+          },
+          "sequence_number": 3
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-text",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "Synthetic ",
+          "sequence_number": 4
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-text",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "回复🙂",
+          "sequence_number": 5
+        },
+        {
+          "type": "response.output_text.done",
+          "item_id": "msg-synthetic-text",
+          "output_index": 0,
+          "content_index": 0,
+          "text": "Synthetic 回复🙂",
+          "sequence_number": 6
+        },
+        {
+          "type": "response.content_part.done",
+          "item_id": "msg-synthetic-text",
+          "output_index": 0,
+          "content_index": 0,
+          "part": {
+            "type": "output_text",
+            "text": "Synthetic 回复🙂",
+            "annotations": []
+          },
+          "sequence_number": 7
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "id": "msg-synthetic-text",
+            "type": "message",
+            "status": "completed",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Synthetic 回复🙂",
+                "annotations": []
+              }
+            ]
+          },
+          "sequence_number": 8
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-synthetic-text",
+            "status": "completed",
+            "output": [
+              {
+                "id": "msg-synthetic-text",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "output_text",
+                    "text": "Synthetic 回复🙂",
+                    "annotations": []
+                  }
+                ]
+              }
+            ],
+            "usage": {
+              "input_tokens": 12,
+              "output_tokens": 5,
+              "total_tokens": 17,
+              "input_tokens_details": {
+                "cached_tokens": 0
+              },
+              "output_tokens_details": {
+                "reasoning_tokens": 0
+              }
+            }
+          },
+          "sequence_number": 9
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-stream-text",
+          "AgentTurnId": "turn-stream-text",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-text"
+          }
+        },
+        {
+          "RequestId": "req-stream-text",
+          "AgentTurnId": "turn-stream-text",
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-text",
+          "Payload": {
+            "Text": "Synthetic "
+          }
+        },
+        {
+          "RequestId": "req-stream-text",
+          "AgentTurnId": "turn-stream-text",
+          "SequenceNumber": 3,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-text",
+          "Payload": {
+            "Text": "回复🙂"
+          }
+        },
+        {
+          "RequestId": "req-stream-text",
+          "AgentTurnId": "turn-stream-text",
+          "SequenceNumber": 4,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 12,
+              "OutputTokens": 5,
+              "TotalTokens": 17,
+              "CachedInputReadTokens": 0,
+              "ReasoningOutputTokens": 0,
+              "Completeness": "Final"
+            }
+          }
+        },
+        {
+          "RequestId": "req-stream-text",
+          "AgentTurnId": "turn-stream-text",
+          "SequenceNumber": 5,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "FinalAnswer"
+          }
+        }
+      ],
+      "TerminalCount": 1
+    },
+    {
+      "CaseId": "refusal_completed",
+      "RequestId": "req-stream-refusal",
+      "AgentTurnId": "turn-stream-refusal",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-refusal",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "msg-synthetic-refusal",
+            "type": "message",
+            "status": "in_progress",
+            "role": "assistant",
+            "content": []
+          },
+          "sequence_number": 2
+        },
+        {
+          "type": "response.content_part.added",
+          "item_id": "msg-synthetic-refusal",
+          "output_index": 0,
+          "content_index": 0,
+          "part": {
+            "type": "refusal",
+            "refusal": ""
+          },
+          "sequence_number": 3
+        },
+        {
+          "type": "response.refusal.delta",
+          "item_id": "msg-synthetic-refusal",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "Synthetic refusal.",
+          "sequence_number": 4
+        },
+        {
+          "type": "response.refusal.done",
+          "item_id": "msg-synthetic-refusal",
+          "output_index": 0,
+          "content_index": 0,
+          "refusal": "Synthetic refusal.",
+          "sequence_number": 5
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "id": "msg-synthetic-refusal",
+            "type": "message",
+            "status": "completed",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "refusal",
+                "refusal": "Synthetic refusal."
+              }
+            ]
+          },
+          "sequence_number": 6
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-synthetic-refusal",
+            "status": "completed",
+            "output": [
+              {
+                "id": "msg-synthetic-refusal",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "refusal",
+                    "refusal": "Synthetic refusal."
+                  }
+                ]
+              }
+            ],
+            "usage": {
+              "input_tokens": 8,
+              "output_tokens": 3,
+              "total_tokens": 11,
+              "output_tokens_details": {
+                "reasoning_tokens": 0
+              }
+            }
+          },
+          "sequence_number": 7
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-stream-refusal",
+          "AgentTurnId": "turn-stream-refusal",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-refusal"
+          }
+        },
+        {
+          "RequestId": "req-stream-refusal",
+          "AgentTurnId": "turn-stream-refusal",
+          "SequenceNumber": 2,
+          "EventType": "RefusalDelta",
+          "ItemId": "msg-synthetic-refusal",
+          "Payload": {
+            "Text": "Synthetic refusal."
+          }
+        },
+        {
+          "RequestId": "req-stream-refusal",
+          "AgentTurnId": "turn-stream-refusal",
+          "SequenceNumber": 3,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 8,
+              "OutputTokens": 3,
+              "TotalTokens": 11,
+              "ReasoningOutputTokens": 0,
+              "Completeness": "Final"
+            }
+          }
+        },
+        {
+          "RequestId": "req-stream-refusal",
+          "AgentTurnId": "turn-stream-refusal",
+          "SequenceNumber": 4,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "Refusal"
+          }
+        }
+      ],
+      "TerminalCount": 1
+    },
+    {
+      "CaseId": "interleaved_function_calls_tool_handoff",
+      "RequestId": "req-stream-tools",
+      "AgentTurnId": "turn-stream-tools",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-tools",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "fc-synthetic-order",
+            "type": "function_call",
+            "status": "in_progress",
+            "call_id": "call-synthetic-order",
+            "name": "lookup_order",
+            "arguments": ""
+          },
+          "sequence_number": 2
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 1,
+          "item": {
+            "id": "fc-synthetic-order-2",
+            "type": "function_call",
+            "status": "in_progress",
+            "call_id": "call-synthetic-order-2",
+            "name": "lookup_order",
+            "arguments": ""
+          },
+          "sequence_number": 3
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "item_id": "fc-synthetic-order",
+          "output_index": 0,
+          "delta": "{\"order_id\":\"",
+          "sequence_number": 4
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "item_id": "fc-synthetic-order-2",
+          "output_index": 1,
+          "delta": "{\"order_id\":\"",
+          "sequence_number": 5
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "item_id": "fc-synthetic-order",
+          "output_index": 0,
+          "delta": "ORDER-SYNTH-001\"}",
+          "sequence_number": 6
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "item_id": "fc-synthetic-order-2",
+          "output_index": 1,
+          "delta": "ORDER-SYNTH-002\"}",
+          "sequence_number": 7
+        },
+        {
+          "type": "response.function_call_arguments.done",
+          "item_id": "fc-synthetic-order-2",
+          "output_index": 1,
+          "arguments": "{\"order_id\":\"ORDER-SYNTH-002\"}",
+          "sequence_number": 8
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 1,
+          "item": {
+            "id": "fc-synthetic-order-2",
+            "type": "function_call",
+            "status": "completed",
+            "call_id": "call-synthetic-order-2",
+            "name": "lookup_order",
+            "arguments": "{\"order_id\":\"ORDER-SYNTH-002\"}"
+          },
+          "sequence_number": 9
+        },
+        {
+          "type": "response.function_call_arguments.done",
+          "item_id": "fc-synthetic-order",
+          "output_index": 0,
+          "arguments": "{\"order_id\":\"ORDER-SYNTH-001\"}",
+          "sequence_number": 10
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "id": "fc-synthetic-order",
+            "type": "function_call",
+            "status": "completed",
+            "call_id": "call-synthetic-order",
+            "name": "lookup_order",
+            "arguments": "{\"order_id\":\"ORDER-SYNTH-001\"}"
+          },
+          "sequence_number": 11
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-synthetic-tools",
+            "status": "completed",
+            "output": [
+              {
+                "id": "fc-synthetic-order",
+                "type": "function_call",
+                "status": "completed",
+                "call_id": "call-synthetic-order",
+                "name": "lookup_order",
+                "arguments": "{\"order_id\":\"ORDER-SYNTH-001\"}"
+              },
+              {
+                "id": "fc-synthetic-order-2",
+                "type": "function_call",
+                "status": "completed",
+                "call_id": "call-synthetic-order-2",
+                "name": "lookup_order",
+                "arguments": "{\"order_id\":\"ORDER-SYNTH-002\"}"
+              }
+            ],
+            "usage": {
+              "input_tokens": 18,
+              "output_tokens": 12,
+              "total_tokens": 30,
+              "output_tokens_details": {
+                "reasoning_tokens": 2
+              }
+            }
+          },
+          "sequence_number": 12
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-tools"
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 2,
+          "EventType": "ToolCallStarted",
+          "ItemId": "fc-synthetic-order",
+          "ToolCallId": "call-synthetic-order",
+          "Payload": {
+            "ToolName": "lookup_order"
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 3,
+          "EventType": "ToolCallStarted",
+          "ItemId": "fc-synthetic-order-2",
+          "ToolCallId": "call-synthetic-order-2",
+          "Payload": {
+            "ToolName": "lookup_order"
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 4,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "fc-synthetic-order",
+          "ToolCallId": "call-synthetic-order",
+          "Payload": {
+            "JsonText": "{\"order_id\":\""
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 5,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "fc-synthetic-order-2",
+          "ToolCallId": "call-synthetic-order-2",
+          "Payload": {
+            "JsonText": "{\"order_id\":\""
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 6,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "fc-synthetic-order",
+          "ToolCallId": "call-synthetic-order",
+          "Payload": {
+            "JsonText": "ORDER-SYNTH-001\"}"
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 7,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "fc-synthetic-order-2",
+          "ToolCallId": "call-synthetic-order-2",
+          "Payload": {
+            "JsonText": "ORDER-SYNTH-002\"}"
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 8,
+          "EventType": "ToolCallReady",
+          "ItemId": "fc-synthetic-order-2",
+          "ToolCallId": "call-synthetic-order-2",
+          "Payload": {
+            "ToolName": "lookup_order",
+            "Arguments": {
+              "order_id": "ORDER-SYNTH-002"
+            }
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 9,
+          "EventType": "ToolCallReady",
+          "ItemId": "fc-synthetic-order",
+          "ToolCallId": "call-synthetic-order",
+          "Payload": {
+            "ToolName": "lookup_order",
+            "Arguments": {
+              "order_id": "ORDER-SYNTH-001"
+            }
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 10,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 18,
+              "OutputTokens": 12,
+              "TotalTokens": 30,
+              "ReasoningOutputTokens": 2,
+              "Completeness": "Final"
+            }
+          }
+        },
+        {
+          "RequestId": "req-stream-tools",
+          "AgentTurnId": "turn-stream-tools",
+          "SequenceNumber": 11,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "ToolHandoff"
+          }
+        }
+      ],
+      "TerminalCount": 1
+    },
+    {
+      "CaseId": "exact_duplicate_sequence_ignored",
+      "RequestId": "req-stream-duplicate",
+      "AgentTurnId": "turn-stream-duplicate",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-duplicate",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-duplicate",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "once",
+          "sequence_number": 2
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-duplicate",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "once",
+          "sequence_number": 2
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-synthetic-duplicate",
+            "status": "completed",
+            "output": [
+              {
+                "id": "msg-synthetic-duplicate",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "output_text",
+                    "text": "once",
+                    "annotations": []
+                  }
+                ]
+              }
+            ],
+            "usage": null
+          },
+          "sequence_number": 3
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-stream-duplicate",
+          "AgentTurnId": "turn-stream-duplicate",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-duplicate"
+          }
+        },
+        {
+          "RequestId": "req-stream-duplicate",
+          "AgentTurnId": "turn-stream-duplicate",
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-duplicate",
+          "Payload": {
+            "Text": "once"
+          }
+        },
+        {
+          "RequestId": "req-stream-duplicate",
+          "AgentTurnId": "turn-stream-duplicate",
+          "SequenceNumber": 3,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "FinalAnswer"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "DuplicateHandling": "Ignore only the byte/JSON-identical event with the same upstream sequence_number."
+    },
+    {
+      "CaseId": "sequence_gap_rejected",
+      "RequestId": "req-stream-gap",
+      "AgentTurnId": "turn-stream-gap",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-gap",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-gap",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "must not be delivered",
+          "sequence_number": 3
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-stream-gap",
+          "AgentTurnId": "turn-stream-gap",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-gap"
+          }
+        },
+        {
+          "RequestId": "req-stream-gap",
+          "AgentTurnId": "turn-stream-gap",
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "InvalidStream",
+            "Retryable": false,
+            "Description": "Synthetic sequence gap."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    },
+    {
+      "CaseId": "conflicting_duplicate_sequence_rejected",
+      "RequestId": "req-stream-conflict",
+      "AgentTurnId": "turn-stream-conflict",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-synthetic-conflict",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-conflict",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "first",
+          "sequence_number": 2
+        },
+        {
+          "type": "response.output_text.delta",
+          "item_id": "msg-synthetic-conflict",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "different",
+          "sequence_number": 2
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-stream-conflict",
+          "AgentTurnId": "turn-stream-conflict",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-synthetic-conflict"
+          }
+        },
+        {
+          "RequestId": "req-stream-conflict",
+          "AgentTurnId": "turn-stream-conflict",
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "msg-synthetic-conflict",
+          "Payload": {
+            "Text": "first"
+          }
+        },
+        {
+          "RequestId": "req-stream-conflict",
+          "AgentTurnId": "turn-stream-conflict",
+          "SequenceNumber": 3,
+          "EventType": "ResponseFailed",
+          "Payload": {
+            "ErrorCode": "InvalidStream",
+            "Retryable": false,
+            "Description": "Synthetic same-sequence payload conflict."
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "AutomaticResend": false
+    }
+  ]
+}
