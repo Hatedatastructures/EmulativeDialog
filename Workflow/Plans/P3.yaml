@@ -42,6 +42,22 @@ ChangeRequests:
       Fixed-head preflight found the named provider/Memory/Context ReadSet entries and OnDemand examples absent;
       each replacement JSON fixture path is present in the frozen repository tree.
 
+  - ChangeRequestId: CR-ED-0126-006
+    RequestedBy: Coordinator
+    ApprovedBy: Coordinator
+    Decision: Accepted
+    TaskIds: [ED-0105]
+    TaskRevisionTransitions:
+      - {TaskId: ED-0105, FromRevision: 3, ToRevision: 4}
+    Scope: >-
+      Move only ED-0105 test support paths from Tests/Contract/Providers/ChatCompletions/ into the ModuleMap-owned
+      Tests/Contract/Providers/OpenAIChatCompletions/ root. Keep all Source/Providers/OpenAIChatCompletions production
+      paths, Goal, Acceptance, dependencies, Owner, Reviewer, fixture semantics, and protocol behavior unchanged; align
+      CMake -S, TaskBuildDirectory, CTest, gcov report paths, and branch/worktree with R4. No product source changes.
+    Reason: >-
+      ProviderOpenAIChatCompletions ModuleMap WriteRoots authorize Source/Providers/OpenAIChatCompletions/ and
+      Tests/Contract/Providers/OpenAIChatCompletions/ only; R3 declared two test files outside that module boundary.
+
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113]
@@ -163,7 +179,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0110, ED-0111, ED-0114]}
 
   - TaskId: ED-0105
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-06
     Title: 实现 OpenAI-compatible Chat Completions C++ Provider Adapter
     TaskKind: CapabilitySlice
@@ -177,8 +193,8 @@ Tasks:
     ReviewerAgentId: "/root/provider_anthropic"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0105-R3-ChatCompletions
-    Worktree: H:/Qbot/EmulativeDialog.ED-0105-R3
+    Branch: Task/ED-0105-R4-ChatCompletions
+    Worktree: H:/Qbot/EmulativeDialog.ED-0105-R4
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -221,6 +237,25 @@ Tasks:
       Reason: "The ReadSet FixtureIndex.yaml and OnDemandSet PC-001.json are absent; the existing inputs are OpenAIChatCompletions/Fixtures/FixtureIndex.json and OpenAIChatCompletions/Fixtures/CanonicalRequest.json."
       PreserveGoalWriteSetDependenciesAcceptanceOwnerReviewer: true
     CapabilityIds: [OpenAICompatibleChatCompletions]
+    SupersededRevision3Evidence:
+      TaskRevision: 3
+      TaskSpecCommit: b711685de2bc8dccdefb206f4fa899e301a8e64b
+      TaskSpecBlob: e61da608fbbb167fdd96f40d146329a515983979
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "R3 placed two provider-test paths outside ProviderOpenAIChatCompletions WriteRoots. R4 corrects only those paths before implementation; no task worktree or code change began."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0126-006
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0105/R3 Goal, Acceptance, dependencies, Owner, Reviewer, all Source/Providers/OpenAIChatCompletions WriteSet paths and protocol semantics. Move only the two test WriteSet paths into the ModuleMap-owned Tests/Contract/Providers/OpenAIChatCompletions root; update matching CMake source root and revision-specific Branch/Worktree/TaskBuildDirectory, CTest and gcov report paths."
+      PreserveGoalAcceptanceDependenciesOwnerReviewerSourceWriteSetAndProtocolSemantics: true
     Goal: "实现与 Responses 分离的 Chat Completions adapter，区分标准语义与注册服务商差异，并遵守公共 ModelProviderPort V1.1。"
     OutOfScope: ["任意服务商猜测", "无注册的 extension 字段", "Rust/Node/Python runtime", "直接渠道发送", "微信"]
     DependsOn: [ED-0015, ED-0010, ED-0120]
@@ -233,7 +268,7 @@ Tasks:
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
-    WriteSet: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.h, Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Tests/Contract/Providers/ChatCompletions/ChatCompletionsProviderTests.cpp, Tests/Contract/Providers/ChatCompletions/CMakeLists.txt]
+    WriteSet: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.h, Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp, Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt]
     SharedLocks: []
     Acceptance:
       - {AcceptanceId: AC-1, Description: "Standard request/stream/error/refusal fields map to the canonical contract, while service-specific fields require a declared CompatibilityProfile.", Evidence: "Fixtures cover standard mode and each registered extension independently."}
@@ -241,23 +276,23 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "Changed production adapter source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
     Validation:
       RequiredTargets: [ChatCompletionsProviderTests]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0105-R3.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0105-R4.build
       Coverage:
         Required: true
         ProductionSources: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0105-R3.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0105-R4.build/Reports
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Providers/ChatCompletions -B H:/Qbot/EmulativeDialog.ED-0105-R3.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0105-R3.build/CMake --target ChatCompletionsProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0105-R3.build/CMake --output-on-failure"
+        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake --target ChatCompletionsProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake --output-on-failure"
       ContractFixtures: ["All ED-0010 fixtures and the declared compatibility-profile extensions."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
         - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0105-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0105-R3.build/Reports'; try { $gcno = Get-ChildItem -LiteralPath 'H:/Qbot/EmulativeDialog.ED-0105-R3.build/CMake' -Recurse -Filter 'ChatCompletionsProvider.cpp.gcno' | Select-Object -First 1; if ($null -eq $gcno) { throw 'Missing ChatCompletionsProvider.cpp.gcno' }; & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o ($gcno.FullName -replace '\\.gcno$','') 'H:/Qbot/EmulativeDialog.ED-0105-R3/Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp' } finally { Pop-Location }\""
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0105-R4.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0105-R4.build/Reports'; try { $gcno = Get-ChildItem -LiteralPath 'H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake' -Recurse -Filter 'ChatCompletionsProvider.cpp.gcno' | Select-Object -First 1; if ($null -eq $gcno) { throw 'Missing ChatCompletionsProvider.cpp.gcno' }; & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o ($gcno.FullName -replace '\\.gcno$','') 'H:/Qbot/EmulativeDialog.ED-0105-R4/Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp' } finally { Pop-Location }\""
         - "Verify ChatCompletionsProvider.cpp is at least 80 percent line-covered with numerator, denominator, exclusions, and gcov version; reports stay under TaskBuildDirectory/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Adapter tests use offline scripted HttpTransport and synthetic profiles."
