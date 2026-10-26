@@ -26,9 +26,14 @@
 |---|---|---|
 | 固定审计树和文件清单 | Git 2.53.0.windows.1 | git ls-tree -r --name-only，退出码 0；81 个文件 |
 | 路径命名 | PowerShell 7.6.9 | 下方脚本，退出码 0；121 个路径项、0 个发现 |
-| C++ 标识符命名 | clang-tidy LLVM 22.1.0；MinGW-w64 target x86_64-w64-windows-gnu；libstdc++ headers 16.1.0 | 下方脚本，退出码 0；16/16 文件解析，命名发现 0 |
+| C++ 标识符命名 | C:/Users/C1373/AppData/Local/Programs/Python/Python312/Scripts/clang-tidy.exe，LLVM 22.1.0；MinGW-w64 target x86_64-w64-windows-gnu；libstdc++ headers 16.1.0 | 下方脚本，退出码 0；16/16 文件解析，命名发现 0 |
 | CMake 项目/目标定位 | ripgrep 15.1.0 | 下方命令，退出码 0；项目名和 4 个 target 均符合 |
 | 依赖解析输入 | yaml-cpp commit 56e3bb550c91fd7005566f19c079cb7a503223cf | 与基线 CMake/DependencyPins.cmake 固定提交一致；只作为第三方 include 输入，未修改 |
+
+实际可执行文件与版本核对（PowerShell 7.6.9）：
+
+- Get-Command clang-tidy -All 的首个 PATH 命中为 C:/Users/C1373/AppData/Local/Programs/Python/Python312/Scripts/clang-tidy.exe；PowerShell 的裸命令 clang-tidy 使用该路径。核验命令 & 'C:/Users/C1373/AppData/Local/Programs/Python/Python312/Scripts/clang-tidy.exe' --version 输出 LLVM 22.1.0，退出码 0。
+- 第二个 PATH 命中为 C:/msys64/ucrt64/bin/clang-tidy.exe；核验命令 & 'C:/msys64/ucrt64/bin/clang-tidy.exe' --version 输出 LLVM 22.1.4，退出码 0。此可执行文件没有用于本次审计。
 
 ### 路径检查
 
@@ -242,6 +247,6 @@ C++ 子分母（16）：
 ## 变更记录
 
 - BaseCommit: d151c5b3287718964d376ad550953e4d34890a08
-- 本审计文件路径由 Coordinator 批准的 CR-ED-0013-008 从任务派发草案的连字符名称改为 PascalCase 的 Workflow/Evidence/P1Code001.md；Coordinator 将在集成时登记该 CR。P1 计划未修改。
+- CR-ED-0013-008 已在集成提交 68e83fa16f5fddd2c9c75baee1d64bff04111a93 的 Workflow/Events/Bootstrap/P1.jsonl 中登记：Submitted EventId 99141cee-01a0-4e93-b151-4f870bb22acb，Approved EventId 7fb1dcac-49b6-475e-bbe2-ada1bf9af27f。批准范围仅为证据交付路径 Workflow/Evidence/P1Code001.md；P1 计划未修改。
 - 操作偏差：第一次使用未指定目标 worktree 的 apply_patch，文件落在 H:\Qbot\EmulativeDialog\Workflow\Evidence；随后已撤回本轮创建的唯一文件。该文件夹现为空。Coordinator 指示保留此空目录供其只读复核；原始目录此后没有进一步写操作。
 - 本报告只覆盖上述固定基线的静态名称/路径规则；不代替独立 Reviewer 或 Coordinator 对 P1 ExitGate 的决定。
