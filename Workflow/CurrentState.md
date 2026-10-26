@@ -6,11 +6,11 @@
 - 根路径：H:/Qbot/EmulativeDialog。
 - 原始 `main` 仍是 unborn branch，原工作区中的项目目录仍未跟踪。为保护它并提供隔离基线，协调者从只读 workspace snapshot 建立本地 bootstrap commit `6e9b727ab88ae910d70069d9b9f19a9912f2bcb4`；当前集成工作树是 `codex/integration`，原工作区未切换或覆盖。
 - 远端 `origin` 指向公开 GitHub 仓库 `Hatedatastructures/EmulativeDialog`；已发布 `codex/integration` 和 ED-0006 任务分支。创建 PR 时 GitHub connector 返回 `403 Resource not accessible by integration`，`gh auth status` 也显示 CLI 未登录。因此 ED-0006 按 bootstrap 规则使用已批准的本地 ReviewBundle，不声称有远端 PR。
-- ED-0006 已交付并本地合入 Windows 原生 C++20 BuildProbe（merge `71bed25a257b018f1e2a8c6e34ca751133135f30`），post-merge configure/build/CTest 全部通过并获独立审查批准；远端 PR 未创建，原因见仓库/PR 权限记录。ED-0007 四份 V1 合同已修正、独立审查通过并本地合入（merge `7745fb1019c6a7afdd8b54f89a9894568fbf38a0`）；Provider/Memory 实现现在可依赖冻结合同，但产品切片仍等 P1 的 Controller gate。ED-0008 Revision 2 C++ WorkflowController 已固定并通过独立协调者重跑；当前交 Worker02 只读评审，本地 ReviewBundle 位于 `H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008`。
+- ED-0006 已交付并本地合入 Windows 原生 C++20 BuildProbe（merge `71bed25a257b018f1e2a8c6e34ca751133135f30`），post-merge configure/build/CTest 全部通过并获独立审查批准；远端 PR 未创建，原因见仓库/PR 权限记录。ED-0007 四份 V1 合同已修正、独立审查通过并本地合入（merge `7745fb1019c6a7afdd8b54f89a9894568fbf38a0`）；Provider/Memory 实现现在可依赖冻结合同，但产品 AgentRuntime 切片仍等 P1 的 Controller gate。ED-0008 Revision 2 C++ WorkflowController 已固定并通过独立协调者重跑；当前交 Worker02 只读评审，本地 ReviewBundle 位于 `H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008`。Worker03–06 正在分离写集准备三协议和 Memory/Context 离线夹具，不写产品 C++ 实现或共享接口。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
 - P0 的 ED-0001 上游能力映射与 ED-0005 模块/治理门均已通过独立审查并合入本地 `codex/integration`；CodexCorePreparationGate 已通过。P1 的 ED-0006 build 与 ED-0007 四份合同均已独立审查并合并；ED-0008 控制器已固定 Head，当前由 Worker02 独立复审。P1 ExitGate 通过前不启动产品 AgentRuntime 实现。QQ/TUI 仍保留独立领域门。
-- Workflow/AgentPool.yaml 将 Worker01–Worker06 保持为用户指定的稳定职责；Worker01 完成 ED-0008 作者工作，Worker02 当前独立复审 ED-0008；Worker03–Worker06 可复用于合同已冻结的 Provider/Memory 离线夹具预备任务。后续继续复用逻辑身份，不虚报已完成 Agent 会话仍在运行。
+- Workflow/AgentPool.yaml 将 Worker01–Worker06 保持为用户指定的稳定职责；Worker01 完成 ED-0008 作者工作，Worker02 当前独立复审 ED-0008，Worker03–Worker06 分别并行负责 Responses、Chat Completions、Anthropic、Memory/Context 夹具任务。后续继续复用逻辑身份，不虚报已完成 Agent 会话仍在运行。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
 - `Workflow/CodexCapabilityMap.yaml` 已锁定 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97` 与 Apache-2.0 行为参考边界；24 项能力已分类，15 项 Keep/Redesign 具备拟议 TaskId。正式 P2/P3 TaskSpecs 须在实现分配前登记。TUI 参照库仍未锁定，且不阻塞 Agent 核心。
 - 任何阶段不得把本状态描述为“已实现”或“已构建”。

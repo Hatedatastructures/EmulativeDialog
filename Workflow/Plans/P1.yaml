@@ -401,7 +401,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 OpenAI Responses 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Proposed
+    State: Assigned
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -467,15 +467,16 @@ Tasks:
     RiskOwnerRole: ResponsesProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0009-ResponsesFixtures
+    Worktree: H:/Qbot/EmulativeDialog.ED-0009
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0009
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      NextAction: Prepare the four frozen Responses fixture data files in the assigned isolated worktree; do not implement the adapter or shared C++ interface.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
@@ -490,7 +491,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Chat Completions 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Proposed
+    State: Assigned
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -556,15 +557,16 @@ Tasks:
     RiskOwnerRole: ChatCompletionsProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0010-ChatFixtures
+    Worktree: H:/Qbot/EmulativeDialog.ED-0010
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      NextAction: Prepare the four frozen Chat Completions fixture data files in the assigned isolated worktree; do not implement the adapter or shared C++ interface.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
@@ -579,7 +581,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Anthropic Messages 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Proposed
+    State: Assigned
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -645,15 +647,16 @@ Tasks:
     RiskOwnerRole: AnthropicProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0011-AnthropicFixtures
+    Worktree: H:/Qbot/EmulativeDialog.ED-0011
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0011
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      NextAction: Prepare the four frozen Anthropic Messages fixture data files in the assigned isolated worktree; do not implement the adapter or shared C++ interface.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
@@ -668,7 +671,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Memory 与 ContextSelector 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Proposed
+    State: Assigned
     Phase: P1
     OwnerRole: MemoryContextOwner
     OwnerSlotId: Worker06
@@ -735,15 +738,16 @@ Tasks:
     RiskOwnerRole: MemoryContextOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: ""
+    BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0012-MemoryContextFixtures
+    Worktree: H:/Qbot/EmulativeDialog.ED-0012
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0012
     Checkpoint:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Create the isolated fixture-only worktree and prepare the four frozen data files.
+      NextAction: Prepare the four frozen Memory/Context fixture data files in the assigned isolated worktree; do not implement Memory, ContextSelector, or shared C++ APIs.
       OpenMessageIds: []
       LastValidationResult: ""
     Deliverable:
