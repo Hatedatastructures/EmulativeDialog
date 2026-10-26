@@ -2657,11 +2657,11 @@ Tasks:
         - ED-0101
 
   - TaskId: ED-0127
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-05
     Title: 新增 OpenAI Responses V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Ready
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -2687,6 +2687,13 @@ Tasks:
         Disposition: SupersededBeforeAssignment
         ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
         Reason: "ED-0017/R4 is the frozen V1.2 contract; the consumer pin must use the merged R4 task revision."
+      - TaskRevision: 3
+        TaskSpecCommit: d2b1ba815cfa450acd2c82a3dfc2748634278516
+        TaskSpecBlob: 92444c71a2268f41d6e8d3bdc080c2f272031613
+        State: Assigned
+        Disposition: SupersededBeforeImplementation
+        Branch: Task/ED-0127-ResponsesV12Fixtures
+        Reason: "Initial task worktree was based before ED-0017/R4 and before the current frozen contract state; no implementation changes existed."
     PreviousRevisionChangeRequest:
       ChangeRequestId: CR-ED-0127-001
       RequestedByRole: Coordinator
@@ -2700,7 +2707,7 @@ Tasks:
         blocked fixture task to the ED-0017/R3 V1.2 contract task revision. Preserve its fixture-only Goal, ReadSet,
         WriteSet, acceptance criteria, validation commands, and Blocked state.
       Reason: "Assignment validation rejected the registered branch before any task implementation began."
-    RevisionChangeRequest:
+    PriorRevisionChangeRequest:
       ChangeRequestId: CR-ED-0127-002
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -2713,6 +2720,22 @@ Tasks:
         slot that is not an owner of another concurrently active fixture task. Preserve this task's exact fixture-only
         Goal, ReadSet, WriteSet, acceptance criteria, validation commands, and synthetic-data boundary.
       Reason: "ED-0017/R4 is now merged; reviewer slots are allocated so the three disjoint refusal fixture tasks can run in parallel without owner/reviewer slot collisions."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0127-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+      Scope: >-
+        Update only the frozen task baseline and merge base to the current integration head containing the merged
+        ED-0017/R4 contract and task context. Preserve Goal, ReadSet, WriteSet, dependencies, contract pin,
+        acceptance, validation, owner, reviewer and task branch.
+      Reason: >-
+        The assigned R3 branches were clean but still at 2a1dc408, which predates the contract revision they
+        consume. No implementation began. A current fixed base is required for source inspection, exact diff
+        review and an integration-ready PR.
     ParallelGroup: ProviderRefusalV1_2OfflineFixtures
     Goal: >-
       在 ED-0017/R4 冻结 ModelProviderContract V1.2 后，为 OpenAI Responses 既有拒绝映射增加独立、完全合成的
@@ -2759,9 +2782,9 @@ Tasks:
     RiskOwnerRole: ResponsesProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
+    BaselineCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     HeadCommit: ""
-    MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
+    MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0127-ResponsesV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0127-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0127-R3
@@ -2770,19 +2793,19 @@ Tasks:
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Ready after ED-0017/R4 merged; assignment awaits distinct branch/worktree and event pins."
+      CurrentFindingOrFailure: "R3 superseded before implementation because its fixed baseline omitted the merged ED-0017/R4 contract."
       TriedApproaches: []
-      NextAction: "Coordinator pins the ED-0017/R4 contract commit, records assignment, then owner implements the two-file fixture WriteSet."
-      LastValidationResult: "Not run; dependency remains Blocked."
+      NextAction: "Coordinator fast-forwards the clean isolated branch to BaselineCommit and revalidates assignment for R4."
+      LastValidationResult: "No owner implementation started; R4 awaits clean-base assignment."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0128
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Ready
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -2808,6 +2831,13 @@ Tasks:
         Disposition: SupersededBeforeAssignment
         ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
         Reason: "ED-0017/R4 is the frozen V1.2 contract; the consumer pin must use the merged R4 task revision."
+      - TaskRevision: 3
+        TaskSpecCommit: d2b1ba815cfa450acd2c82a3dfc2748634278516
+        TaskSpecBlob: 92444c71a2268f41d6e8d3bdc080c2f272031613
+        State: Assigned
+        Disposition: SupersededBeforeImplementation
+        Branch: Task/ED-0128-ChatCompletionsV12Fixtures
+        Reason: "Initial task worktree was based before ED-0017/R4 and before the current frozen contract state; no implementation changes existed."
     PreviousRevisionChangeRequest:
       ChangeRequestId: CR-ED-0128-001
       RequestedByRole: Coordinator
@@ -2821,7 +2851,7 @@ Tasks:
         blocked fixture task to the ED-0017/R3 V1.2 contract task revision. Preserve its fixture-only Goal, ReadSet,
         WriteSet, acceptance criteria, validation commands, and Blocked state.
       Reason: "Assignment validation rejected the registered branch before any task implementation began."
-    RevisionChangeRequest:
+    PriorRevisionChangeRequest:
       ChangeRequestId: CR-ED-0128-002
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -2834,6 +2864,22 @@ Tasks:
         slot that is not an owner of another concurrently active fixture task. Preserve this task's exact fixture-only
         Goal, ReadSet, WriteSet, acceptance criteria, validation commands, and synthetic-data boundary.
       Reason: "ED-0017/R4 is now merged; reviewer slots are allocated so the three disjoint refusal fixture tasks can run in parallel without slot collision."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0128-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+      Scope: >-
+        Update only the frozen task baseline and merge base to the current integration head containing the merged
+        ED-0017/R4 contract and task context. Preserve Goal, ReadSet, WriteSet, dependencies, contract pin,
+        acceptance, validation, owner, reviewer and task branch.
+      Reason: >-
+        The assigned R3 branches were clean but still at 2a1dc408, which predates the contract revision they
+        consume. No implementation began. A current fixed base is required for source inspection, exact diff
+        review and an integration-ready PR.
     ParallelGroup: ProviderRefusalV1_2OfflineFixtures
     Goal: >-
       在 ED-0017/R4 冻结 ModelProviderContract V1.2 后，为 Chat Completions delta.refusal 的 V1.2 profile 语义
@@ -2882,9 +2928,9 @@ Tasks:
     RiskOwnerRole: ChatCompletionsProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
+    BaselineCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     HeadCommit: ""
-    MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
+    MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0128-ChatCompletionsV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0128-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0128-R3
@@ -2893,19 +2939,19 @@ Tasks:
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Ready after ED-0017/R4 merged; assignment awaits distinct branch/worktree and event pins."
+      CurrentFindingOrFailure: "R3 superseded before implementation because its fixed baseline omitted the merged ED-0017/R4 contract."
       TriedApproaches: []
-      NextAction: "Coordinator pins the ED-0017/R4 contract commit, records assignment, then owner implements the two-file fixture WriteSet."
-      LastValidationResult: "Not run; dependency remains Blocked."
+      NextAction: "Coordinator fast-forwards the clean isolated branch to BaselineCommit and revalidates assignment for R4."
+      LastValidationResult: "No owner implementation started; R4 awaits clean-base assignment."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0129
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-05
     Title: 新增 Anthropic Messages V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Ready
     Phase: P1
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -2931,6 +2977,13 @@ Tasks:
         Disposition: SupersededBeforeAssignment
         ContractVersion: ModelProviderContract V1.2 from ED-0017/R3
         Reason: "ED-0017/R4 is the frozen V1.2 contract; the consumer pin must use the merged R4 task revision."
+      - TaskRevision: 3
+        TaskSpecCommit: d2b1ba815cfa450acd2c82a3dfc2748634278516
+        TaskSpecBlob: 92444c71a2268f41d6e8d3bdc080c2f272031613
+        State: Assigned
+        Disposition: SupersededBeforeImplementation
+        Branch: Task/ED-0129-AnthropicV12Fixtures
+        Reason: "Initial task worktree was based before ED-0017/R4 and before the current frozen contract state; no implementation changes existed."
     PreviousRevisionChangeRequest:
       ChangeRequestId: CR-ED-0129-001
       RequestedByRole: Coordinator
@@ -2944,7 +2997,7 @@ Tasks:
         blocked fixture task to the ED-0017/R3 V1.2 contract task revision. Preserve its fixture-only Goal, ReadSet,
         WriteSet, acceptance criteria, validation commands, and Blocked state.
       Reason: "Assignment validation rejected the registered branch before any task implementation began."
-    RevisionChangeRequest:
+    PriorRevisionChangeRequest:
       ChangeRequestId: CR-ED-0129-002
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -2959,6 +3012,22 @@ Tasks:
       Reason: >-
         ED-0017/R4 adds AC-8 under CR-ED-0007-008; the Anthropic fixture successor must cover that protocol mapping.
         Worker06 is assigned as independent reviewer so the three disjoint fixture tasks can run in parallel.
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0129-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+      Scope: >-
+        Update only the frozen task baseline and merge base to the current integration head containing the merged
+        ED-0017/R4 contract and task context. Preserve Goal, ReadSet, WriteSet, dependencies, contract pin,
+        acceptance, validation, owner, reviewer and task branch.
+      Reason: >-
+        The assigned R3 branches were clean but still at 2a1dc408, which predates the contract revision they
+        consume. No implementation began. A current fixed base is required for source inspection, exact diff
+        review and an integration-ready PR.
     ParallelGroup: ProviderRefusalV1_2OfflineFixtures
     Goal: >-
       在 ED-0017/R4 冻结 ModelProviderContract V1.2 后，为 Anthropic refusal stop_details 到 canonical
@@ -3012,9 +3081,9 @@ Tasks:
     RiskOwnerRole: AnthropicProviderOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
+    BaselineCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     HeadCommit: ""
-    MergeBaseCommit: 2a1dc408bbc25612b630dad01f8e5c6fff1379b1
+    MergeBaseCommit: 4c391d91e85fa9f12c298a20b62f2ae47bd438dc
     Branch: Task/ED-0129-AnthropicV12Fixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0129-R2
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0129-R3
@@ -3023,9 +3092,9 @@ Tasks:
     ReviewHeadCommit: ""
     Checkpoint:
       LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Ready after ED-0017/R4 merged; assignment awaits distinct branch/worktree and event pins."
+      CurrentFindingOrFailure: "R3 superseded before implementation because its fixed baseline omitted the merged ED-0017/R4 contract."
       TriedApproaches: []
-      NextAction: "Coordinator pins the ED-0017/R4 contract commit, records assignment, then owner implements the two-file fixture WriteSet."
-      LastValidationResult: "Not run; dependency remains Blocked."
+      NextAction: "Coordinator fast-forwards the clean isolated branch to BaselineCommit and revalidates assignment for R4."
+      LastValidationResult: "No owner implementation started; R4 awaits clean-base assignment."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
