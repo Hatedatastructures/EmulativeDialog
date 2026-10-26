@@ -259,7 +259,7 @@ Tasks:
       FollowUpTaskIds: []
 
   - TaskId: ED-0008
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
@@ -297,10 +297,10 @@ Tasks:
       - CMake/DependencyPins.cmake
     ContextBudgetOverride:
       TaskId: ED-0008
-      TaskRevision: 1
+      TaskRevision: 2
       MaxReferenceFiles: 13
       ApprovedByRole: Coordinator
-      ApprovalEventId: d04f16ad-692d-46bc-b3fc-08c7770c1d61
+      ApprovalEventId: b7d3a845-6348-42a0-9530-3da7fd1f83a2
       RuleRef: Workflow/AgentExecutionStandard.md:47-48
       Reason: All 13 listed files are direct dependencies of AC-1..AC-6 or the authorized Windows/yaml-cpp build; no unrelated task history is loaded.
     WriteSet:
@@ -339,7 +339,7 @@ Tasks:
         - WorkflowController
       TargetedBuild:
         - cmake --preset windows-mingw
-        - cmake --build --preset windows-mingw --target WorkflowController
+        - cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
       ContractFixtures:
         - ctest --preset windows-mingw --output-on-failure
       StaticChecks:
@@ -357,13 +357,26 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: ""
-      TriedApproaches: []
-      NextAction: Implement the frozen ED-0008 WriteSet in the assigned worktree; ED-0007 contracts are merged and the 13-file soft-budget exception is recorded.
+      CurrentFindingOrFailure: "TaskRevision 1 CTest exited 1 on an invalid ReadSet fixture; the fixture was corrected. TaskRevision 2 build scope is approved; final CTest rerun is pending."
+      TriedApproaches:
+        - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
+        - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
+      NextAction: Finish the corrected fixture and run the TaskRevision 2 frozen configure/build/CTest commands in the assigned worktree.
       OpenMessageIds: []
-      LastValidationResult: ""
+      LastValidationResult: "Windows CMake configure exit 0; initial controller target build exit 0; CTest exit 1 on fixture setup; later full build exit 0; TaskRevision 2 CTest pending."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
       EventShard: Workflow/Events/Bootstrap/P1.jsonl
       FollowUpTaskIds: []
+    ApprovedChangeRequests:
+      - ChangeRequestId: CR-ED-0008-001
+        FromTaskRevision: 1
+        ToTaskRevision: 2
+        RequestedByAgentId: "/root"
+        ApprovedByAgentId: "/root"
+        Scope: Validation.TargetedBuild
+        PreviousCommand: cmake --build --preset windows-mingw --target WorkflowController
+        ApprovedCommand: cmake --build --preset windows-mingw --target BuildProbe WorkflowController WorkflowControllerContractTests
+        Reason: A clean task-specific binary directory must build BuildProbe and WorkflowControllerContractTests before CTest; the TaskRevision 1 target built only WorkflowController, so registered tests were skipped or unavailable.
+        PreserveBranchAndWorktree: true
