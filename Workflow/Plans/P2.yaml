@@ -63,7 +63,7 @@ ChangeRequests:
       - {TaskId: ED-0107, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0108, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0109, FromRevision: 2, ToRevision: 3}
-      - {TaskId: ED-0110, FromRevision: 1, ToRevision: 2}
+      - {TaskId: ED-0110, FromRevision: 2, ToRevision: 3}
       - {TaskId: ED-0111, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0112, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0113, FromRevision: 1, ToRevision: 2}
@@ -479,7 +479,7 @@ Tasks:
       FollowUpTaskIds: [ED-0107, ED-0108, ED-0110, ED-0111, ED-0114, ED-0115]
 
   - TaskId: ED-0102
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现隔离的会话与对话状态管理
     TaskKind: CapabilitySlice
@@ -493,7 +493,28 @@ Tasks:
     ReviewerAgentId: "/root/provider_anthropic"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0102-R2-SessionState
+    Worktree: H:/Qbot/EmulativeDialog.ED-0102-R2
     CapabilityIds: [SessionAndConversationState]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0102/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "实现按已授权 ConversationScope 隔离的进程内 SessionState、消息顺序、turn 状态及显式结束行为；持久化恢复另由 ED-0112 完成。"
     OutOfScope: ["跨进程持久化", "原始平台对象/身份字段持久化", "MemoryConsent 或跨 scope 召回", "TUI", "微信"]
     DependsOn: [ED-0007, ED-0015, ED-0101]
@@ -513,10 +534,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Messages and turn outcomes preserve order and distinguish active, completed, cancelled, and unknown outcomes.", Evidence: "State-transition tests include duplicate message and invalid transition rejection."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0102-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Core/ConversationSessionState.cpp]
+        TestDriverSource: Tests/Contract/Core/ConversationSessionStateTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0102-R2.build/Reports
       RequiredTargets: [ConversationSessionStateTests]
-      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Core/ConversationSessionState.cpp Tests/Contract/Core/ConversationSessionStateTests.cpp -o <TaskBuildDir>/ConversationSessionStateTests.exe", "<TaskBuildDir>/ConversationSessionStateTests.exe"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0102-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0102-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0102-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0102-R2/Source/Core/ConversationSessionState.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0102-R2.build/Objects/ConversationSessionState.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0102-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0102-R2/Tests/Contract/Core/ConversationSessionStateTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0102-R2.build/Objects/ConversationSessionStateTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0102-R2.build/Objects/ConversationSessionState.o\" \"H:/Qbot/EmulativeDialog.ED-0102-R2.build/Objects/ConversationSessionStateTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0102-R2.build/ConversationSessionStateTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0102-R2'; & 'H:/Qbot/EmulativeDialog.ED-0102-R2.build/ConversationSessionStateTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic scope isolation and turn lifecycle cases."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0102-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0102-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0102-R2.build/Objects/ConversationSessionState.o' 'H:/Qbot/EmulativeDialog.ED-0102-R2/Source/Core/ConversationSessionState.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Core/ConversationSessionState.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0102-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "In-memory state-only implementation; persistence is ED-0112."
     RiskLevel: Medium
@@ -525,9 +564,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112, ED-0113]}
-
   - TaskId: ED-0103
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现有界且尊重信任层级的 ContextSelector
     TaskKind: CapabilitySlice
@@ -541,7 +579,28 @@ Tasks:
     ReviewerAgentId: "/root/agent_core"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0103-R2-ContextSelector
+    Worktree: H:/Qbot/EmulativeDialog.ED-0103-R2
     CapabilityIds: [ContextSelectionAndBudget]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0103/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "实现 Core 已授权输入上的上下文优先级、预算裁剪、摘要占位和来源元数据保留；不从消息正文推导身份或权限。"
     OutOfScope: ["Durable memory writes", "Provider wire serialization", "任意文件/RAG/网络检索", "TUI", "微信"]
     DependsOn: [ED-0007, ED-0012, ED-0101]
@@ -561,10 +620,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Untrusted history and summaries never override system/developer rules or grant identity/permissions.", Evidence: "Trust-order and spoofed-role contract tests."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh per-source gcov report."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0103-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Context/ContextSelector.cpp]
+        TestDriverSource: Tests/Contract/Context/ContextSelectorTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports
       RequiredTargets: [ContextSelectorTests]
-      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Context/ContextSelector.cpp Tests/Contract/Context/ContextSelectorTests.cpp -o <TaskBuildDir>/ContextSelectorTests.exe", "<TaskBuildDir>/ContextSelectorTests.exe"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0103-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0103-R2/Source/Context/ContextSelector.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelector.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0103-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0103-R2/Tests/Contract/Context/ContextSelectorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelectorTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelector.o\" \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelectorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0103-R2.build/ContextSelectorTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0103-R2'; & 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/ContextSelectorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: [CB-001, CB-002]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0103-R2.build/Objects/ContextSelector.o' 'H:/Qbot/EmulativeDialog.ED-0103-R2/Source/Context/ContextSelector.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Context/ContextSelector.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0103-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "No external retrieval or user data is used."
     RiskLevel: Medium
@@ -573,9 +650,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, CTX-001, CTX-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0113, ED-0115]}
-
   - TaskId: ED-0107
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现规范化流式 Agent 事件投影与终态门
     TaskKind: CapabilitySlice
@@ -589,7 +665,28 @@ Tasks:
     ReviewerAgentId: "/root/provider_anthropic"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0107-R2-AgentEventProjector
+    Worktree: H:/Qbot/EmulativeDialog.ED-0107-R2
     CapabilityIds: [CanonicalStreamedAgentEvents]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0107/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "把三协议规范事件投影为 Agent 生命周期事件，校验 request/turn/sequence 关联，并确保终态唯一且先于工具 dispatch 门。"
     OutOfScope: ["修改 ModelProviderContract", "原始 reasoning/thinking 透传", "直接向 Channel 流式发送", "TUI"]
     DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106]
@@ -609,10 +706,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Out-of-order, duplicate, wrong-request, and second-terminal events fail closed.", Evidence: "Contract tests assert stable error codes and no action."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0107-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Agent/AgentEventProjector.cpp]
+        TestDriverSource: Tests/Contract/Agent/AgentEventProjectorTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports
       RequiredTargets: [AgentEventProjectorTests]
-      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Agent/AgentEventProjector.cpp Tests/Contract/Agent/AgentEventProjectorTests.cpp -o <TaskBuildDir>/AgentEventProjectorTests.exe", "<TaskBuildDir>/AgentEventProjectorTests.exe"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0107-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0107-R2/Source/Agent/AgentEventProjector.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjector.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0107-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0107-R2/Tests/Contract/Agent/AgentEventProjectorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjectorTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjector.o\" \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjectorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0107-R2.build/AgentEventProjectorTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0107-R2'; & 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/AgentEventProjectorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic V1.1 normal, refusal, usage, malformed sequence, and duplicate terminal events."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0107-R2.build/Objects/AgentEventProjector.o' 'H:/Qbot/EmulativeDialog.ED-0107-R2/Source/Agent/AgentEventProjector.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/AgentEventProjector.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0107-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Events are synthetic and no external channels/providers are invoked."
     RiskLevel: High
@@ -621,9 +736,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0108, ED-0110, ED-0114]}
-
   - TaskId: ED-0108
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现受 Core 授权的业务工具调用往返
     TaskKind: IntegrationTask
@@ -637,8 +751,29 @@ Tasks:
     ReviewerAgentId: "/root/provider_chat"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0108-R2-ToolCallCoordinator
+    Worktree: H:/Qbot/EmulativeDialog.ED-0108-R2
     CapabilityIds: [ToolCallRoundTrip]
     ModuleIds: [AgentRuntime, Core]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0108/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "实现 Core 登记的显式业务动作 schema、完整 ToolCallReady 验证、一次性授权与回执闭环；模型输出本身不构成授权。"
     OutOfScope: ["Shell/命令执行", "任意文件/网络/MCP 工具", "Provider 对话框自授权", "真实 QQ 动作"]
     DependsOn: [ED-0101, ED-0107, ED-0109]
@@ -659,10 +794,29 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "No generic developer tools are registered; every business action returns correlated status without blind retry on unknown outcome.", Evidence: "Registry allowlist and receipt lifecycle tests."}
       - {AcceptanceId: AC-4, Description: "Changed production Core and Agent sources meet at least 80 percent line coverage.", Evidence: "Fresh per-source gcov report."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0108-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Agent/ToolCallCoordinator.cpp, Source/Core/BusinessActionRegistry.cpp]
+        TestDriverSource: Tests/Contract/Agent/ToolCallRoundTripTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0108-R2.build/Reports
       RequiredTargets: [ToolCallRoundTripTests]
-      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Agent/ToolCallCoordinator.cpp Source/Core/BusinessActionRegistry.cpp Tests/Contract/Agent/ToolCallRoundTripTests.cpp -o <TaskBuildDir>/ToolCallRoundTripTests.exe", "<TaskBuildDir>/ToolCallRoundTripTests.exe"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0108-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0108-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0108-R2/Source/Agent/ToolCallCoordinator.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/ToolCallCoordinator.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0108-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0108-R2/Source/Core/BusinessActionRegistry.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/BusinessActionRegistry.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0108-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0108-R2/Tests/Contract/Agent/ToolCallRoundTripTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/ToolCallRoundTripTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/ToolCallCoordinator.o\" \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/BusinessActionRegistry.o\" \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/ToolCallRoundTripTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0108-R2.build/ToolCallRoundTripTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0108-R2'; & 'H:/Qbot/EmulativeDialog.ED-0108-R2.build/ToolCallRoundTripTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic registered business action schemas and malformed/untrusted tool calls."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80% per changed module"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0108-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0108-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/ToolCallCoordinator.o' 'H:/Qbot/EmulativeDialog.ED-0108-R2/Source/Agent/ToolCallCoordinator.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/ToolCallCoordinator.cpp' };   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0108-R2.build/Objects/BusinessActionRegistry.o' 'H:/Qbot/EmulativeDialog.ED-0108-R2/Source/Core/BusinessActionRegistry.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Core/BusinessActionRegistry.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0108-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Only synthetic registered business actions are used."
     RiskLevel: High
@@ -671,9 +825,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
-
   - TaskId: ED-0110
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 实现 turn 与三协议 Provider 统一取消生命周期
     TaskKind: CapabilitySlice
@@ -687,9 +840,30 @@ Tasks:
     ReviewerAgentId: "/root/provider_anthropic"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0110-R3-TurnCancellation
+    Worktree: H:/Qbot/EmulativeDialog.ED-0110-R3
     ChangeRequestId: CR-ED-0110-001
     ValidationChangeRequestId: CR-ED-0126-001
     CapabilityIds: [TurnAndProviderCancellation]
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: d151c5b3287718964d376ad550953e4d34890a08
+      TaskSpecBlob: 242a381728498d5110076d5cb00525de398aa877
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 2."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0110/R2 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "把 Core turn 的 stop_token 传播到 AgentRuntime，并正确归一化三个 Provider adapter 的取消终态；各协议实际 I/O 取消由 ED-0104/0105/0106 实现和测试。"
     OutOfScope: ["各 Provider 的 transport cancellation implementation/tests（由 ED-0104/0105/0106 承担）", "新增协议", "自动重试未知结果", "取消已确认完成的 Channel 副作用"]
     DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
@@ -709,10 +883,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Cancellation never retries a possibly accepted request or dispatches an incomplete tool call.", Evidence: "Provider call-count and channel action-count assertions."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage per changed module.", Evidence: "Fresh gcov reports per adapter and AgentRuntime source."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0110-R3.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Agent/TurnCancellationCoordinator.cpp]
+        TestDriverSource: Tests/Contract/Agent/TurnCancellationTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports
       RequiredTargets: [TurnCancellationTests]
-      TargetedBuild: ["Build the isolated AgentRuntime cancellation target with the Windows C++20 toolchain and run its focused contract test."]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects','H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0110-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0110-R3/Source/Agent/TurnCancellationCoordinator.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationCoordinator.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0110-R3\" -c \"H:/Qbot/EmulativeDialog.ED-0110-R3/Tests/Contract/Agent/TurnCancellationTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationCoordinator.o\" \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0110-R3.build/TurnCancellationTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0110-R3'; & 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/TurnCancellationTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Pre-send, during-event, after-terminal, and ambiguous remote outcome cases; protocol transport-specific cancellation fixtures live in ED-0104/0105/0106."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Per-module production coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0110-R3.build/Objects/TurnCancellationCoordinator.o' 'H:/Qbot/EmulativeDialog.ED-0110-R3/Source/Agent/TurnCancellationCoordinator.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/TurnCancellationCoordinator.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0110-R3.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Cancellation scenarios use fake transport/provider/channel only."
     RiskLevel: High
@@ -721,9 +913,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
-
   - TaskId: ED-0111
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现 Provider 失败分类与有界重试策略
     TaskKind: CapabilitySlice
@@ -737,7 +928,28 @@ Tasks:
     ReviewerAgentId: "/root/provider_responses"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0111-R2-ProviderOutcomePolicy
+    Worktree: H:/Qbot/EmulativeDialog.ED-0111-R2
     CapabilityIds: [ProviderFailureAndRetrySemantics]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0111/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "统一显式 retry policy 和 ProviderError/终态分类；对可能已被远端接受的请求保持 OutcomeUnknown 且不得自动重发。"
     OutOfScope: ["修改协议 wire contract", "修改外部服务商策略", "对副作用型工具/Channel 动作自动重试"]
     DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
@@ -757,10 +969,28 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Retry occurs only for explicitly retryable no-side-effect failures within the configured budget.", Evidence: "Attempt-count tests prove no retry for OutcomeUnknown, partial output, cancellation, or tool handoff."}
       - {AcceptanceId: AC-3, Description: "Changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0111-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Agent/ProviderOutcomePolicy.cpp]
+        TestDriverSource: Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports
       RequiredTargets: [ProviderOutcomePolicyTests]
-      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Source/Agent/ProviderOutcomePolicy.cpp Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp -o <TaskBuildDir>/ProviderOutcomePolicyTests.exe", "<TaskBuildDir>/ProviderOutcomePolicyTests.exe"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0111-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0111-R2/Source/Agent/ProviderOutcomePolicy.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicy.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0111-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0111-R2/Tests/Contract/Agent/ProviderOutcomePolicyTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicyTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicy.o\" \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicyTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0111-R2.build/ProviderOutcomePolicyTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0111-R2'; & 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/ProviderOutcomePolicyTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic provider terminal outcomes and retry budgets."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Production line coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0111-R2.build/Objects/ProviderOutcomePolicy.o' 'H:/Qbot/EmulativeDialog.ED-0111-R2/Source/Agent/ProviderOutcomePolicy.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/ProviderOutcomePolicy.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0111-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "No real provider calls or retrying side effects are allowed."
     RiskLevel: High
@@ -769,9 +999,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
-
   - TaskId: ED-0112
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
@@ -785,8 +1014,29 @@ Tasks:
     ReviewerAgentId: "/root/workflow_controller"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0112-R2-TurnRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0112-R2
     CapabilityIds: [InterruptedTurnRecoveryAndUnknownOutcome]
     ModuleIds: [Core, Storage]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0112/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "保存可恢复的安全回合检查点和副作用状态；重启后恢复确定状态，不重发未知 Provider/Channel 操作。"
     OutOfScope: ["无限期原始聊天归档", "删除/重置现有用户数据", "任何自动重发 UnknownOutcome", "微信"]
     DependsOn: [ED-0101, ED-0102, ED-0108, ED-0109, ED-0110, ED-0111]
@@ -807,10 +1057,31 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "Logs and checkpoints contain no secrets, raw private bodies, or prompt dumps.", Evidence: "Synthetic secret/body sentinel scan over persisted fixture and redacted event output."}
       - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh per-module gcov reports."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0112-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.cpp]
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports
       RequiredTargets: [TurnCheckpointStoreTests, TurnRecoveryCoordinatorTests]
-      TargetedBuild: ["Build and run only the two Windows-native C++20 storage/recovery targets in an isolated temporary data directory."]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Storage/TurnCheckpointStore.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Core/TurnRecoveryCoordinator.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinator.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Tests/Contract/Storage/TurnCheckpointStoreTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStoreTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinatorTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o\" \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStoreTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnCheckpointStoreTests.exe\""
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnCheckpointStoreTests' | Out-Null; $env:TEMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnCheckpointStoreTests'; $env:TMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnCheckpointStoreTests'; Set-Location 'H:/Qbot/EmulativeDialog.ED-0112-R2'; & 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnCheckpointStoreTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o\" \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinator.o\" \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinatorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnRecoveryCoordinatorTests.exe\""
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnRecoveryCoordinatorTests' | Out-Null; $env:TEMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnRecoveryCoordinatorTests'; $env:TMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnRecoveryCoordinatorTests'; Set-Location 'H:/Qbot/EmulativeDialog.ED-0112-R2'; & 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnRecoveryCoordinatorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic restart checkpoints, revoked scope, deleted record, and unknown action outcome."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "No real user-data mutation", "Per-module line coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o' 'H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Storage/TurnCheckpointStore.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Storage/TurnCheckpointStore.cpp' };   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinator.o' 'H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Core/TurnRecoveryCoordinator.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Core/TurnRecoveryCoordinator.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "All persistence fixtures are synthetic and the temporary database is isolated to TaskBuildDir."
     RiskLevel: High
@@ -819,9 +1090,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, TRACE-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
-
   - TaskId: ED-0115
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现指令组装与策略优先级
     TaskKind: IntegrationTask
@@ -835,8 +1105,29 @@ Tasks:
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0115-R2-InstructionAssembly
+    Worktree: H:/Qbot/EmulativeDialog.ED-0115-R2
     CapabilityIds: [InstructionAssemblyAndPolicyPrecedence]
     ModuleIds: [Core, AgentRuntime, ContextSelector]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0115/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "按冻结优先级组装 system/developer instructions 和当前已授权对话；低信任正文、历史、Provider 输出和摘要不能覆盖 Core policy。"
     OutOfScope: ["persona 冒充真实个人", "隐藏 AI 身份", "prompt 中放置密钥", "TUI/CLI/IDE"]
     DependsOn: [ED-0101, ED-0103, ED-0109]
@@ -857,10 +1148,29 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "The assistant remains transparent about being an AI and cannot assert unapproved persona identity.", Evidence: "Identity-policy and prompt-output fixture tests."}
       - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh gcov report per module."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0115-R2.build
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Core/InstructionPolicy.cpp, Source/Agent/InstructionAssembler.cpp]
+        TestDriverSource: Tests/Contract/Agent/InstructionAssemblerTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0115-R2.build/Reports
       RequiredTargets: [InstructionAssemblerTests]
-      TargetedBuild: ["Build and run the isolated Windows-native C++20 instruction contract target."]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0115-R2.build/Reports' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0115-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0115-R2/Source/Core/InstructionPolicy.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionPolicy.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0115-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0115-R2/Source/Agent/InstructionAssembler.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionAssembler.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0115-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0115-R2/Tests/Contract/Agent/InstructionAssemblerTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionAssemblerTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionPolicy.o\" \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionAssembler.o\" \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionAssemblerTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0115-R2.build/InstructionAssemblerTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0115-R2'; & 'H:/Qbot/EmulativeDialog.ED-0115-R2.build/InstructionAssemblerTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic prompt injection, persona, secret sentinel, and conflicting priority cases."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "Per-module line coverage >=80%"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0115-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0115-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionPolicy.o' 'H:/Qbot/EmulativeDialog.ED-0115-R2/Source/Core/InstructionPolicy.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Core/InstructionPolicy.cpp' };   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0115-R2.build/Objects/InstructionAssembler.o' 'H:/Qbot/EmulativeDialog.ED-0115-R2/Source/Agent/InstructionAssembler.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Agent/InstructionAssembler.cpp' }; } finally { Pop-Location }\""
+        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0115-R2.build/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Only synthetic instructions and message fixtures are used."
     RiskLevel: High
@@ -869,9 +1179,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, CTX-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
-
   - TaskId: ED-0120
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 冻结 Windows 原生 HTTPS Provider Transport 合同与 C++ Port
     TaskKind: ContractFreeze
@@ -885,6 +1194,27 @@ Tasks:
     ReviewerAgentId: "/root/provider_responses"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0120-R2-HttpTransportContract
+    Worktree: H:/Qbot/EmulativeDialog.ED-0120-R2
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0120/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "解决 OD-0007 的 Windows TLS 选择并冻结三种 Provider 共用的 C++ HTTP streaming Port 与 V1 合同；只接受注册 Provider 显式配置的 HTTPS endpoint。"
     OutOfScope: ["WinHTTP 实现代码", "任意网络工具", "loopback listener", "自动 redirect 到未批准 host", "凭据日志", "Provider wire schemas"]
     DependsOn: [ED-0006, ED-0007, ED-0008]
@@ -904,10 +1234,26 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "HttpTransportContract V1 defines typed request/stream/terminal results, limits, cancellation, sanitization, timeout, and unknown-outcome behavior without exposing WinHTTP types." , Evidence: "Contract review covers normal, TLS failure, redirect, timeout, cancellation, and ambiguous-result examples."}
       - {AcceptanceId: AC-3, Description: "A compiled C++20 HttpTransportPort can be substituted by an offline fake without exposing arbitrary URL, credentials, or generic network tools." , Evidence: "Port compile/contract target and negative API tests."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0120-R2.build
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "Contract/Port and contract-test sources only; no production C++ implementation source is in the WriteSet."
+        ProductionSources: []
+        TestDriverSource: Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: ""
       RequiredTargets: [HttpTransportPortTests]
-      TargetedBuild: ["g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Tests/Contract/Platform/Network/HttpTransportPortTests.cpp -o <TaskBuildDir>/HttpTransportPortTests.exe", "<TaskBuildDir>/HttpTransportPortTests.exe"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0120-R2.build/Objects' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0120-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0120-R2/Tests/Contract/Platform/Network/HttpTransportPortTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0120-R2.build/Objects/HttpTransportPortTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe \"H:/Qbot/EmulativeDialog.ED-0120-R2.build/Objects/HttpTransportPortTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0120-R2.build/HttpTransportPortTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0120-R2'; & 'H:/Qbot/EmulativeDialog.ED-0120-R2.build/HttpTransportPortTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Typed HTTPS endpoint, bounded body/chunk, timeout, cancellation, redirect-denied, and unknown-result examples."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact WriteSet", "No WinHTTP platform type leaks through HttpTransportPort.h"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "Production C++ line coverage: NotApplicable; no production C++ implementation source is modified by this task."
       LiveSideEffects: Forbidden
       NotRunReason: "Contract and Port freeze only; WinHTTP implementation behavior is ED-0121 and uses offline tests."
     RiskLevel: High
@@ -916,9 +1262,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106, ED-0121]}
-
   - TaskId: ED-0124
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
     TaskKind: Build
@@ -932,6 +1277,27 @@ Tasks:
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0124-R2-RootCMakeIntegration
+    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R2
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+      TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0124/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "把已独立验证的 Core/AgentRuntime 纵向切片 C++ target 加入根 Windows CMake/CTest，使常规根构建能执行其行为验收。"
     OutOfScope: ["修改 Core/AgentRuntime 源码", "增加 Provider/Channel 运行时", "全仓重构 CMake", "修改依赖版本"]
     DependsOn: [ED-0101, ED-0109]
@@ -950,10 +1316,25 @@ Tasks:
       - {AcceptanceId: AC-1, Description: "Existing Windows root configuration builds AgentRuntimeVerticalSliceTests without changing dependency pins or unrelated targets.", Evidence: "Native CMake configure/build output for only the new product test target."}
       - {AcceptanceId: AC-2, Description: "Root CTest discovers and passes the focused AgentRuntime.VerticalSlice test.", Evidence: "Targeted CTest output and unchanged prior focused Controller test."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R2.build
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "Build-system-only WriteSet; no production C++ implementation source is modified by this task."
+        ProductionSources: []
+        MinimumLinePercent: 80
+        ReportDirectory: ""
       RequiredTargets: [AgentRuntimeVerticalSliceTests]
-      TargetedBuild: ["cmake --preset win-ucrt64-debug", "cmake --build --preset win-ucrt64-debug --target AgentRuntimeVerticalSliceTests --parallel 4", "ctest --preset win-ucrt64-debug -R AgentRuntime.VerticalSlice --output-on-failure"]
+      TargetedBuild:
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0124-R2.build' | Out-Null"
+        - "cmake -S 'H:/Qbot/EmulativeDialog.ED-0124-R2' -B 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' -G 'MinGW Makefiles' -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
+        - "cmake --build 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --target AgentRuntimeVerticalSliceTests --parallel 4"
+        - "ctest --test-dir 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --output-on-failure -R 'AgentRuntime.VerticalSlice|WorkflowController'"
       ContractFixtures: ["Uses the already frozen FakeProvider and MockChannel synthetic fixtures."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact single-file WriteSet", "No dependency pin changes"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "Production C++ line coverage: NotApplicable; no production C++ implementation source is modified by this task."
       LiveSideEffects: Forbidden
       NotRunReason: "The integration target is offline and uses only synthetic test support."
     RiskLevel: Medium
@@ -962,9 +1343,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
-
   - TaskId: ED-0125
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 让 MockChannel 使用 Core 专属动作与可关联回执
     TaskKind: TestSupport
@@ -978,8 +1358,29 @@ Tasks:
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    Branch: Task/ED-0125-R2-MockChannelAdapter
+    Worktree: H:/Qbot/EmulativeDialog.ED-0125-R2
     ChangeRequestId: CR-ED-0018-002
     ModuleIds: [ChannelAdapterPort]
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: 35620b0fff5a5c95961c583eeee04db076fe71c1
+      TaskSpecBlob: 3c4d2a67af7cdafac57cf9550f3e83e45d406392
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: ""
+      Worktree: ""
+      HeadCommit: ""
+      Reason: "Accepted validation correction supersedes the blocked TaskSpec before code; no implementation branch, worktree, or source write had started for revision 1."
+    ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0126-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Preserve ED-0125/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
+      PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     Goal: "将现有离线 MockChannel 测试替身改为使用 Core 的不可伪造 CoreAuthorizedAction，并按预置 ActionId/OperationId 返回一次性精确关联回执。"
     OutOfScope: ["修改 ChannelAdapterContract V1", "真实 QQ/网络/凭据", "Core 身份授权逻辑", "重试或自行合成成功回执"]
     DependsOn: [ED-0018, ED-0109]
@@ -1015,12 +1416,26 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "A scripted receipt matches exact ActionId and OperationId and is consumed once; no receipt is synthesized for an unconfigured or mismatched action.", Evidence: "Contract tests for success, mismatched IDs, duplicate send, and exhausted script."}
       - {AcceptanceId: AC-3, Description: "Existing offline MockChannel behavior and V1 receipt outcomes remain intact for the test adapter.", Evidence: "All existing MockChannel contract cases pass after migration."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0125-R2.build
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "Test-support implementation and contract tests only; no production C++ implementation source is in the WriteSet."
+        ProductionSources: []
+        MinimumLinePercent: 80
+        ReportDirectory: ""
       RequiredTargets: [MockChannelAdapterContractTests]
       TargetedBuild:
-        - "g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp -o <TaskBuildDir>/MockChannelAdapterContractTests.exe"
-        - "<TaskBuildDir>/MockChannelAdapterContractTests.exe"
+        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects' | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0125-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0125-R2/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapter.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0125-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0125-R2/Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapterContractTests.o\""
+        - "C:/msys64/ucrt64/bin/g++.exe \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapter.o\" \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapterContractTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/MockChannelAdapterContractTests.exe\""
+        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0125-R2'; & 'H:/Qbot/EmulativeDialog.ED-0125-R2.build/MockChannelAdapterContractTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
       ContractFixtures: ["Synthetic Core action/operation IDs, one-shot status receipts, mismatch, and unknown outcome."]
-      StaticChecks: ["git diff --check BaseCommit HeadCommit", "Exact four-path WriteSet", "No public Channel contract change"]
+      StaticChecks:
+        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
+        - "Changed paths exactly equal frozen WriteSet"
+        - "Production C++ line coverage: NotApplicable; no production C++ implementation source is modified by this task."
       LiveSideEffects: Forbidden
       NotRunReason: "Test support is entirely offline and uses synthetic action/receipt data."
     RiskLevel: Medium
