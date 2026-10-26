@@ -173,6 +173,41 @@ void VerifyTaskAssignment(const std::filesystem::path& RepositoryRoot,
   ValidateAssignment(Task, Request, LoadDependencyStates(RepositoryRoot, Task));
 }
 
+std::vector<WorkflowEvent> ReviewBundleEventHistory(
+    const TaskSpec& Task,
+    const std::string& HeadCommit,
+    const std::vector<WorkflowEvent>& Events) {
+  std::vector<WorkflowEvent> History;
+  for (const WorkflowEvent& Event : Events) {
+    if (Event.TaskId != Task.TaskId) {
+      continue;
+    }
+    if (Event.TaskRevision < Task.TaskRevision) {
+      History.push_back(Event);
+      continue;
+    }
+    if (Event.TaskRevision != Task.TaskRevision) {
+      continue;
+    }
+    if (Event.EventId == Task.AssignmentEventId ||
+        (Task.RegisteredBudgetOverride &&
+         Event.EventId == Task.RegisteredBudgetOverride->ApprovalEventId)) {
+      History.push_back(Event);
+      continue;
+    }
+    const bool CurrentTaskPin = Event.TaskSpecCommit == Task.TaskSpecCommit &&
+                                Event.TaskSpecBlobId == Task.TaskSpecBlobId &&
+                                Event.AssignmentEventCommit == Task.AssignmentEventCommit &&
+                                Event.AssignmentEventId == Task.AssignmentEventId &&
+                                Event.CodeBaseCommit == Task.CodeBaseCommit;
+    if (CurrentTaskPin &&
+        (Event.EventType != "CommandExecuted" || Event.HeadCommit == HeadCommit)) {
+      History.push_back(Event);
+    }
+  }
+  return History;
+}
+
 int RunCommand(const std::vector<std::string>& Arguments) {
   if (Arguments.size() < 2) {
     PrintUsage();
@@ -312,11 +347,11 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     }
     const auto RepositoryRoot = std::filesystem::absolute(Arguments[2]);
     WindowsProcessRunner Runner;
-    const TaskSpec Task = Arguments.size() == 11
-                              ? LoadTaskSpecFromPinnedSnapshot(
-                                    RepositoryRoot, Arguments[3], Arguments[4], Arguments[6],
-                                    Arguments[7], Arguments[8], Arguments[9], Runner)
-                              : LoadTask(RepositoryRoot, Arguments[3], Arguments[4]);
+    TaskSpec Task = Arguments.size() == 11
+                        ? LoadTaskSpecFromPinnedSnapshot(
+                              RepositoryRoot, Arguments[3], Arguments[4], Arguments[6],
+                              Arguments[7], Arguments[8], Arguments[9], Runner)
+                        : LoadTask(RepositoryRoot, Arguments[3], Arguments[4]);
     if (Task.TaskRevision != ParseRevision(Arguments[5])) {
       throw WorkflowError("Stale TaskRevision; validation must use the frozen revision");
     }
@@ -327,6 +362,15 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     const auto WorkingDirectory = Task.Worktree.empty()
                                       ? RepositoryRoot
                                       : std::filesystem::path(Task.Worktree);
+    if (!Task.TaskSpecCommit.empty()) {
+      const WorktreeResult Verified = VerifyExistingWorktreeForReview(
+          {RepositoryRoot, CurrentAssignment(Task)}, Task.State, Runner);
+      Task.FixedHeadCommit = Verified.HeadCommit;
+    } else {
+      Task.FixedHeadCommit = Trim(Runner.Run(
+          {"git", "-C", WorkingDirectory.string(), "rev-parse", "HEAD"},
+          WorkingDirectory).Output);
+    }
     const auto EvidencePath = ValidationEvidencePathFor(Task, RepositoryRoot, CommandIndex);
     EventStore Events(EventLogPath(RepositoryRoot, Task));
     const ValidationResult Result = RunFrozenValidation(
@@ -514,7 +558,7 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     }
     const auto RepositoryRoot = std::filesystem::absolute(Arguments[2]);
     WindowsProcessRunner Runner;
-    const TaskSpec Task = LoadTaskSpecFromPinnedSnapshot(
+    TaskSpec Task = LoadTaskSpecFromPinnedSnapshot(
         RepositoryRoot, Arguments[3], Arguments[4], Arguments[6], Arguments[7],
         Arguments[8], Arguments[9], Runner);
     if (Task.TaskRevision != ParseRevision(Arguments[5])) {
@@ -528,6 +572,7 @@ int RunCommand(const std::vector<std::string>& Arguments) {
         {RepositoryRoot, CurrentAssignment(Task)}, Task.State, Runner);
     const auto Worktree = VerifiedWorktree.Worktree;
     const std::string Head = VerifiedWorktree.HeadCommit;
+    Task.FixedHeadCommit = Head;
     const ProcessResult DiffResult = Runner.Run(
         {"git", "-C", Worktree.string(), "diff", "--name-status", "--find-renames",
          Task.CodeBaseCommit, Head}, Worktree);
@@ -559,8 +604,9 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     if (GitDiffValidation.ExitCode != 0) {
       throw WorkflowError("Typed GitDiffCheck failed; evidence was recorded but no ReviewBundle was written");
     }
-    Bundle.Events = Events.ReadTaskEvents(Task.TaskId);
-    Bundle.Validations = CollectTaskRevisionValidations(Task, Bundle.Events);
+    const auto TaskEvents = Events.ReadTaskEvents(Task.TaskId);
+    Bundle.Validations = CollectTaskRevisionValidations(Task, TaskEvents);
+    Bundle.Events = ReviewBundleEventHistory(Task, Head, TaskEvents);
     const std::filesystem::path RequestedOutput = std::filesystem::absolute(Arguments[11]);
     WriteLocalReviewBundle(RepositoryRoot, Task, Bundle, RequestedOutput, Events);
     std::cout << "LocalReviewBundle=" << RequestedOutput.string() << '\n'

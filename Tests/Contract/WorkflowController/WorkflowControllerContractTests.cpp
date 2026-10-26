@@ -154,14 +154,25 @@ class FakeProcessRunner final : public ProcessRunner {
  public:
   ProcessResult Run(const std::vector<std::string>& Arguments,
                     const std::filesystem::path& WorkingDirectory) override {
-    ++Calls;
     LastArguments = Arguments;
     LastWorkingDirectory = WorkingDirectory;
+    if (Arguments.size() >= 5 && Arguments[0] == "git" && Arguments[1] == "-C" &&
+        Arguments[3] == "rev-parse" && Arguments[4] == "HEAD") {
+      return {GitExitCode, GitHeadCommit + "\n"};
+    }
+    if (Arguments.size() >= 5 && Arguments[0] == "git" && Arguments[1] == "-C" &&
+        Arguments[3] == "status") {
+      return {GitExitCode, GitStatus};
+    }
+    ++Calls;
     return {ExitCode, "Build complete\nAuthorization: Bearer secret-value\nAPI_TOKEN=fixture-secret\n"};
   }
 
   unsigned long ExitCode = 0;
+  unsigned long GitExitCode = 0;
   int Calls = 0;
+  std::string GitHeadCommit;
+  std::string GitStatus;
   std::vector<std::string> LastArguments;
   std::filesystem::path LastWorkingDirectory;
 };
@@ -499,6 +510,60 @@ void TestTaskOwnedPathResolution(const std::filesystem::path& Root) {
       "Checkpoint reparse escape was accepted");
 }
 
+void TestReadSetYamlFragmentSelectors(const std::filesystem::path& Root) {
+  const RepositoryFixture Fixture(Root);
+  const std::string CapabilityMap =
+      "Capabilities:\n"
+      "  - CapabilityId: ED-0101\n"
+      "    Name: CanonicalStreamedAgentEvents\n"
+      "    Decision: Keep\n"
+      "  - CapabilityId: ED-0115\n"
+      "    Name: WeChatDeferredAdapter\n"
+      "    Decision: Defer\n";
+  const std::string ModuleMap =
+      "Modules:\n"
+      "  - ModuleId: AgentRuntime\n"
+      "    Owner: AgentRuntimeOwner\n"
+      "    Path: Source/Agent/AgentRuntime/\n"
+      "  - ModuleId: WeChatChannel\n"
+      "    Owner: ChannelOwner\n"
+      "    Path: Source/Channels/WeChat/\n";
+  WriteText(Fixture.Root / "Workflow/CodexCapabilityMap/AgentCore.yaml", CapabilityMap);
+  WriteText(Fixture.Root / "Architecture/ModuleMap.yaml", ModuleMap);
+  TaskSpec Task = LoadTaskSpec(Fixture.Root, "Workflow/TaskIndex.yaml", "P1", "ED-0002");
+  Task.ReadSet = {
+      "Workflow/CodexCapabilityMap/AgentCore.yaml#CapabilityId=ED-0101",
+      "Architecture/ModuleMap.yaml#ModuleId=AgentRuntime"};
+  const auto Context = AssembleReadSetContext(Fixture.Root, Task);
+  Check(Context.size() == 2 &&
+            Context[0].RelativePath == Task.ReadSet[0] &&
+            Context[1].RelativePath == Task.ReadSet[1],
+        "ReadSet selector context did not preserve each exact frozen fragment selector");
+  const std::string SelectedText = Context[0].Content + Context[1].Content;
+  Check(SelectedText.find("CanonicalStreamedAgentEvents") != std::string::npos &&
+            SelectedText.find("AgentRuntimeOwner") != std::string::npos &&
+            SelectedText.find("ED-0115") == std::string::npos &&
+            SelectedText.find("WeChatDeferredAdapter") == std::string::npos &&
+            SelectedText.find("WeChatChannel") == std::string::npos,
+        "ReadSet selector exposed another capability or module outside its selected YAML entries");
+
+  Task.ReadSet = {"Workflow/CodexCapabilityMap/AgentCore.yaml#CapabilityId=ED-0999"};
+  ExpectWorkflowError(
+      [&] { (void)AssembleReadSetContext(Fixture.Root, Task); },
+      "Missing YAML fragment selector was silently accepted");
+  Task.ReadSet = {"Workflow/CodexCapabilityMap/AgentCore.yaml#CapabilityId=ED-0101"};
+  WriteText(Fixture.Root / "Workflow/CodexCapabilityMap/DuplicateCases.yaml",
+            "Capabilities:\n"
+            "  - CapabilityId: ED-0101\n"
+            "    Name: First\n"
+            "  - CapabilityId: ED-0101\n"
+            "    Name: Duplicate\n");
+  Task.ReadSet = {"Workflow/CodexCapabilityMap/DuplicateCases.yaml#CapabilityId=ED-0101"};
+  ExpectWorkflowError(
+      [&] { (void)AssembleReadSetContext(Fixture.Root, Task); },
+      "Duplicate YAML fragment selector was silently accepted");
+}
+
 void RunGit(WindowsProcessRunner& Runner,
             const std::filesystem::path& Directory,
             const std::vector<std::string>& Arguments) {
@@ -786,8 +851,10 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
   RunGit(GitRunner, Worktree, {"git", "commit", "-m", "review bundle head fixture"});
   const std::string HeadCommit = TrimText(GitRunner.Run(
       {"git", "-C", Worktree.string(), "rev-parse", "HEAD"}, Worktree).Output);
+  Task.FixedHeadCommit = HeadCommit;
 
   FakeProcessRunner Runner;
+  Runner.GitHeadCommit = HeadCommit;
   EventStore Events(Fixture.Root / Task.EventShard);
   WorkflowEvent Assignment;
   Assignment.EventId = Task.AssignmentEventId;
@@ -955,6 +1022,7 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
       "git diff --check c4d2b94e0dbfb82d922634c1b175aab76f545567 "
       "ddcfac296c1cb50869bd5497bdc0739e8568a56a";
   const std::string R4Head(40, 'f');
+  Task.FixedHeadCommit = R4Head;
   const std::string R4DiffCommand =
       "git diff --check " + Task.CodeBaseCommit + " " + R4Head;
   EventStore Events(Fixture.Root / Task.EventShard);
@@ -1006,6 +1074,7 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
     Current.AssignmentEventCommit = Task.AssignmentEventCommit;
     Current.AssignmentEventId = Task.AssignmentEventId;
     Current.CodeBaseCommit = Task.CodeBaseCommit;
+    Current.HeadCommit = R4Head;
     Events.Append(Current);
   }
   WorkflowEvent OtherTask;
@@ -1046,8 +1115,8 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   Bundle.ChangeKinds = {"Modified"};
   Bundle.Validations = Validations;
   Bundle.Events = TaskEvents;
-  const auto BundlePath = Fixture.Root.parent_path() / "ReviewBundles" /
-                          "ED-0002-R3/ReviewBundle.json";
+  const auto BundleRoot = Fixture.Root.parent_path() / "ReviewBundles";
+  const auto BundlePath = BundleRoot / "ED-0002-R4/ReviewBundle.json";
   WriteLocalReviewBundle(Fixture.Root, Task, Bundle, BundlePath, Events);
   const std::string BundleText = ReadText(BundlePath);
   const auto ValidationsStart = BundleText.find("\"validations\":[");
@@ -1076,6 +1145,25 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
             BundleText.find("\"TaskRevision\":4") != std::string::npos,
         "ReviewBundle event history did not preserve historical revisions explicitly");
 
+  ReviewBundleData StaleSameRevisionHistory = Bundle;
+  WorkflowEvent UnboundR4Command;
+  UnboundR4Command.EventId = "unbound-r4-command";
+  UnboundR4Command.EventType = "CommandExecuted";
+  UnboundR4Command.PhaseId = Task.PhaseId;
+  UnboundR4Command.TaskId = Task.TaskId;
+  UnboundR4Command.TaskRevision = Task.TaskRevision;
+  UnboundR4Command.TaskSpecCommit = Task.TaskSpecCommit;
+  UnboundR4Command.TaskSpecBlobId = Task.TaskSpecBlobId;
+  UnboundR4Command.AssignmentEventCommit = Task.AssignmentEventCommit;
+  UnboundR4Command.AssignmentEventId = Task.AssignmentEventId;
+  UnboundR4Command.CodeBaseCommit = Task.CodeBaseCommit;
+  UnboundR4Command.Command = Task.ValidationCommands.front();
+  StaleSameRevisionHistory.Events.push_back(UnboundR4Command);
+  ExpectWorkflowError(
+      [&] { WriteLocalReviewBundle(Fixture.Root, Task, StaleSameRevisionHistory,
+                                   BundleRoot / "ED-0002-R4-stale/ReviewBundle.json", Events); },
+      "ReviewBundle serialized a same-revision validation event without its fixed HeadCommit pin");
+
   WorkflowEvent MissingEvidence;
   MissingEvidence.EventType = "CommandExecuted";
   MissingEvidence.PhaseId = Task.PhaseId;
@@ -1086,6 +1174,7 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   MissingEvidence.AssignmentEventCommit = Task.AssignmentEventCommit;
   MissingEvidence.AssignmentEventId = Task.AssignmentEventId;
   MissingEvidence.CodeBaseCommit = Task.CodeBaseCommit;
+  MissingEvidence.HeadCommit = Task.FixedHeadCommit;
   MissingEvidence.Command = Task.ValidationCommands.front();
   MissingEvidence.WorkingDirectory = Task.Worktree;
   Events.Append(MissingEvidence);
@@ -1121,6 +1210,7 @@ int main() {
     TestPinnedTaskSpecAssignment(Temp.Path / "PinnedTaskSpec");
     TestReadSetAndWriteSetBoundaries(Temp.Path / "Boundaries");
     TestTaskOwnedPathResolution(Temp.Path / "TaskPaths");
+    TestReadSetYamlFragmentSelectors(Temp.Path / "YamlSelectors");
     TestIsolatedWorktree(Temp.Path / "Unused");
     TestEventsCheckpointsAndTaskScopedMessages(Temp.Path / "Persistence");
     TestBudgetOverrideEvent(Temp.Path / "Budget");

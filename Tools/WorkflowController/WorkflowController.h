@@ -78,6 +78,7 @@ struct TaskSpec {
   std::string AssignmentEventCommit;
   std::string AssignmentEventId;
   std::string CodeBaseCommit;
+  std::string FixedHeadCommit;
   std::string EventShard;
   std::string CommunicationShard;
   std::vector<std::string> DependsOn;
@@ -162,6 +163,7 @@ struct WorkflowEvent {
   std::string AssignmentEventCommit;
   std::string AssignmentEventId;
   std::string CodeBaseCommit;
+  std::string HeadCommit;
   std::string ContextBudgetApprovalEventId;
   std::string OwnerAgentId;
   std::string ReviewerAgentId;
@@ -191,6 +193,7 @@ struct ValidationResult {
   unsigned long ExitCode = 0;
   std::filesystem::path EvidencePath;
   std::string EventId;
+  std::string HeadCommit;
 };
 
 std::vector<ValidationResult> CollectTaskRevisionValidations(

@@ -216,6 +216,122 @@ std::string NormalizeRelativePath(const std::string& RelativePath) {
   return Normalized;
 }
 
+struct ReadSetSelection {
+  std::string Path;
+  std::string RelativeEntry;
+  std::string OutputEntry;
+  std::string SelectorKey;
+  std::string SelectorValue;
+  bool HasSelector = false;
+};
+
+ReadSetSelection ParseReadSetSelection(const std::string& Entry) {
+  const std::size_t Separator = Entry.find('#');
+  const std::string Path = NormalizeRelativePath(
+      Separator == std::string::npos ? Entry : Entry.substr(0, Separator));
+  ReadSetSelection Selection;
+  Selection.Path = Path;
+  Selection.RelativeEntry = LowerAscii(Path);
+  Selection.OutputEntry = Path;
+  if (Separator == std::string::npos) {
+    return Selection;
+  }
+  if (Entry.find('#', Separator + 1) != std::string::npos) {
+    throw WorkflowError("ReadSet YAML selector must contain one fragment: " + Entry);
+  }
+  const std::string Fragment = Entry.substr(Separator + 1);
+  const std::size_t Equals = Fragment.find('=');
+  if (Equals == std::string::npos || Equals == 0 || Equals + 1 == Fragment.size() ||
+      Fragment.find('=', Equals + 1) != std::string::npos) {
+    throw WorkflowError("ReadSet YAML selector must use Key=Value syntax: " + Entry);
+  }
+  Selection.SelectorKey = Fragment.substr(0, Equals);
+  Selection.SelectorValue = Fragment.substr(Equals + 1);
+  const auto IsSelectorKeyChar = [](unsigned char C) {
+    return std::isalnum(C) != 0 || C == '_' || C == '-';
+  };
+  const auto IsSelectorValueChar = [](unsigned char C) {
+    return std::isalnum(C) != 0 || C == '_' || C == '-' || C == '.' || C == ':';
+  };
+  if (!std::all_of(Selection.SelectorKey.begin(), Selection.SelectorKey.end(),
+                   IsSelectorKeyChar) ||
+      !std::all_of(Selection.SelectorValue.begin(), Selection.SelectorValue.end(),
+                   IsSelectorValueChar)) {
+    throw WorkflowError("ReadSet YAML selector contains an unsupported character: " + Entry);
+  }
+  Selection.HasSelector = true;
+  Selection.RelativeEntry += "#" + Selection.SelectorKey + "=" + Selection.SelectorValue;
+  Selection.OutputEntry += "#" + Selection.SelectorKey + "=" + Selection.SelectorValue;
+  return Selection;
+}
+
+void CollectYamlSelectorMatches(const YAML::Node& Node,
+                                const std::string& Key,
+                                const std::string& Value,
+                                std::vector<YAML::Node>& Matches,
+                                std::size_t& Visited,
+                                std::size_t Depth) {
+  if (++Visited > 100000 || Depth > 64) {
+    throw WorkflowError("ReadSet YAML selector exceeded its bounded traversal limit");
+  }
+  if (Node.IsMap()) {
+    const YAML::Node SelectedValue = Node[Key];
+    if (SelectedValue && SelectedValue.IsScalar() && SelectedValue.as<std::string>() == Value) {
+      Matches.push_back(Node);
+      return;
+    }
+    if (SelectedValue && SelectedValue.IsSequence()) {
+      for (const YAML::Node& Item : SelectedValue) {
+        if (Item.IsScalar() && Item.as<std::string>() == Value) {
+          Matches.push_back(Node);
+          return;
+        }
+      }
+    }
+    if (Key.ends_with("Id")) {
+      const YAML::Node PluralValue = Node[Key + "s"];
+      if (PluralValue && PluralValue.IsSequence()) {
+        for (const YAML::Node& Item : PluralValue) {
+          if (Item.IsScalar() && Item.as<std::string>() == Value) {
+            Matches.push_back(Node);
+            return;
+          }
+        }
+      }
+    }
+    for (const auto& Entry : Node) {
+      CollectYamlSelectorMatches(Entry.second, Key, Value, Matches, Visited, Depth + 1);
+    }
+  } else if (Node.IsSequence()) {
+    for (const YAML::Node& Item : Node) {
+      CollectYamlSelectorMatches(Item, Key, Value, Matches, Visited, Depth + 1);
+    }
+  }
+}
+
+std::string ExtractYamlSelector(const std::string& Content,
+                                const ReadSetSelection& Selection) {
+  if (!Selection.HasSelector) {
+    return Content;
+  }
+  YAML::Node Root;
+  try {
+    Root = YAML::Load(Content);
+  } catch (const YAML::Exception& Error) {
+    throw WorkflowError("Selected ReadSet YAML is invalid: " + std::string(Error.what()));
+  }
+  std::vector<YAML::Node> Matches;
+  std::size_t Visited = 0;
+  CollectYamlSelectorMatches(Root, Selection.SelectorKey, Selection.SelectorValue,
+                             Matches, Visited, 0);
+  if (Matches.size() != 1) {
+    throw WorkflowError("ReadSet YAML selector must match exactly one entry: " +
+                        Selection.RelativeEntry + " (matches=" +
+                        std::to_string(Matches.size()) + ")");
+  }
+  return YAML::Dump(Matches.front()) + "\n";
+}
+
 std::filesystem::path ResolveRepoPath(
     const std::filesystem::path& RepositoryRoot,
     const std::string& RelativePath) {
@@ -395,7 +511,22 @@ TaskSpec ParseTaskSpec(const YAML::Node& Node, const std::string& PhaseId) {
   if (Validation) {
     AppendValidationCommands(Validation, "TargetedBuild", Task.ValidationCommands);
     AppendValidationCommands(Validation, "ContractFixtures", Task.ValidationCommands);
-    AppendValidationCommands(Validation, "StaticChecks", Task.StaticChecks);
+    const YAML::Node StaticChecks = Validation["StaticChecks"];
+    if (StaticChecks && !StaticChecks.IsNull()) {
+      if (!StaticChecks.IsSequence()) {
+        throw WorkflowError("StaticChecks must be a sequence");
+      }
+      for (const YAML::Node& Check : StaticChecks) {
+        if (Check.IsScalar()) {
+          const std::string Value = Check.as<std::string>();
+          if (Value.starts_with("git diff --check ")) {
+            Task.StaticChecks.push_back(Value);
+          }
+        } else if (!Check.IsMap() || Check.size() != 1) {
+          throw WorkflowError("StaticChecks entries must be scalar rules or descriptive key/value items");
+        }
+      }
+    }
   }
   return Task;
 }
@@ -583,6 +714,7 @@ std::string SerializeEvent(const WorkflowEvent& Event) {
          << "\"AssignmentEventCommit\":" << JsonEscape(Event.AssignmentEventCommit) << ','
          << "\"AssignmentEventId\":" << JsonEscape(Event.AssignmentEventId) << ','
          << "\"CodeBaseCommit\":" << JsonEscape(Event.CodeBaseCommit) << ','
+         << "\"HeadCommit\":" << JsonEscape(Event.HeadCommit) << ','
          << "\"ContextBudgetApprovalEventId\":"
          << JsonEscape(Event.ContextBudgetApprovalEventId) << ','
          << "\"OwnerAgentId\":" << JsonEscape(RedactSensitiveText(Event.OwnerAgentId)) << ','
@@ -844,7 +976,8 @@ std::string SerializeReviewBundle(const TaskSpec& Task,
            << "\"command\":" << JsonEscape(RedactSensitiveText(Validation.Command)) << ','
            << "\"working_directory\":" << JsonEscape(Validation.WorkingDirectory.string()) << ','
            << "\"exit_code\":" << Validation.ExitCode << ','
-           << "\"evidence_path\":" << JsonEscape(Validation.EvidencePath.string())
+           << "\"evidence_path\":" << JsonEscape(Validation.EvidencePath.string()) << ','
+           << "\"head_commit\":" << JsonEscape(Validation.HeadCommit)
            << '}';
   }
   Output << "],\"events\":[";
@@ -1240,10 +1373,10 @@ void ValidateAssignment(const TaskSpec& Task,
 }
 
 void ValidateReadSetPath(const TaskSpec& Task, const std::string& RelativePath) {
-  const std::string Candidate = LowerAscii(NormalizeRelativePath(RelativePath));
+  const std::string Candidate = ParseReadSetSelection(RelativePath).RelativeEntry;
   const bool Authorized = std::any_of(
       Task.ReadSet.begin(), Task.ReadSet.end(), [&](const std::string& Allowed) {
-        return LowerAscii(NormalizeRelativePath(Allowed)) == Candidate;
+        return ParseReadSetSelection(Allowed).RelativeEntry == Candidate;
       });
   if (!Authorized) {
     throw WorkflowError("Context path is outside the frozen ReadSet: " + RelativePath);
@@ -1335,12 +1468,14 @@ std::vector<ContextFile> AssembleReadSetContext(
                                  ? std::filesystem::path{}
                                  : CanonicalExistingDirectory(RepositoryRoot);
   for (const std::string& RelativePath : Task.ReadSet) {
+    const ReadSetSelection Selection = ParseReadSetSelection(RelativePath);
     ValidateReadSetPath(Task, RelativePath);
     std::string Content;
+    constexpr std::size_t MaximumSelectorSourceBytes = 32U * 1024U * 1024U;
     if (PinnedSnapshot) {
       const std::string TreeEntry = TrimCommandOutput(RunGit(
           *PinnedSnapshotRunner, RepositoryRoot,
-          {"ls-tree", Task.CodeBaseCommit, "--", RelativePath}).Output);
+          {"ls-tree", Task.CodeBaseCommit, "--", Selection.Path}).Output);
       const std::size_t FirstSpace = TreeEntry.find(' ');
       const std::size_t SecondSpace = TreeEntry.find(' ', FirstSpace == std::string::npos
                                                             ? FirstSpace
@@ -1356,23 +1491,32 @@ std::vector<ContextFile> AssembleReadSetContext(
       if (TreeEntry.empty() || FirstSpace == std::string::npos ||
           SecondSpace == std::string::npos || Tab == std::string::npos ||
           (Mode != "100644" && Mode != "100755") || ObjectType != "blob" ||
-          TreeEntry.substr(Tab + 1) != NormalizeRelativePath(RelativePath)) {
+          TreeEntry.substr(Tab + 1) != Selection.Path) {
         throw WorkflowError("Pinned ReadSet entry is missing, a symlink, or not a regular Git blob: " +
                             RelativePath);
       }
       Content = RunGit(*PinnedSnapshotRunner, RepositoryRoot,
-                       {"show", Task.CodeBaseCommit + ":" + NormalizeRelativePath(RelativePath)}).Output;
+                       {"show", Task.CodeBaseCommit + ":" + Selection.Path}).Output;
+      if (Selection.HasSelector && Content.size() > MaximumSelectorSourceBytes) {
+        throw WorkflowError("Pinned selector source exceeds its bounded YAML parse size: " +
+                            RelativePath);
+      }
     } else {
-      const auto FullPath = ResolveRepoPath(RepositoryRoot, RelativePath);
+      const auto FullPath = ResolveRepoPath(RepositoryRoot, Selection.Path);
       const std::string CanonicalRelativePath =
           FullPath.lexically_relative(CanonicalRoot).generic_string();
-      ValidateReadSetPath(Task, CanonicalRelativePath);
+      const std::string CanonicalReadSetEntry =
+          CanonicalRelativePath + (Selection.HasSelector
+                                       ? "#" + Selection.SelectorKey + "=" + Selection.SelectorValue
+                                       : std::string{});
+      ValidateReadSetPath(Task, CanonicalReadSetEntry);
       std::error_code Error;
       if (!std::filesystem::is_regular_file(FullPath, Error) || Error) {
         throw WorkflowError("ReadSet entries must resolve to existing files: " + RelativePath);
       }
       const auto Size = std::filesystem::file_size(FullPath, Error);
-      if (Error || Size > MaximumFileBytes || TotalBytes + Size > MaximumTotalBytes) {
+      if (Error || (Selection.HasSelector && Size > MaximumSelectorSourceBytes) ||
+          (!Selection.HasSelector && Size > MaximumFileBytes)) {
         throw WorkflowError("ReadSet file or bundle exceeds the configured context byte limit: " +
                             RelativePath);
       }
@@ -1382,14 +1526,14 @@ std::vector<ContextFile> AssembleReadSetContext(
       }
       Content.assign(std::istreambuf_iterator<char>(Input), std::istreambuf_iterator<char>());
     }
+    Content = ExtractYamlSelector(Content, Selection);
     const std::size_t Size = Content.size();
     if (Size > MaximumFileBytes || TotalBytes + Size > MaximumTotalBytes) {
       throw WorkflowError("ReadSet file or bundle exceeds the configured context byte limit: " +
                           RelativePath);
     }
     TotalBytes += Content.size();
-    Context.push_back({NormalizeRelativePath(RelativePath),
-                       RedactSensitiveText(Content)});
+    Context.push_back({Selection.OutputEntry, RedactSensitiveText(Content)});
   }
   return Context;
 }
@@ -1603,6 +1747,9 @@ ValidationResult RunFrozenValidation(const TaskSpec& Task,
       Task.ValidationCommands.end()) {
     throw WorkflowError("Validation command is not listed in the frozen TaskSpec");
   }
+  if (!IsCommitId(Task.FixedHeadCommit)) {
+    throw WorkflowError("Validation must be bound to the fixed assigned HeadCommit");
+  }
   const std::vector<std::string> Arguments = TokenizeFrozenCommand(ExactCommand);
   if (!WorkingDirectory.is_absolute() || !std::filesystem::is_directory(WorkingDirectory)) {
     throw WorkflowError("Validation working directory must be an existing absolute directory");
@@ -1622,6 +1769,20 @@ ValidationResult RunFrozenValidation(const TaskSpec& Task,
     throw WorkflowError("Validation evidence must remain under the assigned worktree's sibling build directory");
   }
   ProcessResult Process = Runner.Run(Arguments, WorkingDirectory);
+  if (!Task.TaskSpecCommit.empty()) {
+    const std::string HeadAfter = TrimCommandOutput(Runner.Run(
+        {"git", "-C", WorkingDirectory.string(), "rev-parse", "HEAD"},
+        WorkingDirectory).Output);
+    const std::string StatusAfter = Runner.Run(
+        {"git", "-C", WorkingDirectory.string(), "status", "--porcelain",
+         "--untracked-files=all"}, WorkingDirectory).Output;
+    if (HeadAfter != Task.FixedHeadCommit || !TrimCommandOutput(StatusAfter).empty()) {
+      Process.Output += "\nController rejected validation evidence because the assigned worktree changed during execution.\n";
+      if (Process.ExitCode == 0) {
+        Process.ExitCode = 1;
+      }
+    }
+  }
   WriteExclusive(EvidencePath, RedactSensitiveText(Process.Output));
 
   WorkflowEvent Event;
@@ -1646,9 +1807,11 @@ ValidationResult RunFrozenValidation(const TaskSpec& Task,
   Event.AssignmentEventCommit = Task.AssignmentEventCommit;
   Event.AssignmentEventId = Task.AssignmentEventId;
   Event.CodeBaseCommit = Task.CodeBaseCommit;
+  Event.HeadCommit = Task.FixedHeadCommit;
   Events.Append(Event);
 
-  return {ExactCommand, WorkingDirectory, Process.ExitCode, EvidencePath, Event.EventId};
+  return {ExactCommand, WorkingDirectory, Process.ExitCode, EvidencePath, Event.EventId,
+          Task.FixedHeadCommit};
 }
 
 ValidationResult RunTypedGitDiffCheck(const TaskSpec& Task,
@@ -1665,7 +1828,7 @@ ValidationResult RunTypedGitDiffCheck(const TaskSpec& Task,
     throw WorkflowError("Typed GitDiffCheck is not listed in the frozen TaskSpec");
   }
   if (!IsCommitId(Task.CodeBaseCommit) || Task.CodeBaseCommit != Task.BaselineCommit ||
-      !IsCommitId(HeadCommit)) {
+      !IsCommitId(HeadCommit) || Task.FixedHeadCommit != HeadCommit) {
     throw WorkflowError("Typed GitDiffCheck requires the pinned CodeBaseCommit and fixed HeadCommit");
   }
   if (!WorkingDirectory.is_absolute() || !std::filesystem::is_directory(WorkingDirectory) ||
@@ -1716,9 +1879,10 @@ ValidationResult RunTypedGitDiffCheck(const TaskSpec& Task,
   Event.AssignmentEventCommit = Task.AssignmentEventCommit;
   Event.AssignmentEventId = Task.AssignmentEventId;
   Event.CodeBaseCommit = Task.CodeBaseCommit;
+  Event.HeadCommit = HeadCommit;
   Events.Append(Event);
   return {ExactCommand, CanonicalWorkingDirectory, Process.ExitCode, EvidencePath,
-          Event.EventId};
+          Event.EventId, HeadCommit};
 }
 
 std::string RedactSensitiveText(const std::string& Text) {
@@ -1840,6 +2004,7 @@ std::vector<WorkflowEvent> EventStore::ReadTaskEvents(const std::string& TaskId,
         Node, "AssignmentEventCommit", "assignment_event_commit");
     Event.AssignmentEventId = OptionalEventString(Node, "AssignmentEventId", "assignment_event_id");
     Event.CodeBaseCommit = OptionalEventString(Node, "CodeBaseCommit", "code_base_commit");
+    Event.HeadCommit = OptionalEventString(Node, "HeadCommit", "head_commit");
     Event.ContextBudgetApprovalEventId = OptionalEventString(
         Node, "ContextBudgetApprovalEventId", "context_budget_approval_event_id");
     Event.OwnerAgentId = OptionalEventString(Node, "OwnerAgentId", "owner_agent_id");
@@ -1867,8 +2032,9 @@ std::vector<WorkflowEvent> EventStore::ReadTaskEvents(const std::string& TaskId,
 std::vector<ValidationResult> CollectTaskRevisionValidations(
     const TaskSpec& Task,
     const std::vector<WorkflowEvent>& Events) {
-  if (!IsTaskId(Task.TaskId) || Task.TaskRevision <= 0) {
-    throw WorkflowError("ReviewBundle validation collection requires a valid TaskId and TaskRevision");
+  if (!IsTaskId(Task.TaskId) || Task.TaskRevision <= 0 ||
+      !IsCommitId(Task.FixedHeadCommit)) {
+    throw WorkflowError("ReviewBundle validation collection requires TaskId, TaskRevision, and fixed HeadCommit");
   }
   std::vector<ValidationResult> Results;
   std::unordered_map<std::string, std::string> PayloadByEventId;
@@ -1881,7 +2047,8 @@ std::vector<ValidationResult> CollectTaskRevisionValidations(
         Event.TaskSpecBlobId != Task.TaskSpecBlobId ||
         Event.AssignmentEventCommit != Task.AssignmentEventCommit ||
         Event.AssignmentEventId != Task.AssignmentEventId ||
-        Event.CodeBaseCommit != Task.CodeBaseCommit) {
+        Event.CodeBaseCommit != Task.CodeBaseCommit ||
+        Event.HeadCommit != Task.FixedHeadCommit) {
       continue;
     }
     if (Event.EventId.empty() || Event.Command.empty() || Event.ExitCode < 0 ||
@@ -1904,7 +2071,7 @@ std::vector<ValidationResult> CollectTaskRevisionValidations(
     }
     Results.push_back({Event.Command, Event.WorkingDirectory,
                        static_cast<unsigned long>(Event.ExitCode), Event.EvidencePath,
-                       Event.EventId});
+                       Event.EventId, Event.HeadCommit});
   }
   return Results;
 }
@@ -2121,6 +2288,7 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
       !IsCommitId(Bundle.TaskSpecCommit) || !IsCommitId(Bundle.TaskSpecBlobId) ||
       !IsCommitId(Bundle.AssignmentEventCommit) || Bundle.AssignmentEventId.empty() ||
       !IsCommitId(Bundle.CodeBaseCommit) || Bundle.BaseCommit != Bundle.CodeBaseCommit ||
+      !IsCommitId(Task.FixedHeadCommit) || Task.FixedHeadCommit != Bundle.HeadCommit ||
       Bundle.TaskSpecPath != Task.TaskPlanPath ||
       Bundle.BaseCommit != Task.BaselineCommit || Bundle.CodeBaseCommit != Task.CodeBaseCommit ||
       Bundle.TaskSpecCommit != Task.TaskSpecCommit ||
@@ -2146,6 +2314,7 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
     throw WorkflowError("This bootstrap controller only emits an explicitly local ReviewBundle");
   }
   const std::vector<WorkflowEvent> TaskEvents = Events.ReadTaskEvents(Task.TaskId);
+  const std::vector<WorkflowEvent>& BundleEvents = Bundle.Events;
   const auto AssignmentEvent = std::find_if(
       TaskEvents.begin(), TaskEvents.end(), [&](const WorkflowEvent& Event) {
         return Event.EventId == Task.AssignmentEventId &&
@@ -2166,8 +2335,19 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
   if (AssignmentEvent == TaskEvents.end()) {
     throw WorkflowError("ReviewBundle is not bound to the pinned Coordinator assignment event");
   }
-  if (Task.ReadSet.size() > 12 && !Events.FindContextBudgetOverride(Task)) {
-    throw WorkflowError("ReviewBundle cannot use a ReadSet without its revision-specific Coordinator approval");
+  if (std::none_of(BundleEvents.begin(), BundleEvents.end(), [&](const WorkflowEvent& Event) {
+        return Event.EventId == Task.AssignmentEventId;
+      })) {
+    throw WorkflowError("ReviewBundle history omitted its pinned Coordinator assignment event");
+  }
+  if (Task.ReadSet.size() > 12) {
+    const auto BudgetOverride = Events.FindContextBudgetOverride(Task);
+    if (!BudgetOverride ||
+        std::none_of(BundleEvents.begin(), BundleEvents.end(), [&](const WorkflowEvent& Event) {
+          return Event.EventId == Task.RegisteredBudgetOverride->ApprovalEventId;
+        })) {
+      throw WorkflowError("ReviewBundle cannot use a ReadSet without its revision-specific Coordinator approval");
+    }
   }
   ValidateWriteSetPaths(Task, Bundle.ChangedPaths);
   if (Bundle.Validations.empty()) {
@@ -2177,7 +2357,7 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
   const auto BuildSibling = CanonicalWorktree.parent_path() /
                            (CanonicalWorktree.filename().string() + ".build");
   const auto CanonicalBuildSibling = CanonicalizeFuturePath(BuildSibling);
-  const auto CurrentEvents = Bundle.Events;
+  const auto CurrentEvents = BundleEvents;
   std::unordered_map<std::string, const WorkflowEvent*> EventById;
   for (const WorkflowEvent& Event : CurrentEvents) {
     if (Event.EventId.empty()) {
@@ -2186,6 +2366,15 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
     const auto [It, Inserted] = EventById.emplace(Event.EventId, &Event);
     if (!Inserted && It->second->EventType != Event.EventType) {
       throw WorkflowError("ReviewBundle event history contains conflicting EventIds");
+    }
+    if (Event.TaskRevision == Task.TaskRevision && Event.EventType == "CommandExecuted" &&
+        (Event.TaskSpecCommit != Task.TaskSpecCommit ||
+         Event.TaskSpecBlobId != Task.TaskSpecBlobId ||
+         Event.AssignmentEventCommit != Task.AssignmentEventCommit ||
+         Event.AssignmentEventId != Task.AssignmentEventId ||
+         Event.CodeBaseCommit != Task.CodeBaseCommit ||
+         Event.HeadCommit != Bundle.HeadCommit)) {
+      throw WorkflowError("ReviewBundle history contains an unbound current-revision validation event");
     }
   }
   std::unordered_map<std::string, const ValidationResult*> ValidationByEventId;
@@ -2224,10 +2413,12 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
         Event.AssignmentEventCommit != Task.AssignmentEventCommit ||
         Event.AssignmentEventId != Task.AssignmentEventId ||
         Event.CodeBaseCommit != Task.CodeBaseCommit ||
+        Event.HeadCommit != Bundle.HeadCommit ||
         Event.Command != Validation.Command ||
         Event.WorkingDirectory != Validation.WorkingDirectory.string() ||
         Event.EvidencePath != Validation.EvidencePath.string() ||
-        Event.ExitCode != static_cast<long>(Validation.ExitCode)) {
+        Event.ExitCode != static_cast<long>(Validation.ExitCode) ||
+        Validation.HeadCommit != Bundle.HeadCommit) {
       throw WorkflowError("ReviewBundle validation does not match its pinned command event");
     }
     if (!PathsEqual(CanonicalExistingDirectory(Validation.WorkingDirectory),
@@ -2271,8 +2462,10 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
   if (std::filesystem::exists(CanonicalOutputPath)) {
     throw WorkflowError("Local ReviewBundle output already exists; refusing to overwrite evidence");
   }
+  ReviewBundleData CompleteBundle = Bundle;
   for (std::size_t Index = 0; Index < Bundle.ChangedPaths.size(); ++Index) {
     WorkflowEvent FileEvent;
+    FileEvent.EventId = NewRecordId();
     FileEvent.EventType = "FileChangeObserved";
     FileEvent.ReleaseId = Task.ReleaseId;
     FileEvent.PhaseId = Task.PhaseId;
@@ -2284,6 +2477,7 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
     FileEvent.AssignmentEventCommit = Task.AssignmentEventCommit;
     FileEvent.AssignmentEventId = Task.AssignmentEventId;
     FileEvent.CodeBaseCommit = Task.CodeBaseCommit;
+    FileEvent.HeadCommit = Bundle.HeadCommit;
     FileEvent.AgentId = Bundle.AuthorAgentId;
     FileEvent.Branch = Task.Branch;
     FileEvent.Result = Index < Bundle.ChangeKinds.size()
@@ -2292,9 +2486,8 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
     FileEvent.EvidenceRefs = {Bundle.ChangedPaths[Index], Bundle.BaseCommit,
                               Bundle.HeadCommit};
     Events.Append(FileEvent);
+    CompleteBundle.Events.push_back(std::move(FileEvent));
   }
-  ReviewBundleData CompleteBundle = Bundle;
-  CompleteBundle.Events = Events.ReadTaskEvents(Task.TaskId);
   WriteExclusive(OutputPath, SerializeReviewBundle(Task, CompleteBundle) + "\n");
 
   WorkflowEvent BundleEvent;
@@ -2309,6 +2502,7 @@ void WriteLocalReviewBundle(const std::filesystem::path& RepositoryRoot,
   BundleEvent.AssignmentEventCommit = Task.AssignmentEventCommit;
   BundleEvent.AssignmentEventId = Task.AssignmentEventId;
   BundleEvent.CodeBaseCommit = Task.CodeBaseCommit;
+  BundleEvent.HeadCommit = Bundle.HeadCommit;
   BundleEvent.AgentId = Bundle.AuthorAgentId;
   BundleEvent.Branch = Task.Branch;
   BundleEvent.Result = "LocalReviewBundle";
