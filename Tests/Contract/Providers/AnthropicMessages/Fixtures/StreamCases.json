@@ -1,0 +1,418 @@
+{
+  "FixtureSchemaVersion": 1,
+  "Contract": "ModelProviderContract V1",
+  "Protocol": "AnthropicMessages",
+  "Profile": {
+    "ProviderProfileId": "profile-synthetic-anthropic-v1",
+    "Protocol": "AnthropicMessages",
+    "Endpoint": "https://api.anthropic.com/v1/messages",
+    "ModelName": "fixture-model",
+    "AuthenticationScheme": "XApiKeyHeader",
+    "AnthropicVersion": "2026-10-21",
+    "CredentialSource": "Core-held CredentialLease; no credential value in fixture"
+  },
+  "Cases": [
+    {
+      "CaseId": "text_blocks_utf8_and_sse_fragmentation",
+      "AcceptanceIds": [
+        "AC-2",
+        "AC-3"
+      ],
+      "RequestId": "req_fixture_text",
+      "AgentTurnId": "turn_fixture_text",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_fixture_text_01\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":12,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"你好🙂\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":0}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"Second synthetic block.\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":1}\r\n\r\n",
+        "event: ping\r\ndata: {\"type\":\"ping\"}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":12,\"output_tokens\":7,\"cache_creation_input_tokens\":3,\"cache_read_input_tokens\":2}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "DeliveryChunkByteLengths": [
+        21,
+        12,
+        218,
+        2,
+        140,
+        99,
+        2,
+        846
+      ],
+      "FragmentationAssertions": [
+        "split inside SSE event line",
+        "split inside data JSON",
+        "split between CR and LF bytes",
+        "split inside the UTF-8 bytes of 🙂",
+        "frames are delivered in original byte order"
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "msg_fixture_text_01"
+          }
+        },
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 2,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 12,
+              "OutputTokens": 1,
+              "Completeness": "Partial"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 3,
+          "EventType": "TextDelta",
+          "ItemId": "anthropic:block:0",
+          "Payload": {
+            "Text": "你好🙂"
+          }
+        },
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 4,
+          "EventType": "TextDelta",
+          "ItemId": "anthropic:block:1",
+          "Payload": {
+            "Text": "Second synthetic block."
+          }
+        },
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 5,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "OutputTokens": 3,
+              "Completeness": "Partial"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 6,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 12,
+              "OutputTokens": 7,
+              "CachedInputWriteTokens": 3,
+              "CachedInputReadTokens": 2,
+              "Completeness": "Final"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_text",
+          "AgentTurnId": "turn_fixture_text",
+          "SequenceNumber": 7,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "FinalAnswer",
+            "FinalUsageSnapshot": {
+              "InputTokens": 12,
+              "OutputTokens": 7,
+              "CachedInputWriteTokens": 3,
+              "CachedInputReadTokens": 2,
+              "Completeness": "Final"
+            }
+          }
+        }
+      ],
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "tool_use_partial_json_and_stable_ids",
+      "AcceptanceIds": [
+        "AC-2"
+      ],
+      "RequestId": "req_fixture_tools",
+      "AgentTurnId": "turn_fixture_tools",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_fixture_tools_01\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":18,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Running synthetic lookups.\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":0}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_fixture_lookup\",\"name\":\"SyntheticLookup\",\"input\":{}}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"query\\\":\\\"Shang\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"hai\\\"}\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":1}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":2,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_fixture_normalize\",\"name\":\"SyntheticNormalize\",\"input\":{}}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"value\\\":\\\"A\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":2,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"1\\\"}\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":2}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":18,\"output_tokens\":9,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "msg_fixture_tools_01"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 2,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 18,
+              "OutputTokens": 1,
+              "Completeness": "Partial"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 3,
+          "EventType": "TextDelta",
+          "ItemId": "anthropic:block:0",
+          "Payload": {
+            "Text": "Running synthetic lookups."
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 4,
+          "EventType": "ToolCallStarted",
+          "ItemId": "anthropic:block:1",
+          "ToolCallId": "toolu_fixture_lookup",
+          "Payload": {
+            "ToolName": "SyntheticLookup"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 5,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "anthropic:block:1",
+          "ToolCallId": "toolu_fixture_lookup",
+          "Payload": {
+            "JsonTextDelta": "{\"query\":\"Shang"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 6,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "anthropic:block:1",
+          "ToolCallId": "toolu_fixture_lookup",
+          "Payload": {
+            "JsonTextDelta": "hai\"}"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 7,
+          "EventType": "ToolCallReady",
+          "ItemId": "anthropic:block:1",
+          "ToolCallId": "toolu_fixture_lookup",
+          "Payload": {
+            "ToolName": "SyntheticLookup",
+            "Arguments": {
+              "query": "Shanghai"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 8,
+          "EventType": "ToolCallStarted",
+          "ItemId": "anthropic:block:2",
+          "ToolCallId": "toolu_fixture_normalize",
+          "Payload": {
+            "ToolName": "SyntheticNormalize"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 9,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "anthropic:block:2",
+          "ToolCallId": "toolu_fixture_normalize",
+          "Payload": {
+            "JsonTextDelta": "{\"value\":\"A"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 10,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "anthropic:block:2",
+          "ToolCallId": "toolu_fixture_normalize",
+          "Payload": {
+            "JsonTextDelta": "1\"}"
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 11,
+          "EventType": "ToolCallReady",
+          "ItemId": "anthropic:block:2",
+          "ToolCallId": "toolu_fixture_normalize",
+          "Payload": {
+            "ToolName": "SyntheticNormalize",
+            "Arguments": {
+              "value": "A1"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 12,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 18,
+              "OutputTokens": 9,
+              "CachedInputWriteTokens": 0,
+              "CachedInputReadTokens": 0,
+              "Completeness": "Final"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_tools",
+          "AgentTurnId": "turn_fixture_tools",
+          "SequenceNumber": 13,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "ToolHandoff",
+            "FinalUsageSnapshot": {
+              "InputTokens": 18,
+              "OutputTokens": 9,
+              "CachedInputWriteTokens": 0,
+              "CachedInputReadTokens": 0,
+              "Completeness": "Final"
+            }
+          }
+        }
+      ],
+      "ReadyOnlyAfterBlockStop": true,
+      "ToolCallIdsPreservedExactly": true,
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "cumulative_usage_snapshots",
+      "AcceptanceIds": [
+        "AC-3"
+      ],
+      "RequestId": "req_fixture_usage",
+      "AgentTurnId": "turn_fixture_usage",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_fixture_usage_01\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_sequence\":null},\"usage\":{\"output_tokens\":3}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":5,\"cache_creation_input_tokens\":4,\"cache_read_input_tokens\":2}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req_fixture_usage",
+          "AgentTurnId": "turn_fixture_usage",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "msg_fixture_usage_01"
+          }
+        },
+        {
+          "RequestId": "req_fixture_usage",
+          "AgentTurnId": "turn_fixture_usage",
+          "SequenceNumber": 2,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 10,
+              "OutputTokens": 1,
+              "CachedInputWriteTokens": 0,
+              "CachedInputReadTokens": 0,
+              "Completeness": "Partial"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_usage",
+          "AgentTurnId": "turn_fixture_usage",
+          "SequenceNumber": 3,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "OutputTokens": 3,
+              "Completeness": "Partial"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_usage",
+          "AgentTurnId": "turn_fixture_usage",
+          "SequenceNumber": 4,
+          "EventType": "UsageUpdated",
+          "Payload": {
+            "UsageSnapshot": {
+              "InputTokens": 10,
+              "OutputTokens": 5,
+              "CachedInputWriteTokens": 4,
+              "CachedInputReadTokens": 2,
+              "Completeness": "Final"
+            }
+          }
+        },
+        {
+          "RequestId": "req_fixture_usage",
+          "AgentTurnId": "turn_fixture_usage",
+          "SequenceNumber": 5,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "FinalAnswer",
+            "FinalUsageSnapshot": {
+              "InputTokens": 10,
+              "OutputTokens": 5,
+              "CachedInputWriteTokens": 4,
+              "CachedInputReadTokens": 2,
+              "Completeness": "Final"
+            }
+          }
+        }
+      ],
+      "CumulativeCountsMustNotBeSummed": true,
+      "MissingFieldsRemainUnknown": true,
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    }
+  ]
+}

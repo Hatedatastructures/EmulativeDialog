@@ -1,0 +1,477 @@
+{
+  "FixtureSchemaVersion": 1,
+  "Contract": "ModelProviderContract V1",
+  "Protocol": "AnthropicMessages",
+  "Profile": {
+    "AuthenticationScheme": "XApiKeyHeader",
+    "AnthropicVersion": "2026-10-21"
+  },
+  "StopReasonMatrix": [
+    {
+      "StopReason": "end_turn",
+      "CoveredBy": "StreamCases.json#text_blocks_utf8_and_sse_fragmentation",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "FinalAnswer"
+      }
+    },
+    {
+      "StopReason": "tool_use",
+      "CoveredBy": "StreamCases.json#tool_use_partial_json_and_stable_ids",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "ToolHandoff"
+      }
+    },
+    {
+      "StopReason": "max_tokens",
+      "CaseId": "max_tokens_output_limit",
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutputLimited",
+        "LimitKind": "OutputTokens"
+      }
+    },
+    {
+      "StopReason": "stop_sequence",
+      "CaseId": "stop_sequence_completion",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "FinalAnswer",
+        "StopSequenceCode": "SYNTHETIC_STOP"
+      }
+    },
+    {
+      "StopReason": "pause_turn",
+      "CaseId": "pause_turn_server_tool_not_supported",
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "ErrorCode": "UnsupportedCapability"
+      }
+    },
+    {
+      "StopReason": "refusal",
+      "CaseId": "refusal_is_completed_not_provider_failure",
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "CompletionKind": "Refusal"
+      }
+    },
+    {
+      "StopReason": "model_context_window_exceeded",
+      "CaseId": "context_window_output_limit",
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutputLimited",
+        "LimitKind": "ContextWindow"
+      }
+    }
+  ],
+  "Cases": [
+    {
+      "CaseId": "max_tokens_output_limit",
+      "RequestId": "req_max_tokens_output_limit",
+      "AgentTurnId": "turn_max_tokens_output_limit",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_max_tokens_output\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Synthetic partial output.\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":0}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"max_tokens\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":20}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "TextDelta",
+        "ResponseOutputLimited"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutputLimited",
+        "Payload": {
+          "LimitKind": "OutputTokens",
+          "UsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 20,
+            "Completeness": "Final"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "PartialTextPolicy": "Only text emitted before the terminal event is retained."
+    },
+    {
+      "CaseId": "stop_sequence_completion",
+      "RequestId": "req_stop_sequence_completion",
+      "AgentTurnId": "turn_stop_sequence_completion",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_stop_sequence\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Synthetic partial output.\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":0}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"stop_sequence\",\"stop_sequence\":\"SYNTHETIC_STOP\"},\"usage\":{\"input_tokens\":10,\"output_tokens\":5}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "TextDelta",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "FinalAnswer",
+          "StopSequenceCode": "SYNTHETIC_STOP",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 5,
+            "Completeness": "Final"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "pause_turn_server_tool_not_supported",
+      "RequestId": "req_pause_turn_server_tool_not_supported",
+      "AgentTurnId": "turn_pause_turn_server_tool_not_supported",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_pause_turn\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"pause_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "UnsupportedCapability",
+          "Retryable": false,
+          "SafeMessage": "Anthropic server-tool continuation is unsupported in V1."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "refusal_is_completed_not_provider_failure",
+      "RequestId": "req_refusal_is_completed_not_provider_failure",
+      "AgentTurnId": "turn_refusal_is_completed_not_provider_failure",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_refusal\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"explanation\":\"Synthetic refusal explanation for offline fixture.\"}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseCompleted"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCompleted",
+        "Payload": {
+          "CompletionKind": "Refusal",
+          "FinalUsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 0,
+            "Completeness": "Final"
+          },
+          "StopDetails": {
+            "Type": "refusal",
+            "Category": "general_harms",
+            "Explanation": "Synthetic refusal explanation for offline fixture."
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "context_window_output_limit",
+      "RequestId": "req_context_window_output_limit",
+      "AgentTurnId": "turn_context_window_output_limit",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_context_limit\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"model_context_window_exceeded\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseOutputLimited"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutputLimited",
+        "Payload": {
+          "LimitKind": "ContextWindow",
+          "UsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 0,
+            "Completeness": "Final"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "unknown_stop_reason_fails_closed",
+      "RequestId": "req_unknown_stop_reason_fails_closed",
+      "AgentTurnId": "turn_unknown_stop_reason_fails_closed",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_unknown_stop\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"future_stop_reason\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "Unrecognized Anthropic stop_reason."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "server_tool_block_rejected",
+      "RequestId": "req_server_tool_block_rejected",
+      "AgentTurnId": "turn_server_tool_block_rejected",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_server_tool\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"server_tool_use\",\"id\":\"srvtoolu_synthetic\",\"name\":\"synthetic_server_tool\",\"input\":{}}}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "UnsupportedCapability",
+          "Retryable": false,
+          "SafeMessage": "Anthropic server-side tools are outside the V1 profile."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoFurtherFramesConsumedAfterFailure": true
+    },
+    {
+      "CaseId": "unknown_content_block_rejected",
+      "RequestId": "req_unknown_content_block_rejected",
+      "AgentTurnId": "turn_unknown_content_block_rejected",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_unknown_block\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"future_content_block\",\"payload\":\"synthetic\"}}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "UnsupportedCapability",
+          "Retryable": false,
+          "SafeMessage": "Unrecognized Anthropic content block."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "http_authentication_failure",
+      "RequestId": "req_http_auth_failure",
+      "AgentTurnId": "turn_http_auth_failure",
+      "Trigger": "HttpResponseBeforeSse",
+      "HttpResponse": {
+        "Status": 401,
+        "Headers": {
+          "request-id": "req_synthetic_auth_error"
+        },
+        "Body": {
+          "type": "error",
+          "error": {
+            "type": "authentication_error",
+            "message": "Synthetic authentication failure."
+          },
+          "request_id": "req_synthetic_auth_error"
+        }
+      },
+      "ExpectedEventTypes": [
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "AuthenticationFailure",
+          "Retryable": false,
+          "SafeMessage": "Synthetic authentication failure."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "CredentialFree": true,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "in_band_error_after_partial_text",
+      "RequestId": "req_in_band_error_after_partial_text",
+      "AgentTurnId": "turn_in_band_error_after_partial_text",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_in_band_error\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Synthetic partial output.\"}}\r\n\r\n",
+        "event: error\r\ndata: {\"type\":\"error\",\"error\":{\"type\":\"overloaded_error\",\"message\":\"Synthetic overload.\"}}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "TextDelta",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "ProviderRejected",
+          "Retryable": false,
+          "SafeMessage": "Anthropic returned an in-band stream error after partial output."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoAutomaticRetry": true
+    },
+    {
+      "CaseId": "unexpected_eof_before_message_stop_is_unknown",
+      "RequestId": "req_unexpected_eof_before_message_stop_is_unknown",
+      "AgentTurnId": "turn_unexpected_eof_before_message_stop_is_unknown",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_unexpected_eof\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Synthetic partial output.\"}}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "TextDelta",
+        "ResponseOutcomeUnknown"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutcomeUnknown",
+        "Payload": {
+          "ReasonCode": "StreamEndedBeforeTerminal"
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NoAutomaticRetry": true
+    },
+    {
+      "CaseId": "cancellation_before_send_is_cancelled",
+      "RequestId": "req_cancel_before_send",
+      "AgentTurnId": "turn_cancel_before_send",
+      "Trigger": "LocalCancellationBeforeNetworkSend",
+      "WireFrames": [],
+      "ExpectedEventTypes": [
+        "ResponseCancelled"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseCancelled",
+        "Payload": {
+          "ReasonCode": "CancelledBeforeSend"
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "NetworkRequestSent": false,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "cancellation_after_send_without_confirmation_is_unknown",
+      "RequestId": "req_cancellation_after_send_without_confirmation_is_unknown",
+      "AgentTurnId": "turn_cancellation_after_send_without_confirmation_is_unknown",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_cancel_after_send\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Synthetic partial output.\"}}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "TextDelta",
+        "ResponseOutcomeUnknown"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutcomeUnknown",
+        "Payload": {
+          "ReasonCode": "LocalCancellationUnconfirmed"
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "NetworkRequestSent": true,
+      "RemoteCancellationConfirmed": false,
+      "NoAutomaticRetry": true
+    },
+    {
+      "CaseId": "incomplete_tool_json_at_output_limit_never_becomes_ready",
+      "RequestId": "req_incomplete_tool_json_at_output_limit_never_becomes_ready",
+      "AgentTurnId": "turn_incomplete_tool_json_at_output_limit_never_becomes_ready",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_incomplete_tool_json\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_start\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_fixture_incomplete\",\"name\":\"SyntheticLookup\",\"input\":{}}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"query\\\":\\\"unfinished\"}}\r\n\r\n",
+        "event: content_block_stop\r\ndata: {\"type\":\"content_block_stop\",\"index\":0}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"max_tokens\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":20}}\r\n\r\n",
+        "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ToolCallStarted",
+        "ToolArgumentDelta",
+        "ResponseOutputLimited"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseOutputLimited",
+        "Payload": {
+          "LimitKind": "OutputTokens",
+          "UsageSnapshot": {
+            "InputTokens": 10,
+            "OutputTokens": 20,
+            "Completeness": "Final"
+          }
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true,
+      "MustNotEmitEventTypes": [
+        "ToolCallReady",
+        "ResponseCompleted"
+      ]
+    },
+    {
+      "CaseId": "mismatched_sse_event_and_data_type_is_invalid",
+      "RequestId": "req_mismatched_sse_event_and_data_type_is_invalid",
+      "AgentTurnId": "turn_mismatched_sse_event_and_data_type_is_invalid",
+      "WireFrames": [
+        "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_mismatched_type\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
+        "event: content_block_delta\r\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n"
+      ],
+      "ExpectedEventTypes": [
+        "ResponseStarted",
+        "ResponseFailed"
+      ],
+      "ExpectedTerminal": {
+        "EventType": "ResponseFailed",
+        "Payload": {
+          "ErrorCode": "InvalidStream",
+          "Retryable": false,
+          "SafeMessage": "SSE event name and JSON type disagree."
+        }
+      },
+      "ExpectedTerminalEventCount": 1,
+      "Synthetic": true
+    }
+  ]
+}
