@@ -1,0 +1,462 @@
+{
+  "SchemaVersion": 1,
+  "ContractVersion": "ModelProviderContract V1",
+  "Protocol": "OpenAICompatibleChatCompletions",
+  "SyntheticOnly": true,
+  "Cases": [
+    {
+      "CaseId": "ERROR-001-disconnect-before-usage-trailer",
+      "Profile": {
+        "ProviderProfileId": "fixture-chat-profile-v1",
+        "Protocol": "OpenAICompatibleChatCompletions",
+        "Endpoint": "https://chat-fixture.example.invalid/v1/chat/completions",
+        "ModelName": "fixture-chat-model",
+        "CredentialRef": "fixture-reference-not-a-credential",
+        "AuthenticationScheme": "Bearer",
+        "ProtocolVersion": "chat-completions-v1",
+        "CompatibilityProfileId": "fixture-chat-extensions-v1",
+        "Capabilities": [
+          "Streaming",
+          "ToolCalls",
+          "Usage",
+          "OutputLimit",
+          "Cancellation"
+        ]
+      },
+      "RequestSettings": {
+        "n": 1,
+        "stream": true,
+        "include_usage": true
+      },
+      "ReceivedFramesBeforeDisconnect": [
+        {
+          "id": "chatcmpl_fixture_disconnect",
+          "object": "chat.completion.chunk",
+          "created": 1,
+          "model": "fixture-chat-model",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "content": "partial answer"
+              },
+              "finish_reason": null
+            }
+          ],
+          "usage": null
+        }
+      ],
+      "MissingAfterDisconnect": [
+        "final choice finish_reason",
+        "usage trailer",
+        "data: [DONE]"
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_disconnect"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "item_fixture_disconnect_0",
+          "TextUtf8Delta": "partial answer"
+        },
+        {
+          "SequenceNumber": 3,
+          "EventType": "ResponseOutcomeUnknown",
+          "ReasonCode": "StreamEndedBeforeCompleteTerminator"
+        }
+      ],
+      "ExpectedUsageCompleteness": "Unavailable",
+      "DoNotEmit": [
+        "UsageUpdated",
+        "ResponseCompleted"
+      ],
+      "AutomaticRetry": false
+    },
+    {
+      "CaseId": "ERROR-002-http-rate-limited",
+      "WireResponse": {
+        "Status": 429,
+        "ContentType": "application/json",
+        "Body": {
+          "error": {
+            "type": "rate_limit_error",
+            "message": "Synthetic rate limit."
+          }
+        }
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "RateLimited",
+          "Retryable": true,
+          "SanitizedDescription": "Synthetic provider rate limit."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true
+    },
+    {
+      "CaseId": "ERROR-003-cancelled-before-send",
+      "Cancellation": {
+        "Requested": true,
+        "RequestSent": false,
+        "ProviderCancellationConfirmed": true
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseCancelled",
+          "ReasonCode": "CancelledBeforeSend"
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseCancelled",
+      "TerminalExactlyOnce": true,
+      "NetworkRequestExpected": false
+    },
+    {
+      "CaseId": "ERROR-004-cancel-after-send-unconfirmed",
+      "Cancellation": {
+        "Requested": true,
+        "RequestSent": true,
+        "ProviderCancellationConfirmed": false,
+        "ResponseReceived": false
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "EventType": "ResponseOutcomeUnknown",
+          "SequenceNumber": 1,
+          "ReasonCode": "CancellationUnconfirmed"
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseOutcomeUnknown",
+      "TerminalExactlyOnce": true,
+      "AutomaticRetry": false
+    },
+    {
+      "CaseId": "ERROR-005-unregistered-vendor-response-field",
+      "Profile": {
+        "ProviderProfileId": "fixture-chat-profile-v1",
+        "Protocol": "OpenAICompatibleChatCompletions",
+        "Endpoint": "https://chat-fixture.example.invalid/v1/chat/completions",
+        "ModelName": "fixture-chat-model",
+        "CredentialRef": "fixture-reference-not-a-credential",
+        "AuthenticationScheme": "Bearer",
+        "ProtocolVersion": "chat-completions-v1",
+        "CompatibilityProfileId": "fixture-chat-base-only-v1",
+        "Capabilities": [
+          "Streaming",
+          "ToolCalls",
+          "Usage",
+          "OutputLimit",
+          "Cancellation"
+        ]
+      },
+      "WireResponse": {
+        "id": "chatcmpl_fixture_unknown_field",
+        "object": "chat.completion",
+        "created": 1,
+        "model": "fixture-chat-model",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "Synthetic answer."
+            },
+            "finish_reason": "stop"
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 3,
+          "completion_tokens": 2,
+          "total_tokens": 5
+        },
+        "x_vendor_trace": "synthetic-only"
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_unknown_field"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "UnsupportedCapability",
+          "Retryable": false,
+          "SanitizedDescription": "Response contains an unregistered vendor field."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true,
+      "RegisteredStandardResponseEnvelopeFields": [
+        "id",
+        "object",
+        "created",
+        "model"
+      ],
+      "StandardEnvelopeCanonicalMappings": [
+        {
+          "WirePath": "id",
+          "CanonicalTarget": "ResponseStarted.ProviderResponseId"
+        }
+      ],
+      "RegisteredCanonicalResponseFields": [
+        "choices",
+        "usage.prompt_tokens",
+        "usage.completion_tokens",
+        "usage.total_tokens"
+      ],
+      "UnsupportedVendorExtensions": [
+        "x_vendor_trace"
+      ]
+    },
+    {
+      "CaseId": "ERROR-006-legacy-function-call-rejected",
+      "WireResponse": {
+        "id": "chatcmpl_fixture_legacy_function_call",
+        "object": "chat.completion",
+        "created": 1,
+        "model": "fixture-chat-model",
+        "choices": [
+          {
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": null,
+              "function_call": {
+                "name": "lookup_ticket_status",
+                "arguments": "{\"ticket_id\":\"CASE-001\"}"
+              }
+            },
+            "finish_reason": "function_call"
+          }
+        ]
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_legacy_function_call"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "UnsupportedCapability",
+          "Retryable": false,
+          "SanitizedDescription": "V1 does not support legacy function_call."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true
+    },
+    {
+      "CaseId": "ERROR-007-n-greater-than-one-rejected",
+      "CanonicalRequest": {
+        "RequestId": "request-fixture-invalid-n",
+        "AgentTurnId": "turn-fixture-invalid-n",
+        "ModelName": "fixture-chat-model",
+        "OutputLimit": 32,
+        "ProviderOptions": {
+          "N": 2
+        }
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "InvalidRequest",
+          "Retryable": false,
+          "SanitizedDescription": "Chat Completions V1 fixes n=1."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true,
+      "NetworkRequestExpected": false
+    },
+    {
+      "CaseId": "ERROR-008-unregistered-request-extension-rejected",
+      "Profile": {
+        "ProviderProfileId": "fixture-chat-profile-v1",
+        "Protocol": "OpenAICompatibleChatCompletions",
+        "Endpoint": "https://chat-fixture.example.invalid/v1/chat/completions",
+        "ModelName": "fixture-chat-model",
+        "CredentialRef": "fixture-reference-not-a-credential",
+        "AuthenticationScheme": "Bearer",
+        "ProtocolVersion": "chat-completions-v1",
+        "CompatibilityProfileId": "fixture-chat-base-only-v1",
+        "Capabilities": [
+          "Streaming",
+          "ToolCalls",
+          "Usage",
+          "OutputLimit",
+          "Cancellation"
+        ]
+      },
+      "CanonicalRequest": {
+        "RequestId": "request-fixture-unregistered-option",
+        "AgentTurnId": "turn-fixture-unregistered-option",
+        "ModelName": "fixture-chat-model",
+        "OutputLimit": 32,
+        "ProviderOptions": {
+          "Compatibility": {
+            "vendor_mode": "fast"
+          }
+        }
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "InvalidRequest",
+          "Retryable": false,
+          "SanitizedDescription": "Unregistered compatibility fields are rejected before dispatch."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true,
+      "NetworkRequestExpected": false
+    },
+    {
+      "CaseId": "ERROR-009-malformed-sse-json",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true
+      },
+      "ReceivedSseData": [
+        "{\"id\":\"chatcmpl_fixture_bad_json\",\"choices\":["
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "InvalidStream",
+          "Retryable": false,
+          "SanitizedDescription": "Malformed Chat Completions SSE payload."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true
+    },
+    {
+      "CaseId": "ERROR-010-invalid-tool-arguments-never-ready",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true,
+        "include_usage": false
+      },
+      "ReceivedFrames": [
+        {
+          "id": "chatcmpl_fixture_invalid_tool_json",
+          "object": "chat.completion.chunk",
+          "created": 1,
+          "model": "fixture-chat-model",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "tool_calls": [
+                  {
+                    "index": 0,
+                    "id": "call_fixture_invalid_args",
+                    "type": "function",
+                    "function": {
+                      "name": "lookup_ticket_status",
+                      "arguments": "{\"ticket_id\":"
+                    }
+                  }
+                ]
+              },
+              "finish_reason": "tool_calls"
+            }
+          ],
+          "usage": null
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_invalid_tool_json"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ToolCallStarted",
+          "ItemId": "item_fixture_invalid_tool",
+          "ToolCallId": "call_fixture_invalid_args",
+          "ToolName": "lookup_ticket_status"
+        },
+        {
+          "SequenceNumber": 3,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "item_fixture_invalid_tool",
+          "ToolCallId": "call_fixture_invalid_args",
+          "ArgumentsJsonDelta": "{\"ticket_id\":"
+        },
+        {
+          "SequenceNumber": 4,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "InvalidStream",
+          "Retryable": false,
+          "SanitizedDescription": "Tool arguments are incomplete JSON at tool_calls terminal."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true,
+      "MustNotEmit": [
+        "ToolCallReady"
+      ],
+      "ToolExecutionExpected": false,
+      "TerminalSseFrame": "data: [DONE]"
+    },
+    {
+      "CaseId": "ERROR-011-unknown-finish-reason",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true
+      },
+      "ReceivedFrames": [
+        {
+          "id": "chatcmpl_fixture_unknown_finish",
+          "object": "chat.completion.chunk",
+          "created": 1,
+          "model": "fixture-chat-model",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {},
+              "finish_reason": "future_reason"
+            }
+          ],
+          "usage": null
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_unknown_finish"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "InvalidStream",
+          "Retryable": false,
+          "SanitizedDescription": "Unknown finish_reason is not treated as success."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true,
+      "TerminalSseFrame": "data: [DONE]"
+    }
+  ]
+}

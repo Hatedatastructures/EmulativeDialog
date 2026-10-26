@@ -1,0 +1,222 @@
+{
+  "SchemaVersion": 1,
+  "TaskId": "ED-0010",
+  "TaskRevision": 1,
+  "Contract": {
+    "Id": "ModelProviderContract",
+    "Version": "V1"
+  },
+  "CapabilityId": "OpenAICompatibleChatCompletions",
+  "Protocol": "OpenAICompatibleChatCompletions",
+  "OfflineOnly": true,
+  "SyntheticDataOnly": true,
+  "CredentialBytesIncluded": false,
+  "NetworkRequestsPerformed": false,
+  "FixtureFiles": [
+    "FixtureIndex.json",
+    "CanonicalRequest.json",
+    "StreamCases.json",
+    "ErrorCases.json"
+  ],
+  "Cases": [
+    {
+      "CaseId": "REQ-001-standard-roles-tool-result-n1-output-limit-profile-field",
+      "File": "CanonicalRequest.json",
+      "JsonPointer": "/Cases/0",
+      "Acceptance": [
+        "AC-1"
+      ],
+      "Covers": [
+        "n=1",
+        "system/developer/user/assistant/tool roles",
+        "matching tool_call.id and tool_call_id",
+        "max_completion_tokens output limit",
+        "registered service_tier profile field"
+      ]
+    },
+    {
+      "CaseId": "STREAM-001-text-stop-fragmented-utf8",
+      "File": "StreamCases.json",
+      "JsonPointer": "/Cases/0",
+      "Acceptance": [
+        "AC-2"
+      ],
+      "Covers": [
+        "SSE data frames and DONE",
+        "transport boundary split",
+        "UTF-8 code point split",
+        "finish_reason stop"
+      ]
+    },
+    {
+      "CaseId": "STREAM-002-interleaved-tools-first-and-later-fragment-metadata-usage-trailer",
+      "File": "StreamCases.json",
+      "JsonPointer": "/Cases/1",
+      "Acceptance": [
+        "AC-2"
+      ],
+      "Covers": [
+        "interleaved tool indexes",
+        "id/type/name first and delayed",
+        "fragmented JSON arguments",
+        "finish_reason tool_calls",
+        "empty choices usage trailer",
+        "registered optional usage mappings"
+      ]
+    },
+    {
+      "CaseId": "STREAM-003-finish-reason-length",
+      "File": "StreamCases.json",
+      "JsonPointer": "/Cases/2",
+      "Acceptance": [
+        "AC-2"
+      ],
+      "Covers": [
+        "length maps to ResponseOutputLimited"
+      ]
+    },
+    {
+      "CaseId": "STREAM-004-finish-reason-content-filter",
+      "File": "StreamCases.json",
+      "JsonPointer": "/Cases/3",
+      "Acceptance": [
+        "AC-2"
+      ],
+      "Covers": [
+        "content_filter maps to ContentFiltered"
+      ]
+    },
+    {
+      "CaseId": "ERROR-001-disconnect-before-usage-trailer",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/0",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "usage missing after disconnect remains unavailable",
+        "OutcomeUnknown",
+        "no retry"
+      ]
+    },
+    {
+      "CaseId": "ERROR-002-http-rate-limited",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/1",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "HTTP rate-limit stable error"
+      ]
+    },
+    {
+      "CaseId": "ERROR-003-cancelled-before-send",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/2",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "confirmed pre-send cancellation"
+      ]
+    },
+    {
+      "CaseId": "ERROR-004-cancel-after-send-unconfirmed",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/3",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "unknown outcome and no retry"
+      ]
+    },
+    {
+      "CaseId": "ERROR-005-unregistered-vendor-response-field",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/4",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "unregistered vendor response field rejected"
+      ]
+    },
+    {
+      "CaseId": "ERROR-006-legacy-function-call-rejected",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/5",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "legacy function_call rejected"
+      ]
+    },
+    {
+      "CaseId": "ERROR-007-n-greater-than-one-rejected",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/6",
+      "Acceptance": [
+        "AC-1",
+        "AC-3"
+      ],
+      "Covers": [
+        "n=1 enforced before dispatch"
+      ]
+    },
+    {
+      "CaseId": "ERROR-008-unregistered-request-extension-rejected",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/7",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "unregistered extension rejected before dispatch"
+      ]
+    },
+    {
+      "CaseId": "ERROR-009-malformed-sse-json",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/8",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "malformed SSE is InvalidStream"
+      ]
+    },
+    {
+      "CaseId": "ERROR-010-invalid-tool-arguments-never-ready",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/9",
+      "Acceptance": [
+        "AC-3"
+      ],
+      "Covers": [
+        "invalid arguments never ready or executed"
+      ]
+    },
+    {
+      "CaseId": "ERROR-011-unknown-finish-reason",
+      "File": "ErrorCases.json",
+      "JsonPointer": "/Cases/10",
+      "Acceptance": [
+        "AC-2",
+        "AC-3"
+      ],
+      "Covers": [
+        "unknown finish reason is InvalidStream"
+      ]
+    }
+  ],
+  "Invariants": [
+    "All identifiers, messages, tools, responses, and usage values are synthetic.",
+    "No real credential bytes, private user messages, or network captures are present.",
+    "Only profile-registered compatibility fields are mapped; arbitrary passthrough is forbidden.",
+    "Provider fixtures never authorize or execute business actions.",
+    "Each response case has one terminal event; request-only cases describe validation expectations."
+  ]
+}
