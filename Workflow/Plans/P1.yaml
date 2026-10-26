@@ -154,7 +154,7 @@ Tasks:
     EpicId: EP-05
     Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
     TaskKind: ContractFreeze
-    State: Rework
+    State: Verified
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -236,17 +236,21 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: c0792ea36b443fc984ea04542f6895457d33a569
-    HeadCommit: 6d5a2eba610a7f9a9c1e31c7e20f9209fde16621
+    HeadCommit: 6a53c8d52f98ce563e38016ee9ed772da72d0a88
     Branch: Task/ED-0007-ContractFreeze
     Worktree: H:/Qbot/EmulativeDialog.ED-0007
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0007
+    MergeTargetBranch: codex/integration
+    MergeBaseCommit: c0792ea36b443fc984ea04542f6895457d33a569
+    ReviewerDecision: Approved
+    ReviewHeadCommit: 6a53c8d52f98ce563e38016ee9ed772da72d0a88
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "ED-0007-RV-001 Major: MemoryWriteConsent must be reconciled with the trusted ChannelEnvelope and explicit current-user message source."
+      CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Rework ED-0007-RV-001 within the four-file WriteSet and resubmit a fixed Head; no code or test files are in scope.
+      NextAction: Queue and merge the independently approved four-contract change into codex/integration; provider and memory code may start only after this merge.
       OpenMessageIds: []
-      LastValidationResult: "git diff --check Base..Head exit 0; independent contract review found one open Major; no build/tests required."
+      LastValidationResult: "Independent review approved AC-1..AC-5 on fixed Head 6a53c8d52f98ce563e38016ee9ed772da72d0a88; ED-0007-RV-001 resolved; diff check exit 0; contract-only, no build/tests required."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false

@@ -38,7 +38,7 @@ Slots:
       - AgentRuntime
       - Core
     CurrentTaskId: ED-0007
-    Status: Active
+    Status: Review
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/provider_responses"
