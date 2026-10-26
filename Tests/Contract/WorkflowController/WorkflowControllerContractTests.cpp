@@ -392,7 +392,7 @@ void TestPinnedTaskSpecAssignment(const std::filesystem::path& Root) {
                 << "\"ReadSetPaths\":[\"Workflow/TaskTemplate.yaml\"],"
                 << "\"Result\":\"Corrects reason wording\","
                 << "\"EvidenceRefs\":[\"Workflow/Plans/P1.yaml#ED-0002.ContextBudgetOverride\","
-                << "\"Workflow/Plans/P1.yaml#ED-0002.ReadSet\",\"approval-r4\"]}\n";
+                << "\"approval-r4\"]}\n";
   PinnedSnapshotProcessRunner Runner(Fixture.Root, TaskSpecCommit, TaskSpecBlobId,
                                      AssignmentEventCommit, BudgetCorrectionEventCommit,
                                      TaskIndex.str(), TaskPlan.str(), AssignmentEvent.str(),
@@ -866,7 +866,6 @@ void TestBudgetOverrideEvent(const std::filesystem::path& Root) {
   Correction.ReadSetPaths = Task.ReadSet;
   Correction.Result = "Corrects only the approval reason wording";
   Correction.EvidenceRefs = {Task.TaskPlanPath + "#" + Task.TaskId + ".ContextBudgetOverride",
-                             Task.TaskPlanPath + "#" + Task.TaskId + ".ReadSet",
                              Approval.EventId};
   Events.Append(Correction);
 

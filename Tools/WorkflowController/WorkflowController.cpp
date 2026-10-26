@@ -2269,8 +2269,6 @@ std::optional<VerifiedContextBudgetOverride> EventStore::FindContextBudgetOverri
                !Event.Result.empty() &&
                std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(), TaskEvidenceRef) !=
                    Event.EvidenceRefs.end() &&
-               std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(), ReadSetEvidenceRef) !=
-                   Event.EvidenceRefs.end() &&
                std::find(Event.EvidenceRefs.begin(), Event.EvidenceRefs.end(),
                          Registered.ApprovalEventId) != Event.EvidenceRefs.end();
       });
