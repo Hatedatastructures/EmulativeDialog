@@ -274,6 +274,10 @@ P1Blockers:
       RuleIds: [GOV-001, GOV-002, GOV-003, GOV-004, CTRL-001, CTX-001, CTX-002, PAR-001, PAR-002, TRACE-001, MAP-001]
       RequiredWork: C++ task lookup, revision/state validation, bounded ReadSet context, WriteSet checks, isolated worktree, event/checkpoint recovery, and capability-map manual/automatic gate.
       OwnerRole: AgentWorkflowOwner
+    - BlockerId: P1-PhaseTransitionGate
+      RuleIds: [PLAN-001]
+      RequiredWork: Coordinator evaluates every phase exit criterion against verified task and review evidence before promoting a phase.
+      OwnerRole: Coordinator
     - BlockerId: P1-DataAndReviewGates
       RuleIds: [SEC-002, MERGE-001, MERGE-002]
       RequiredWork: Independent destructive-change review and auditable local ReviewBundle flow during bootstrap.
