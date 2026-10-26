@@ -1821,7 +1821,7 @@ Tasks:
         - ED-0113
 
   - TaskId: ED-0013
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
@@ -1834,7 +1834,7 @@ Tasks:
     ReviewerSlotId: Worker02
     ReviewerAgentId: "/root/agent_core"
     CreatedBy: Coordinator
-    ChangeRequestId: CR-ED-0013-002
+    ChangeRequestId: CR-ED-0013-003
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
@@ -1845,7 +1845,7 @@ Tasks:
       SourceBranch: Task/ED-0013-MultiAgentCollaborationStandard
       SourceWorktree: H:/Qbot/EmulativeDialog.ED-0013
       SourceHeadCommit: 1ed077f751dc1850a2a64757f5c6e29aec67356f
-    RevisionChangeRequest:
+    PriorRevisionChangeRequest:
       ChangeRequestId: CR-ED-0013-002
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
@@ -1874,6 +1874,36 @@ Tasks:
       Worktree: H:/Qbot/EmulativeDialog.ED-0013-R2
       HeadCommit: ""
       Reason: "ED-0019 had not yet resolved the P1 event collisions needed by R2 context loading; no implementation worktree or code changes existed."
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0013-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Supersede the R3 assignment before code; preserve the exact Goal, AC-1..AC-6, Reviewer, ReadSet, WriteSet,
+        dependencies, and CR-ED-0013-002 governance scope. Refresh only Baseline/CodeBaseCommit and isolated R4
+        branch/worktree to the current integrated commit that already contains Coordinator's ED-0019/ED-0020
+        AgentPool and P1 task-state updates. No new paths or product implementation scope are added.
+      Reason: >-
+        R3 Base 891d095 predates Coordinator changes to AgentPool.yaml, which is inside ED-0013's six-path WriteSet.
+        Starting R3 would reintroduce stale slot/task state or create an avoidable WriteSet merge conflict. R3 had
+        no branch/worktree or code changes, so a fresh R4 baseline is the minimum safe continuation.
+      PreserveGoalAcceptanceWriteSet: true
+      PreserveReviewer: true
+      NewBaselineCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
+      SupersededRevision: 3
+    SupersededRevision3Evidence:
+      TaskSpecCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
+      P1PlanBlob: 318d2121d7704f1ec50555b2b366d560174bb355
+      BaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+      State: Ready
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0013-R3-MultiAgentCollaborationStandard
+      Worktree: H:/Qbot/EmulativeDialog.ED-0013-R3
+      HeadCommit: ""
+      Reason: "R3 was registered but never branched or written; coordinator's current AgentPool changes are in R3 WriteSet, so R4 uses the current integration commit as Base."
     ParallelGroup: P1GovernanceAndGateEvidence
     Goal: >-
       将本项目六个稳定 Agent 槽、四个并行实现分支加两个支持槽、冻结接口后并行、独立
@@ -1891,7 +1921,7 @@ Tasks:
       - "当前协调配置：六个稳定槽；四个实现槽、两个支持槽。"
       - "代码实现的新增/变更生产模块行覆盖率至少 80%，并提供可定位报告。"
       - "远端主线以 GitHub 仓库当前 default branch 为准；不得假设存在名为 main 的分支。"
-      - "CR-ED-0013-002: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 3; R2 was superseded before code."
+      - "CR-ED-0013-003: Coordinator-approved exact-path governance write delegation, limited to TaskRevision 4; R2/R3 were superseded before code."
     ContractVersion: Workflow governance only; no product contract changes.
     GoalFrozen: true
     ReadSet:
@@ -1916,9 +1946,9 @@ Tasks:
       - Workflow/EnforcementMatrix.yaml
       - Workflow/MultiAgentCollaborationStandard.md
     WriteSetAuthorization:
-      ChangeRequestId: CR-ED-0013-002
+      ChangeRequestId: CR-ED-0013-003
       ApprovedByRole: Coordinator
-      Scope: This exact TaskRevision 3 only
+      Scope: This exact TaskRevision 4 only
       AuthorizedPaths:
         - AGENTS.md
         - Workflow/AgentExecutionStandard.md
@@ -2013,14 +2043,14 @@ Tasks:
         Evidence: 固定 Base..Head 路径核对与 git diff --check。
     Rules:
       MustFollow:
-        - "Only the six paths explicitly delegated by CR-ED-0013-002 may be written; no ModuleMap or product contract changes."
+        - "Only the six paths explicitly delegated by CR-ED-0013-003 may be written; no ModuleMap or product contract changes."
         - "TaskIndex and AgentPool changes are single-task Coordinator delegations and expire at TaskClosed."
         - "P1 ExitGate stays Pending until separate Coordinator evaluation; this task does not start product AgentRuntime code."
       SoftDefaults: []
       ApprovedOverrides:
         - RuleRef: Architecture/ModuleMap.yaml#OwnershipRules.CrossModuleChangesRequireContractOrIntegrationTask
-          ChangeRequestId: CR-ED-0013-002
-          Scope: Exact six-path WriteSet in ED-0013 Revision 3 only
+          ChangeRequestId: CR-ED-0013-003
+          Scope: Exact six-path WriteSet in ED-0013 Revision 4 only
           ApprovedByRole: Coordinator
     Validation:
       RequiredTargets: []
@@ -2036,18 +2066,18 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
-    CodeBaseCommit: 891d095c484a1a05f9c5145e45c8cd61ffc17361
+    BaselineCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
+    CodeBaseCommit: ae13196829f9ac639f375c9afa07b0566340e3d8
     HeadCommit: ""
-    TaskSpecCommitPin: Coordinator supplies immutable Revision3 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
-    Branch: Task/ED-0013-R3-MultiAgentCollaborationStandard
-    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R3
+    TaskSpecCommitPin: Coordinator supplies immutable Revision4 snapshot S at assignment; source path Workflow/Plans/P1.yaml#TaskId=ED-0013.
+    Branch: Task/ED-0013-R4-MultiAgentCollaborationStandard
+    Worktree: H:/Qbot/EmulativeDialog.ED-0013-R4
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "R2 was blocked before code because the P1 EventShard had five duplicate EventIds; ED-0019/R1 now resolved and merged those records, so the task can resume on a fresh current Base."
+      CurrentFindingOrFailure: "R3 was superseded before code because its Base predates Coordinator changes to the in-scope AgentPool.yaml; no branch/worktree or code edit was started."
       TriedApproaches: []
-      NextAction: "After the Coordinator freezes this R3 TaskSpec, Worker01 creates the isolated R3 worktree, writes the exact six-path governance/doc set, defines MAN-003 P1 manual paths, and requests Worker02 fixed-Head review."
+      NextAction: "Create the isolated R4 worktree from Base ae13196829f9ac639f375c9afa07b0566340e3d8, implement only the six authorized governance paths, define MAN-003 P1 manual paths, then request Worker02 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:

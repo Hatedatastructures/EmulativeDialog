@@ -10,7 +10,7 @@
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务使用独立分支/worktree、冻结写集、独立 Reviewer、单一 IntegrationOwner 和结构化事件；EnforcementMatrix 中 MAP-001 有 ManualGate，其余多数 P1 MUST 仍为 Planned。Worker05 独立审核认为 P1 ExitGate 仍缺 MAN-003 覆盖与已签署的 scoped manual 路径，当前保持 Pending。
 - ED-0008/R5 固定 S/A/C/B/H 经 Worker02 Approve/Verified；RV-003..RV-010 已关闭，Controller configure/build/full CTest（2/2）通过。ED-0019/R1 的真实 P1 验证显示：未解决的 Base 上 `context ED-0006/R1` 因 EventId `378e2cbe-98e9-4419-8418-287ef16b7c74` 退出 1；应用五条 resolution 的 Head 临时副本同一命令退出 0 并仅在临时副本追加 ContextLoaded。P1 ExitGate 仍待 MAN-003 与 Coordinator 签署评估；产品 AgentRuntime 代码尚未开始。
-- 六个稳定槽保持 Worker01-Worker06 身份。当前 Worker01 执行 ED-0013/R3 协作规范与 MAN-003；Worker02 独立 Reviewer；Worker03 执行 ED-0020 FakeProvider 测试替身；Worker06 为 ED-0020 Reviewer；Worker05 已完成 P1 Gate 独立审计；Worker04 暂无新的 Ready 独立任务。ED-0020 只改 Tests/ 中的离线 C++ 支持代码，不是 AgentRuntime。
+- 六个稳定槽保持 Worker01-Worker06 身份。当前 Worker01 执行 ED-0013/R4 协作规范与 MAN-003；Worker02 独立 Reviewer；Worker03 执行 ED-0020 FakeProvider 测试替身；Worker06 为 ED-0020 Reviewer；Worker05 已完成 P1 Gate 独立审计；Worker04 暂无新的 Ready 独立任务。ED-0020 只改 Tests/ 中的离线 C++ 支持代码，不是 AgentRuntime。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
 - `Workflow/CodexCapabilityMap.yaml` 已锁定 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97` 与 Apache-2.0 行为参考边界；24 项已分类，15 项 Keep/Redesign 仍须在 ED-0101..ED-0115 中登记完整任务合同。正式产品实现任务尚未 Ready；本轮只注册 ED-0020 测试替身。TUI 参照库未锁定但不阻塞 Agent 核心，微信继续 Deferred。
 - 任何阶段不得把本状态描述为“已实现”或“已构建”。
@@ -33,7 +33,7 @@
 ## 下一步
 1. P0 的 ED-0001 与 ED-0005 已通过独立审查并合入本地 `codex/integration`；P1 现已打开。
 2. ED-0006 Windows C++20/CMake 基础和 ED-0007 Core/Provider/Memory/Channel 合同已通过独立审查并合并。
-3. Worker01 按 ED-0013/R3 在六条冻结路径内完成正式协作规范和 EnforcementMatrix 的 MAN-003 P1 覆盖；Worker02 固定 Head 复审。GitHub PR/branch protection 的 403 环境限制须明确保留。
+3. Worker01 按 ED-0013/R4 在六条冻结路径内完成正式协作规范和 EnforcementMatrix 的 MAN-003 P1 覆盖；Worker02 固定 Head 复审。GitHub PR/branch protection 的 403 环境限制须明确保留。
 4. Worker03 按 ED-0020 实现离线 FakeProvider 测试替身，Worker06 独立审查；该测试支持完成后仍要先通过 P1 ExitGate，再登记 ED-0101..ED-0115 完整 TaskSpecs，然后开始 Core 身份/策略与 AgentRuntime 第一条产品纵向切片。
 5. QQ 官方授权接入与 TUI 参照分别按后续 Epic 推进；TUI 不阻塞 Agent 核心，微信保持 Deferred。
 
