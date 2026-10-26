@@ -7,7 +7,7 @@
 - 原始 `H:/Qbot/EmulativeDialog` 保持只读、未跟踪且未被切换；全部集成工作在 `H:/Qbot/EmulativeDialog.integration` 的 `codex/integration` 分支。
 - R7 固定 Base `ae13196829f9ac639f375c9afa07b0566340e3d8` → Head `195ee1632287e24cd8b94c59634227a70f6f28bf`，Worker02 **Approve / Verified**，只含六条 WriteSet 路径。只读 ReviewBundle 位于 `H:/Qbot/ReviewBundles/EmulativeDialog-ED-0013-R7`，SHA256SUMS digest `7e1b3bf21fa05497d31208d265f3640924e4f8fe90238bc57e27173d7547c482`。
 - R7 已在本地无冲突合入，集成提交为 `761b80b6b9082fc9227d63498398e3dfd530ca31`。GitHub 插件建 PR 返回 HTTP 403 `Resource not accessible by integration`；未创建 PR。该 bootstrap LocalReviewBundle 和本地合并不等于产品 PR。
-- 该 R7 合并后的集成提交尚待推送；当前工作区的任务计划/阶段门更新将在复核后由 Coordinator 一并提交与推送。
+- TaskSpec 注册提交 `c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82` 已推送，`origin/codex/integration` 已核实与本地同步。该提交登记 P2/P3 15 个能力 TaskSpec、五个必要基础任务和能力图追踪；注册事件为 `c0afddb6-7fe2-4d19-986a-56d94860a8da`。
 
 ## 阶段与实际实现
 
@@ -27,4 +27,4 @@
 
 - R7 Bundle 的 9 个内容哈希已核验；固定 Head 的六路径核对和 `git diff --check` 退出 0；MAN-003 的 20/20 RuleId 与 blocker union 一致；10 个 Markdown 链接无断链。
 - 现成 MinGW C++20 `WorkflowController.exe query` 对 ED-0101..ED-0115 及 ED-0120..ED-0124 共 20 个 TaskSpec 查询均退出 0，状态均为 Blocked（产品门未通过）。
-- 下一步：提交并推送已冻结的 P2/P3 TaskSpec 和 CapabilityMap 注册状态；将 R7 task/merge 事实纳入 P1 账本；补齐 MAN-003 的逐 RuleId 证据引用，交 Worker05 固定状态独立复核，随后由 Coordinator 签署 P1 ExitGate。只有该门通过后才创建实现 worktree 并派发 C++ 代码任务。
+- 下一步：为 MAN-003 逐 RuleId 绑定 P1/bootstrap 证据与独立评审字段，交 Worker05 固定状态复核，再由 Coordinator 签署 P1 ExitGate。只有该门通过后才创建实现 worktree 并派发 C++ 代码任务。

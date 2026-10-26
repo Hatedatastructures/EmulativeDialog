@@ -2177,6 +2177,12 @@ Tasks:
     HeadCommit: 195ee1632287e24cd8b94c59634227a70f6f28bf
     TaskSpecCommitPin: 18c03eda99b16e24df2809669e2208c804e13db4
     TaskSpecBlobPin: f8c18d89195cf5c6db650f4a566d37f938b2540d
+    TaskSpecRegistrationCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
+    TaskSpecRegistrationEventId: c0afddb6-7fe2-4d19-986a-56d94860a8da
+    CapabilityTaskSpecBlobs:
+      P2: fd672b8de1919a8efed89f8b27961789b631859a
+      P3: 6ad6a7aa6a276ac45e2091b8b807a49cfbbbf1e5
+    TaskSpecValidationEvidence: H:/Qbot/ReviewBundles/EmulativeDialog-P1-TaskSpecRegistration-2026-10-27
     Branch: Task/ED-0013-R7-MultiAgentCollaborationStandard
     Worktree: H:/Qbot/EmulativeDialog.ED-0013-R7
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0013-R7
