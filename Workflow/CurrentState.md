@@ -6,10 +6,10 @@
 - 根路径：H:/Qbot/EmulativeDialog。
 - 原始 `main` 仍是 unborn branch，原工作区中的项目目录仍未跟踪。为保护它并提供隔离基线，协调者从只读 workspace snapshot 建立本地 bootstrap commit `6e9b727ab88ae910d70069d9b9f19a9912f2bcb4`；当前集成工作树是 `codex/integration`，原工作区未切换或覆盖。
 - 远端 `origin` 当前没有公布 HEAD 或分支；启动阶段使用本地 ReviewBundle，不声称已创建远端 PR。
-- 本轮创建并修订中文治理、产品、合同、路线和平台能力文档；没有创建 C++ 源码、CMake 工程或测试。
+- ED-0006 已在独立 worktree 创建 Windows C++20 CMake 基础和 BuildProbe，定向 build/CTest 已通过；ED-0007 正在冻结四份公共合同。
 - 长任务控制入口为 Workflow/TaskIndex.yaml；任务按阶段分片，Agent 不逐项加载全计划，也不为每个小任务创建 Markdown。
 - 多 Agent 任务要求独立分支/worktree、冻结写集、独立 Reviewer、协调者单写状态、PR 集成队列和结构化事件轨迹。EnforcementMatrix 中未实现门全部标为 Planned。
-- P0 的 ED-0001 上游能力映射与 ED-0005 模块/治理门均已通过独立审查并合入本地 `codex/integration`；CodexCorePreparationGate 已通过，P1 现为当前 Codex 核心工作阶段。ED-0006 与 ED-0007 已在独立 worktree 分配给 Worker01/Worker02 并行执行；QQ/TUI 仍保留独立领域门。
+- P0 的 ED-0001 上游能力映射与 ED-0005 模块/治理门均已通过独立审查并合入本地 `codex/integration`；CodexCorePreparationGate 已通过，P1 现为当前 Codex 核心工作阶段。ED-0006 的 Worker01 已在隔离 worktree 开始 C++20 Windows 构建基础，ED-0007 合同冻结由 Worker02 并行执行；QQ/TUI 仍保留独立领域门。
 - Workflow/AgentPool.yaml 已将 Worker01–Worker06 绑定到用户指定的六个稳定职责与原 AgentId；当前会话均处于 Dormant，后续任务须复用这些逻辑身份，不虚报旧会话仍在运行。
 - Architecture/ModuleMap.yaml 是分片索引；详细 owner 与写路径按域存于 Architecture/Modules/。
 - `Workflow/CodexCapabilityMap.yaml` 已锁定 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97` 与 Apache-2.0 行为参考边界；24 项能力已分类，15 项 Keep/Redesign 具备拟议 TaskId。正式 P2/P3 TaskSpecs 须在实现分配前登记。TUI 参照库仍未锁定，且不阻塞 Agent 核心。

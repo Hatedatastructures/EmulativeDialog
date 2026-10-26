@@ -29,7 +29,7 @@ Slots:
       - RootBuildAndDependencies
       - AgentWorkflowController
     CurrentTaskId: ED-0006
-    Status: Assigned
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/agent_core"
@@ -38,7 +38,7 @@ Slots:
       - AgentRuntime
       - Core
     CurrentTaskId: ED-0007
-    Status: Assigned
+    Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/provider_responses"

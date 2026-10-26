@@ -50,7 +50,7 @@ Tasks:
     EpicId: EP-05
     Title: 建立 Windows 原生 C++20 CMake 与依赖基线
     TaskKind: Build
-    State: Assigned
+    State: Active
     Phase: P1
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -148,7 +148,7 @@ Tasks:
     EpicId: EP-05
     Title: 冻结 Core、Provider、Memory 与 ChannelAdapter 公共合同
     TaskKind: ContractFreeze
-    State: Assigned
+    State: Active
     Phase: P1
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
