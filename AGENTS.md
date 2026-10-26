@@ -24,6 +24,7 @@
 - 本仓库自有可执行开发工具也使用 C++；外部 Codex 宿主只作为开发期调度器，不进入产品发行包。CMake/YAML/JSON 等工具要求的配置元数据不属于可执行模块。
 - 项目自有文件夹、文件和 C++ 标识符遵守 PascalCase 规则；机器强制名称、外部 API 标识符和依赖符号按 Standards/CppEngineeringStandard.md 中的例外表处理。
 - 并行任务必须使用隔离分支/worktree 和互不重叠的 WriteSet。共享合同和根构建系统由集成负责人单独维护。
+- 项目使用六个稳定工作槽：Worker01 与 Worker06 为支持槽，Worker02-Worker05 为实现槽；Coordinator 单独负责派工和集成。实际并行数取六个槽位、宿主容量、Ready 且互相独立的任务数三者最小值。分派与 PR 规则见 [Workflow/MultiAgentCollaborationStandard.md](Workflow/MultiAgentCollaborationStandard.md)。
 
 ## 开始任务的顺序
 

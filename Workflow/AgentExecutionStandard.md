@@ -100,16 +100,16 @@ Codex 聊天 Agent 核心重写范围按 ADR-0002 执行，不由每个任务重
 
 任务规格在 Ready 时冻结为版本。任何目标、验收、WriteSet、合同版本或风险等级变化，都产生新 TaskRevision 和 ChangeRequest；旧版本与其证据保留。任务 owner 不得通过重写验收条件让失败变成通过。
 
-## 五、稳定 Agent 团队与最多 8 路并行
+## 五、六个稳定 Agent 槽与并行
 
-- 建立最多 8 个长期工作槽，由模块/职责角色维持连续性；同一 Agent 在相关 PR 完成后优先接手同一职责的下一个 Ready 切片，不因每个小任务重复创建和关闭。
-- 8 是项目允许的子代理上限，不代表每个宿主都能同时运行 8 个；实际并行数取项目上限、宿主当前可用容量和互相独立的 Ready 任务数三者最小值。不得把宿主限制或空闲槽伪报成已满并行。
-- Workflow/AgentPool.yaml 是稳定槽位注册表，由 Coordinator 读取和更新；实现 Agent 不加载其他槽位的完整上下文。
-- 每个槽有稳定的 AgentId、职责、模块范围、允许工具、当前任务和待办队列。槽的上下文可被压缩，可靠状态必须写入任务检查点，不能只存在于 Agent 记忆中。
-- 并行度按依赖图和写集冲突决定。只给 Ready、互相独立且能隔离工作树的任务分配子代理；没有足够独立工作时保留空槽，不制造重复审查或无效任务凑数。
-- 8 个槽包括实现者和独立审查者；协调者负责计划/合并，不与实现者的写集混同。审查该 PR 的 Agent 不得是该 PR 作者。
-- 每个实现任务使用独立 branch 和 worktree。共享合同、根构建/依赖锁、版本化 TaskIndex 和发布组装等单写者资源必须排队处理。
-- 任务由协调者按依赖、风险、人员职责和写集分配。Agent 不自行认领改变自身任务边界的工作。
+- 项目固定六个逻辑工作槽：Worker01（Build/Workflow 支持）、Worker02（AgentRuntime/Core）、Worker03（OpenAI Responses）、Worker04（Chat Completions）、Worker05（Anthropic Messages）、Worker06（Memory/Context 支持）。Worker02-Worker05 是当前四个并行产品实现槽；Worker01 与 Worker06 在 P1 作为支持槽。Worker06 保留 Memory/Context 职责，待合同和依赖冻结后可由 Coordinator 分派独立实现任务。
+- Coordinator 单独负责任务分派、公共合同和集成，不计入六个槽，也不与实现者共享写集。Reviewer 必须与作者不同。
+- 有效并行数为 min(6, 宿主可用容量, Ready 且互相独立的任务数)。空闲槽保持空闲；不得为了填槽制造重复分析、无写集或不满足依赖的任务。
+- Workflow/AgentPool.yaml 是稳定槽位注册表。相关 PR 完成后复用同一职责槽，不因小任务反复创建或关闭 Agent；可靠状态保存在 TaskCheckpoint，不依赖会话记忆。
+- 每个任务先冻结 TaskId/Revision、BaseCommit、精确 ReadSet/WriteSet、依赖、验收、验证命令和 Reviewer，再分配独立 branch/worktree。每个可审查模块切片按节奏提交，提交应对应真实工作。合同、根构建、依赖锁、TaskIndex 和集成分支等共享资源由单一 owner 排队修改。
+- Agent 只在已分派任务内工作。沟通消息可以报告发现或建议，但不能改变 Goal、Acceptance、WriteSet、依赖或优先级；范围变化走 ChangeRequest。
+
+完整分派、PR、审查和冲突规则见 [Workflow/MultiAgentCollaborationStandard.md](MultiAgentCollaborationStandard.md)。
 
 OpenAI 官方多 Agent 指南建议把并行用于真正独立的工作，给每个子任务清晰问题与预期结果，并协调会修改同一文件的工作。本项目在此基础上强制使用独立 worktree、冻结写集、独立 Reviewer 和集成队列：
 https://developers.openai.com/api/docs/guides/agents-api/multi-agent
@@ -181,7 +181,7 @@ Git branch、commit、PR diff 是文件变化的事实来源，不用全仓 Hash
 
 ## 九、可执行门槛
 
-MUST 规则必须在 Workflow/EnforcementMatrix.yaml 中对应到自动检查或明确的独立签字人、证据和阻塞阶段。未被自动化的规则须标记 ManualGate 和责任角色；不得声称“规范保证”但没有检查入口。实施阶段开始前，所有影响安全、写集、合同、分支隔离和 PR 的规则都必须有可执行门。
+MUST 规则必须在 Workflow/EnforcementMatrix.yaml 中对应到自动检查或明确的独立签字人、证据和阻塞阶段。未被自动化的规则须标记 ManualGate 和责任角色；不得声称“规范保证”但没有检查入口。实施阶段开始前，所有影响安全、写集、合同、分支隔离和 PR 的规则都必须有可执行门。 MAN-003 为 P1 阻塞 RuleId 提供逐项人工控制、证据、独立审查与 Coordinator 签署栏；矩阵和文档本身不构成签署，P1 ExitGate 在 Coordinator 评估前保持 Pending。
 
 验证遵循任务级最小集合：新增/改变行为要有对应合同或行为验证；纯文档变更不运行 C++ 构建；阶段集成再执行阶段级检查。失败只重查失败目标，发行候选才执行完整发布检查。
 
