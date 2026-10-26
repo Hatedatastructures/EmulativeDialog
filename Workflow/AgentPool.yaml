@@ -37,7 +37,7 @@ Slots:
       - AgentRuntime
       - Core
     CurrentTaskId: ED-0005
-    Status: Assigned
+    Status: Active
   - SlotId: Worker03
     RoleFamily: Unassigned
     AgentId: ""
