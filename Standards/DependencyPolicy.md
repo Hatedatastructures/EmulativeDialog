@@ -39,3 +39,19 @@ https://docs.cppalliance.org/user-guide/library-table.html
 - 替代/删除方式。
 
 只在指定版本的配置和 build manifest 中声明依赖。Provider task 不得直接更新根 Boost 版本；根依赖由 DependencyOwner 负责，相关 API 变更要走 ChangeRequest。
+
+## P1 构建基线依赖
+
+根 CMake 版本和提交固定在 `CMake/DependencyPins.cmake`。FetchContent 只声明不可变提交；它不会下载或构建这些依赖，直到某个消费者显式调用 `FetchContent_MakeAvailable`。`BuildProbe` 不使用第三方依赖。
+
+| DependencyId | 精确版本/提交 | License 与分发要求 | Pin owner / Consumer | 用途与 Windows 状态 | 链接与运行时 | 升级与移除 |
+|---|---|---|---|---|---|---|
+| Boost | 1.92.0 / `afdfa32505af73e3d208144b3f623f0096cb62b6` (`boostorg/boost`) | Boost Software License 1.0；重分发时按上游许可证保留版权和许可文本。 | Pin owner：BuildAndDependencyOwner。预期消费者：NetworkPlatform、ProviderOpenAIResponses、ProviderOpenAIChatCompletions、ProviderAnthropicMessages。 | Asio 用于异步网络/I/O，Beast 用于 HTTP/WebSocket 构件，JSON 用于 Provider wire 编解码。Boost.Process 目前仅为候选库，不由本基线启用。上游发布 Windows 源包；本任务只用 MinGW 验证 BuildProbe，没有编译 Boost 子模块或验证其 MinGW 兼容性。 | 本任务不下载、不链接 Boost；本任务的静态/动态链接状态为“不适用”。消费者接入时必须确定并登记静态/动态链接、运行时 DLL 和再分发路径。 | BuildAndDependencyOwner 维护根 pin。升级需 ChangeRequest、上游差异/安全审查和 Windows 消费者验证。无消费者且所有调用方已迁移后，移除 FetchContent 声明及本登记。 |
+| yaml-cpp | 0.9.0 / `56e3bb550c91fd7005566f19c079cb7a503223cf` (`jbeder/yaml-cpp`) | MIT；重分发时在副本或重要部分中保留版权和许可声明。 | Pin owner：BuildAndDependencyOwner。预期消费者：AgentWorkflowController。 | 用于 C++ 开发期工具读取/校验 YAML 任务和计划元数据；不进入聊天产品运行时。上游提供 CMake 构建并包含 Windows/MSVC 修复记录；本任务的 MinGW 构建仅覆盖 BuildProbe，尚未编译 yaml-cpp。 | 本任务不下载、不链接 yaml-cpp。消费者接入时须明确静态/动态链接模式、是否有 DLL，以及其随工具分发的方式。 | BuildAndDependencyOwner 维护根 pin。升级需 ChangeRequest、上游差异/安全审查和 Windows 消费者验证。Controller 不再依赖 YAML 后移除 FetchContent 声明及本登记。 |
+
+本任务没有引入传递运行库或 DLL，也没有把 Boost 或 yaml-cpp 纳入 `BuildProbe`。依赖实际编译、链接方式与打包清单留待对应消费者接入任务完成验证后记录；不能从 pin 的存在推断依赖已构建或已通过 MinGW 验收。
+
+固定来源与许可证证据：
+
+- Boost：[1.92.0 发布说明](https://www.boost.org/releases/1.92.0/)、[固定 superproject 提交](https://github.com/boostorg/boost/commit/afdfa32505af73e3d208144b3f623f0096cb62b6)、[该提交的 Boost Software License 1.0](https://github.com/boostorg/boost/blob/afdfa32505af73e3d208144b3f623f0096cb62b6/LICENSE_1_0.txt)。
+- yaml-cpp：[0.9.0 发布记录](https://github.com/jbeder/yaml-cpp/releases/tag/yaml-cpp-0.9.0)、[固定提交](https://github.com/jbeder/yaml-cpp/commit/56e3bb550c91fd7005566f19c079cb7a503223cf)、[该提交的 MIT License](https://github.com/jbeder/yaml-cpp/blob/56e3bb550c91fd7005566f19c079cb7a503223cf/LICENSE)。

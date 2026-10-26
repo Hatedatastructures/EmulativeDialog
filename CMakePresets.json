@@ -1,0 +1,59 @@
+{
+  "version": 5,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-mingw",
+      "displayName": "Windows x64 MinGW C++20",
+      "description": "Native Windows build using the configured MinGW-w64 toolchain.",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceParentDir}/${sourceDirName}.build/${presetName}",
+      "cacheVariables": {
+        "BUILD_TESTING": {
+          "type": "BOOL",
+          "value": "ON"
+        },
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Debug"
+        },
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_EXTENSIONS": {
+          "type": "BOOL",
+          "value": "OFF"
+        },
+        "CMAKE_CXX_STANDARD": {
+          "type": "STRING",
+          "value": "20"
+        },
+        "CMAKE_CXX_STANDARD_REQUIRED": {
+          "type": "BOOL",
+          "value": "ON"
+        },
+        "FETCHCONTENT_UPDATES_DISCONNECTED": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-mingw",
+      "configurePreset": "windows-mingw"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-mingw",
+      "configurePreset": "windows-mingw",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
