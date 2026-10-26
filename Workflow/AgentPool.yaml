@@ -54,7 +54,7 @@ Slots:
     ModuleIds:
       - ProviderOpenAIChatCompletions
     CurrentTaskId: ED-0010
-    Status: Active
+    Status: Review
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/provider_anthropic"

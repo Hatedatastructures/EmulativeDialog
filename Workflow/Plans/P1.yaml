@@ -504,7 +504,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Chat Completions 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Review
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -571,17 +571,18 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
-    HeadCommit: ""
+    HeadCommit: 6bd28756642183ed44501adab42a41e067408b20
     Branch: Task/ED-0010-ChatFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0010
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
     Checkpoint:
-      LastCompletedAcceptance: ""
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Prepare the four frozen Chat Completions fixture data files in the assigned isolated worktree; do not implement the adapter or shared C++ interface.
+      NextAction: Independent fixed-commit review by Worker05; author must not change Head during review.
       OpenMessageIds: []
-      LastValidationResult: ""
+      LastValidationResult: "PowerShell JSON parse exit 0; git diff --check Base..Head exit 0; exact four-file WriteSet; fixture-only, no C++ build/live request."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -684,7 +685,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Memory 与 ContextSelector 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Rework
     Phase: P1
     OwnerRole: MemoryContextOwner
     OwnerSlotId: Worker06
@@ -752,17 +753,18 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
-    HeadCommit: ""
+    HeadCommit: 96c86eedc903331f522ad55f8c95213b8971a43d
     Branch: Task/ED-0012-MemoryContextFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0012
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0012
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0012
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: ""
+      CurrentFindingOrFailure: "ED-0012-RV-001 Major: ContextBudget CB-001 includes raw CurrentTrustedChannelEnvelope in provider-visible SelectedItemIds; ModelProviderContract V1 forbids raw envelope/identity fields in ProviderRequest."
       TriedApproaches: []
-      NextAction: Prepare the four frozen Memory/Context fixture data files in the assigned isolated worktree; do not implement Memory, ContextSelector, or shared C++ APIs.
+      NextAction: Correct CB-001 so the verified envelope remains a Core-only selection input, never a provider-visible ContextItem; add no raw-envelope/channel-ID assertions and recompute budget totals, then resubmit a fixed Head.
       OpenMessageIds: []
-      LastValidationResult: ""
+      LastValidationResult: "JSON parse and Base..Head diff check exit 0; independent review found one open Major; no C++ build applies to this fixture-only task."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
