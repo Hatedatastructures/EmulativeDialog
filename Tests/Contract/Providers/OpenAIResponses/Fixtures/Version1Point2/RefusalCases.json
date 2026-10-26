@@ -1,0 +1,251 @@
+{
+  "SchemaVersion": 1,
+  "Task": {
+    "TaskId": "ED-0127",
+    "TaskRevision": 4
+  },
+  "Protocol": "OpenAIResponses",
+  "ContractVersion": "ModelProviderContract V1.2",
+  "ContractCommit": "c4ce5b8c28e7277e1182c4abec1a76cfae1545ea",
+  "DataPolicy": {
+    "SyntheticOnly": true,
+    "ContainsCredentials": false,
+    "ContainsUserConversationData": false,
+    "CapturedFromNetwork": false,
+    "LiveRequestsPermitted": false
+  },
+  "Cases": [
+    {
+      "CaseId": "refusal_delta_done_then_response_completed",
+      "RequestId": "req-v12-refusal-text",
+      "AgentTurnId": "turn-v12-refusal-text",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-v12-refusal-text",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "msg-v12-refusal-text",
+            "type": "message",
+            "status": "in_progress",
+            "role": "assistant",
+            "content": []
+          },
+          "sequence_number": 2
+        },
+        {
+          "type": "response.content_part.added",
+          "item_id": "msg-v12-refusal-text",
+          "output_index": 0,
+          "content_index": 0,
+          "part": {
+            "type": "refusal",
+            "refusal": ""
+          },
+          "sequence_number": 3
+        },
+        {
+          "type": "response.refusal.delta",
+          "item_id": "msg-v12-refusal-text",
+          "output_index": 0,
+          "content_index": 0,
+          "delta": "Synthetic refusal text.",
+          "sequence_number": 4
+        },
+        {
+          "type": "response.refusal.done",
+          "item_id": "msg-v12-refusal-text",
+          "output_index": 0,
+          "content_index": 0,
+          "refusal": "Synthetic refusal text.",
+          "sequence_number": 5
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "id": "msg-v12-refusal-text",
+            "type": "message",
+            "status": "completed",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "refusal",
+                "refusal": "Synthetic refusal text."
+              }
+            ]
+          },
+          "sequence_number": 6
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-v12-refusal-text",
+            "status": "completed",
+            "output": [
+              {
+                "id": "msg-v12-refusal-text",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "refusal",
+                    "refusal": "Synthetic refusal text."
+                  }
+                ]
+              }
+            ]
+          },
+          "sequence_number": 7
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-v12-refusal-text",
+          "AgentTurnId": "turn-v12-refusal-text",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-v12-refusal-text"
+          }
+        },
+        {
+          "RequestId": "req-v12-refusal-text",
+          "AgentTurnId": "turn-v12-refusal-text",
+          "SequenceNumber": 2,
+          "EventType": "RefusalDelta",
+          "ItemId": "msg-v12-refusal-text",
+          "Payload": {
+            "Text": "Synthetic refusal text."
+          }
+        },
+        {
+          "RequestId": "req-v12-refusal-text",
+          "AgentTurnId": "turn-v12-refusal-text",
+          "SequenceNumber": 3,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "Refusal"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "Synthetic": true
+    },
+    {
+      "CaseId": "empty_refusal_done_then_response_completed",
+      "RequestId": "req-v12-empty-refusal",
+      "AgentTurnId": "turn-v12-empty-refusal",
+      "WireEvents": [
+        {
+          "type": "response.created",
+          "response": {
+            "id": "resp-v12-empty-refusal",
+            "status": "in_progress"
+          },
+          "sequence_number": 1
+        },
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "msg-v12-empty-refusal",
+            "type": "message",
+            "status": "in_progress",
+            "role": "assistant",
+            "content": []
+          },
+          "sequence_number": 2
+        },
+        {
+          "type": "response.content_part.added",
+          "item_id": "msg-v12-empty-refusal",
+          "output_index": 0,
+          "content_index": 0,
+          "part": {
+            "type": "refusal",
+            "refusal": ""
+          },
+          "sequence_number": 3
+        },
+        {
+          "type": "response.refusal.done",
+          "item_id": "msg-v12-empty-refusal",
+          "output_index": 0,
+          "content_index": 0,
+          "refusal": "",
+          "sequence_number": 4
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "id": "msg-v12-empty-refusal",
+            "type": "message",
+            "status": "completed",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "refusal",
+                "refusal": ""
+              }
+            ]
+          },
+          "sequence_number": 5
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "resp-v12-empty-refusal",
+            "status": "completed",
+            "output": [
+              {
+                "id": "msg-v12-empty-refusal",
+                "type": "message",
+                "status": "completed",
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "refusal",
+                    "refusal": ""
+                  }
+                ]
+              }
+            ]
+          },
+          "sequence_number": 6
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "RequestId": "req-v12-empty-refusal",
+          "AgentTurnId": "turn-v12-empty-refusal",
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "Payload": {
+            "ProviderResponseId": "resp-v12-empty-refusal"
+          }
+        },
+        {
+          "RequestId": "req-v12-empty-refusal",
+          "AgentTurnId": "turn-v12-empty-refusal",
+          "SequenceNumber": 2,
+          "EventType": "ResponseCompleted",
+          "Payload": {
+            "CompletionKind": "Refusal"
+          }
+        }
+      ],
+      "TerminalCount": 1,
+      "Synthetic": true
+    }
+  ]
+}
