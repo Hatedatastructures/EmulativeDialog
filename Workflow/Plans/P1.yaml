@@ -414,7 +414,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 OpenAI Responses 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Assigned
+    State: Review
     Phase: P1
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -481,17 +481,17 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
-    HeadCommit: ""
+    HeadCommit: 92c940eeaf2257ecc7f7a6be7e69b39201c49185
     Branch: Task/ED-0009-ResponsesFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0009
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0009
     Checkpoint:
-      LastCompletedAcceptance: ""
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: Prepare the four frozen Responses fixture data files in the assigned isolated worktree; do not implement the adapter or shared C++ interface.
+      NextAction: Independent fixed-commit review by Worker04; author must not change Head during review.
       OpenMessageIds: []
-      LastValidationResult: ""
+      LastValidationResult: "PowerShell JSON parse exit 0; git diff --check Base..Head exit 0; exact four-file WriteSet; fixture-only, no C++ build/live request."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -504,7 +504,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Chat Completions 离线协议夹具
     TaskKind: ContractFixturePreparation
-    State: Review
+    State: Rework
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -575,14 +575,14 @@ Tasks:
     Branch: Task/ED-0010-ChatFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0010
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0010
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
-      CurrentFindingOrFailure: ""
+      CurrentFindingOrFailure: "ED-0010-RV-001 P2: ErrorCases ERROR-005 RegisteredResponseFields does not distinguish the standard response envelope id/object/created/model fields from the unsupported vendor extension fields."
       TriedApproaches: []
-      NextAction: Independent fixed-commit review by Worker05; author must not change Head during review.
-      OpenMessageIds: []
-      LastValidationResult: "PowerShell JSON parse exit 0; git diff --check Base..Head exit 0; exact four-file WriteSet; fixture-only, no C++ build/live request."
+      NextAction: Clarify ERROR-005 field semantics within ErrorCases.json, then submit a new fixed Head for focused P2 re-review.
+      OpenMessageIds:
+        - ED-0010-RV-001
+      LastValidationResult: "Initial JSON parse, diff check and WriteSet checks passed; fixed-commit review opened one P2 fixture ambiguity; no C++ build/live request applies."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -685,7 +685,7 @@ Tasks:
     EpicId: EP-06
     Title: 准备 Memory 与 ContextSelector 离线夹具
     TaskKind: ContractFixturePreparation
-    State: Rework
+    State: Verified
     Phase: P1
     OwnerRole: MemoryContextOwner
     OwnerSlotId: Worker06
@@ -753,18 +753,22 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
-    HeadCommit: 96c86eedc903331f522ad55f8c95213b8971a43d
+    HeadCommit: 8ac50caf67ff6fe240318a33f63bdfe68f3f4525
     Branch: Task/ED-0012-MemoryContextFixtures
     Worktree: H:/Qbot/EmulativeDialog.ED-0012
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0012
-    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0012
+    MergeTargetBranch: codex/integration
+    MergeBaseCommit: 280fc4f5ef7cc5ee7bd3978a5221ac3cf31d8da6
+    ReviewerDecision: Approved
+    ReviewHeadCommit: 8ac50caf67ff6fe240318a33f63bdfe68f3f4525
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "ED-0012-RV-001 Major: ContextBudget CB-001 includes raw CurrentTrustedChannelEnvelope in provider-visible SelectedItemIds; ModelProviderContract V1 forbids raw envelope/identity fields in ProviderRequest."
-      TriedApproaches: []
-      NextAction: Correct CB-001 so the verified envelope remains a Core-only selection input, never a provider-visible ContextItem; add no raw-envelope/channel-ID assertions and recompute budget totals, then resubmit a fixed Head.
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4
+      CurrentFindingOrFailure: ""
+      TriedApproaches:
+        - "ED-0012-RV-001 Major resolved in R2: moved the verified envelope to Core-only SelectionInputs, removed it from budgeted Items/SelectedItemIds, asserted envelope/identity fields are not serialized, and recalculated CB-001/CB-002 budgets."
+      NextAction: Queue and merge the independently approved R2 fixture change into codex/integration; no source-code or CMake changes are in scope.
       OpenMessageIds: []
-      LastValidationResult: "JSON parse and Base..Head diff check exit 0; independent review found one open Major; no C++ build applies to this fixture-only task."
+      LastValidationResult: "Independent focused review approved R2 Head 8ac50caf67ff6fe240318a33f63bdfe68f3f4525; JSON parse, diff check and exact four-file WriteSet checks passed; fixture-only, no C++ build applies."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false

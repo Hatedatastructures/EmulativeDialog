@@ -46,7 +46,7 @@ Slots:
     ModuleIds:
       - ProviderOpenAIResponses
     CurrentTaskId: ED-0009
-    Status: Active
+    Status: Review
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/provider_chat"
@@ -54,7 +54,7 @@ Slots:
     ModuleIds:
       - ProviderOpenAIChatCompletions
     CurrentTaskId: ED-0010
-    Status: Review
+    Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/provider_anthropic"
@@ -71,7 +71,7 @@ Slots:
       - Memory
       - ContextSelector
     CurrentTaskId: ED-0012
-    Status: Active
+    Status: Review
   - SlotId: Worker07
     RoleFamily: Unassigned
     AgentId: ""
