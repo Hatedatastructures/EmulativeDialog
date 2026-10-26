@@ -2179,6 +2179,7 @@ Tasks:
     TaskSpecBlobPin: f8c18d89195cf5c6db650f4a566d37f938b2540d
     TaskSpecRegistrationCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
     TaskSpecRegistrationEventId: c0afddb6-7fe2-4d19-986a-56d94860a8da
+    TaskSpecValidationEventId: aff8bcaf-d4d3-4fee-b8fb-f0f41c6524d3
     CapabilityTaskSpecBlobs:
       P2: fd672b8de1919a8efed89f8b27961789b631859a
       P3: 6ad6a7aa6a276ac45e2091b8b807a49cfbbbf1e5
