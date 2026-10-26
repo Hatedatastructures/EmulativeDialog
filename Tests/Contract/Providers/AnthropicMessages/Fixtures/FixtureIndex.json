@@ -1,0 +1,105 @@
+{
+  "FixtureSchemaVersion": 1,
+  "TaskId": "ED-0011",
+  "TaskRevision": 1,
+  "Protocol": "AnthropicMessages",
+  "Contract": "ModelProviderContract V1",
+  "ContractCommit": "7745fb1019c6a7afdd8b54f89a9894568fbf38a0",
+  "Profile": {
+    "AuthenticationScheme": "XApiKeyHeader",
+    "AuthenticationHeaderName": "x-api-key",
+    "AnthropicVersion": "2026-10-21",
+    "CredentialMaterialIncluded": false
+  },
+  "DataPolicy": {
+    "SyntheticOnly": true,
+    "CredentialsIncluded": false,
+    "UserPrivateMessagesIncluded": false,
+    "NetworkCaptureIncluded": false
+  },
+  "Files": [
+    "FixtureIndex.json",
+    "CanonicalRequest.json",
+    "StreamCases.json",
+    "ErrorCases.json"
+  ],
+  "CoverageMatrix": [
+    {
+      "AcceptanceId": "AC-1",
+      "File": "CanonicalRequest.json",
+      "CaseIds": [
+        "default_sampling_omits_removed_wire_parameters",
+        "nondefault_temperature_rejected_before_send",
+        "nondefault_top_p_rejected_before_send",
+        "nondefault_top_k_rejected_before_send"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-2",
+      "File": "CanonicalRequest.json",
+      "CaseIds": [
+        "tool_use_tool_result_roundtrip_preserves_ids_and_order",
+        "tool_result_after_text_rejected"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-2",
+      "File": "StreamCases.json",
+      "CaseIds": [
+        "text_blocks_utf8_and_sse_fragmentation",
+        "tool_use_partial_json_and_stable_ids"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-3",
+      "File": "StreamCases.json",
+      "CaseIds": [
+        "cumulative_usage_snapshots"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-3",
+      "File": "ErrorCases.json",
+      "CaseIds": [
+        "max_tokens_output_limit",
+        "stop_sequence_completion",
+        "pause_turn_server_tool_not_supported",
+        "refusal_is_completed_not_provider_failure",
+        "context_window_output_limit",
+        "unknown_stop_reason_fails_closed",
+        "server_tool_block_rejected",
+        "unknown_content_block_rejected",
+        "http_authentication_failure",
+        "in_band_error_after_partial_text",
+        "unexpected_eof_before_message_stop_is_unknown",
+        "cancellation_before_send_is_cancelled",
+        "cancellation_after_send_without_confirmation_is_unknown",
+        "incomplete_tool_json_at_output_limit_never_becomes_ready",
+        "mismatched_sse_event_and_data_type_is_invalid"
+      ]
+    },
+    {
+      "AcceptanceId": "AC-4",
+      "File": "All four files",
+      "CaseIds": [
+        "all cases are deterministic synthetic data; no credentials, private chat content, or live network data"
+      ]
+    }
+  ],
+  "FrozenStopReasons": [
+    "end_turn",
+    "tool_use",
+    "max_tokens",
+    "stop_sequence",
+    "pause_turn",
+    "refusal",
+    "model_context_window_exceeded"
+  ],
+  "TerminalEventPolicy": "Exactly one canonical terminal event per request; no event follows it.",
+  "NotImplementedByThisTask": [
+    "C++ adapter",
+    "provider transport",
+    "network validation",
+    "live smoke"
+  ]
+}

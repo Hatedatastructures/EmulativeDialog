@@ -1,0 +1,509 @@
+{
+  "FixtureSchemaVersion": 1,
+  "Contract": "ModelProviderContract V1",
+  "Protocol": "AnthropicMessages",
+  "Profile": {
+    "ProviderProfileId": "profile-synthetic-anthropic-v1",
+    "Protocol": "AnthropicMessages",
+    "Endpoint": "https://api.anthropic.com/v1/messages",
+    "ModelName": "fixture-model",
+    "AuthenticationScheme": "XApiKeyHeader",
+    "AnthropicVersion": "2026-10-21",
+    "CredentialSource": "Core-held CredentialLease; no credential value in fixture"
+  },
+  "Cases": [
+    {
+      "CaseId": "default_sampling_omits_removed_wire_parameters",
+      "AcceptanceIds": [
+        "AC-1"
+      ],
+      "CanonicalModelRequest": {
+        "RequestId": "req_fixture_text",
+        "AgentTurnId": "turn_fixture_text",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope:synthetic:private",
+        "SystemInstructions": "Synthetic system instruction for offline fixtures.",
+        "DeveloperInstructions": [],
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Synthetic question for fixture coverage."
+              }
+            ]
+          }
+        ],
+        "ToolDefinitions": [],
+        "ModelName": "fixture-model",
+        "OutputLimit": 128,
+        "SamplingOptions": {}
+      },
+      "Expected": {
+        "Outcome": "RequestReady",
+        "Method": "POST",
+        "Path": "/v1/messages",
+        "RequiredHeaderNames": [
+          "content-type",
+          "anthropic-version",
+          "x-api-key"
+        ],
+        "AnthropicVersion": "2026-10-21",
+        "AuthenticationScheme": "XApiKeyHeader",
+        "CredentialHeaderValue": "InjectedFromCoreCredentialLease; not captured",
+        "WireBody": {
+          "model": "fixture-model",
+          "max_tokens": 128,
+          "system": "Synthetic system instruction for offline fixtures.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Synthetic question for fixture coverage."
+                }
+              ]
+            }
+          ]
+        },
+        "OmittedBodyFields": [
+          "temperature",
+          "top_p",
+          "top_k",
+          "RequestId",
+          "AgentTurnId",
+          "ConversationScopeRef",
+          "CancellationToken",
+          "CapabilitySnapshot"
+        ]
+      }
+    },
+    {
+      "CaseId": "nondefault_temperature_rejected_before_send",
+      "AcceptanceIds": [
+        "AC-1"
+      ],
+      "CanonicalModelRequest": {
+        "RequestId": "req_fixture_sampling_temperature",
+        "AgentTurnId": "turn_fixture_text",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope:synthetic:private",
+        "SystemInstructions": "Synthetic system instruction for offline fixtures.",
+        "DeveloperInstructions": [],
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Synthetic question for fixture coverage."
+              }
+            ]
+          }
+        ],
+        "ToolDefinitions": [],
+        "ModelName": "fixture-model",
+        "OutputLimit": 128,
+        "SamplingOptions": {
+          "Temperature": 0.2
+        }
+      },
+      "Expected": {
+        "Outcome": "ResponseFailed",
+        "ErrorCode": "UnsupportedCapability",
+        "Retryable": false,
+        "BeforeNetworkSend": true,
+        "WireRequestCreated": false,
+        "RejectedSamplingFields": [
+          "Temperature"
+        ]
+      }
+    },
+    {
+      "CaseId": "nondefault_top_p_rejected_before_send",
+      "AcceptanceIds": [
+        "AC-1"
+      ],
+      "CanonicalModelRequest": {
+        "RequestId": "req_fixture_sampling_top_p",
+        "AgentTurnId": "turn_fixture_text",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope:synthetic:private",
+        "SystemInstructions": "Synthetic system instruction for offline fixtures.",
+        "DeveloperInstructions": [],
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Synthetic question for fixture coverage."
+              }
+            ]
+          }
+        ],
+        "ToolDefinitions": [],
+        "ModelName": "fixture-model",
+        "OutputLimit": 128,
+        "SamplingOptions": {
+          "TopP": 0.7
+        }
+      },
+      "Expected": {
+        "Outcome": "ResponseFailed",
+        "ErrorCode": "UnsupportedCapability",
+        "Retryable": false,
+        "BeforeNetworkSend": true,
+        "WireRequestCreated": false,
+        "RejectedSamplingFields": [
+          "TopP"
+        ]
+      }
+    },
+    {
+      "CaseId": "nondefault_top_k_rejected_before_send",
+      "AcceptanceIds": [
+        "AC-1"
+      ],
+      "CanonicalModelRequest": {
+        "RequestId": "req_fixture_sampling_top_k",
+        "AgentTurnId": "turn_fixture_text",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope:synthetic:private",
+        "SystemInstructions": "Synthetic system instruction for offline fixtures.",
+        "DeveloperInstructions": [],
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Synthetic question for fixture coverage."
+              }
+            ]
+          }
+        ],
+        "ToolDefinitions": [],
+        "ModelName": "fixture-model",
+        "OutputLimit": 128,
+        "SamplingOptions": {
+          "TopK": 32
+        }
+      },
+      "Expected": {
+        "Outcome": "ResponseFailed",
+        "ErrorCode": "UnsupportedCapability",
+        "Retryable": false,
+        "BeforeNetworkSend": true,
+        "WireRequestCreated": false,
+        "RejectedSamplingFields": [
+          "TopK"
+        ]
+      }
+    },
+    {
+      "CaseId": "tool_use_tool_result_roundtrip_preserves_ids_and_order",
+      "AcceptanceIds": [
+        "AC-2"
+      ],
+      "CanonicalModelRequest": {
+        "RequestId": "req_fixture_tool_roundtrip",
+        "AgentTurnId": "turn_fixture_tool_roundtrip",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope:synthetic:private",
+        "SystemInstructions": "Synthetic system instruction for offline fixtures.",
+        "DeveloperInstructions": [],
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Run the synthetic checks."
+              }
+            ]
+          },
+          {
+            "Role": "assistant",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "I will run two synthetic checks."
+              },
+              {
+                "Type": "ToolUse",
+                "ToolCallId": "toolu_synthetic_lookup",
+                "ToolName": "SyntheticLookup",
+                "Arguments": {
+                  "query": "alpha"
+                }
+              },
+              {
+                "Type": "ToolUse",
+                "ToolCallId": "toolu_synthetic_normalize",
+                "ToolName": "SyntheticNormalize",
+                "Arguments": {
+                  "value": "sample"
+                }
+              }
+            ]
+          },
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "ToolResult",
+                "ToolCallId": "toolu_synthetic_lookup",
+                "Content": "Synthetic lookup result."
+              },
+              {
+                "Type": "ToolResult",
+                "ToolCallId": "toolu_synthetic_normalize",
+                "Content": "Synthetic validation failed.",
+                "IsError": true
+              },
+              {
+                "Type": "Text",
+                "Text": "Continue with these synthetic results."
+              }
+            ]
+          }
+        ],
+        "ToolDefinitions": [
+          {
+            "Name": "SyntheticLookup",
+            "Description": "Synthetic tool definition for offline fixture coverage.",
+            "InputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "Name": "SyntheticNormalize",
+            "Description": "Synthetic tool definition for offline fixture coverage.",
+            "InputSchema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ],
+        "ModelName": "fixture-model",
+        "OutputLimit": 256,
+        "SamplingOptions": {}
+      },
+      "Expected": {
+        "Outcome": "RequestReady",
+        "WireBody": {
+          "model": "fixture-model",
+          "max_tokens": 256,
+          "system": "Synthetic system instruction for offline fixtures.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Run the synthetic checks."
+                }
+              ]
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "I will run two synthetic checks."
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_synthetic_lookup",
+                  "name": "SyntheticLookup",
+                  "input": {
+                    "query": "alpha"
+                  }
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_synthetic_normalize",
+                  "name": "SyntheticNormalize",
+                  "input": {
+                    "value": "sample"
+                  }
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "toolu_synthetic_lookup",
+                  "content": "Synthetic lookup result."
+                },
+                {
+                  "type": "tool_result",
+                  "tool_use_id": "toolu_synthetic_normalize",
+                  "content": "Synthetic validation failed.",
+                  "is_error": true
+                },
+                {
+                  "type": "text",
+                  "text": "Continue with these synthetic results."
+                }
+              ]
+            }
+          ],
+          "tools": [
+            {
+              "name": "SyntheticLookup",
+              "description": "Synthetic tool definition for offline fixture coverage.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "query"
+                ],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "SyntheticNormalize",
+              "description": "Synthetic tool definition for offline fixture coverage.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value"
+                ],
+                "additionalProperties": false
+              }
+            }
+          ]
+        },
+        "RequiredOrdering": "Every tool_result follows its assistant tool_use turn in the next user message, matches tool_use_id, and precedes any text block."
+      }
+    },
+    {
+      "CaseId": "tool_result_after_text_rejected",
+      "AcceptanceIds": [
+        "AC-2"
+      ],
+      "CanonicalModelRequest": {
+        "RequestId": "req_fixture_tool_result_order_invalid",
+        "AgentTurnId": "turn_fixture_tool_result_order_invalid",
+        "CreatedAt": "2026-10-26T00:00:00Z",
+        "ConversationScopeRef": "scope:synthetic:private",
+        "SystemInstructions": "Synthetic system instruction for offline fixtures.",
+        "DeveloperInstructions": [],
+        "Messages": [
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "Run the synthetic check."
+              }
+            ]
+          },
+          {
+            "Role": "assistant",
+            "ContentParts": [
+              {
+                "Type": "ToolUse",
+                "ToolCallId": "toolu_synthetic_lookup",
+                "ToolName": "SyntheticLookup",
+                "Arguments": {
+                  "query": "alpha"
+                }
+              }
+            ]
+          },
+          {
+            "Role": "user",
+            "ContentParts": [
+              {
+                "Type": "Text",
+                "Text": "This text is intentionally before the result."
+              },
+              {
+                "Type": "ToolResult",
+                "ToolCallId": "toolu_synthetic_lookup",
+                "Content": "Synthetic result."
+              }
+            ]
+          }
+        ],
+        "ToolDefinitions": [
+          {
+            "Name": "SyntheticLookup",
+            "Description": "Synthetic tool definition for offline fixture coverage.",
+            "InputSchema": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "Name": "SyntheticNormalize",
+            "Description": "Synthetic tool definition for offline fixture coverage.",
+            "InputSchema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ],
+        "ModelName": "fixture-model",
+        "OutputLimit": 256,
+        "SamplingOptions": {}
+      },
+      "Expected": {
+        "Outcome": "ResponseFailed",
+        "ErrorCode": "InvalidRequest",
+        "Retryable": false,
+        "BeforeNetworkSend": true,
+        "WireRequestCreated": false
+      }
+    }
+  ]
+}
