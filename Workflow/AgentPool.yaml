@@ -28,7 +28,7 @@ Slots:
     ModuleIds:
       - AgentWorkflowController
     CurrentTaskId: ED-0001
-    Status: Assigned
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/agent_core"
@@ -37,7 +37,7 @@ Slots:
       - AgentRuntime
       - Core
     CurrentTaskId: ED-0001
-    Status: Active
+    Status: Review
   - SlotId: Worker03
     RoleFamily: Unassigned
     AgentId: ""
