@@ -263,7 +263,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Review
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -352,19 +352,22 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     BaselineCommit: c4d2b94e0dbfb82d922634c1b175aab76f545567
-    HeadCommit: ""
+    HeadCommit: ddcfac296c1cb50869bd5497bdc0739e8568a56a
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
+    ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008
     Checkpoint:
-      LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "TaskRevision 1 CTest exited 1 on an invalid ReadSet fixture; the fixture was corrected. TaskRevision 2 build scope is approved; final CTest rerun is pending."
+      LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
+      CurrentFindingOrFailure: ""
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
-      NextAction: Finish the corrected fixture and run the TaskRevision 2 frozen configure/build/CTest commands in the assigned worktree.
+        - "Early compile failures: duplicate TaskScopedMessageStore constructor; PathsEqual declaration order; missing Trim fixture helper; corrected in the task WriteSet."
+        - "Early CTest failures: invalid ReadSet setup and missing PhaseId in event fixture; corrected and superseded by final 2/2 pass."
+      NextAction: Independent fixed-commit review by Worker02; author must not change Head during review.
       OpenMessageIds:
         - FUP-ED-0008-01
-      LastValidationResult: "Windows CMake configure exit 0; initial controller target build exit 0; CTest exit 1 on fixture setup; later full build exit 0; TaskRevision 2 CTest pending."
+      LastValidationResult: "Revision 2 configure exit 0; three-target build exit 0; CTest exit 0 with 2/2 passed; fixed Base..Head diff check exit 0; clean worktree."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
