@@ -941,7 +941,7 @@ Tasks:
       FollowUpTaskIds: [ED-0015, ED-0011]
 
   - TaskId: ED-0018
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-05
     Title: 实现可复用的离线 MockChannelAdapter 测试替身
     TaskKind: TestSupport
@@ -957,6 +957,14 @@ Tasks:
     CreatedBy: Coordinator
     CreatedAt: "2026-10-26"
     UpdatedAt: "2026-10-26"
+    PreviousRevisionEvidence:
+      TaskRevision: 1
+      TaskSpecCommit: 5d8618036a559388bbaefa277a9d3288450e927e
+      TaskSpecBlob: f3a33ca5631380deb7b8e05d80c7d1e04971a0b7
+      CodeHeadCommit: a52e4d01782be6504369bde865e5e513595f206f
+      ReviewerDecision: RequestChanges
+      Disposition: SupersededAfterFixedReview
+      Reason: "Worker06 found missing Forbidden receipt coverage and action/operation receipt correlation in R1."
     ParallelGroup: P1FirstSliceTestSupport
     Goal: >-
       在已审查的 ChannelAdapterPort C++20 接口之上实现一个可复用、确定性、完全离线的 MockChannelAdapter，
@@ -968,13 +976,25 @@ Tasks:
       - 修改 ChannelAdapterPort 接口、公共合同、CMake 或根构建
     DependsOn:
       - ED-0016
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0018-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: >-
+        Supersede R1 and extend the same test-only three-path WriteSet/acceptance to cover Forbidden, Rejected and
+        RateLimited+RetryAfter receipt outcomes, exact ActionId/OperationId correlation, and a non-correlated
+        unscripted failure result. No Core authorization or platform behavior is added.
+      Reason: "Worker06 fixed-Head review found R1 omitted ChannelAdapterContract V1 Forbidden behavior and did not tie returned receipts to the supplied operation."
     ExternalInputs:
       - "ED-0016/R2 reviewed fixed Head 3f6b284a212156814aa5eb42d2aa0d2c0ff68a8f; ChannelAdapterPort API is the only public input seam."
       - "All channel/account/sender/conversation identities in tests are synthetic and remain confined to the trusted test adapter boundary."
-    BaselineCommit: 3f6b284a212156814aa5eb42d2aa0d2c0ff68a8f
+    BaselineCommit: a52e4d01782be6504369bde865e5e513595f206f
     HeadCommit: ""
-    Branch: Task/ED-0018-MockChannelTestSupport
-    Worktree: H:/Qbot/EmulativeDialog.ED-0018
+    Branch: Task/ED-0018-R2-MockChannelTestSupport
+    Worktree: H:/Qbot/EmulativeDialog.ED-0018-R2
     Context:
       ModuleId: ChannelAdapterPort
       ReadSet:
@@ -1012,7 +1032,8 @@ Tasks:
       MustFollow:
         - "The mock adapter may construct trusted synthetic envelopes only inside test support; it must not infer identity from CanonicalMessage, provider output, nicknames or body text."
         - "Core remains the only component that resolves principal/scope and authorizes actions; MockChannelAdapter only returns the supplied action result/receipt."
-        - "Unsupported capability and UnknownOutcome paths never produce a success ChannelReceipt and are never automatically retried."
+        - "Forbidden, Rejected, UnsupportedCapability, RateLimited, Failed and UnknownOutcome paths never fabricate a success receipt; RateLimited preserves RetryAfter and UnknownOutcome is never automatically retried."
+        - "Every returned receipt correlates to the supplied action's ActionId and OperationId; an unscripted fallback cannot look like a valid correlated platform receipt."
         - "All fixtures use synthetic IDs/content; no real platform SDK, credential, network or personal data is used."
         - "Keep source and test changes to the exact three-path WriteSet."
         - "Require at least 80 percent line coverage for MockChannelAdapter.cpp and report numerator, denominator, exclusions and gcov version."
@@ -1026,30 +1047,36 @@ Tasks:
         Evidence: Contract tests cover distinct synthetic identities, untrusted body spoof attempts and duplicate ingress.
       - AcceptanceId: AC-2
         Description: >-
-          Start/Stop are idempotent; supported text sends return one deterministic ChannelReceipt, while unsupported,
-          failed and unknown outcomes remain distinct and never fabricate a success receipt.
+          Start/Stop are idempotent; supported text sends return one deterministic ChannelReceipt, while Forbidden,
+          Rejected, UnsupportedCapability, RateLimited, Failed and UnknownOutcome remain distinct; RateLimited carries
+          RetryAfter and none of these branches produces a success receipt.
         Evidence: Contract tests cover lifecycle, all receipt branches and no blind resend after UnknownOutcome.
       - AcceptanceId: AC-3
+        Description: >-
+          Every scripted receipt returns the exact ActionId and OperationId supplied with CoreAuthorizedAction;
+          an unscripted invocation returns no valid-looking correlated receipt.
+        Evidence: Tests assert matched correlation and mismatched/unscripted failure behavior.
+      - AcceptanceId: AC-4
         Description: MockChannelAdapter is a test-only implementation of the fixed ED-0016/R2 public API and adds no authorization behavior.
         Evidence: Compile-time interface conformance and independent review.
-      - AcceptanceId: AC-4
+      - AcceptanceId: AC-5
         Description: Changed test-support implementation line coverage is at least 80 percent.
         Evidence: Task-specific MinGW gcov report records numerator/denominator, exclusions and version.
-      - AcceptanceId: AC-5
+      - AcceptanceId: AC-6
         Description: Only the three exact WriteSet paths change; no real account, network, product source or contract changes.
         Evidence: Fixed BaseCommit..HeadCommit changed-path audit and git diff --check.
     Validation:
       RequiredTargets: []
       TargetedBuild:
-        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0018.build
-        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapter.o
-        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.o
-        - g++ --coverage H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.o -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.exe
+        - New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0018-R2.build
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp -o H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapter.o
+        - g++ -std=c++20 -Wall -Wextra -Werror -pedantic --coverage -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapterContractTests.o
+        - g++ --coverage H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapterContractTests.o -o H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapterContractTests.exe
       ContractFixtures:
-        - Run H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapterContractTests.exe
+        - Run H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapterContractTests.exe
       StaticChecks:
         - git diff --check <BaselineCommit> <HeadCommit>
-        - From H:/Qbot/EmulativeDialog.ED-0018.build, run gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0018.build/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0018/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp.
+        - From H:/Qbot/EmulativeDialog.ED-0018-R2.build, run gcov --branch-counts -o H:/Qbot/EmulativeDialog.ED-0018-R2.build/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0018-R2/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp.
         - Verify line coverage is at least 80 percent for MockChannelAdapter.cpp and changed paths equal the exact three-path WriteSet.
       LiveSideEffects: Forbidden
       NotRunReason: "Offline C++ test-support implementation; direct native MinGW compile isolates output from other task builds."
@@ -1062,7 +1089,7 @@ Tasks:
       LastCompletedAcceptance: ""
       CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "Implement the three-path synthetic MockChannelAdapter test double, run task-local C++20 tests and gcov, then request Worker06 fixed-Head review."
+      NextAction: "Implement the R2 receipt/correlation cases in the three-path synthetic MockChannelAdapter, run task-local C++20 tests and gcov, then request Worker06 fixed-Head review."
       OpenMessageIds: []
       LastValidationResult: NotRun
     Deliverable:
