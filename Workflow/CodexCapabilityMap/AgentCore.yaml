@@ -34,195 +34,198 @@ SourceCatalog:
     Path: codex-rs/core/src/session/turn.rs
     Symbols:
       - Name: run_turn
-        RequiredRange: 156-177
+        RequiredRange: 156-181
         Behavior: A turn loops over model sampling; a requested function call is executed and its result is sent in a subsequent sample, while an assistant answer completes the turn.
       - Name: run_turn
         RequiredRange: 454-565
         Behavior: The loop selects a step, prepares model input, invokes run_sampling_request, and branches on its result.
       - Name: run_sampling_request
-        RequiredRange: 1657-1672
+        RequiredRange: 1730-1870
         Behavior: Runs one model sampling request with a turn-scoped client session and cancellation input.
 
   - SourceId: SessionState
     Path: codex-rs/core/src/session/session.rs
     Symbols:
       - Name: Session
-        RequiredRange: 54-101
+        RequiredRange: 60-104
         Behavior: Session holds thread identity, state, active turn, input queue, provider services, and configuration.
 
   - SourceId: InstructionAssembly
     Path: codex-rs/core/src/session/session.rs
     Symbols:
       - Name: SessionConfiguration
-        RequiredRange: 102-122
+        RequiredRange: 107-124
         Behavior: Session configuration separates base instructions from supplemental developer instructions.
       - Name: Session::new
-        RequiredRange: 770-842
+        RequiredRange: "812-879, 1102-1104"
         Behavior: Session initialization resolves and records instruction provenance for configured or model-derived base instructions.
 
   - SourceId: PluginsAndSkills
     Path: codex-rs/core/src/session/session.rs
     Symbols:
       - Name: warm_plugins_and_skills_for_session_init
-        RequiredRange: 609-641
+        RequiredRange: 640-672
         Behavior: Session initialization can load configured plugins and discover host skills for later model context and tool registration.
 
   - SourceId: TurnState
     Path: codex-rs/core/src/state/turn.rs
     Symbols:
       - Name: ActiveTurn
-        RequiredRange: 25-32
+        RequiredRange: 30-36
         Behavior: Active turn state binds the running task and turn state.
       - Name: RunningTask
-        RequiredRange: 67-78
+        RequiredRange: 75-86
         Behavior: A running task carries a cancellation token, task handle, and turn context.
       - Name: TurnState
-        RequiredRange: 79-95
+        RequiredRange: 90-101
         Behavior: Turn state tracks pending approvals and input waiters, tool calls, and usage state.
 
   - SourceId: ProviderBoundary
     Path: codex-rs/model-provider-info/src/lib.rs
     Symbols:
       - Name: WireApi
-        RequiredRange: 96-127
+        RequiredRange: 111-137
         Behavior: At this commit the provider wire enum contains Responses only; parsing the legacy chat value returns an error.
     RelatedPath: codex-rs/core/src/client.rs
     RelatedSymbols:
       - Name: ModelClientSession
-        RequiredRange: 270-293
+        RequiredRange: 297-312
       - Name: stream
-        RequiredRange: 2287-2316
+        RequiredRange: 2392-2454
         Behavior: A per-turn client session carries turn-scoped state and routes the supported Responses stream over HTTP or WebSocket.
 
   - SourceId: ResponseItemsAndTools
     Path: codex-rs/core/src/stream_events_utils.rs
     Symbols:
       - Name: record_completed_response_item
-        RequiredRange: 72-98
+        RequiredRange: 79-91
         Behavior: Completed response items are recorded in conversation history.
       - Name: handle_output_item_done
-        RequiredRange: 298-344
+        RequiredRange: 317-446
         Behavior: Completed model output items are normalized; function calls are recorded and queued for tool execution with a child cancellation token.
     RelatedPath: codex-rs/core/src/tools/parallel.rs
     RelatedSymbols:
       - Name: ToolCallRuntime
-        RequiredRange: 41-60
+        RequiredRange: 46-65
       - Name: handle_tool_call
-        RequiredRange: 71-115
+        RequiredRange: 78-123
       - Name: handle_tool_call_with_source
-        RequiredRange: 117-145
+        RequiredRange: 126-347
         Behavior: Tool calls are routed, recorded, executed, and converted to a success or failure response item.
 
   - SourceId: ToolInventory
     Path: codex-rs/core/src/tools/spec_plan.rs
     Symbols:
       - Name: build_tool_router
-        RequiredRange: 115-139
+        RequiredRange: 121-187
         Behavior: The per-step tool router is built from the session policy, model, environment, and registered integrations.
       - Name: add_shell_tools
-        RequiredRange: 1174-1205
+        RequiredRange: 1242-1273
         Behavior: The tool registry includes process execution and stdin continuation tools.
       - Name: add_core_utility_tools
-        RequiredRange: 1223-1349
+        RequiredRange: 1294-1452
         Behavior: The tool registry can include the file patch tool.
       - Name: add_mcp_resource_tools
-        RequiredRange: 1206-1221
+        RequiredRange: 1276-1291
         Behavior: MCP server resources and templates can be exposed as tools.
       - Name: add_collaboration_tools
-        RequiredRange: 1373-1504
+        RequiredRange: 1455-1586
         Behavior: The tool registry can expose a subagent spawn tool.
       - Name: standalone_web_search_enabled
-        RequiredRange: 1144-1152
+        RequiredRange: 1207-1215
         Behavior: Hosted web search can be enabled from provider capabilities and feature policy.
     RelatedPath: codex-rs/core/src/tools/handlers/apply_patch.rs
     RelatedSymbols:
       - Name: ToolExecutor<ToolInvocation> for ApplyPatchHandler
-        RequiredRange: 270-284
+        RequiredRange: 286-301
       - Name: CoreToolRuntime for ApplyPatchHandler
-        RequiredRange: 361-381
+        RequiredRange: 381-409
 
   - SourceId: RetryAndFailure
     Path: codex-rs/core/src/responses_retry.rs
     Symbols:
       - Name: ResponsesStreamRetryState
-        RequiredRange: 28-41
+        RequiredRange: 32-36
       - Name: handle_response_stream_error
-        RequiredRange: 49-142
+        RequiredRange: 58-142
         Behavior: Stream retry decisions carry retry counts and distinguish retryable from terminal or exhausted errors.
 
   - SourceId: ContextCompaction
     Path: codex-rs/core/src/compact.rs
     Symbols:
       - Name: build_compaction_replacement_history
-        RequiredRange: 78-109
+        RequiredRange: 84-114
         Behavior: Compacted history is rebuilt with initial context and ordered prefix/context items.
       - Name: run_inline_auto_compact_task
-        RequiredRange: 110-143
+        RequiredRange: 117-151
         Behavior: Automatic compaction submits a summarization request and records the compaction reason and phase.
 
   - SourceId: MemoryPipeline
     Path: codex-rs/memories/README.md
     Symbols:
       - Name: When it runs
-        RequiredRange: 24-33
+        RequiredRange: 29-38
       - Name: Phase 1 Rollout Extraction
-        RequiredRange: 34-67
+        RequiredRange: 40-77
         Behavior: Codex extracts per-thread memories from eligible rollouts, with bounded claims, secret redaction, persistence, and retry backoff.
       - Name: Phase 2 Global Consolidation
-        RequiredRange: 68-80
+        RequiredRange: 79-95
         Behavior: Codex consolidates eligible generated memories under a global lock using recency and usage selection.
 
   - SourceId: InterruptedTurnRecovery
     Path: codex-rs/core/src/session/daemon_recovery.rs
     Symbols:
       - Name: interrupted_turn
-        RequiredRange: 19-52
+        RequiredRange: 23-55
         Behavior: A regular, non-cancelled turn can be captured only after its input is recorded and the rollout is flushed; recovery declines unsupported environment configurations.
 
   - SourceId: CommandAndWorkspaceTools
     Path: codex-rs/core/src/tools/spec_plan.rs
     Symbols:
       - Name: add_shell_tools
-        RequiredRange: 1174-1205
+        RequiredRange: 1242-1273
         Behavior: Registers shell command execution and resumable stdin when policy and feature gates allow them.
       - Name: add_core_utility_tools
-        RequiredRange: 1223-1349
+        RequiredRange: 1294-1452
         Behavior: May register ApplyPatchHandler and workspace-oriented utility tools.
     RelatedPath: codex-rs/core/src/session/turn_context.rs
     RelatedSymbols:
       - Name: TurnEnvironment
-        RequiredRange: 64-77
+        RequiredRange: 68-82
 
   - SourceId: CliAndTui
     Path: codex-rs/cli/src/main.rs
     Symbols:
       - Name: main
-        RequiredRange: 968-989
+        RequiredRange: 1043-1051
     RelatedPath: codex-rs/tui/src/app.rs
     RelatedSymbols:
       - Name: App
-        RequiredRange: 514-524
-        Behavior: The upstream TUI owns its top-level application state and event loop.
+        RequiredRange: 537-692
+        Behavior: The upstream TUI App struct owns terminal UI state used by the interactive surface.
+      - Name: handle_tui_event
+        RequiredRange: 861-1219
+        Behavior: The App handles keyboard and terminal input events.
 
   - SourceId: AppServerHostSurface
     Path: codex-rs/app-server/src/lib.rs
     Symbols:
       - Name: run_main
-        RequiredRange: 417-437
+        RequiredRange: 446-465
         Behavior: The Rust app server starts its host-facing protocol runtime over stdio for an IDE client.
 
   - SourceId: RealtimeAudio
     Path: codex-rs/core/src/client.rs
     Symbols:
       - Name: create_realtime_call_with_headers
-        RequiredRange: 717-724
+        RequiredRange: 760-795
         Behavior: Codex has a separate realtime media call path.
 
   - SourceId: HostedWebSearch
     Path: codex-rs/core/src/tools/hosted_spec.rs
     Symbols:
       - Name: create_web_search_tool
-        RequiredRange: 7-41
+        RequiredRange: 14-45
         Behavior: The upstream tool catalog can declare cached, indexed, or live web search and text or image search content.
 
 Capabilities:
