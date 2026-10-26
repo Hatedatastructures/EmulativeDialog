@@ -1,0 +1,601 @@
+{
+  "SchemaVersion": 1,
+  "ContractVersion": "ModelProviderContract V1",
+  "Protocol": "OpenAICompatibleChatCompletions",
+  "Cases": [
+    {
+      "CaseId": "STREAM-001-text-stop-fragmented-utf8",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true,
+        "include_usage": false
+      },
+      "WireFrames": [
+        {
+          "FrameIndex": 0,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_text",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "role": "assistant"
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 1,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_text",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "content": "Hello "
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 2,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_text",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "content": "你"
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 3,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_text",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop"
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 4,
+          "Kind": "Done",
+          "Data": "[DONE]"
+        }
+      ],
+      "TransportSplit": {
+        "Encoding": "UTF-8",
+        "CutOffsets": [
+          1,
+          551,
+          552,
+          790
+        ],
+        "SplitCodePoint": {
+          "Character": "你",
+          "Utf8Hex": "e4bda0",
+          "CutsAfterCodePointByteOffsets": [
+            551,
+            552
+          ]
+        },
+        "TransportChunksUtf8Hex": [
+          "64",
+          "6174613a207b226964223a2263686174636d706c5f666978747572655f74657874222c226f626a656374223a22636861742e636f6d706c6574696f6e2e6368756e6b222c2263726561746564223a312c226d6f64656c223a22666978747572652d636861742d6d6f64656c222c2263686f69636573223a5b7b22696e646578223a302c2264656c7461223a7b22726f6c65223a22617373697374616e74227d2c2266696e6973685f726561736f6e223a6e756c6c7d5d2c227573616765223a6e756c6c7d0a0a646174613a207b226964223a2263686174636d706c5f666978747572655f74657874222c226f626a656374223a22636861742e636f6d706c6574696f6e2e6368756e6b222c2263726561746564223a312c226d6f64656c223a22666978747572652d636861742d6d6f64656c222c2263686f69636573223a5b7b22696e646578223a302c2264656c7461223a7b22636f6e74656e74223a2248656c6c6f20227d2c2266696e6973685f726561736f6e223a6e756c6c7d5d2c227573616765223a6e756c6c7d0a0a646174613a207b226964223a2263686174636d706c5f666978747572655f74657874222c226f626a656374223a22636861742e636f6d706c6574696f6e2e6368756e6b222c2263726561746564223a312c226d6f64656c223a22666978747572652d636861742d6d6f64656c222c2263686f69636573223a5b7b22696e646578223a302c2264656c7461223a7b22636f6e74656e74223a22e4",
+          "bd",
+          "a0227d2c2266696e6973685f726561736f6e223a6e756c6c7d5d2c227573616765223a6e756c6c7d0a0a646174613a207b226964223a2263686174636d706c5f666978747572655f74657874222c226f626a656374223a22636861742e636f6d706c6574696f6e2e6368756e6b222c2263726561746564223a312c226d6f64656c223a22666978747572652d636861742d6d6f64656c222c2263686f69636573223a5b7b22696e646578223a302c2264656c7461223a7b7d2c2266696e6973685f726561736f6e223a2273746f70227d5d2c227573616765223a6e756c6c7d0a0a646174613a205b444f4e455d0a",
+          "0a"
+        ]
+      },
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_text"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "item_fixture_text_0",
+          "TextUtf8Delta": "Hello "
+        },
+        {
+          "SequenceNumber": 3,
+          "EventType": "TextDelta",
+          "ItemId": "item_fixture_text_0",
+          "TextUtf8Delta": "你"
+        },
+        {
+          "SequenceNumber": 4,
+          "EventType": "ResponseCompleted",
+          "CompletionKind": "FinalAnswer",
+          "FinalUsageSnapshot": {
+            "Completeness": "Unavailable"
+          }
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseCompleted",
+      "TerminalExactlyOnce": true
+    },
+    {
+      "CaseId": "STREAM-002-interleaved-tools-first-and-later-fragment-metadata-usage-trailer",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true,
+        "include_usage": true
+      },
+      "Profile": {
+        "ProviderProfileId": "fixture-chat-profile-v1",
+        "Protocol": "OpenAICompatibleChatCompletions",
+        "Endpoint": "https://chat-fixture.example.invalid/v1/chat/completions",
+        "ModelName": "fixture-chat-model",
+        "CredentialRef": "fixture-reference-not-a-credential",
+        "AuthenticationScheme": "Bearer",
+        "ProtocolVersion": "chat-completions-v1",
+        "CompatibilityProfileId": "fixture-chat-extensions-v1",
+        "Capabilities": [
+          "Streaming",
+          "ToolCalls",
+          "Usage",
+          "OutputLimit",
+          "Cancellation"
+        ]
+      },
+      "CompatibilityProfile": {
+        "Id": "fixture-chat-extensions-v1",
+        "AllowedRequestFieldMappings": [
+          {
+            "WirePath": "service_tier",
+            "CanonicalOption": "ProviderOptions.Compatibility.ServiceTier",
+            "Value": "default"
+          }
+        ],
+        "UsageFieldMappings": [
+          {
+            "WirePath": "usage.prompt_tokens_details.cached_tokens",
+            "CanonicalUsageField": "CachedInputReadTokens"
+          },
+          {
+            "WirePath": "usage.completion_tokens_details.reasoning_tokens",
+            "CanonicalUsageField": "ReasoningOutputTokens"
+          }
+        ],
+        "UnregisteredFieldPolicy": "Reject; no arbitrary header/body passthrough"
+      },
+      "WireFrames": [
+        {
+          "FrameIndex": 0,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_tools",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "role": "assistant",
+                  "tool_calls": [
+                    {
+                      "index": 0,
+                      "id": "call_fixture_lookup_001",
+                      "type": "function",
+                      "function": {
+                        "name": "lookup_ticket_status",
+                        "arguments": "{\"ticket_id\":\""
+                      }
+                    }
+                  ]
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 1,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_tools",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "tool_calls": [
+                    {
+                      "index": 1,
+                      "function": {
+                        "arguments": "{\"style\":\""
+                      }
+                    }
+                  ]
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 2,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_tools",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "tool_calls": [
+                    {
+                      "index": 0,
+                      "function": {
+                        "arguments": "CASE-001\"}"
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "id": "call_fixture_format_002",
+                      "type": "function",
+                      "function": {
+                        "name": "format_summary",
+                        "arguments": "brief\"}"
+                      }
+                    }
+                  ]
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 3,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_tools",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "tool_calls"
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 4,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_tools",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [],
+            "usage": {
+              "prompt_tokens": 50,
+              "completion_tokens": 20,
+              "total_tokens": 70,
+              "prompt_tokens_details": {
+                "cached_tokens": 4
+              },
+              "completion_tokens_details": {
+                "reasoning_tokens": 3
+              }
+            }
+          }
+        },
+        {
+          "FrameIndex": 5,
+          "Kind": "Done",
+          "Data": "[DONE]"
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_tools"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ToolCallStarted",
+          "ItemId": "item_fixture_tool_0",
+          "ToolCallId": "call_fixture_lookup_001",
+          "ToolName": "lookup_ticket_status"
+        },
+        {
+          "SequenceNumber": 3,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "item_fixture_tool_0",
+          "ToolCallId": "call_fixture_lookup_001",
+          "ArgumentsJsonDelta": "{\"ticket_id\":\""
+        },
+        {
+          "SequenceNumber": 4,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "item_fixture_tool_0",
+          "ToolCallId": "call_fixture_lookup_001",
+          "ArgumentsJsonDelta": "CASE-001\"}"
+        },
+        {
+          "SequenceNumber": 5,
+          "EventType": "ToolCallStarted",
+          "ItemId": "item_fixture_tool_1",
+          "ToolCallId": "call_fixture_format_002",
+          "ToolName": "format_summary"
+        },
+        {
+          "SequenceNumber": 6,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "item_fixture_tool_1",
+          "ToolCallId": "call_fixture_format_002",
+          "ArgumentsJsonDelta": "{\"style\":\""
+        },
+        {
+          "SequenceNumber": 7,
+          "EventType": "ToolArgumentDelta",
+          "ItemId": "item_fixture_tool_1",
+          "ToolCallId": "call_fixture_format_002",
+          "ArgumentsJsonDelta": "brief\"}"
+        },
+        {
+          "SequenceNumber": 8,
+          "EventType": "ToolCallReady",
+          "ItemId": "item_fixture_tool_0",
+          "ToolCallId": "call_fixture_lookup_001",
+          "ToolName": "lookup_ticket_status",
+          "ArgumentsJson": "{\"ticket_id\":\"CASE-001\"}"
+        },
+        {
+          "SequenceNumber": 9,
+          "EventType": "ToolCallReady",
+          "ItemId": "item_fixture_tool_1",
+          "ToolCallId": "call_fixture_format_002",
+          "ToolName": "format_summary",
+          "ArgumentsJson": "{\"style\":\"brief\"}"
+        },
+        {
+          "SequenceNumber": 10,
+          "EventType": "UsageUpdated",
+          "UsageSnapshot": {
+            "InputTokens": 50,
+            "OutputTokens": 20,
+            "TotalTokens": 70,
+            "CachedInputReadTokens": 4,
+            "ReasoningOutputTokens": 3,
+            "Completeness": "Final"
+          }
+        },
+        {
+          "SequenceNumber": 11,
+          "EventType": "ResponseCompleted",
+          "CompletionKind": "ToolHandoff",
+          "FinalUsageSnapshot": {
+            "InputTokens": 50,
+            "OutputTokens": 20,
+            "TotalTokens": 70,
+            "CachedInputReadTokens": 4,
+            "ReasoningOutputTokens": 3,
+            "Completeness": "Final"
+          }
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseCompleted",
+      "TerminalExactlyOnce": true,
+      "ToolExecutionExpectation": "No tool is authorized or executed by the Provider.",
+      "Assertions": [
+        "Tool index 1 first sends arguments without id/type/name; buffer that fragment until metadata arrives, then emit its ToolCallStarted and argument deltas in order."
+      ]
+    },
+    {
+      "CaseId": "STREAM-003-finish-reason-length",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true,
+        "include_usage": false
+      },
+      "WireFrames": [
+        {
+          "FrameIndex": 0,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_length",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "role": "assistant"
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 1,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_length",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "content": "partial output"
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 2,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_length",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "length"
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 3,
+          "Kind": "Done",
+          "Data": "[DONE]"
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_length"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "TextDelta",
+          "ItemId": "item_fixture_length_0",
+          "TextUtf8Delta": "partial output"
+        },
+        {
+          "SequenceNumber": 3,
+          "EventType": "ResponseOutputLimited",
+          "LimitKind": "OutputTokens",
+          "FinalUsageSnapshot": {
+            "Completeness": "Unavailable"
+          }
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseOutputLimited",
+      "TerminalExactlyOnce": true
+    },
+    {
+      "CaseId": "STREAM-004-finish-reason-content-filter",
+      "RequestSettings": {
+        "n": 1,
+        "stream": true,
+        "include_usage": false
+      },
+      "WireFrames": [
+        {
+          "FrameIndex": 0,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_filter",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {
+                  "role": "assistant"
+                },
+                "finish_reason": null
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 1,
+          "Kind": "Data",
+          "Data": {
+            "id": "chatcmpl_fixture_filter",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": "fixture-chat-model",
+            "choices": [
+              {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "content_filter"
+              }
+            ],
+            "usage": null
+          }
+        },
+        {
+          "FrameIndex": 2,
+          "Kind": "Done",
+          "Data": "[DONE]"
+        }
+      ],
+      "ExpectedCanonicalEvents": [
+        {
+          "SequenceNumber": 1,
+          "EventType": "ResponseStarted",
+          "ProviderResponseId": "chatcmpl_fixture_filter"
+        },
+        {
+          "SequenceNumber": 2,
+          "EventType": "ResponseFailed",
+          "ErrorCode": "ContentFiltered",
+          "Retryable": false,
+          "SanitizedDescription": "Provider content filter stopped the completion."
+        }
+      ],
+      "ExpectedTerminalEventType": "ResponseFailed",
+      "TerminalExactlyOnce": true
+    }
+  ]
+}
