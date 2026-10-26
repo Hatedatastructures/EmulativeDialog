@@ -183,16 +183,20 @@ class PinnedSnapshotProcessRunner final : public ProcessRunner {
                                std::string TaskSpecCommit,
                                std::string TaskSpecBlobId,
                                std::string AssignmentEventCommit,
+                               std::string BudgetCorrectionEventCommit,
                                std::string TaskIndexText,
                                std::string TaskPlanText,
-                               std::string AssignmentLog)
+                               std::string AssignmentLog,
+                               std::string BudgetCorrectionLog)
       : RepositoryRoot(std::move(RepositoryRoot)),
         TaskSpecCommit(std::move(TaskSpecCommit)),
         TaskSpecBlobId(std::move(TaskSpecBlobId)),
         AssignmentEventCommit(std::move(AssignmentEventCommit)),
+        BudgetCorrectionEventCommit(std::move(BudgetCorrectionEventCommit)),
         TaskIndexText(std::move(TaskIndexText)),
         TaskPlanText(std::move(TaskPlanText)),
-        AssignmentLog(std::move(AssignmentLog)) {}
+        AssignmentLog(std::move(AssignmentLog)),
+        BudgetCorrectionLog(std::move(BudgetCorrectionLog)) {}
 
   ProcessResult Run(const std::vector<std::string>& Arguments,
                     const std::filesystem::path&) override {
@@ -220,6 +224,10 @@ class PinnedSnapshotProcessRunner final : public ProcessRunner {
         Arguments[4] == AssignmentEventCommit + ":Workflow/Events/Bootstrap/P1.jsonl") {
       return {0, AssignmentLog};
     }
+    if (Arguments[3] == "show" && Arguments.size() == 5 &&
+        Arguments[4] == BudgetCorrectionEventCommit + ":Workflow/Events/Bootstrap/P1.jsonl") {
+      return {0, BudgetCorrectionLog};
+    }
     throw std::runtime_error("Pinned snapshot loader issued an unregistered Git command");
   }
 
@@ -230,9 +238,11 @@ class PinnedSnapshotProcessRunner final : public ProcessRunner {
   std::string TaskSpecCommit;
   std::string TaskSpecBlobId;
   std::string AssignmentEventCommit;
+  std::string BudgetCorrectionEventCommit;
   std::string TaskIndexText;
   std::string TaskPlanText;
   std::string AssignmentLog;
+  std::string BudgetCorrectionLog;
 };
 
 class ReadSetSnapshotProcessRunner final : public ProcessRunner {
@@ -303,6 +313,7 @@ void TestPinnedTaskSpecAssignment(const std::filesystem::path& Root) {
   const std::string TaskSpecBlobId(40, 'b');
   const std::string AssignmentEventCommit(40, 'c');
   const std::string CodeBaseCommit(40, 'd');
+  const std::string BudgetCorrectionEventCommit(40, 'e');
   const auto Worktree = Temp.Path / "AssignedWorktree";
   std::ostringstream TaskIndex;
   TaskIndex << "CurrentReleaseId: Bootstrap\n"
@@ -355,33 +366,67 @@ void TestPinnedTaskSpecAssignment(const std::filesystem::path& Root) {
                   << "\"ReviewerAgentId\":\"/root/independent-reviewer\","
                   << "\"Branch\":\"Task/ED-0002-ControllerFixture\","
                   << "\"Worktree\":\"" << Worktree.generic_string() << "\"}\n";
+  std::ostringstream CorrectionLog;
+  CorrectionLog << "{\"EventId\":\"approval-r4\","
+                << "\"EventType\":\"ContextBudgetExceptionApproved\","
+                << "\"TaskId\":\"ED-0002\",\"TaskRevision\":4,"
+                << "\"AgentRole\":\"Coordinator\",\"Result\":\"Approved\","
+                << "\"ApprovalReason\":\"old reason\",\"MaxReferenceFiles\":1,"
+                << "\"ReadSetPaths\":[\"Workflow/TaskTemplate.yaml\"]}\n"
+                << "{\"EventId\":\"correction-r4\","
+                << "\"EventType\":\"ContextBudgetExceptionCorrection\","
+                << "\"TaskId\":\"ED-0002\",\"TaskRevision\":4,"
+                << "\"AgentRole\":\"Coordinator\","
+                << "\"CorrectionOfEventId\":\"approval-r4\","
+                << "\"CorrectedField\":\"ApprovalReason\","
+                << "\"OriginalValue\":\"old reason\","
+                << "\"CorrectedValue\":\"test a pinned budget event\","
+                << "\"TaskSpecCommit\":\"" << TaskSpecCommit << "\","
+                << "\"TaskSpecBlobId\":\"" << TaskSpecBlobId << "\","
+                << "\"TaskSpecPath\":\"Workflow/Plans/P1.yaml\","
+                << "\"AssignmentEventCommit\":\"" << AssignmentEventCommit << "\","
+                << "\"AssignmentEventId\":\"assignment-r4\","
+                << "\"CodeBaseCommit\":\"" << CodeBaseCommit << "\","
+                << "\"ChangeRequestId\":\"CR-ED-0008-003\","
+                << "\"MaxReferenceFiles\":1,"
+                << "\"ReadSetPaths\":[\"Workflow/TaskTemplate.yaml\"],"
+                << "\"Result\":\"Corrects reason wording\","
+                << "\"EvidenceRefs\":[\"Workflow/Plans/P1.yaml#ED-0002.ContextBudgetOverride\","
+                << "\"Workflow/Plans/P1.yaml#ED-0002.ReadSet\",\"approval-r4\"]}\n";
   PinnedSnapshotProcessRunner Runner(Fixture.Root, TaskSpecCommit, TaskSpecBlobId,
-                                     AssignmentEventCommit, TaskIndex.str(),
-                                     TaskPlan.str(), AssignmentEvent.str());
+                                     AssignmentEventCommit, BudgetCorrectionEventCommit,
+                                     TaskIndex.str(), TaskPlan.str(), AssignmentEvent.str(),
+                                     CorrectionLog.str());
   const TaskSpec Task = LoadTaskSpecFromPinnedSnapshot(
       Fixture.Root, "P1", "ED-0002", TaskSpecCommit, TaskSpecBlobId,
-      AssignmentEventCommit, "assignment-r4", Runner);
+      AssignmentEventCommit, "assignment-r4", BudgetCorrectionEventCommit,
+      "correction-r4", Runner);
   Check(Task.TaskRevision == 4 && Task.State == "Rework" &&
             Task.TaskSpecCommit == TaskSpecCommit &&
             Task.TaskSpecBlobId == TaskSpecBlobId &&
             Task.AssignmentEventCommit == AssignmentEventCommit &&
+            Task.BudgetCorrectionEventCommit == BudgetCorrectionEventCommit &&
+            Task.BudgetCorrectionEventId == "correction-r4" &&
             Task.CodeBaseCommit == CodeBaseCommit &&
             Task.ReviewerAgentId == "/root/independent-reviewer" &&
             Task.ValidationCommands.size() == 2,
         "Pinned TaskSpec/assignment fields did not load from their immutable commits");
 
-  PinnedSnapshotProcessRunner WrongBlobRunner(Fixture.Root, TaskSpecCommit, TaskSpecBlobId,
-                                             AssignmentEventCommit, TaskIndex.str(),
-                                             TaskPlan.str(), AssignmentEvent.str());
+  PinnedSnapshotProcessRunner WrongBlobRunner(
+      Fixture.Root, TaskSpecCommit, TaskSpecBlobId, AssignmentEventCommit,
+      BudgetCorrectionEventCommit, TaskIndex.str(), TaskPlan.str(), AssignmentEvent.str(),
+      CorrectionLog.str());
   ExpectWorkflowError(
       [&] { (void)LoadTaskSpecFromPinnedSnapshot(
                 Fixture.Root, "P1", "ED-0002", TaskSpecCommit, std::string(40, 'e'),
-                AssignmentEventCommit, "assignment-r4", WrongBlobRunner); },
+                AssignmentEventCommit, "assignment-r4", BudgetCorrectionEventCommit,
+                "correction-r4", WrongBlobRunner); },
       "Pinned TaskSpec loader accepted a mismatched blob ID");
   ExpectWorkflowError(
       [&] { (void)LoadTaskSpecFromPinnedSnapshot(
                 Fixture.Root, "P1", "ED-0002", TaskSpecCommit, TaskSpecBlobId,
-                AssignmentEventCommit, "wrong-assignment-id", Runner); },
+                AssignmentEventCommit, "wrong-assignment-id", BudgetCorrectionEventCommit,
+                "correction-r4", Runner); },
       "Pinned TaskSpec loader accepted an unbound assignment event ID");
 }
 
@@ -755,6 +800,8 @@ void TestBudgetOverrideEvent(const std::filesystem::path& Root) {
   Task.TaskSpecBlobId = std::string(40, 'd');
   Task.AssignmentEventCommit = std::string(40, 'e');
   Task.AssignmentEventId = "assignment-event-1";
+  Task.BudgetCorrectionEventCommit = std::string(40, 'f');
+  Task.BudgetCorrectionEventId = "approval-correction-1";
   for (int Index = 0; Index < 13; ++Index) {
     const std::string Relative = "Context/Approved" + std::to_string(Index) + ".txt";
     WriteText(Fixture.Root / Relative, "approved context fixture\n");
@@ -792,9 +839,36 @@ void TestBudgetOverrideEvent(const std::filesystem::path& Root) {
   Approval.Result = "Approved";
   Approval.ApprovalReason = "Coordinator approves a test budget";
   Approval.MaxReferenceFiles = 14;
-  Approval.EvidenceRefs = {"Workflow/Plans/P1.yaml#ED-0002.ContextBudgetOverride"};
+  Approval.EvidenceRefs = {"Workflow/Plans/P1.yaml#ED-0002.ContextBudgetOverride",
+                           "Workflow/Plans/P1.yaml#ED-0002.ReadSet"};
   Approval.ReadSetPaths = Task.ReadSet;
   Events.Append(Approval);
+
+  WorkflowEvent Correction;
+  Correction.EventId = Task.BudgetCorrectionEventId;
+  Correction.EventType = "ContextBudgetExceptionCorrection";
+  Correction.PhaseId = Task.PhaseId;
+  Correction.TaskId = Task.TaskId;
+  Correction.TaskRevision = Task.TaskRevision;
+  Correction.AgentRole = "Coordinator";
+  Correction.CorrectionOfEventId = Approval.EventId;
+  Correction.CorrectedField = "ApprovalReason";
+  Correction.OriginalApprovalReason = Approval.ApprovalReason;
+  Correction.CorrectedApprovalReason = Task.RegisteredBudgetOverride->Reason;
+  Correction.TaskSpecCommit = Task.TaskSpecCommit;
+  Correction.TaskSpecBlobId = Task.TaskSpecBlobId;
+  Correction.TaskSpecPath = Task.TaskPlanPath;
+  Correction.AssignmentEventCommit = Task.AssignmentEventCommit;
+  Correction.AssignmentEventId = Task.AssignmentEventId;
+  Correction.CodeBaseCommit = Task.CodeBaseCommit;
+  Correction.ChangeRequestId = "CR-ED-0008-003";
+  Correction.MaxReferenceFiles = 14;
+  Correction.ReadSetPaths = Task.ReadSet;
+  Correction.Result = "Corrects only the approval reason wording";
+  Correction.EvidenceRefs = {Task.TaskPlanPath + "#" + Task.TaskId + ".ContextBudgetOverride",
+                             Task.TaskPlanPath + "#" + Task.TaskId + ".ReadSet",
+                             Approval.EventId};
+  Events.Append(Correction);
 
   const auto VerifiedOverride = Events.FindContextBudgetOverride(Task);
   Check(VerifiedOverride.has_value(),
@@ -1015,7 +1089,16 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   Task.TaskSpecBlobId = std::string(40, '2');
   Task.AssignmentEventCommit = std::string(40, '3');
   Task.AssignmentEventId = "assignment-r4-fixture";
-  Task.RegisteredBudgetOverride.reset();
+  Task.BudgetCorrectionEventCommit = std::string(40, '4');
+  Task.BudgetCorrectionEventId = "budget-correction-r4-fixture";
+  ContextBudgetOverride FixtureBudget;
+  FixtureBudget.TaskId = Task.TaskId;
+  FixtureBudget.TaskRevision = Task.TaskRevision;
+  FixtureBudget.MaxReferenceFiles = 1;
+  FixtureBudget.ApprovedByRole = "Coordinator";
+  FixtureBudget.ApprovalEventId = "approval-r4-fixture";
+  FixtureBudget.Reason = "fixture reason";
+  Task.RegisteredBudgetOverride = FixtureBudget;
   Task.EventShard = "Workflow/Events/Bootstrap/P1.jsonl";
 
   const std::string R2DiffCommand =
@@ -1037,11 +1120,55 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   Assignment.TaskSpecCommit = Task.TaskSpecCommit;
   Assignment.TaskSpecBlobId = Task.TaskSpecBlobId;
   Assignment.CodeBaseCommit = Task.CodeBaseCommit;
+  Assignment.ContextBudgetApprovalEventId = Task.RegisteredBudgetOverride->ApprovalEventId;
   Assignment.OwnerAgentId = Task.OwnerAgentId;
   Assignment.ReviewerAgentId = Task.ReviewerAgentId;
   Assignment.Branch = Task.Branch;
   Assignment.Worktree = Task.Worktree;
   Events.Append(Assignment);
+
+  WorkflowEvent Approval;
+  Approval.EventId = Task.RegisteredBudgetOverride->ApprovalEventId;
+  Approval.EventType = "ContextBudgetExceptionApproved";
+  Approval.PhaseId = Task.PhaseId;
+  Approval.TaskId = Task.TaskId;
+  Approval.TaskRevision = Task.TaskRevision;
+  Approval.AgentRole = "Coordinator";
+  Approval.Result = "Approved";
+  Approval.ApprovalReason = "old fixture reason";
+  Approval.MaxReferenceFiles = 1;
+  Approval.ReadSetPaths = Task.ReadSet;
+  Approval.EvidenceRefs = {Task.TaskPlanPath + "#" + Task.TaskId + ".ContextBudgetOverride",
+                           Task.TaskPlanPath + "#" + Task.TaskId + ".ReadSet"};
+  Events.Append(Approval);
+
+  WorkflowEvent BudgetCorrection;
+  BudgetCorrection.EventId = Task.BudgetCorrectionEventId;
+  BudgetCorrection.EventType = "ContextBudgetExceptionCorrection";
+  BudgetCorrection.PhaseId = Task.PhaseId;
+  BudgetCorrection.TaskId = Task.TaskId;
+  BudgetCorrection.TaskRevision = Task.TaskRevision;
+  BudgetCorrection.AgentRole = "Coordinator";
+  BudgetCorrection.CorrectionOfEventId = Task.RegisteredBudgetOverride->ApprovalEventId;
+  BudgetCorrection.CorrectedField = "ApprovalReason";
+  BudgetCorrection.OriginalApprovalReason = "old fixture reason";
+  BudgetCorrection.CorrectedApprovalReason = Task.RegisteredBudgetOverride->Reason;
+  BudgetCorrection.TaskSpecCommit = Task.TaskSpecCommit;
+  BudgetCorrection.TaskSpecBlobId = Task.TaskSpecBlobId;
+  BudgetCorrection.TaskSpecPath = Task.TaskPlanPath;
+  BudgetCorrection.AssignmentEventCommit = Task.AssignmentEventCommit;
+  BudgetCorrection.AssignmentEventId = Task.AssignmentEventId;
+  BudgetCorrection.CodeBaseCommit = Task.CodeBaseCommit;
+  BudgetCorrection.ChangeRequestId = "CR-ED-0008-003";
+  BudgetCorrection.MaxReferenceFiles = 1;
+  BudgetCorrection.ReadSetPaths = Task.ReadSet;
+  BudgetCorrection.Result = "Corrects fixture reason";
+  BudgetCorrection.EvidenceRefs = {Task.TaskPlanPath + "#" + Task.TaskId + ".ContextBudgetOverride",
+                                   Task.TaskPlanPath + "#" + Task.TaskId + ".ReadSet",
+                                   Task.RegisteredBudgetOverride->ApprovalEventId};
+  Events.Append(BudgetCorrection);
+  Check(Events.FindContextBudgetOverride(Task).has_value(),
+        "Revision-specific correction event did not authorize the exact fixture ReadSet");
 
   WorkflowEvent StaleR2;
   StaleR2.EventType = "CommandExecuted";
@@ -1074,6 +1201,8 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
     Current.AssignmentEventCommit = Task.AssignmentEventCommit;
     Current.AssignmentEventId = Task.AssignmentEventId;
     Current.CodeBaseCommit = Task.CodeBaseCommit;
+    Current.BudgetCorrectionEventCommit = Task.BudgetCorrectionEventCommit;
+    Current.BudgetCorrectionEventId = Task.BudgetCorrectionEventId;
     Current.HeadCommit = R4Head;
     Events.Append(Current);
   }
@@ -1107,6 +1236,8 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   Bundle.AssignmentEventCommit = Task.AssignmentEventCommit;
   Bundle.AssignmentEventId = Task.AssignmentEventId;
   Bundle.CodeBaseCommit = Task.CodeBaseCommit;
+  Bundle.BudgetCorrectionEventCommit = Task.BudgetCorrectionEventCommit;
+  Bundle.BudgetCorrectionEventId = Task.BudgetCorrectionEventId;
   Bundle.BaseCommit = Task.BaselineCommit;
   Bundle.HeadCommit = R4Head;
   Bundle.AuthorAgentId = Task.OwnerAgentId;
@@ -1136,6 +1267,12 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
                 std::string::npos &&
             BundleText.find("\"assignment_event_commit\":\"" +
                             Task.AssignmentEventCommit + "\"") != std::string::npos &&
+            BundleText.find("\"budget_correction_event_commit\":\"" +
+                            Task.BudgetCorrectionEventCommit + "\"") != std::string::npos &&
+            BundleText.find("\"budget_correction_event_id\":\"" +
+                            Task.BudgetCorrectionEventId + "\"") != std::string::npos &&
+            BundleText.find("\"EventId\":\"" + Task.BudgetCorrectionEventId + "\"") !=
+                std::string::npos &&
             BundleText.find("\"base_commit\":\"" + Task.BaselineCommit + "\"") !=
                 std::string::npos &&
             BundleText.find("\"head_commit\":\"" + R4Head + "\"") !=
@@ -1174,6 +1311,8 @@ void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root
   MissingEvidence.AssignmentEventCommit = Task.AssignmentEventCommit;
   MissingEvidence.AssignmentEventId = Task.AssignmentEventId;
   MissingEvidence.CodeBaseCommit = Task.CodeBaseCommit;
+  MissingEvidence.BudgetCorrectionEventCommit = Task.BudgetCorrectionEventCommit;
+  MissingEvidence.BudgetCorrectionEventId = Task.BudgetCorrectionEventId;
   MissingEvidence.HeadCommit = Task.FixedHeadCommit;
   MissingEvidence.Command = Task.ValidationCommands.front();
   MissingEvidence.WorkingDirectory = Task.Worktree;

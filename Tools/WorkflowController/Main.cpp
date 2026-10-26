@@ -105,16 +105,16 @@ void PrintUsage() {
       "  query <repo> <phase> <task-id> <revision>\n"
       "  validate-assignment <repo> <phase> <task-id> <revision> <agent> <branch> <worktree> <base>\n"
       "  context <repo> <phase> <task-id> <revision>\n"
-      "  context <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id>\n"
+      "  context <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id> <budget-correction-event-commit> <budget-correction-event-id>\n"
       "  create-worktree <repo> <phase> <task-id> <revision>\n"
       "  run-validation <repo> <phase> <task-id> <revision> <command-index>\n"
-      "  run-validation <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id> <command-index>\n"
+      "  run-validation <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id> <budget-correction-event-commit> <budget-correction-event-id> <command-index>\n"
       "  checkpoint-save <repo> <phase> <task-id> <revision> <next-action>\n"
       "  checkpoint-recover <repo> <phase> <task-id> <revision>\n"
       "  messages <repo> <phase> <task-id>\n"
       "  message-add <repo> <phase> <task-id> <revision> <sender> <recipient> <type> <subject> <summary>\n"
       "  message-close <repo> <phase> <task-id> <revision> <message-id> <resolver-agent-id>\n"
-      "  review-bundle <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id> <reviewer-agent-id> <output-path>\n"
+      "  review-bundle <repo> <phase> <task-id> <revision> <task-spec-commit> <task-spec-blob> <assignment-event-commit> <assignment-event-id> <budget-correction-event-commit> <budget-correction-event-id> <reviewer-agent-id> <output-path>\n"
       "  approve-change <task-id> <change-request-id>  (always rejected)\n"
       "  merge <task-id>  (always rejected; IntegrationOwner only)\n"
       "  history  (unscoped query always rejected)\n";
@@ -190,6 +190,7 @@ std::vector<WorkflowEvent> ReviewBundleEventHistory(
       continue;
     }
     if (Event.EventId == Task.AssignmentEventId ||
+        Event.EventId == Task.BudgetCorrectionEventId ||
         (Task.RegisteredBudgetOverride &&
          Event.EventId == Task.RegisteredBudgetOverride->ApprovalEventId)) {
       History.push_back(Event);
@@ -199,6 +200,8 @@ std::vector<WorkflowEvent> ReviewBundleEventHistory(
                                 Event.TaskSpecBlobId == Task.TaskSpecBlobId &&
                                 Event.AssignmentEventCommit == Task.AssignmentEventCommit &&
                                 Event.AssignmentEventId == Task.AssignmentEventId &&
+                                Event.BudgetCorrectionEventCommit == Task.BudgetCorrectionEventCommit &&
+                                Event.BudgetCorrectionEventId == Task.BudgetCorrectionEventId &&
                                 Event.CodeBaseCommit == Task.CodeBaseCommit;
     if (CurrentTaskPin &&
         (Event.EventType != "CommandExecuted" || Event.HeadCommit == HeadCommit)) {
@@ -262,16 +265,17 @@ int RunCommand(const std::vector<std::string>& Arguments) {
   }
 
   if (Command == "context") {
-    if (Arguments.size() != 6 && Arguments.size() != 10) {
+    if (Arguments.size() != 6 && Arguments.size() != 12) {
       PrintUsage();
       return 2;
     }
     const auto RepositoryRoot = std::filesystem::absolute(Arguments[2]);
     WindowsProcessRunner Runner;
-    const TaskSpec Task = Arguments.size() == 10
+    const TaskSpec Task = Arguments.size() == 12
                               ? LoadTaskSpecFromPinnedSnapshot(
                                     RepositoryRoot, Arguments[3], Arguments[4], Arguments[6],
-                                    Arguments[7], Arguments[8], Arguments[9], Runner)
+                                    Arguments[7], Arguments[8], Arguments[9], Arguments[10],
+                                    Arguments[11], Runner)
                               : LoadTask(RepositoryRoot, Arguments[3], Arguments[4]);
     if (Task.TaskRevision != ParseRevision(Arguments[5])) {
       throw WorkflowError("Stale TaskRevision; context request must use the frozen revision");
@@ -280,7 +284,7 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     const auto BudgetOverride = Events.FindContextBudgetOverride(Task);
     const auto Files = AssembleReadSetContext(RepositoryRoot, Task, 1024U * 1024U,
                                                8U * 1024U * 1024U, BudgetOverride,
-                                               Arguments.size() == 10 ? &Runner : nullptr);
+                                               Arguments.size() == 12 ? &Runner : nullptr);
     WorkflowEvent Event;
     Event.EventType = "ContextLoaded";
     Event.ReleaseId = Task.ReleaseId;
@@ -296,6 +300,8 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     Event.AssignmentEventCommit = Task.AssignmentEventCommit;
     Event.AssignmentEventId = Task.AssignmentEventId;
     Event.CodeBaseCommit = Task.CodeBaseCommit;
+    Event.BudgetCorrectionEventCommit = Task.BudgetCorrectionEventCommit;
+    Event.BudgetCorrectionEventId = Task.BudgetCorrectionEventId;
     for (const ContextFile& File : Files) {
       Event.EvidenceRefs.push_back(File.RelativePath);
     }
@@ -341,21 +347,22 @@ int RunCommand(const std::vector<std::string>& Arguments) {
   }
 
   if (Command == "run-validation") {
-    if (Arguments.size() != 7 && Arguments.size() != 11) {
+    if (Arguments.size() != 7 && Arguments.size() != 13) {
       PrintUsage();
       return 2;
     }
     const auto RepositoryRoot = std::filesystem::absolute(Arguments[2]);
     WindowsProcessRunner Runner;
-    TaskSpec Task = Arguments.size() == 11
+    TaskSpec Task = Arguments.size() == 13
                         ? LoadTaskSpecFromPinnedSnapshot(
                               RepositoryRoot, Arguments[3], Arguments[4], Arguments[6],
-                              Arguments[7], Arguments[8], Arguments[9], Runner)
+                                    Arguments[7], Arguments[8], Arguments[9], Arguments[10],
+                                    Arguments[11], Runner)
                         : LoadTask(RepositoryRoot, Arguments[3], Arguments[4]);
     if (Task.TaskRevision != ParseRevision(Arguments[5])) {
       throw WorkflowError("Stale TaskRevision; validation must use the frozen revision");
     }
-    const std::size_t CommandIndex = ParseIndex(Arguments[Arguments.size() == 11 ? 10 : 6]);
+    const std::size_t CommandIndex = ParseIndex(Arguments[Arguments.size() == 13 ? 12 : 6]);
     if (CommandIndex >= Task.ValidationCommands.size()) {
       throw WorkflowError("Validation command index is outside the frozen allowlist");
     }
@@ -552,7 +559,7 @@ int RunCommand(const std::vector<std::string>& Arguments) {
   }
 
   if (Command == "review-bundle") {
-    if (Arguments.size() != 12) {
+    if (Arguments.size() != 14) {
       PrintUsage();
       return 2;
     }
@@ -560,12 +567,12 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     WindowsProcessRunner Runner;
     TaskSpec Task = LoadTaskSpecFromPinnedSnapshot(
         RepositoryRoot, Arguments[3], Arguments[4], Arguments[6], Arguments[7],
-        Arguments[8], Arguments[9], Runner);
+        Arguments[8], Arguments[9], Arguments[10], Arguments[11], Runner);
     if (Task.TaskRevision != ParseRevision(Arguments[5])) {
       throw WorkflowError("Stale TaskRevision; ReviewBundle must use the frozen revision");
     }
     if (Task.CodeBaseCommit.empty() || Task.Worktree.empty() ||
-        Arguments[10] != Task.ReviewerAgentId || Arguments[10] == Task.OwnerAgentId) {
+        Arguments[12] != Task.ReviewerAgentId || Arguments[12] == Task.OwnerAgentId) {
       throw WorkflowError("ReviewBundle requires the pinned CodeBase, assigned worktree, and independent Reviewer");
     }
     const WorktreeResult VerifiedWorktree = VerifyExistingWorktreeForReview(
@@ -589,7 +596,9 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     Bundle.BaseCommit = Task.CodeBaseCommit;
     Bundle.HeadCommit = Head;
     Bundle.AuthorAgentId = Task.OwnerAgentId;
-    Bundle.ReviewerAgentId = Arguments[10];
+    Bundle.ReviewerAgentId = Arguments[12];
+    Bundle.BudgetCorrectionEventCommit = Task.BudgetCorrectionEventCommit;
+    Bundle.BudgetCorrectionEventId = Task.BudgetCorrectionEventId;
     EventStore Events(EventLogPath(RepositoryRoot, Task));
     for (const FileChange& Change : ParseNameStatusDiff(DiffResult.Output)) {
       for (const std::string& ChangedPath : Change.Paths) {
@@ -607,13 +616,15 @@ int RunCommand(const std::vector<std::string>& Arguments) {
     const auto TaskEvents = Events.ReadTaskEvents(Task.TaskId);
     Bundle.Validations = CollectTaskRevisionValidations(Task, TaskEvents);
     Bundle.Events = ReviewBundleEventHistory(Task, Head, TaskEvents);
-    const std::filesystem::path RequestedOutput = std::filesystem::absolute(Arguments[11]);
+    const std::filesystem::path RequestedOutput = std::filesystem::absolute(Arguments[13]);
     WriteLocalReviewBundle(RepositoryRoot, Task, Bundle, RequestedOutput, Events);
     std::cout << "LocalReviewBundle=" << RequestedOutput.string() << '\n'
               << "TaskSpecCommit=" << Task.TaskSpecCommit << '\n'
               << "TaskSpecBlobId=" << Task.TaskSpecBlobId << '\n'
               << "AssignmentEventCommit=" << Task.AssignmentEventCommit << '\n'
               << "AssignmentEventId=" << Task.AssignmentEventId << '\n'
+              << "BudgetCorrectionEventCommit=" << Task.BudgetCorrectionEventCommit << '\n'
+              << "BudgetCorrectionEventId=" << Task.BudgetCorrectionEventId << '\n'
               << "CodeBaseCommit=" << Task.CodeBaseCommit << '\n'
               << "HeadCommit=" << Head << '\n'
               << "RemotePrCreated=false\n";

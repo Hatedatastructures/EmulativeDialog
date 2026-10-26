@@ -38,24 +38,36 @@ class VerifiedContextBudgetOverride final {
     return FrozenAssignmentEventCommit;
   }
   const std::string& AssignmentEventId() const noexcept { return FrozenAssignmentEventId; }
+  const std::string& BudgetCorrectionEventCommit() const noexcept {
+    return FrozenBudgetCorrectionEventCommit;
+  }
+  const std::string& BudgetCorrectionEventId() const noexcept {
+    return FrozenBudgetCorrectionEventId;
+  }
 
  private:
   VerifiedContextBudgetOverride(ContextBudgetOverride Override,
                                 std::string TaskSpecCommit,
                                 std::string TaskSpecBlobId,
                                 std::string AssignmentEventCommit,
-                                std::string AssignmentEventId)
+                                std::string AssignmentEventId,
+                                std::string BudgetCorrectionEventCommit,
+                                std::string BudgetCorrectionEventId)
       : Override(std::move(Override)),
         FrozenTaskSpecCommit(std::move(TaskSpecCommit)),
         FrozenTaskSpecBlobId(std::move(TaskSpecBlobId)),
         FrozenAssignmentEventCommit(std::move(AssignmentEventCommit)),
-        FrozenAssignmentEventId(std::move(AssignmentEventId)) {}
+        FrozenAssignmentEventId(std::move(AssignmentEventId)),
+        FrozenBudgetCorrectionEventCommit(std::move(BudgetCorrectionEventCommit)),
+        FrozenBudgetCorrectionEventId(std::move(BudgetCorrectionEventId)) {}
 
   ContextBudgetOverride Override;
   std::string FrozenTaskSpecCommit;
   std::string FrozenTaskSpecBlobId;
   std::string FrozenAssignmentEventCommit;
   std::string FrozenAssignmentEventId;
+  std::string FrozenBudgetCorrectionEventCommit;
+  std::string FrozenBudgetCorrectionEventId;
   friend class EventStore;
 };
 
@@ -79,6 +91,8 @@ struct TaskSpec {
   std::string AssignmentEventId;
   std::string CodeBaseCommit;
   std::string FixedHeadCommit;
+  std::string BudgetCorrectionEventCommit;
+  std::string BudgetCorrectionEventId;
   std::string EventShard;
   std::string CommunicationShard;
   std::vector<std::string> DependsOn;
@@ -164,6 +178,13 @@ struct WorkflowEvent {
   std::string AssignmentEventId;
   std::string CodeBaseCommit;
   std::string HeadCommit;
+  std::string BudgetCorrectionEventCommit;
+  std::string BudgetCorrectionEventId;
+  std::string CorrectionOfEventId;
+  std::string CorrectedField;
+  std::string OriginalApprovalReason;
+  std::string CorrectedApprovalReason;
+  std::string ChangeRequestId;
   std::string ContextBudgetApprovalEventId;
   std::string OwnerAgentId;
   std::string ReviewerAgentId;
@@ -220,6 +241,8 @@ struct ReviewBundleData {
   std::string AssignmentEventCommit;
   std::string AssignmentEventId;
   std::string CodeBaseCommit;
+  std::string BudgetCorrectionEventCommit;
+  std::string BudgetCorrectionEventId;
   std::string BaseCommit;
   std::string HeadCommit;
   std::string AuthorAgentId;
@@ -244,6 +267,8 @@ TaskSpec LoadTaskSpecFromPinnedSnapshot(
     const std::string& TaskSpecBlobId,
     const std::string& AssignmentEventCommit,
     const std::string& AssignmentEventId,
+    const std::string& BudgetCorrectionEventCommit,
+    const std::string& BudgetCorrectionEventId,
     ProcessRunner& Runner);
 
 std::string LoadTaskState(const std::filesystem::path& RepositoryRoot,
