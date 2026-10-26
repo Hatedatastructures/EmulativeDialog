@@ -852,7 +852,7 @@ Tasks:
     EpicId: EP-05
     Title: 固化六槽并行分支、PR、冲突与覆盖率协作标准
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Blocked
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -1032,16 +1032,16 @@ Tasks:
     RiskOwnerRole: Coordinator
     RequiresCredentials: false
     RequiresExternalAccount: false
-    BaselineCommit: 8ede04243ac45d9cfd101286f6482d00c5dc321b
+    BaselineCommit: 8ede042a2ec1f64556b6a12c1b99ef15e8225f3f
     HeadCommit: ""
     Branch: Task/ED-0013-R2-MultiAgentCollaborationStandard
     Worktree: H:/Qbot/EmulativeDialog.ED-0013-R2
     ReviewerDecision: Pending
     Checkpoint:
       LastCompletedAcceptance: ""
-      CurrentFindingOrFailure: "CR-ED-0013-001 approved; R2 expands ReadSet to 12 unique files and delegates the exact six governance paths. R1 branch/worktree remains preserved with no task-file edits."
+      CurrentFindingOrFailure: "R2 controller context/create-worktree is blocked because P1.jsonl has conflicting duplicate EventIds; BaseCommit was corrected to the real 8ede042a commit by append-only assignment correction. No R2 worktree exists and no task-file edit began."
       TriedApproaches: []
-      NextAction: "Worker01 creates the isolated R2 worktree from BaseCommit 8ede04243ac45d9cfd101286f6482d00c5dc321b, then writes only the six-path delegated WriteSet and reports fixed Head for Worker02 review."
+      NextAction: "Complete the ED-0014 EventId reconciliation code/test task, then retry R2 context and isolated worktree creation from the corrected BaseCommit."
       OpenMessageIds: []
       LastValidationResult: "Not run; task has not started."
     Deliverable:
