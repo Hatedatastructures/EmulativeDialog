@@ -274,7 +274,7 @@ Tasks:
     EpicId: EP-05
     Title: 实现 C++ AgentWorkflowController 必要能力
     TaskKind: CapabilitySlice
-    State: Verified
+    State: Merged
     Phase: P1
     OwnerRole: AgentWorkflowOwner
     OwnerSlotId: Worker01
@@ -368,6 +368,13 @@ Tasks:
     RequiresExternalAccount: false
     BaselineCommit: 10a38af152971b782eb422addaba14f4eabb4ba9
     HeadCommit: df5c463ba45929da804b2c3c8a2ef21b25a3e13e
+    MergeBaseCommit: 10a38af152971b782eb422addaba14f4eabb4ba9
+    MergeCommit: 4eea6819c0bf6091a4c0119b74b95abb49157c41
+    MergeTargetBranch: codex/integration
+    MergeEventId: 19e7090c-d5db-498c-b34c-e9c178dcf611
+    IntegrationMode: LocalReviewBundle
+    RemotePullRequestCreated: false
+    RemotePullRequestBlocker: GitHub connector 403 Resource not accessible by integration; gh CLI unauthenticated.
     Branch: Task/ED-0008-AgentWorkflowController
     Worktree: H:/Qbot/EmulativeDialog.ED-0008
     ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0008-R5/ReviewBundle.json
@@ -375,7 +382,7 @@ Tasks:
     ReviewHeadCommit: df5c463ba45929da804b2c3c8a2ef21b25a3e13e
     Checkpoint:
       LastCompletedAcceptance: AC-1, AC-2, AC-3, AC-4, AC-5, AC-6
-      CurrentFindingOrFailure: "R5 fixed S/A/C/B/H review approved and verified; integration is pending. Non-blocking ED-0008-RV-011 is a separate P2 follow-up for exact fragment-selector comparison; it does not change the frozen R5 Head or acceptance."
+      CurrentFindingOrFailure: "R5 fixed S/A/C/B/H was approved and locally merged at 4eea6819c0bf6091a4c0119b74b95abb49157c41. P1 ExitGate remains pending Coordinator evaluation of manual/automated MUST enforcement evidence. Non-blocking ED-0008-RV-011 is a separate P2 follow-up; it does not change the fixed R5 Head or six-path WriteSet."
       TriedApproaches:
         - "TaskRevision 1: cmake --build --preset windows-mingw --target WorkflowController exited 0; ctest --preset windows-mingw --output-on-failure exited 1 because a file present in that fixture's ReadSet was treated as unauthorized."
         - "An unlisted full build, cmake --build --preset windows-mingw, exited 0 while preparing CTest; this deviation is recorded and the approved TaskRevision 2 command now names all required CTest executables."
@@ -387,7 +394,7 @@ Tasks:
         - "Coordinator also observed four duplicate EventIds across identical R3 CommandExecuted records; R5 de-duplicates identical IDs and rejects conflicting payloads."
         - "R5 independent review approved fixed Head df5c463ba45929da804b2c3c8a2ef21b25a3e13e; integration merge and P1 gate recording remain pending."
         - "Non-blocking ED-0008-RV-011: RequestAdditionalRead membership should compare selector key/value as well as path before any future fragment-read API is exposed."
-      NextAction: Coordinator integrates the verified fixed Head into codex/integration, records the merge and P1 gate, then expands P2 and registers the first independent RootBuild/Port/Core tasks.
+      NextAction: Coordinator records the verified local merge and evaluates the remaining P1 manual/automated enforcement evidence; after P1 ExitGate is explicitly passed, expand P2 and register the first independent RootBuild/Port/Core tasks.
       OpenMessageIds: []
       LastValidationResult: "At fixed Head df5c463ba45929da804b2c3c8a2ef21b25a3e13e: configure, specified BuildProbe/WorkflowController/WorkflowControllerContractTests build, full CTest (2/2), and typed B..H diff check all exited 0 with accessible evidence paths in the R5 ReviewBundle; Worker02 independently approved without rerunning tests."
     Deliverable:
