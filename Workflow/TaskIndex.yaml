@@ -149,7 +149,7 @@ PhasePlans:
     LoadWhen: CodexCorePreparationGatePassed
   - PhaseId: P2
     Path: Workflow/Plans/P2.yaml
-    State: RegisteredPendingP1Gate
+    State: Current
     LoadWhen: AgentWorkflowControllerAndCoreContractsVerified
   - PhaseId: P3
     Path: Workflow/Plans/P3.yaml
