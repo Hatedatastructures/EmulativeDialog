@@ -136,7 +136,7 @@
       "AgentTurnId": "turn_pause_turn_server_tool_not_supported",
       "WireFrames": [
         "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_pause_turn\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
-        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"pause_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"pause_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}\r\n\r\n",
         "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
       ],
       "ExpectedEventTypes": [
@@ -160,7 +160,7 @@
       "AgentTurnId": "turn_refusal_is_completed_not_provider_failure",
       "WireFrames": [
         "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_refusal\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
-        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"explanation\":\"Synthetic refusal explanation for offline fixture.\"}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"refusal\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":1},\"stop_details\":{\"type\":\"refusal\",\"category\":\"general_harms\",\"explanation\":\"Synthetic refusal explanation for offline fixture.\"}}\r\n\r\n",
         "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
       ],
       "ExpectedEventTypes": [
@@ -173,7 +173,7 @@
           "CompletionKind": "Refusal",
           "FinalUsageSnapshot": {
             "InputTokens": 10,
-            "OutputTokens": 0,
+            "OutputTokens": 1,
             "Completeness": "Final"
           },
           "StopDetails": {
@@ -192,7 +192,7 @@
       "AgentTurnId": "turn_context_window_output_limit",
       "WireFrames": [
         "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_context_limit\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
-        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"model_context_window_exceeded\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"model_context_window_exceeded\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}\r\n\r\n",
         "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
       ],
       "ExpectedEventTypes": [
@@ -205,7 +205,7 @@
           "LimitKind": "ContextWindow",
           "UsageSnapshot": {
             "InputTokens": 10,
-            "OutputTokens": 0,
+            "OutputTokens": 1,
             "Completeness": "Final"
           }
         }
@@ -219,7 +219,7 @@
       "AgentTurnId": "turn_unknown_stop_reason_fails_closed",
       "WireFrames": [
         "event: message_start\r\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_unknown_stop\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"fixture-model\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}}\r\n\r\n",
-        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"future_stop_reason\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}\r\n\r\n",
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"future_stop_reason\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":10,\"output_tokens\":1}}\r\n\r\n",
         "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"
       ],
       "ExpectedEventTypes": [
