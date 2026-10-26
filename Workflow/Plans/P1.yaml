@@ -2814,7 +2814,7 @@ Tasks:
     EpicId: EP-05
     Title: 新增 OpenAI Chat Completions V1.2 refusal 离线夹具
     TaskKind: ContractFixturePreparation
-    State: MergeQueued
+    State: Merged
     Phase: P1
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -2946,12 +2946,18 @@ Tasks:
     MergeTargetBranch: codex/integration
     ReviewerDecision: Approve
     ReviewHeadCommit: "354164fdb2fd73079b3ef7ff8646061b58b2ba15"
+    IntegrationParentCommit: f300fa8fa0b2c89202658fae9016c664d0eb1645
+    IntegrationCommit: c914ec083926600e046b7f9f0ee8e13d38beb880
+    MergeCommit: c914ec083926600e046b7f9f0ee8e13d38beb880
+    IntegrationMode: LocalReviewBundle
+    RemotePullRequestCreated: false
+    RemotePRBlocker: "GitHub connector returned HTTP 403 FORBIDDEN: Resource not accessible by integration."
     Checkpoint:
-      LastCompletedAcceptance: []
-      CurrentFindingOrFailure: "Independent fixed-head review approved with no findings; P1 LocalReviewBundle complete; GitHub PR creation denied HTTP 403."
+      LastCompletedAcceptance: [AC-1, AC-2, AC-3]
+      CurrentFindingOrFailure: ""
       TriedApproaches: []
-      NextAction: "IntegrationOwner performs the authorized no-conflict local merge, verifies the final task diff and targeted evidence, then retires the task branch."
-      LastValidationResult: "Author and independent review passed; exact two-path diff, R4 pin, 12-case conflict matrix, terminal exactly-once, no ToolCallReady on failures, and four V1 blobs passed."
+      NextAction: "P1 ExitGate is ready for Coordinator evidence evaluation after ED-0127/R4 and ED-0129/R4 merged."
+      LastValidationResult: "Author, independent review, and post-merge case/pointer/fail-closed/V1 blob checks passed."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/Bootstrap/P1.jsonl, FollowUpTaskIds: []}
 
