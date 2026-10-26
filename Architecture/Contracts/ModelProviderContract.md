@@ -1,6 +1,6 @@
-# 模型 Provider 合同 V1
+# 模型 Provider 合同 V1.1
 
-状态：冻结候选（ED-0007@1；独立评审通过并合并后生效）。V1 定义 ProviderPort、规范化请求/事件和三种远端 wire 协议映射；不实现任何 Adapter。
+状态：V1.1 候选。ED-0007 V1 保持冻结；本文件的 V1.1 修正由 CR-ED-0007-005 提出，独立评审并合入后生效。本版本增加类型化 refusal metadata，并分离失败码与输出截断、取消、未知结果终态；不实现任何 Adapter。
 
 ## 职责和依赖方向
 
@@ -39,7 +39,7 @@
 
 V1 `ContentParts` 必须类型化；文本始终可用。Image 输入仅在 Profile `Capabilities` 明确声明且 Core 提供获准内容引用时使用；Adapter 不得根据 URL 或路径自行下载/读取文件。Audio、video、任意文件和未知 ContentPart 在 V1 返回 `UnsupportedCapability`。
 
-## CanonicalModelEvent V1
+## CanonicalModelEvent V1.1
 
 每个事件包含 `RequestId`、`AgentTurnId`、`SequenceNumber`、`EventType`，以及适用时的 `ItemId`、`ToolCallId` 和 payload。Adapter 创建本地 `SequenceNumber`：从 1 开始，每个已递交事件递增 1；同一响应中的文本项、拒绝项和工具调用保持稳定 ItemId。除协议映射特别声明外，协议私有字段不进入 Core/Agent 数据模型。
 
@@ -55,7 +55,7 @@ V1 `ContentParts` 必须类型化；文本始终可用。Image 输入仅在 Prof
 | `ToolCallReady` | Provider 协议已结束该调用的参数块且 JSON 完整有效；仅代表候选动作，不代表 Core 授权。 |
 | `UsageUpdated` | 可选 usage 快照。字段可为未知；缺失不等于零。 |
 
-事件 payload V1：
+事件 payload V1.1：
 
 | EventType | Payload |
 |---|---|
@@ -65,10 +65,22 @@ V1 `ContentParts` 必须类型化；文本始终可用。Image 输入仅在 Prof
 | `ToolArgumentDelta` | `ItemId`、`ToolCallId`、原序参数 JSON 文本增量。 |
 | `ToolCallReady` | `ItemId`、`ToolCallId`、`ToolName`、完整 JSON arguments。Core 仍须验证完整 schema 和 policy。 |
 | `UsageUpdated` | `UsageSnapshot`：optional `InputTokens`、`OutputTokens`、`TotalTokens`、`CachedInputReadTokens`、`CachedInputWriteTokens`、`ReasoningOutputTokens` 和 `Completeness=Partial/Final/Unavailable`。 |
-| `ResponseCompleted` | `CompletionKind=FinalAnswer/ToolHandoff/Refusal`，可选 stop sequence code 和 final UsageSnapshot。 |
+| ResponseCompleted | CompletionKind=FinalAnswer/ToolHandoff/Refusal，可选 stop sequence code、final UsageSnapshot 和可选类型化 RefusalStopDetails。RefusalStopDetails 只允许出现在 CompletionKind=Refusal。 |
 | `ResponseOutputLimited` | `LimitKind=OutputTokens/ContextWindow`、final/partial UsageSnapshot 和可选已生成安全文本。 |
-| `ResponseFailed` | 稳定 `ErrorCode`、是否可安全 retry、脱敏说明；没有 provider-raw body。 |
+| ResponseFailed | FailureCode（仅允许 V1.1 failure-only 列表）、是否可安全 retry、脱敏说明；不含 provider-raw body。 |
 | `ResponseCancelled` / `ResponseOutcomeUnknown` | 稳定 cancel/unknown reason code；不宣称远端副作用已停止或未发生。 |
+
+RefusalStopDetails V1.1 是拒绝终态的类型化信息 metadata，不是可见文本或授权信号。该字段可独立于 RefusalDelta/TextDelta 表示，因此空拒绝文本仍可携带拒绝分类。
+
+ResponseCompleted.RefusalStopDetails 是可选 payload；仅当 CompletionKind=Refusal 时允许出现。Anthropic stop_reason=refusal 时必须生成该结构；若 category 缺失、null 或不识别，规范化为 Unclassified。其他协议只有在各自映射明确规定时才提供该字段。
+
+| RefusalStopDetails field | Type and rule |
+|---|---|
+| Type | Fixed literal Refusal. |
+| Category | RefusalCategory; present only with CompletionKind=Refusal. |
+| RefusalCategory values | Cyber, Bio, FrontierLlm, ReasoningExtraction, GeneralHarms, Unclassified. Unknown wire values map to Unclassified. |
+
+Anthropic stop_details.explanation is unstable wire-only text and MUST NOT enter CanonicalModelEvent, prompts, logs, Memory, or Channel output. Arbitrary stop_details JSON is never passed through.
 
 Canonical event 不包含任意 vendor JSON。协议专属字段只在本合同的映射表或 profile allowlist 中标准化；其他字段按 UnsupportedCapability/InvalidResponse 处理。
 
@@ -80,7 +92,7 @@ V1 不向 AgentRuntime 或 Channel 暴露原始 `ReasoningDelta`/thinking blocks
 |---|---|
 | `ResponseCompleted` | Provider 响应完整结束；可带 `CompletionKind = FinalAnswer / ToolHandoff / Refusal`。`ToolHandoff` 是 Provider 请求终态，但 AgentTurn 仍可继续。 |
 | `ResponseOutputLimited` | 输出或上下文预算截断；不得当作正常最终答案。 |
-| `ResponseFailed` | 请求明确失败。包含稳定 `ErrorCode`、`Retryable` 和脱敏说明。 |
+| ResponseFailed | 请求明确失败。只携带 V1.1 failure-only FailureCode、Retryable 和脱敏说明。 |
 | `ResponseCancelled` | 请求未发出，或 Provider 明确确认取消；不声称未知远端请求已停止。 |
 | `ResponseOutcomeUnknown` | 请求已可能到达 Provider，但流在完整终态前丢失，或本地取消无法确认远端结果；禁止自动重发。 |
 
@@ -90,7 +102,32 @@ Canonical sequence 始终由 Adapter 生成。对于带上游 sequence 的协议
 
 ## 错误、取消、重试和未知结果
 
-V1 的稳定错误类别至少包括 `InvalidProfile`、`InvalidRequest`、`UnsupportedCapability`、`AuthenticationFailure`、`RateLimited`、`TransportFailure`、`InvalidStream`、`ProviderRejected`、`ContentFiltered`、`OutputLimitReached`、`Cancelled` 和 `OutcomeUnknown`。错误详情脱敏，不包含 key、完整私聊正文或完整敏感参数。
+V1.1 的 ResponseFailed.FailureCode 是封闭的公共 failure-only 枚举，表示请求明确失败。错误详情脱敏，不包含 key、完整私聊正文或完整敏感参数。
+
+FailureCode V1.1 values:
+
+| FailureCode | Meaning |
+|---|---|
+| InvalidProfile | Profile is invalid or unsupported by the adapter. |
+| InvalidRequest | Canonical request is invalid before/during protocol mapping. |
+| UnsupportedCapability | A requested, registered capability is unsupported. |
+| AuthenticationFailure | Provider authentication was rejected or is unusable. |
+| RateLimited | Provider rejected the request due to rate limits. |
+| TransportFailure | A transport failure is confirmed and is not an unknown remote outcome. |
+| InvalidStream | The received provider stream violates its protocol mapping. |
+| ProviderRejected | Provider returned an explicit request rejection not represented by another code. |
+| ContentFiltered | Provider completed with an explicit content-filter rejection. |
+
+
+OutputLimitReached、Cancelled 和 OutcomeUnknown 不属于 FailureCode；分别且仅分别由 ResponseOutputLimited、ResponseCancelled 和 ResponseOutcomeUnknown 表示。
+FailureCode 的终态归属互斥：
+
+| Terminal event | Classification field |
+|---|---|
+| ResponseFailed | FailureCode only; excludes output-limit, cancellation, and unknown-outcome codes. |
+| ResponseOutputLimited | LimitKind; never FailureCode. |
+| ResponseCancelled | Cancellation reason code; never FailureCode. |
+| ResponseOutcomeUnknown | Unknown-outcome reason code; never FailureCode. |
 
 - Adapter 可按 profile 明列的 retry budget 重试明确未被远端接收的连接错误；HTTP 错误仅按协议明确标注的可重试类别处理。
 - 只要已发出部分内容、Provider 已可能接受请求、已出现工具 call，或终态缺失，就不得自动重新提交相同请求；输出 `ResponseOutcomeUnknown` 或对应失败终态。AgentRuntime 不执行没有完整 Provider `ResponseCompleted` 的工具调用。
@@ -103,7 +140,7 @@ V1 的稳定错误类别至少包括 `InvalidProfile`、`InvalidRequest`、`Unsu
 |---|---|---|---|
 | OpenAI Responses | `Authorization: Bearer` with a Core-held profile key lease. | `instructions`、`input`、Core-approved `tools`、canonical OutputLimit -> `max_output_tokens` 和 profile allowlisted options；工具结果按原 `call_id` 序列化为 `function_call_output`。 | 按 event order 处理 output item、text/refusal delta、function-call argument delta/done；只在完整 arguments done 且 JSON 合法后发 `ToolCallReady`。校验上游 `sequence_number`。`response.completed` -> `ResponseCompleted`（含 ToolHandoff）；`response.incomplete`/`max_output_tokens` -> `ResponseOutputLimited`；`response.incomplete`/`content_filter`、未知 incomplete reason、`response.failed`、in-band error 或 HTTP error -> `ResponseFailed`。usage 仅记录协议提供值。 |
 | OpenAI-compatible Chat Completions | `Authorization: Bearer` with a Core-held profile key lease. | V1 固定 `n=1`；canonical `system/developer/user/assistant` roles 映射到 `messages`，获准工具映射到 `tools`，OutputLimit 映射到 `max_completion_tokens`，仅发送 compatibility-profile 登记的额外字段。工具结果使用 `tool` role 且 `tool_call_id` 必须匹配相应 assistant `tool_call.id`。V1 不发已弃用 `max_tokens` 字段。 | 按 chunk 顺序处理 choice 0；`tool_calls` 分片依 `index` 组装，补齐初始 fragment 中可能缺失的 id/name/type，完整且 JSON 有效才发 `ToolCallReady`。`stop` -> Completed/FinalAnswer；`tool_calls` -> Completed/ToolHandoff；`length` -> OutputLimited；`content_filter` -> Failed/ContentFiltered；未知 finish reason -> Failed/InvalidStream。V1 不支持旧式 `function_call`。`include_usage` trailer 可为空 choices chunk且中断时可能缺失；缺失 usage 不补 0。 |
-| Anthropic Messages | V1 profile 固定 `AuthenticationScheme: XApiKeyHeader`，只发 `x-api-key`（Core lease）；同时发 `anthropic-version: 2026-10-21`。V1 不用 Bearer fallback。 | canonical OutputLimit 映射到必需的 `max_tokens`；`system` 与 roles/messages/tools 映射到 Messages API。assistant `tool_use` 的结果只可回到紧接的下一条 user message；tool_result blocks 必须位于该 message content 最前，且 `tool_use_id` 一一匹配。 | `message_start`、content block start/delta/stop、message delta 和 message stop 按 Block index 重建稳定 ItemId。`input_json_delta.partial_json` 仅在对应 block stop 后解析；无效 JSON 不发 Ready。Server Tool/MCP/未知 content block -> Failed/UnsupportedCapability。`end_turn`/`stop_sequence` -> Completed/FinalAnswer；`tool_use` -> Completed/ToolHandoff；`max_tokens`/`model_context_window_exceeded` -> OutputLimited；`refusal` -> Completed/Refusal 并保留脱敏 `stop_details`；`pause_turn` -> Failed/UnsupportedCapability（本产品不续跑 server tools）；未知 stop_reason -> Failed/InvalidStream。`message_delta.usage` 是累计快照，后续已知字段替换而不求和；缺失值未知，0 才表示明确零。 |
+| Anthropic Messages | V1 profile 固定 AuthenticationScheme: XApiKeyHeader，只发 x-api-key（Core lease）；同时发 anthropic-version: 2026-10-21。V1 不用 Bearer fallback。 | canonical OutputLimit 映射到必需的 max_tokens；system 与 roles/messages/tools 映射到 Messages API。assistant tool_use 的结果只可回到紧接的下一条 user message；tool_result blocks 必须位于该 message content 最前，且 tool_use_id 一一匹配。 | message_start、content block start/delta/stop、message delta 和 message stop 按 Block index 重建稳定 ItemId。input_json_delta.partial_json 仅在对应 block stop 后解析；无效 JSON 不发 Ready。Server Tool/MCP/未知 content block -> Failed/UnsupportedCapability。end_turn/stop_sequence -> Completed/FinalAnswer；tool_use -> Completed/ToolHandoff；max_tokens/model_context_window_exceeded -> OutputLimited；refusal -> Completed/Refusal，并映射类型化 RefusalStopDetails（Type=Refusal）；category 缺失、null 或不识别时为 Unclassified。该 metadata 不要求存在 RefusalDelta；explanation 和其他未登记 stop_details 字段仅限 wire 层并丢弃。pause_turn -> Failed/UnsupportedCapability（本产品不续跑 server tools）；未知 stop_reason -> Failed/InvalidStream。message_delta.usage 是累计快照，后续已知字段替换而不求和；缺失值未知，0 才表示明确零。 |
 
 #### Anthropic V1 profile 的参数约束
 
@@ -120,15 +157,16 @@ V1 的稳定错误类别至少包括 `InvalidProfile`、`InvalidRequest`、`Unsu
 - Anthropic authentication: https://platform.claude.com/docs/en/manage-claude/authentication
 - Anthropic streaming: https://platform.claude.com/docs/en/build-with-claude/streaming
 - Anthropic stop reasons: https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons
+- Anthropic refusals and refusal stop_details categories: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
 - Anthropic client tool call/result order: https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
 
 不支持协议字段必须返回 `UnsupportedCapability` 或 `InvalidRequest`，不得静默丢弃或塞入公共 Core/Agent 数据模型。
 
-## V1 离线合同夹具计划
+## V1.1 离线合同夹具计划
 
 - 三协议对同一 canonical request 的 request fixture 与事件 fixture；断言公共事件和 terminal 语义一致。
 - Responses：正常文本、refusal、多个交错 function calls、response.completed、max_output_tokens incomplete、failed、HTTP/in-band error、sequence duplicate/gap。
 - Chat Completions：`n=1`、角色和 tool_result round-trip、分片/交错多工具参数、finish_reason 矩阵、content_filter、include_usage 空 choices trailer、被截断时无 usage trailer、拒绝 function_call。
-- Anthropic：版本/认证头、温度参数全部省略、非默认采样值在网络前拒绝、message/content block 生命周期、累计 usage、上述 stop_reason 全矩阵、tool_use/tool_result 关联顺序和未知 block 拒绝。
+- Anthropic：版本/认证头、温度参数全部省略、非默认采样值在网络前拒绝、message/content block 生命周期、累计 usage、stop_reason 全矩阵、tool_use/tool_result 关联顺序、未知 block 拒绝、refusal StopDetails category 映射（含 null/unknown -> Unclassified）和 ResponseFailed failure-code 集合；空拒绝文本仍可带 RefusalStopDetails，explanation 不进入 expected canonical payload。
 - 三 Adapter 与 FakeProvider 都验证同一 `RequestId`、本地单调 SequenceNumber、稳定 ItemId/ToolCallId、terminal exactly-once、取消和 outcome unknown；fixtures 不含真实密钥、用户私聊正文或网络录制。
 - 这些 fixture 是实现任务的验收计划，本合同冻结任务不创建/运行测试，不替代独立 Provider live-smoke。
