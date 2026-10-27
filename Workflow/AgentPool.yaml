@@ -26,12 +26,12 @@ LifecyclePolicy:
     - UserOrCoordinatorExplicitlyClosesTheSlot
 
 Slots:
-  # Worker01/Worker06 为 P1 支持槽；Worker02-Worker05 为四个实现槽。
+  # 六个稳定身份可跨阶段复用；具体任务角色以 Ready TaskSpec 和 Coordinator 分派为准。
   - SlotId: Worker01
     RoleFamily: BuildAndWorkflowOwner
-    AgentId: "/root/p1_trace_events_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    AgentId: "/root/worker01_core"
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - RootBuildAndDependencies
@@ -40,9 +40,9 @@ Slots:
     Status: Idle
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
-    AgentId: "/root/p1_code001_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    AgentId: "/root/worker02_providers"
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - AgentRuntime
@@ -52,9 +52,9 @@ Slots:
     Status: Idle
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
-    AgentId: "/root/p1_gov004_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    AgentId: "/root/worker03_memory"
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIResponses
@@ -62,9 +62,9 @@ Slots:
     Status: Idle
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
-    AgentId: "/root/p2_validation_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    AgentId: "/root/worker04_reviewer"
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIChatCompletions
@@ -72,9 +72,9 @@ Slots:
     Status: Idle
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
-    AgentId: "/root/p3_validation_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    AgentId: "/root/worker05_validation"
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - ProviderAnthropicMessages
@@ -82,9 +82,9 @@ Slots:
     Status: Idle
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
-    AgentId: "/root/p1_par001_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    AgentId: "/root/worker06_integration"
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - Memory

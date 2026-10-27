@@ -10,16 +10,24 @@
 
 | 槽位 | 稳定 Agent | P1 工作类型 | 职责 |
 |---|---|---|---|
-| Worker01 | /root/workflow_controller | 支持 | Windows 构建、AgentWorkflowController、任务与工作流工具 |
-| Worker02 | /root/agent_core | 实现 | Codex AgentRuntime 与 Core |
-| Worker03 | /root/provider_responses | 实现 | OpenAI Responses Provider |
-| Worker04 | /root/provider_chat | 实现 | OpenAI-compatible Chat Completions Provider |
-| Worker05 | /root/provider_anthropic | 实现 | Anthropic Messages Provider |
-| Worker06 | /root/memory_context | 支持 | Memory/Context 合同、夹具和评审支持；合同与依赖冻结后可承担独立实现任务 |
+| Worker01 | /root/worker01_core | 构建/工作流 | Windows 构建、AgentWorkflowController、依赖与集成验证 |
+| Worker02 | /root/worker02_providers | Agent Core/Provider | Codex AgentRuntime、Core 与 Provider 纵向切片 |
+| Worker03 | /root/worker03_memory | Memory/Context | Memory、ContextSelector、会话状态与独立实现 |
+| Worker04 | /root/worker04_reviewer | 独立审查 | 固定 Base/Head 审查、合同与安全边界核验 |
+| Worker05 | /root/worker05_validation | 验证 | Windows 构建、覆盖率、失败复现与独立验证 |
+| Worker06 | /root/worker06_integration | 集成 | 分支预算、PR、冲突处理、最终语义复核与合并 |
 
-当前四个并行产品实现槽为 Worker02–Worker05，Worker01 和 Worker06 是 P1 协作模型中的两个支持槽。Worker06 保留 Memory/Context 职责；后续实现仍须由 Coordinator 分派独立且 Ready 的 TaskSpec。Coordinator 单独负责计划、审批与集成，不计入六个子代理槽。
+六个 Agent 继承 Coordinator 当前的模型和推理强度，不逐个覆盖模型；宿主无法继承时必须停止分配并如实报告，不得静默换成另一模型。Coordinator 单独负责规划、任务路由、审批和最终集成决定，不计入六个子代理槽。功能角色允许跨阶段复用，但稳定 AgentId 必须保留；任何槽位不得靠重复调查或无产出分析填满。
 
 每次分派的有效并行数为六个配置槽、宿主支持容量、依赖已满足且 WriteSet 独立的 Ready 任务数三者中的最小值。没有独立 Ready 任务时，槽位保持空闲；不得为了填满槽位制造重复工作。相关任务完成后优先复用原稳定槽；宿主会话结束时从检查点恢复，不得声称原会话仍在运行。
+
+### 持续开发管线
+
+每次派发都按同一闭环执行：Coordinator 从 Ready 独立任务中选择 Owner，冻结 TaskSpec 和写集，随后 Owner 在独立 worktree 编写、构建、测试并提交；Owner 完成后把 Base/Head、命令和证据回传 Coordinator。Coordinator 同时派发独立 Reviewer，通过后由 IntegrationOwner 检查目标分支、代码差异、覆盖率和冲突。每个模块只有在实现、验证、审查、PR 和合并都完成后才报告完成，后一项任务从更新后的 main 重新建立。
+
+远端分支预算固定为 4 个，其中 main 和 codex/integration 最多各占 1 个，最多 2 个任务 PR 分支同时存在；达到上限时，本地实现 worktree 可继续准备代码，但不得再推送新的远端分支。任务分支合并后必须删除；若旧集成分支有非祖先提交，先记录唯一差异并把本地审计引用保留，再决定归档或删除。
+
+Coordinator 保持六个稳定槽有独立、有产出的工作：实现槽只处理互不重叠的 Ready 写集；合同等待期间，其他槽执行构建复现、固定 Head 审查、依赖获取、测试夹具或后续任务准备，而不是重复分析。下一轮派发依据刚完成的模块和 main 的新 Head，不得沿用过期 Base。
 
 ## 冻结、隔离与实施
 
