@@ -174,7 +174,11 @@ ChangeRequests:
     ProposedTaskRevision: 4
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: SupersededBeforeApproval
+    SupersededBy: CR-ED-0124-004
+    OwnerReviewDecision: RequestChanges
+    IndependentReviewDecision: RequestChanges
+    FixedReviewHeadCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
     ProposedTaskSpecBaseCommit: 8a91a3d3cf90e18afd48b4f129f6fae453a452d3
     Supersedes: CR-ED-0124-002
     Scope: >-
@@ -188,6 +192,24 @@ ChangeRequests:
       CMakeLists requires GCOV_EXECUTABLE and absolute AGENT_RUNTIME_REPORT_DIR, and the command lacked an explicit make
       program pin. The R3 task block also accidentally dropped the frozen Goal and RiskLevel. R3 remains unassigned and
       contains no code changes; R4 corrects these findings before assignment.
+  - ChangeRequestId: CR-ED-0124-004
+    TargetTaskId: ED-0124
+    TargetTaskRevision: 4
+    ProposedTaskRevision: 5
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    ProposedTaskSpecBaseCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
+    Supersedes: CR-ED-0124-003
+    Scope: >-
+      Preserve ED-0124/R4 Goal, RiskLevel, ModuleId, ReadSet, WriteSet, dependencies, Acceptance, stable Owner/Reviewer,
+      contract pins, and Windows validation commands. Restore the missing SupersededRevision2Evidence sibling key,
+      preserve the R3/R4 supersession evidence, and update only TaskRevision plus revision-specific Branch/Worktree/build
+      paths. No product code or CMake scope change.
+    Reason: >-
+      Fixed-Head Worker01 and Worker06 reviews found that the R4 task record accidentally nested the R2 supersession
+      fields under RevisionChangeRequest instead of `SupersededRevision2Evidence:`. R4 remains unassigned and contains no
+      source changes; R5 restores the required auditable revision history before assignment.
   - ChangeRequestId: CR-P2-FIRSTSLICE-001
     RequestedBy: Coordinator
     ApprovedBy: Coordinator
@@ -1751,7 +1773,7 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106, ED-0121]}
   - TaskId: ED-0124
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
     TaskKind: Build
@@ -1765,8 +1787,8 @@ Tasks:
     ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0124-R4RootCMakeIntegration
-    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R4
+    Branch: Task/ED-0124-R5RootCMakeIntegration
+    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R5
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -1787,24 +1809,24 @@ Tasks:
       Scope: "Preserve ED-0124/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     RevisionChangeRequest:
-      ChangeRequestId: CR-ED-0124-003
-      PriorRevisionChangeRequestId: CR-ED-0124-002
-      FromRevision: 3
-      ToRevision: 4
+      ChangeRequestId: CR-ED-0124-004
+      PriorRevisionChangeRequestId: CR-ED-0124-003
+      FromRevision: 4
+      ToRevision: 5
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
       Decision: Proposed
-      ProposedTaskSpecBaseCommit: 8a91a3d3cf90e18afd48b4f129f6fae453a452d3
+      ProposedTaskSpecBaseCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
       ApprovedByRole: ""
       ApprovedByAgentId: ""
       IndependentReviewerAgentId: /root/p1_par001_luna
       IndependentReviewDecision: Pending
-      IndependentReviewBaseCommit: 8a91a3d3cf90e18afd48b4f129f6fae453a452d3
+      IndependentReviewBaseCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
       IndependentReviewHeadCommit: ""
       CoordinatorDecision: Pending
       CoordinatorDecisionAgentId: ""
-      Scope: "Restore the frozen ED-0124 Goal and RiskLevel: Medium, pin GCOV_EXECUTABLE/AGENT_RUNTIME_REPORT_DIR/CMAKE_MAKE_PROGRAM in the configure command, and carry forward the accepted R3 identities, paths, contract pins, and executable CMake/CTest commands. Preserve ModuleId, ReadSet, WriteSet, dependencies, Acceptance, and offline boundary."
-      Reason: "Fixed R3 reviews found omitted Goal/RiskLevel and required Agent CMake configure variables/make pin. No code work or assignment began on R3."
+      Scope: "Restore the missing R2 SupersededRevision2Evidence sibling wrapper and carry forward the R3/R4 audit records. Preserve all ED-0124/R4 product scope, risk, pins, Owner/Reviewer, WriteSet and validation commands; update only revision-specific branch/worktree/build paths."
+      Reason: "Fixed R4 reviews found the R2 historical fields nested under RevisionChangeRequest due a missing sibling key. No code work or assignment began."
       PreserveGoal: true
       PreserveRiskLevel: true
       PreserveModuleId: true
@@ -1813,6 +1835,7 @@ Tasks:
       PreserveDependencies: true
       PreserveAcceptance: true
       PreserveNoLiveSideEffects: true
+    SupersededRevision2Evidence:
       TaskRevision: 2
       TaskSpecCommit: 05250a2402db4d660ff70088ad163375badb6826
       TaskSpecBlob: d6fbaa0e59ba377343d92df08adb24c4dfd589b6
@@ -1845,6 +1868,25 @@ Tasks:
         Fixed-Head reviews found that R3 omitted Goal and RiskLevel: Medium and that its configure command lacked required
         GCOV_EXECUTABLE/AGENT_RUNTIME_REPORT_DIR values and an explicit CMAKE_MAKE_PROGRAM pin. R3 was never assigned and
         contains no product code changes.
+    SupersededRevision4Evidence:
+      TaskRevision: 4
+      TaskSpecCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
+      TaskSpecBlob: 56993036ce39679ead354bc66dd63d78e5d4f1ec
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0124-R4RootCMakeIntegration
+      Worktree: H:/Qbot/EmulativeDialog.ED-0124-R4
+      HeadCommit: ""
+      ReviewBaseCommit: 8a91a3d3cf90e18afd48b4f129f6fae453a452d3
+      ReviewHeadCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
+      OwnerReviewDecision: RequestChanges
+      IndependentReviewDecision: RequestChanges
+      OwnerAgentId: /root/p1_trace_events_luna
+      ReviewerAgentId: /root/p1_par001_luna
+      FindingCount: 1
+      Reason: >-
+        Fixed-Head review found the R2 historical fields lacked their SupersededRevision2Evidence sibling key and were
+        nested under RevisionChangeRequest. R4 was never assigned and contains no product source changes.
     Goal: "把已独立验证的 Core/AgentRuntime 纵向切片 C++ target 加入根 Windows CMake/CTest，使常规根构建能执行其行为验收。"
     OutOfScope: ["修改 Core/AgentRuntime 源码", "增加 Provider/Channel 运行时", "全仓重构 CMake", "修改依赖版本"]
     DependsOn: [ED-0101, ED-0109]
@@ -1863,7 +1905,7 @@ Tasks:
       - {AcceptanceId: AC-1, Description: "Existing Windows root configuration builds AgentRuntimeVerticalSliceTests without changing dependency pins or unrelated targets.", Evidence: "Native CMake configure/build output for only the new product test target."}
       - {AcceptanceId: AC-2, Description: "Root CTest discovers and passes the focused AgentRuntime.VerticalSlice test.", Evidence: "Targeted CTest output and unchanged prior focused Controller test."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R4.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R5.build
       Toolchain:
         CompilerPath: C:/msys64/ucrt64/bin/g++.exe
         CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
@@ -1882,13 +1924,13 @@ Tasks:
         NotApplicableReason: "Build-system-only WriteSet; no production C++ implementation source is modified by this task. The Agent subdirectory still requires a pinned gcov path and absolute reports directory at configure time."
         ProductionSources: []
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0124-R4.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0124-R5.build/Reports
       RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests]
       TargetedBuild:
-        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0124-R4 -B H:/Qbot/EmulativeDialog.ED-0124-R4.build/CMake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0124-R4.build/Reports -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
-        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0124-R4.build/CMake --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests --parallel 4"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R4.build/CMake --output-on-failure -R AgentRuntime.VerticalSlice"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R4.build/CMake --output-on-failure -R WorkflowController.Contract"
+        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0124-R5 -B H:/Qbot/EmulativeDialog.ED-0124-R5.build/CMake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0124-R5.build/Reports -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
+        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0124-R5.build/CMake --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests --parallel 4"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R5.build/CMake --output-on-failure -R AgentRuntime.VerticalSlice"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R5.build/CMake --output-on-failure -R WorkflowController.Contract"
       ContractFixtures: ["Uses the frozen FakeProvider and MockChannel synthetic fixtures; no provider, QQ, or external account."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
