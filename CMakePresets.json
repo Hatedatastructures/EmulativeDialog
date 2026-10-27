@@ -17,6 +17,7 @@
           "type": "BOOL",
           "value": "ON"
         },
+        "AGENT_RUNTIME_REPORT_DIR": "${sourceParentDir}/${sourceDirName}.build/${presetName}/Reports",
         "CMAKE_BUILD_TYPE": {
           "type": "STRING",
           "value": "Debug"
@@ -26,6 +27,7 @@
           "type": "BOOL",
           "value": "OFF"
         },
+        "CMAKE_MAKE_PROGRAM": "mingw32-make",
         "CMAKE_CXX_STANDARD": {
           "type": "STRING",
           "value": "20"
@@ -37,7 +39,17 @@
         "FETCHCONTENT_UPDATES_DISCONNECTED": {
           "type": "BOOL",
           "value": "ON"
-        }
+        },
+        "GCOV_EXECUTABLE": "gcov"
+      }
+    },
+    {
+      "name": "windows-agent-slice",
+      "displayName": "Windows MinGW AgentRuntime Vertical Slice",
+      "description": "Build and test the focused AgentRuntime and WorkflowController contracts.",
+      "inherits": "windows-mingw",
+      "cacheVariables": {
+        "CMAKE_MAKE_PROGRAM": "C:/msys64/ucrt64/bin/mingw32-make.exe"
       }
     }
   ],
@@ -45,6 +57,15 @@
     {
       "name": "windows-mingw",
       "configurePreset": "windows-mingw"
+    },
+    {
+      "name": "windows-agent-slice",
+      "configurePreset": "windows-agent-slice",
+      "targets": [
+        "AgentRuntimeVerticalSliceTests",
+        "WorkflowControllerContractTests",
+        "WorkflowController"
+      ]
     }
   ],
   "testPresets": [
@@ -53,6 +74,19 @@
       "configurePreset": "windows-mingw",
       "output": {
         "outputOnFailure": true
+      },
+      "environment": {
+        "PATH": "I:/cmake/bin${pathListSep}$penv{PATH}"
+      }
+    },
+    {
+      "name": "windows-agent-slice",
+      "inherits": "windows-mingw",
+      "configurePreset": "windows-agent-slice",
+      "filter": {
+        "include": {
+          "name": "^(AgentRuntime\\.VerticalSlice|WorkflowController\\.Contract)$"
+        }
       }
     }
   ]
