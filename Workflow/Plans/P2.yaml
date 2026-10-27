@@ -1652,7 +1652,7 @@ Tasks:
     EpicId: EP-06
     Title: 让 MockChannel 使用 Core 专属动作与可关联回执
     TaskKind: TestSupport
-    State: Blocked
+    State: Assigned
     Phase: P2
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -1664,7 +1664,7 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0125-R3MockChannelAdapter
     Worktree: H:/Qbot/EmulativeDialog.ED-0125-R3
-    BaselineCommit: ""
+    BaselineCommit: d4bff6c36c4fc2cceda49cd0609ad80639029954
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0125-R3.build
     ChangeRequestId: CR-ED-0018-002
     CurrentRevisionChangeRequest:
