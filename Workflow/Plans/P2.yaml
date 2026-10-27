@@ -1652,7 +1652,7 @@ Tasks:
     EpicId: EP-06
     Title: 让 MockChannel 使用 Core 专属动作与可关联回执
     TaskKind: TestSupport
-    State: Assigned
+    State: Active
     Phase: P2
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
