@@ -169,9 +169,12 @@ ChangeRequests:
     Scope: >-
       Preserve ED-0109 Goal, CapabilityIds, direct dependencies, ten-path WriteSet, and 80-percent production Core
       coverage requirement. Freeze the CoreAuthorizedAction typed read API and private CoreChatService-only
-      construction, the FakeChannel test path within the existing Core test file, the CoreAgent-compatible
+      construction, a typed CoreActionIdSource seam that lets tests pre-script correlated IDs without constructing
+      actions, the FakeChannel test path within the existing Core test file, the CoreAgent-compatible
       AgentRunResult-to-CoreAgent state/error mapping including typed OutputLimitReached, the provider contract V1.2 frozen pin, the SharedLock shared with ED-0125, and the
-      absolute Windows GCC/gcov commands and tool versions. Refresh the stable Owner/Reviewer AgentIds and R4 paths.
+      absolute Windows GCC/gcov commands and tool versions. Add an ID-only CoreActionIdSource injection seam and
+      AC-7 so ED-0125 can pre-script correlated receipts while CoreChatService remains the sole action constructor.
+      Refresh the stable Owner/Reviewer AgentIds and R4 paths.
       Keep R4 Blocked until this CR is independently reviewed and the Coordinator freezes BaselineCommit at assignment.
     Reason: >-
       R3 lacks typed ActionId/OperationId accessors and current policy/capability version metadata, and its
@@ -381,8 +384,9 @@ Tasks:
       CoreCredentialLease: "Core::CredentialLease is a noncopyable borrowed secret interface used only for ChannelAdapterPort calls; Provider::CredentialLease remains a distinct port type."
       CoreAuthorizedAction: "Private construction by CoreChatService only; immutable ActionId, OperationId, IdempotencyKey, exact Core ConversationScope, SendText ActionKind, text payload, opaque AuthorizationRef, PolicyVersion, and CapabilitySnapshotVersion."
       CoreAuthorizedActionReadApi: "GetActionId()->const Channels::ActionId&; GetOperationId()->const Channels::OperationId&; GetIdempotencyKey()->const Channels::IdempotencyKey&; GetTargetScope()->const Core::ConversationScope&; GetActionKind()->Core::CoreAuthorizedActionKind; GetTextPayload()->std::string_view (valid only for SendText); GetAuthorizationRef()->const Core::AuthorizationRef&; GetPolicyVersion()->std::uint64_t; GetCapabilitySnapshotVersion()->std::uint64_t. All accessors are const/read-only."
+      CoreActionIdSource: "Define CoreActionIdentifiers {Channels::ActionId ActionId; Channels::OperationId OperationId; Channels::IdempotencyKey IdempotencyKey;} and CoreActionIdSource::Next()->CoreActionIdentifiers in CoreChatService.h. CoreChatService requires a CoreActionIdSource& dependency and obtains one fresh, nonempty tuple only after policy/capability approval and before creating OperationRecord/CoreAuthorizedAction; duplicate or empty identifiers fail closed with no send. The test uses a deterministic queued implementation to pre-script a matching ChannelReceipt. The source creates identifiers only and never constructs or authorizes CoreAuthorizedAction; production ID generation is supplied by the Core composition root."
       VersionChecks: "CoreChatService derives PolicyVersion from active Core policy and CapabilitySnapshotVersion from Channel CapabilitySnapshot.SnapshotVersion; it validates both immediately before dispatch."
-      TestConstruction: "Tests do not construct CoreAuthorizedAction or become friends of it; the Core contract test drives the normal CoreChatService authorization path with FakeAgentRuntime and an instrumented FakeChannelAdapter."
+      TestConstruction: "Tests do not construct CoreAuthorizedAction or become friends of it; the Core contract test injects a deterministic CoreActionIdSource and drives the normal CoreChatService authorization path with FakeAgentRuntime and an instrumented FakeChannelAdapter."
       ReceiptRule: "Core reports send success only for one Succeeded ChannelReceipt whose ActionId and OperationId exactly match the issued action; UnknownOutcome is never retried."
       OperationRecord: "Create an in-memory scoped OperationRecord with PolicyVersion and CapabilitySnapshotVersion before any Channel SendAction; authorize it, mark Dispatched before the call, and transition from its exact receipt to Succeeded/Rejected/Unsupported/Failed/UnknownOutcome. This is not durable restart recovery; ED-0112 owns that capability."
     Acceptance:
@@ -394,7 +398,7 @@ Tasks:
         Evidence: "Fake AgentRuntime and instrumented FakeChannelAdapter counters remain zero on rejected, duplicate, and unsupported inbound message paths. ED-0109 does not depend on the later ED-0125 MockChannel migration."
       - AcceptanceId: AC-3
         Description: "Only a complete, policy-approved AgentRunResult with nonempty final user-visible text can lead CoreChatService to construct a private CoreAuthorizedAction; Provider or message fields cannot grant identity or permission."
-        Evidence: "Tests assert CoreChatService-only construction and exact policy/capability version binding; Provider FailureCode mappings are table-checked; after any Core-approved bounded compaction/retry is exhausted, typed Failed/OutputLimitReached produces no action or send; no action is created on Failed, Cancelled, Unsupported, invalid, or UnknownOutcome. CoreAgent Completed is set only after the exact matching Succeeded ChannelReceipt. Refusal metadata alone never authorizes an action."
+        Evidence: "Tests assert CoreChatService-only construction, deterministic ID-source injection, and exact policy/capability version binding; Provider FailureCode mappings are table-checked; after any Core-approved bounded compaction/retry is exhausted, typed Failed/OutputLimitReached produces no action or send; no action is created on Failed, Cancelled, Unsupported, invalid, or UnknownOutcome. CoreAgent Completed is set only after the exact matching Succeeded ChannelReceipt. Refusal metadata alone never authorizes an action."
       - AcceptanceId: AC-4
         Description: "Core creates the scoped OperationRecord and authorizes it before SendAction, marks Dispatched before the adapter call, updates from one correlated receipt, and never retries UnknownOutcome."
         Evidence: "An instrumented fake Channel asserts the record is Authorized/Dispatched before SendAction and is transitioned after Succeeded, Rejected, or UnknownOutcome."
@@ -404,6 +408,9 @@ Tasks:
       - AcceptanceId: AC-6
         Description: "All changed production Core sources meet at least 80 percent line coverage with the task-pinned compiler and gcov version."
         Evidence: "Fresh task build, per-source gcov report, denominator, exclusions, and tool version in ReviewBundle."
+      - AcceptanceId: AC-7
+        Description: "CoreChatService obtains nonempty ActionId/OperationId/IdempotencyKey values from CoreActionIdSource only after policy/capability approval; empty or duplicate identifiers fail closed without Channel dispatch."
+        Evidence: "A deterministic CoreActionIdSource lets the test pre-script the exact matching ChannelReceipt before invoking CoreChatService; tests cover successful correlation, duplicate tuple rejection, and empty tuple rejection without directly constructing CoreAuthorizedAction."
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0109-R4.build
       Toolchain:
