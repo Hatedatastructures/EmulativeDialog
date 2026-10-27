@@ -1233,10 +1233,10 @@ Tasks:
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02
-    OwnerAgentId: "/root/worker02_providers"
+    OwnerAgentId: "/root/p1_code001_luna"
     ReviewerRole: AnthropicProviderOwner
     ReviewerSlotId: Worker05
-    ReviewerAgentId: "/root/worker05_validation"
+    ReviewerAgentId: "/root/p3_validation_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0102-R3SessionState
@@ -1344,11 +1344,11 @@ Tasks:
     State: Ready
     Phase: P2
     OwnerRole: ContextOwner
-    OwnerSlotId: Worker06
-    OwnerAgentId: "/root/worker03_memory"
+    OwnerSlotId: Worker03
+    OwnerAgentId: "/root/p1_gov004_luna"
     ReviewerRole: AgentRuntimeOwner
     ReviewerSlotId: Worker02
-    ReviewerAgentId: "/root/worker02_providers"
+    ReviewerAgentId: "/root/p1_code001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0103-R5ContextSelector
