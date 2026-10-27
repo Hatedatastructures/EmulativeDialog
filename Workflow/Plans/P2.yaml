@@ -606,7 +606,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 C++ AgentRuntime 首轮循环与产品纵向切片
     TaskKind: CapabilitySlice
-    State: Ready
+    State: Assigned
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
