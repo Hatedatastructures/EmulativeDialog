@@ -21,7 +21,7 @@
 ## 目标范围与下一项产品切片
 
 - 保持 ADR-0002 范围：Windows 原生 C++20；Responses、兼容 Chat Completions、Anthropic Messages；首渠道 QQ；微信 Deferred。CLI/IDE、开发工作流、Shell/主机状态、任意文件/网络/MCP 工具、TUI 不阻塞 Agent 核心。
-- P1 Gate 签署后，首条切片按依赖执行 ED-0109 Core 身份/策略 → ED-0125 MockChannel 授权接缝 → ED-0101 C++ AgentRuntime 回合 → ED-0124 根 CMake/CTest 集成。ED-0109/R4 与 ED-0125/R3 已集成；ED-0101/R4 TaskSpec 已接受并固定，仍需在分派时验证全部依赖、冻结 BaselineCommit 并创建隔离 worktree，然后实现 C++ AgentRuntime。验收要求 Mock 入站身份可信、拒绝/去重不调用 Runtime、FakeProvider 只在完整终态后交付答案、Core 只发送一次授权文本并核对相关 Mock 回执；Core 与 Agent 生产源逐模块覆盖率至少 80%。
+- P1 Gate 签署后，首条切片按依赖执行 ED-0109 Core 身份/策略 → ED-0125 MockChannel 授权接缝 → ED-0101 C++ AgentRuntime 回合 → ED-0124 根 CMake/CTest 集成。ED-0109/R4 与 ED-0125/R3 已集成；ED-0101/R5 TaskSpec 已接受并固定，六项依赖均已查询为 Merged。下一步冻结 assignment BaselineCommit、通过 Controller 校验并创建隔离 R5 worktree，然后实现 AgentRuntime 行为。验收要求 Mock 入站身份可信、拒绝/去重不调用 Runtime、FakeProvider 只在完整终态后交付答案、Core 只发送一次授权文本并核对相关 Mock 回执；Core 与 Agent 生产源逐模块覆盖率至少 80%。
 - ED-0120 冻结共用 HTTPS Transport Port；首条切片通过后，ED-0121 WinHTTP/Schannel 与 ED-0104/0105/0106 三个 Provider Adapter 可用互不重叠写集并行推进。Context、Memory、取消、工具、错误恢复等按 P2/P3 依赖继续分派。
 - 真实 QQ 登录/发送仍须等待官方授权路径和能力证据；本轮不接微信。
 
@@ -29,4 +29,4 @@
 
 - R7 Bundle 的 9 个内容哈希已核验；固定 Head 的六路径核对和 `git diff --check` 退出 0；MAN-003 的 20/20 RuleId 与 blocker union 一致；10 个 Markdown 链接无断链。
 - WorkflowController query H:/Qbot/EmulativeDialog.integration P2 ED-0109 4 显示 ED-0109 已 Merged。ED-0125/R3 Base..Head 仅有 3/3 WriteSet 路径；MSYS2 g++ 16.1.0 的五 TU 编译、链接、行为测试均 exit 0，Coordinator 复跑测试 exit 0；本任务生产 TU 覆盖率按 TaskSpec 为 NotApplicable。固定 Head Reviewer Approve；GitHub PR 尝试 HTTP 403；本地 ReviewBundle manifest SHA256 为 2B88C491E552378E4F984D6EB4D2CBC90F2D4511D9C77EB753BE9480C1C7521B，单一 squash 集成提交 5be9f296dddcf9c7c254afc8d908e2d00d675ae0 已推送。
-- ED-0101/R4 TaskSpec 与六项依赖均已审核/验证，但 WorkflowController 的 assignment validation 拒绝了 R4 分支名：topic 后缀含连字符；命令 exit 1，未创建分支、worktree 或源文件。CR-ED-0101-003 正在把未开工任务修订到 Controller 允许的纯字母数字 R5 branch/worktree/build 路径；R5 复审前不分派代码。
+- ED-0101/R5 TaskSpec 已在 commit ad2a3f6bfe4c534f69b20edd095a72d0df22fae7 固定；CR-ED-0101-003 由 Worker02 Owner 与 Worker01 independent reviewer 批准，六项依赖均经 WorkflowController 查询为 Merged。R4 assignment 尝试因分支 topic 含连字符而失败，失败命令已记录，未创建分支/worktree/源码；R5 TaskState 仍 Blocked，待冻结 baseline 与正式分派。
