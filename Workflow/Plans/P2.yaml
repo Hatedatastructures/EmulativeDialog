@@ -170,12 +170,12 @@ ChangeRequests:
       Preserve ED-0109 Goal, CapabilityIds, direct dependencies, ten-path WriteSet, and 80-percent production Core
       coverage requirement. Freeze the CoreAuthorizedAction typed read API and private CoreChatService-only
       construction, the FakeChannel test path within the existing Core test file, the CoreAgent-compatible
-      AgentRunResult-to-CoreAgent state mapping, the provider contract V1.2 frozen pin, the SharedLock shared with ED-0125, and the
+      AgentRunResult-to-CoreAgent state/error mapping including typed OutputLimitReached, the provider contract V1.2 frozen pin, the SharedLock shared with ED-0125, and the
       absolute Windows GCC/gcov commands and tool versions. Refresh the stable Owner/Reviewer AgentIds and R4 paths.
       Keep R4 Blocked until this CR is independently reviewed and the Coordinator freezes BaselineCommit at assignment.
     Reason: >-
       R3 lacks typed ActionId/OperationId accessors and current policy/capability version metadata, and its
-      AgentRunResult must not report AgentTurn Completed before Core sends a successful ChannelReceipt; Refusal is a completion kind, not a new CoreAgent V1 turn state. ED-0125 must not bypass
+      AgentRunResult must not report AgentTurn Completed before Core sends a successful ChannelReceipt; ResponseOutputLimited must map to stable OutputLimitReached failure without sending; Refusal is a completion kind, not a new CoreAgent V1 turn state. ED-0125 must not bypass
       Core-only authorization to construct a test action. R3 also pins ModelProvider V1.1 and uses unpinned
       compiler/gcov commands that cannot evidence the mandated per-source 80-percent coverage.
     PreserveGoal: true
@@ -374,7 +374,8 @@ Tasks:
     ApiDesign:
       AuthorizedTurnContext: "Core-only construction; immutable mapped PrincipalId, exact ConversationScope, AgentTurnId, and canonical messages."
       AgentRuntimePort: "Agent implements Core::AgentRuntimePort::RunTurn(const AuthorizedTurnContext&, Providers::ModelProviderPort&, const Providers::ModelProviderProfile&, const Providers::CredentialLease&, std::stop_token) -> AgentRunResult; ResponseReady is not a CoreAgent terminal state, and the interface exposes no Channel identity or authorization constructor."
-      AgentRunResult: "Port-local status ResponseReady/Failed/Cancelled/Unsupported/UnknownOutcome. ResponseReady carries CompletionKind FinalAnswer or Refusal and only complete final text; it is not a CoreAgent terminal state. Refusal is a completion kind and refusal metadata is never authorization. Partial text is never sendable."
+      AgentRunResult: "Port-local status ResponseReady/Failed/Cancelled/Unsupported/UnknownOutcome. ResponseReady carries CompletionKind FinalAnswer or Refusal and only complete final text; it is not a CoreAgent terminal state. Failed carries a typed AgentRunFailureCode. Refusal is a completion kind and refusal metadata is never authorization. Partial text is never sendable."
+      AgentRunFailureCode: "OutputLimitReached, ProviderFailed, InvalidStream, InternalError. ResponseOutputLimited maps to Failed/OutputLimitReached and terminates the turn without ResponseReady, CoreAuthorizedAction, or Channel send. ResponseFailed maps to Failed with a stable mapped code; ResponseCancelled maps to Cancelled; ResponseOutcomeUnknown maps to UnknownOutcome and is never retried. Core policy denial is represented by CoreChatService, not AgentRunFailureCode."
       CoreChatServiceStateMapping: "CoreChatService owns CoreAgent V1 AgentTurnState; it transitions Generating->Sending only after a complete ResponseReady is approved, and to Completed only after one exact matching Succeeded ChannelReceipt. AgentRunResult.ResponseReady never means AgentTurn.Completed."
       CoreCredentialLease: "Core::CredentialLease is a noncopyable borrowed secret interface used only for ChannelAdapterPort calls; Provider::CredentialLease remains a distinct port type."
       CoreAuthorizedAction: "Private construction by CoreChatService only; immutable ActionId, OperationId, IdempotencyKey, exact Core ConversationScope, SendText ActionKind, text payload, opaque AuthorizationRef, PolicyVersion, and CapabilitySnapshotVersion."
@@ -392,7 +393,7 @@ Tasks:
         Evidence: "Fake AgentRuntime and instrumented FakeChannelAdapter counters remain zero on rejected, duplicate, and unsupported inbound message paths. ED-0109 does not depend on the later ED-0125 MockChannel migration."
       - AcceptanceId: AC-3
         Description: "Only a complete, policy-approved AgentRunResult with nonempty final user-visible text can lead CoreChatService to construct a private CoreAuthorizedAction; Provider or message fields cannot grant identity or permission."
-        Evidence: "Tests assert CoreChatService-only construction and exact policy/capability version binding; no action is created on Failed, Cancelled, Unsupported, output-limited, invalid, or UnknownOutcome. CoreAgent Completed is set only after the exact matching Succeeded ChannelReceipt. Refusal metadata alone never authorizes an action."
+        Evidence: "Tests assert CoreChatService-only construction and exact policy/capability version binding; ResponseOutputLimited maps to typed Failed/OutputLimitReached with no action or send; no action is created on Failed, Cancelled, Unsupported, invalid, or UnknownOutcome. CoreAgent Completed is set only after the exact matching Succeeded ChannelReceipt. Refusal metadata alone never authorizes an action."
       - AcceptanceId: AC-4
         Description: "Core creates the scoped OperationRecord and authorizes it before SendAction, marks Dispatched before the adapter call, updates from one correlated receipt, and never retries UnknownOutcome."
         Evidence: "An instrumented fake Channel asserts the record is Authorized/Dispatched before SendAction and is transitioned after Succeeded, Rejected, or UnknownOutcome."
