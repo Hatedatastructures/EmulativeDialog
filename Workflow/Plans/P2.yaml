@@ -242,10 +242,18 @@ ChangeRequests:
     TargetTaskRevision: 3
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
     IndependentReviewerAgentId: /root/p1_trace_events_luna
-    IndependentReviewDecision: Pending
+    IndependentReviewDecision: Approve
     ReviewBaseCommit: 1114d44460534062474b3ead07cd1db19ff4565c
+    ReviewHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
+    ApprovedByRole: AgentRuntimeOwner
+    ApprovedByAgentId: /root/p1_code001_luna
+    IndependentReviewBaseCommit: 1114d44460534062474b3ead07cd1db19ff4565c
+    IndependentReviewHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
     TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
     Scope: >-
       Preserve ED-0101 Goal, CapabilityIds, dependencies, WriteSet, out-of-scope boundaries, and the 80-percent
@@ -589,10 +597,16 @@ Tasks:
       ToRevision: 4
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: Proposed
+      ApprovedByRole: AgentRuntimeOwner
+      ApprovedByAgentId: /root/p1_code001_luna
+      Decision: Accepted
       IndependentReviewerAgentId: /root/p1_trace_events_luna
-      IndependentReviewDecision: Pending
-      CoordinatorDecision: Pending
+      IndependentReviewBaseCommit: 1114d44460534062474b3ead07cd1db19ff4565c
+      IndependentReviewHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
+      IndependentReviewDecision: Approve
+      CoordinatorDecision: Accepted
       Scope: "Correct stale AgentIds, Provider V1.2 pin, CoreChatService ReadSet, typed terminal acceptance with Core-approved retry-unavailable/exhausted OutputLimitReached semantics, and absolute Windows build/coverage commands while preserving the approved first-slice task scope."
       Reason: "R3 is not executable with the current AgentPool/toolchain and omits the CoreAgent V1 OutputLimitReached retry condition; R4 has no continuation seam and must not autonomously retry or compact."
       PreserveGoal: true
