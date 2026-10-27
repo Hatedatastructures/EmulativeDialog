@@ -79,6 +79,7 @@ ChangeRequests:
       - {TaskId: ED-0123, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0124, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0125, FromRevision: 1, ToRevision: 2}
+      - {TaskId: ED-0125, FromRevision: 2, ToRevision: 3}
     Scope: >-
       Supersede the blocked-before-code P2/P3 task revisions that contain an undefined <TaskBuildDir> token or lack
       executable coverage instrumentation. Assign an absolute sibling TaskBuildDirectory and unique future branch/worktree
@@ -194,6 +195,37 @@ ChangeRequests:
     PreserveGoal: true
     PreserveCapabilityIds: true
     PreserveWriteSet: true
+    PreserveDependencies: true
+
+  - ChangeRequestId: CR-ED-0125-001
+    TargetTaskId: ED-0125
+    TargetTaskRevision: 2
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+    Scope: >-
+      Preserve ED-0125 Goal, direct dependencies, and offline-only test-support boundary, while updating the task to
+      consume the merged ED-0109/R4 Core API. Pin CoreAuthorizedAction.h and CoreChatService.h to merge commit
+      77401e7881b819cb5ec9b869a2906343b1d534c6 and their exact blobs; replace CoreAgentContract.md in the 12-entry
+      ReadSet with CoreChatService.h. Remove CoreAuthorizedActionTestFactory.h from WriteSet so tests never construct
+      or friend CoreAuthorizedAction. Exercise MockChannelAdapter through the normal CoreChatService path with a
+      deterministic CoreActionIdSource; use that source only to provide IDs and pre-script the matching receipt.
+      Correct AC-2 so every SendAction returns exactly one correlated receipt: matching one-shot scripts preserve
+      their configured status; missing, mismatched, exhausted, duplicate, or replayed scripts return a correlated
+      Failed/InvalidRequest receipt and never fabricate Succeeded. Reassign ContractOwner ownership to Worker02 and
+      add ChannelAdapterPort to that stable slot's authorized ModuleIds. Assign the valid R3 branch/worktree/build
+      paths and freeze exact Windows C++20 compile/link/run commands. Keep R3 Blocked until this CR is independently
+      reviewed and the Coordinator validates dependencies and freezes BaselineCommit at assignment.
+    Reason: >-
+      The merged ED-0109/R4 API now enforces private CoreChatService-only action construction and supplies
+      CoreActionIdSource for exact ActionId/OperationId receipt correlation. ED-0125/R2 pins obsolete ED-0109/R2,
+      cannot pre-script the current IDs, retains an action-construction test factory, and its no-receipt AC conflicts
+      with ChannelAdapterPort::SendAction returning a non-optional ChannelReceipt. Worker04 is not authorized for
+      ChannelAdapterPort in AgentPool. These changes remove the test bypass, align the receipt contract, and assign
+      the test-support work to an explicitly authorized stable slot without changing its offline behavior or
+      introducing a real QQ/network side effect.
+    PreserveGoal: true
     PreserveDependencies: true
 
 ParallelGroups:
@@ -1607,23 +1639,43 @@ Tasks:
     Rules: {MustFollow: [CODE-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
   - TaskId: ED-0125
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 让 MockChannel 使用 Core 专属动作与可关联回执
     TaskKind: TestSupport
     State: Blocked
     Phase: P2
     OwnerRole: ContractOwner
-    OwnerSlotId: Worker04
-    OwnerAgentId: "/root/provider_chat"
+    OwnerSlotId: Worker02
+    OwnerAgentId: "/root/p1_code001_luna"
     ReviewerRole: MemoryContextOwner
     ReviewerSlotId: Worker06
     ReviewerAgentId: "/root/memory_context"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0125-R2-MockChannelAdapter
-    Worktree: H:/Qbot/EmulativeDialog.ED-0125-R2
+    Branch: Task/ED-0125-R3MockChannelAdapter
+    Worktree: H:/Qbot/EmulativeDialog.ED-0125-R3
+    BaselineCommit: ""
+    TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0125-R3.build
     ChangeRequestId: CR-ED-0018-002
+    CurrentRevisionChangeRequest:
+      ChangeRequestId: CR-ED-0125-001
+      FromRevision: 2
+      ToRevision: 3
+      Decision: Proposed
+      IndependentReviewerAgentId: /root/p1_trace_events_luna
+      IndependentReviewDecision: Pending
+      CoordinatorDecision: Pending
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: 3cfbe15d8986f6703bcfbb3613a40f88adf71270
+      TaskSpecBlob: 9797175a2a5da4eec375fcf186836aa35a3bb544
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0125-R2-MockChannelAdapter
+      Worktree: H:/Qbot/EmulativeDialog.ED-0125-R2
+      HeadCommit: ""
+      Reason: "R2 is superseded before source changes because it pins the obsolete ED-0109/R2 API and tests bypass the private Core action constructor."
     ModuleIds: [ChannelAdapterPort]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -1647,7 +1699,10 @@ Tasks:
     Goal: "将现有离线 MockChannel 测试替身改为使用 Core 的不可伪造 CoreAuthorizedAction，并按预置 ActionId/OperationId 返回一次性精确关联回执。"
     OutOfScope: ["修改 ChannelAdapterContract V1", "真实 QQ/网络/凭据", "Core 身份授权逻辑", "重试或自行合成成功回执"]
     DependsOn: [ED-0018, ED-0109]
-    ContractVersion: [Architecture/Contracts/ChannelAdapterContract.md V1, CoreAuthorizedAction C++ API ED-0109/R2]
+    ContractVersion:
+      - Architecture/Contracts/ChannelAdapterContract.md V1
+      - CoreAuthorizedAction C++ API ED-0109/R4 merge 77401e7881b819cb5ec9b869a2906343b1d534c6, blob 3917c7ae58b3f38e6e61cf8f748acff28b9bc586
+      - CoreChatService/CoreActionIdSource C++ API ED-0109/R4 merge 77401e7881b819cb5ec9b869a2906343b1d534c6, blob 50665e9bb01d49ce0f91c9a5d06759d284cb40fb
     Context:
       ModuleId: ChannelAdapterPort
       ReadSet:
@@ -1656,10 +1711,10 @@ Tasks:
         - Workflow/TaskIndex.yaml
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/Channels.yaml
-        - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/ChannelAdapterContract.md
         - Source/Channels/Contracts/ChannelAdapterPort.h
         - Source/Core/CoreAuthorizedAction.h
+        - Source/Core/CoreChatService.h
         - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
         - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
         - Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp
@@ -1672,14 +1727,21 @@ Tasks:
       - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
       - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
       - Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp
-      - Tests/Contract/Channels/Contracts/CoreAuthorizedActionTestFactory.h
     SharedLocks: [MockChannelCoreAuthorizationSeam]
+    ApiDesign:
+      ActionConstruction: "MockChannelAdapter accepts only the Core::CoreAuthorizedAction issued by CoreChatService; this task does not construct the action or add a friend/test factory."
+      TestPath: "The contract test injects a deterministic Core::CoreActionIdSource and ChannelAdapterPort implementation into CoreChatService, then exercises MockChannelAdapter::SendAction through the normal trusted-envelope and policy path."
+      ReceiptRule: "Every SendAction returns exactly one ChannelReceipt. Only the one-shot script item matching ActionId and OperationId may return its configured status; a missing, mismatched, exhausted, duplicate, or replayed script returns a correlated Failed/InvalidRequest receipt, never a fabricated Succeeded receipt."
     Acceptance:
       - {AcceptanceId: AC-1, Description: "MockChannel uses Source/Core/CoreAuthorizedAction.h and no longer defines a competing test-only CoreAuthorizedAction type.", Evidence: "Compile test source with product Core header; repository search confirms one authoritative type."}
-      - {AcceptanceId: AC-2, Description: "A scripted receipt matches exact ActionId and OperationId and is consumed once; no receipt is synthesized for an unconfigured or mismatched action.", Evidence: "Contract tests for success, mismatched IDs, duplicate send, and exhausted script."}
+      - {AcceptanceId: AC-2, Description: "Every SendAction returns exactly one receipt; a script is consumed only by an exact one-shot ActionId/OperationId match, while missing, mismatched, exhausted, duplicate, or replayed scripts fail correlated and never return fabricated success.", Evidence: "Contract tests assert exact correlation, one-time consumption, correlated Failed/InvalidRequest for every invalid script path, and no false Succeeded receipt."}
       - {AcceptanceId: AC-3, Description: "Existing offline MockChannel behavior and V1 receipt outcomes remain intact for the test adapter.", Evidence: "All existing MockChannel contract cases pass after migration."}
+      - {AcceptanceId: AC-4, Description: "Tests obtain CoreAuthorizedAction only through CoreChatService and can pre-script the exact matching receipt using a deterministic CoreActionIdSource.", Evidence: "The contract test uses the normal CoreChatService authorization path; no test helper constructs or friends CoreAuthorizedAction."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0125-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0125-R3.build
+      Toolchain:
+        CompilerPath: C:/msys64/ucrt64/bin/g++.exe
+        CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
       Coverage:
         Required: false
         NotApplicable: true
@@ -1689,11 +1751,14 @@ Tasks:
         ReportDirectory: ""
       RequiredTargets: [MockChannelAdapterContractTests]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects' | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0125-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0125-R2/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapter.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0125-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0125-R2/Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapterContractTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapter.o\" \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/Objects/MockChannelAdapterContractTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0125-R2.build/MockChannelAdapterContractTests.exe\""
-        - "powershell -NoProfile -Command \"Set-Location 'H:/Qbot/EmulativeDialog.ED-0125-R2'; & 'H:/Qbot/EmulativeDialog.ED-0125-R2.build/MockChannelAdapterContractTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
+        - "New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0125-R3 -c H:/Qbot/EmulativeDialog.ED-0125-R3/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp -o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/MockChannelAdapter.o"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0125-R3 -c H:/Qbot/EmulativeDialog.ED-0125-R3/Source/Core/IdentityPolicy.cpp -o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/IdentityPolicy.o"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0125-R3 -c H:/Qbot/EmulativeDialog.ED-0125-R3/Source/Core/OperationRecord.cpp -o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/OperationRecord.o"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0125-R3 -c H:/Qbot/EmulativeDialog.ED-0125-R3/Source/Core/CoreChatService.cpp -o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/CoreChatService.o"
+        - "C:/msys64/ucrt64/bin/g++.exe -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0125-R3 -c H:/Qbot/EmulativeDialog.ED-0125-R3/Tests/Contract/Channels/Contracts/MockChannelAdapterContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/MockChannelAdapterContractTests.o"
+        - "C:/msys64/ucrt64/bin/g++.exe H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/IdentityPolicy.o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/OperationRecord.o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/CoreChatService.o H:/Qbot/EmulativeDialog.ED-0125-R3.build/Objects/MockChannelAdapterContractTests.o -o H:/Qbot/EmulativeDialog.ED-0125-R3.build/MockChannelAdapterContractTests.exe"
+        - "H:/Qbot/EmulativeDialog.ED-0125-R3.build/MockChannelAdapterContractTests.exe"
       ContractFixtures: ["Synthetic Core action/operation IDs, one-shot status receipts, mismatch, and unknown outcome."]
       StaticChecks:
         - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"

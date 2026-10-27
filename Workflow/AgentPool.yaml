@@ -47,6 +47,7 @@ Slots:
     ModuleIds:
       - AgentRuntime
       - Core
+      - ChannelAdapterPort
     CurrentTaskId: ""
     Status: Idle
   - SlotId: Worker03
