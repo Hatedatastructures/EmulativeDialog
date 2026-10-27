@@ -248,7 +248,11 @@ ChangeRequests:
     ProposedTaskRevision: 7
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: SupersededBeforeCoordinatorApproval
+    SupersededBy: CR-ED-0124-007
+    OwnerReviewDecision: Approve
+    IndependentReviewDecision: Approve
+    FixedReviewHeadCommit: 17094f99bffd25d170c49b890449ac863f539aa3
     ProposedTaskSpecBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
     Scope: >-
       Preserve ED-0124/R6 Goal, ModuleId, Owner/Reviewer, WriteSet, shared lock, dependencies, Acceptance, and offline
@@ -260,6 +264,32 @@ ChangeRequests:
       ED-0124/R6 configure, build, and AgentRuntime.VerticalSlice passed. WorkflowController.Contract exited 8 because
       the build command compiled WorkflowControllerContractTests but omitted the WorkflowController executable required
       beside it. The failure and R6 uncommitted one-file CMake diff are recorded in P2 evidence; no code commit or PR exists.
+  - ChangeRequestId: CR-ED-0124-007
+    TargetTaskId: ED-0124
+    TargetTaskRevision: 7
+    ProposedTaskRevision: 8
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    Supersedes: CR-ED-0124-006
+    ProposedTaskSpecBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
+    OwnerReviewDecision: Approve
+    OwnerReviewerAgentId: /root/p1_trace_events_luna
+    OwnerReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
+    IndependentReviewerAgentId: /root/p1_par001_luna
+    IndependentReviewDecision: Pending
+    Scope: >-
+      Add the existing CMakePresets.json to ED-0124 ReadSet/WriteSet. Keep the generic windows-mingw build/test presets
+      unfiltered and usable by adding required GCOV_EXECUTABLE, absolute AGENT_RUNTIME_REPORT_DIR, and PATH-resolved
+      CMAKE_MAKE_PROGRAM cache values to its configure preset. Add a focused configure/build/test preset that builds
+      AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, and WorkflowController and runs only
+      AgentRuntime.VerticalSlice and WorkflowController.Contract. Freeze Controller-allowlisted cmake/ctest executable
+      names without `.exe`, and retain the existing sibling .build output pattern outside the source worktree.
+    Reason: >-
+      The user prohibited submitting the original one-file/few-line CMake change by itself. The focused preset makes
+      root AgentRuntime integration repeatable and centralizes build outputs. The existing generic configure preset has
+      BUILD_TESTING=ON, so it also needs the Agent report/gcov and MakeProgram cache settings to remain valid after the
+      Agent test subtree is added.
   - ChangeRequestId: CR-P2-FIRSTSLICE-001
     RequestedBy: Coordinator
     ApprovedBy: Coordinator
@@ -1823,9 +1853,9 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106, ED-0121]}
   - TaskId: ED-0124
-    TaskRevision: 7
+    TaskRevision: 8
     EpicId: EP-06
-    Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
+    Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 与可复用 Preset
     TaskKind: Build
     State: Blocked
     Phase: P2
@@ -1837,8 +1867,8 @@ Tasks:
     ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0124-R7RootCMakeIntegration
-    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R7
+    Branch: Task/ED-0124-R8RootCMakePresetIntegration
+    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R8
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -1859,30 +1889,47 @@ Tasks:
       Scope: "Preserve ED-0124/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     RevisionChangeRequest:
-      ChangeRequestId: CR-ED-0124-006
-      PriorRevisionChangeRequestId: CR-ED-0124-005
-      FromRevision: 6
-      ToRevision: 7
+      ChangeRequestId: CR-ED-0124-007
+      PriorRevisionChangeRequestId: CR-ED-0124-006
+      FromRevision: 7
+      ToRevision: 8
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
       Decision: Proposed
-      ProposedTaskSpecBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
+      ProposedTaskSpecBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
       ApprovedByRole: ""
       ApprovedByAgentId: ""
+      OwnerReviewDecision: Approve
+      OwnerReviewerAgentId: /root/p1_trace_events_luna
+      OwnerReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
       IndependentReviewerAgentId: /root/p1_par001_luna
       IndependentReviewDecision: Pending
-      IndependentReviewBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
+      IndependentReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
       IndependentReviewHeadCommit: ""
       CoordinatorDecision: Pending
       CoordinatorDecisionAgentId: ""
-      Scope: "Add WorkflowController to ED-0124 RequiredTargets and the frozen build command so WorkflowController.Contract runs beside its required executable. Preserve RootBuild/AgentRuntime product behavior, WriteSet, shared lock, dependencies and other validation commands; update only revision-specific paths."
-      Reason: "R6 CTest showed WorkflowController.Contract fails when WorkflowControllerContractTests is built without WorkflowController.exe in the same binary directory."
-      PreserveGoal: true
+      Scope: >-
+        Preserve the ED-0124/R7 product behavior and add the existing CMakePresets.json to ReadSet/WriteSet. Define
+        task-specific Windows configure/build/test presets. Add the required GCOV_EXECUTABLE, absolute AgentRuntime
+        report-directory, and PATH-resolved CMAKE_MAKE_PROGRAM cache variables to the generic windows-mingw configure
+        preset so it remains configurable after Agent tests are registered; keep its build/test presets unfiltered so
+        it still runs all registered tests. The focused configure preset inherits the generic toolchain settings; its build preset includes
+        AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, and WorkflowController; its test preset
+        selects AgentRuntime.VerticalSlice and WorkflowController.Contract. Freeze Controller-allowlisted cmake
+        --preset, cmake --build --preset, and ctest --preset validation commands and keep generated files under the
+        task sibling .build directory outside the source tree. Preserve the existing root shared lock, dependency pins,
+        product behavior, offline fixture scope, and unrelated targets.
+      Reason: >-
+        R6 showed that WorkflowController.Contract fails unless WorkflowController.exe is built beside its contract
+        test. The user also explicitly rejected submitting a one-file/few-line code change alone. R7 was reviewed but
+        never assigned; adding a reusable focused build/test preset makes this root integration a reproducible,
+        reviewable module change and keeps generated files outside the source tree.
+      PreserveGoal: false
       PreserveModuleId: true
-      PreserveReadSet: true
-      PreserveWriteSet: true
+      PreserveReadSet: false
+      PreserveWriteSet: false
       PreserveDependencies: true
-      PreserveAcceptance: true
+      PreserveAcceptance: false
       PreserveNoLiveSideEffects: true
     SupersededRevision2Evidence:
       TaskRevision: 2
@@ -1978,25 +2025,46 @@ Tasks:
         WorkflowController executable. The existing WorkflowController.Contract test failed because the executable was
         not built beside WorkflowControllerContractTests. No R6 code commit or push was made; the uncommitted CMake patch
         is preserved in the central task build folder for R7 owner reuse.
-    Goal: "把已独立验证的 Core/AgentRuntime 纵向切片 C++ target 加入根 Windows CMake/CTest，使常规根构建能执行其行为验收。"
+    SupersededRevision7Evidence:
+      TaskRevision: 7
+      TaskSpecCommit: 17094f99bffd25d170c49b890449ac863f539aa3
+      TaskSpecBlob: fe1e479de0fcb7f7a29b2c39a7472814717acf0c
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0124-R7RootCMakeIntegration
+      Worktree: H:/Qbot/EmulativeDialog.ED-0124-R7
+      HeadCommit: ""
+      RevisionChangeRequestId: CR-ED-0124-006
+      ReviewBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
+      ReviewHeadCommit: 17094f99bffd25d170c49b890449ac863f539aa3
+      OwnerAgentId: /root/p1_trace_events_luna
+      OwnerReviewDecision: Approve
+      ReviewerAgentId: /root/p1_par001_luna
+      IndependentReviewDecision: Approve
+      Reason: >-
+        Owner and independent Reviewer approved the R7 one-file TaskSpec, but the user then prohibited submitting a
+        one-file/few-line code change alone. Before assignment or product code changes, the Coordinator superseded R7
+        with R8 to include a focused CMakePresets configure/build/test entry point. No R7 branch or worktree was created.
+    Goal: "把已独立验证的 Core/AgentRuntime 纵向切片加入 Windows 根 CMake/CTest，并提供可复用的 C++20 构建/测试 preset；所有生成文件留在仓库外的 task sibling .build 目录。"
     OutOfScope: ["修改 Core/AgentRuntime 源码", "增加 Provider/Channel 运行时", "全仓重构 CMake", "修改依赖版本"]
     DependsOn: [ED-0101, ED-0109]
     ContractVersion: "Root CMake/C++20 baseline ED-0006; AgentRuntimeVerticalSliceTests from ED-0101/R5 Head 27f33aac71d03a1105d4ab038b0a4ba81834f1bb integrated by e2f7246269a2debfed3a164e4f14b8347b5e3ef5; Core policy from ED-0109/R4 merge 77401e7881b819cb5ec9b869a2906343b1d534c6"
     Context:
       ModuleId: RootBuildAndDependencies
-      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/BuildRelease.yaml, Architecture/Modules/HostCoreAgent.yaml, CMakeLists.txt, Tests/Contract/Agent/CMakeLists.txt]
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/BuildRelease.yaml, Architecture/Modules/HostCoreAgent.yaml, CMakeLists.txt, CMakePresets.json, Tests/Contract/Agent/CMakeLists.txt]
       OnDemandSet: [Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp]
       ForbiddenSet: ["Source/Core/", "Source/Agent/", "Workflow/Events/Bootstrap/P1.jsonl", "CMake/DependencyPins.cmake"]
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
-    WriteSet: [CMakeLists.txt]
+    WriteSet: [CMakeLists.txt, CMakePresets.json]
     SharedLocks: [RootCMakeAndPresets]
     Acceptance:
-      - {AcceptanceId: AC-1, Description: "Existing Windows root configuration builds AgentRuntimeVerticalSliceTests without changing dependency pins or unrelated targets.", Evidence: "Native CMake configure/build output for only the new product test target."}
-      - {AcceptanceId: AC-2, Description: "Root CTest discovers and passes the focused AgentRuntime.VerticalSlice test.", Evidence: "Targeted CTest output and unchanged prior focused Controller test."}
+      - {AcceptanceId: AC-1, Description: "The task-specific Windows C++20 configure/build presets build AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, and WorkflowController without changing dependency pins or unrelated targets.", Evidence: "Native configure/build preset output and the resolved target list."}
+      - {AcceptanceId: AC-2, Description: "The focused test preset runs and passes AgentRuntime.VerticalSlice and WorkflowController.Contract; the generic windows-mingw test preset has no filter and remains capable of running all registered root tests.", Evidence: "Focused CTest preset output names both passing tests, and static preset validation confirms the generic test preset remains unfiltered."}
+      - {AcceptanceId: AC-3, Description: "CMake cache, binaries, reports, and logs are written under the task sibling .build path outside the source worktree.", Evidence: "Resolved binary/report paths and a clean source worktree after validation."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R7.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R8.build
       Toolchain:
         CompilerPath: C:/msys64/ucrt64/bin/g++.exe
         CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
@@ -2015,17 +2083,19 @@ Tasks:
         NotApplicableReason: "Build-system-only WriteSet; no production C++ implementation source is modified by this task. The Agent subdirectory still requires a pinned gcov path and absolute reports directory at configure time."
         ProductionSources: []
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0124-R7.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0124-R8.build/windows-agent-slice/Reports
       RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
       TargetedBuild:
-        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0124-R7 -B H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0124-R7.build/Reports -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
-        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests WorkflowController --parallel 4"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake --output-on-failure -R AgentRuntime.VerticalSlice"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake --output-on-failure -R WorkflowController.Contract"
+        - "I:/cmake/bin/cmake --preset windows-agent-slice"
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --parallel 4"
+        - "I:/cmake/bin/ctest --preset windows-agent-slice"
       ContractFixtures: ["Uses the frozen FakeProvider and MockChannel synthetic fixtures; no provider, QQ, or external account."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
-        - "Changed paths exactly equal frozen WriteSet [CMakeLists.txt]"
+        - "Changed paths exactly equal frozen WriteSet [CMakeLists.txt, CMakePresets.json]"
+        - "Resolved binary/report paths are under H:/Qbot/EmulativeDialog.integration-port-contract.build through the task sibling .build junction and outside the source worktree."
+        - "The generic windows-mingw configure preset has GCOV_EXECUTABLE, absolute AGENT_RUNTIME_REPORT_DIR, and CMAKE_MAKE_PROGRAM; its build/test presets remain unfiltered."
+        - "CMakeCache.txt resolves CMAKE_MAKE_PROGRAM to C:/msys64/ucrt64/bin/mingw32-make.exe; PATH resolves GCOV_EXECUTABLE=gcov to C:/msys64/ucrt64/bin/gcov.exe."
         - "No dependency pin or unrelated root target changed."
         - "Production C++ line coverage: NotApplicable; no production C++ implementation source is modified by this task."
       LiveSideEffects: Forbidden
