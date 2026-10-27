@@ -1864,7 +1864,7 @@ Tasks:
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 与可复用 Preset
     TaskKind: Build
-    State: Ready
+    State: Active
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -1876,7 +1876,7 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0124-R8RootCMakePresetIntegration
     Worktree: H:/Qbot/EmulativeDialog.ED-0124-R8
-    BaselineCommit: 562e507e10ea49e458559ac48379923c6501ba61
+    BaselineCommit: 2d9512e047706d59f1dbb96dfeac3e527cb0a89a
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
