@@ -142,6 +142,28 @@ ChangeRequests:
       The prior revision declared two non-existent OnDemandSet files alongside the real combined fixture file in ReadSet.
       An empty OnDemandSet makes ContextSelector's fixture reads executable without changing its test scope.
 
+  - ChangeRequestId: CR-ED-0124-002
+    TargetTaskId: ED-0124
+    TargetTaskRevision: 2
+    ProposedTaskRevision: 3
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    ProposedTaskSpecBaseCommit: 05250a2402db4d660ff70088ad163375badb6826
+    Scope: >-
+      Preserve ED-0124 Goal, ModuleId, ReadSet, WriteSet, dependencies, Acceptance, and no-live-side-effect rule.
+      Bind the build owner and independent reviewer to current Worker01/Worker06 AgentPool identities; replace the
+      Controller-invalid hyphenated branch topic with a unique alphanumeric R3 branch/worktree/build path; pin the
+      ED-0101/R5 and ED-0109/R4 integration commits; replace the PowerShell New-Item pipeline with exact absolute
+      Windows CMake/CTest commands that WorkflowController can execute; split the CTest filters so no shell pipe is
+      required; and update the stale static diff-check baseline to the assignment BaseCommit placeholder. Do not change
+      product source scope or broaden the root CMake WriteSet.
+    Reason: >-
+      ED-0124/R2 remains Blocked and has never created an assignment or code branch. Its branch name contains hyphens in
+      the topic suffix rejected by WorkflowController; its OwnerAgentId and ReviewerAgentId do not match Worker01/Worker06
+      in the stable AgentPool; the New-Item command uses PowerShell syntax and a pipe rejected by the C++ Controller's
+      frozen-command parser; and its git diff check pins an older unrelated commit. These defects must be fixed before
+      assignment or source changes.
   - ChangeRequestId: CR-P2-FIRSTSLICE-001
     RequestedBy: Coordinator
     ApprovedBy: Coordinator
@@ -1705,7 +1727,7 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106, ED-0121]}
   - TaskId: ED-0124
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
     TaskKind: Build
@@ -1713,14 +1735,14 @@ Tasks:
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
-    OwnerAgentId: "/root/workflow_controller"
+    OwnerAgentId: "/root/p1_trace_events_luna"
     ReviewerRole: MemoryContextOwner
     ReviewerSlotId: Worker06
-    ReviewerAgentId: "/root/memory_context"
+    ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0124-R2-RootCMakeIntegration
-    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R2
+    Branch: Task/ED-0124-R3RootCMakeIntegration
+    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R3
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -1740,10 +1762,46 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0124/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
-    Goal: "把已独立验证的 Core/AgentRuntime 纵向切片 C++ target 加入根 Windows CMake/CTest，使常规根构建能执行其行为验收。"
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0124-002
+      FromRevision: 2
+      ToRevision: 3
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Proposed
+      ProposedTaskSpecBaseCommit: 05250a2402db4d660ff70088ad163375badb6826
+      ApprovedByRole: ""
+      ApprovedByAgentId: ""
+      IndependentReviewerAgentId: /root/p1_par001_luna
+      IndependentReviewDecision: Pending
+      IndependentReviewBaseCommit: 05250a2402db4d660ff70088ad163375badb6826
+      IndependentReviewHeadCommit: ""
+      CoordinatorDecision: Pending
+      CoordinatorDecisionAgentId: ""
+      Scope: "Correct only ED-0124 R2 AgentPool identities, alphanumeric isolated paths, ED-0101/ED-0109 code pins, and executable frozen Windows CMake/CTest commands. Preserve Goal, ModuleId, ReadSet, WriteSet, dependencies, Acceptance, and no-live-side-effect rules."
+      Reason: "R2 was never assigned; the existing owner/reviewer IDs are absent from AgentPool, its topic suffix is Controller-invalid, and one frozen validation command is PowerShell syntax rejected by WorkflowController."
+      PreserveGoal: true
+      PreserveModuleId: true
+      PreserveReadSet: true
+      PreserveWriteSet: true
+      PreserveDependencies: true
+      PreserveAcceptance: true
+      PreserveNoLiveSideEffects: true
+    SupersededRevision2Evidence:
+      TaskRevision: 2
+      TaskSpecCommit: 05250a2402db4d660ff70088ad163375badb6826
+      TaskSpecBlob: d6fbaa0e59ba377343d92df08adb24c4dfd589b6
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0124-R2-RootCMakeIntegration
+      Worktree: H:/Qbot/EmulativeDialog.ED-0124-R2
+      HeadCommit: ""
+      Reason: >-
+        R2 was never assigned or implemented. The task branch topic would be rejected by WorkflowController, owner and
+        reviewer IDs were stale relative to the stable AgentPool, a PowerShell creation command was not executable by the
+        Controller command runner, and the fixed diff-check baseline was stale. No branch, worktree, or source change began.
     OutOfScope: ["修改 Core/AgentRuntime 源码", "增加 Provider/Channel 运行时", "全仓重构 CMake", "修改依赖版本"]
     DependsOn: [ED-0101, ED-0109]
-    ContractVersion: "Root CMake/C++20 baseline ED-0006; AgentRuntimeVerticalSliceTests TaskRevision 1"
+    ContractVersion: "Root CMake/C++20 baseline ED-0006; AgentRuntimeVerticalSliceTests from ED-0101/R5 Head 27f33aac71d03a1105d4ab038b0a4ba81834f1bb integrated by e2f7246269a2debfed3a164e4f14b8347b5e3ef5; Core policy from ED-0109/R4 merge 77401e7881b819cb5ec9b869a2906343b1d534c6"
     Context:
       ModuleId: RootBuildAndDependencies
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/BuildRelease.yaml, Architecture/Modules/HostCoreAgent.yaml, CMakeLists.txt, Tests/Contract/Agent/CMakeLists.txt]
@@ -1758,7 +1816,15 @@ Tasks:
       - {AcceptanceId: AC-1, Description: "Existing Windows root configuration builds AgentRuntimeVerticalSliceTests without changing dependency pins or unrelated targets.", Evidence: "Native CMake configure/build output for only the new product test target."}
       - {AcceptanceId: AC-2, Description: "Root CTest discovers and passes the focused AgentRuntime.VerticalSlice test.", Evidence: "Targeted CTest output and unchanged prior focused Controller test."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R3.build
+      Toolchain:
+        CompilerPath: C:/msys64/ucrt64/bin/g++.exe
+        CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
+        CMakePath: I:/cmake/bin/cmake.exe
+        CMakeVersion: "cmake version 4.3.0-rc1"
+        CTestPath: I:/cmake/bin/ctest.exe
+        CTestVersion: "ctest version 4.3.0-rc1"
+        Generator: "MinGW Makefiles"
       Coverage:
         Required: false
         NotApplicable: true
@@ -1768,18 +1834,18 @@ Tasks:
         ReportDirectory: ""
       RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0124-R2.build' | Out-Null"
-        - "cmake -S 'H:/Qbot/EmulativeDialog.ED-0124-R2' -B 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' -G 'MinGW Makefiles' -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
-        - "cmake --build 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests --parallel 4"
-        - "ctest --test-dir 'H:/Qbot/EmulativeDialog.ED-0124-R2.build/CMake' --output-on-failure -R 'AgentRuntime.VerticalSlice|WorkflowController.Contract'"
-      ContractFixtures: ["Uses the already frozen FakeProvider and MockChannel synthetic fixtures."]
+        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0124-R3 -B H:/Qbot/EmulativeDialog.ED-0124-R3.build/CMake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
+        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0124-R3.build/CMake --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests --parallel 4"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R3.build/CMake --output-on-failure -R AgentRuntime.VerticalSlice"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R3.build/CMake --output-on-failure -R WorkflowController.Contract"
+      ContractFixtures: ["Uses the frozen FakeProvider and MockChannel synthetic fixtures; no provider, QQ, or external account."]
       StaticChecks:
-        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
-        - "Changed paths exactly equal frozen WriteSet"
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal frozen WriteSet [CMakeLists.txt]"
+        - "No dependency pin or unrelated root target changed."
         - "Production C++ line coverage: NotApplicable; no production C++ implementation source is modified by this task."
       LiveSideEffects: Forbidden
       NotRunReason: "The integration target is offline and uses only synthetic test support."
-    RiskLevel: Medium
     RiskOwnerRole: BuildAndDependencyOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
