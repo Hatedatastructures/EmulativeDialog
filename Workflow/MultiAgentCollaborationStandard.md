@@ -10,14 +10,14 @@
 
 | 槽位 | 稳定 Agent | P1 工作类型 | 职责 |
 |---|---|---|---|
-| Worker01 | /root/worker01_core | 构建/工作流 | Windows 构建、AgentWorkflowController、依赖与集成验证 |
-| Worker02 | /root/worker02_providers | Agent Core/Provider | Codex AgentRuntime、Core 与 Provider 纵向切片 |
-| Worker03 | /root/worker03_memory | Memory/Context | Memory、ContextSelector、会话状态与独立实现 |
-| Worker04 | /root/worker04_reviewer | 独立审查 | 固定 Base/Head 审查、合同与安全边界核验 |
-| Worker05 | /root/worker05_validation | 验证 | Windows 构建、覆盖率、失败复现与独立验证 |
-| Worker06 | /root/worker06_integration | 集成 | 分支预算、PR、冲突处理、最终语义复核与合并 |
+| Worker01 | /root/p1_trace_events_luna | 构建/工作流 | Windows 构建、AgentWorkflowController、依赖与集成验证 |
+| Worker02 | /root/p1_code001_luna | Agent Core/Provider | Codex AgentRuntime、Core 与 Provider 纵向切片 |
+| Worker03 | /root/p1_gov004_luna | Memory/Context | Memory、ContextSelector、会话状态与独立实现 |
+| Worker04 | /root/p2_validation_luna | 独立审查 | 固定 Base/Head 审查、合同与安全边界核验 |
+| Worker05 | /root/p3_validation_luna | 验证 | Windows 构建、覆盖率、失败复现与独立验证 |
+| Worker06 | /root/p1_par001_luna | 集成 | 分支预算、PR、冲突处理、最终语义复核与合并 |
 
-六个 Agent 继承 Coordinator 当前的模型和推理强度，不逐个覆盖模型；宿主无法继承时必须停止分配并如实报告，不得静默换成另一模型。Coordinator 单独负责规划、任务路由、审批和最终集成决定，不计入六个子代理槽。功能角色允许跨阶段复用，但稳定 AgentId 必须保留；任何槽位不得靠重复调查或无产出分析填满。
+六个 Agent 继承 Coordinator 当前的模型和推理强度，不逐个覆盖模型；宿主无法继承时必须停止分配并如实报告，不得静默换成另一模型。Coordinator 单独负责规划、任务路由、审批和最终集成决定，不计入六个子代理槽。功能角色允许跨阶段复用，既有稳定 AgentId 必须保留；任何槽位不得靠重复调查或无产出分析填满。宿主会话恢复时使用 AgentSlotRecovered 记录替代会话引用，不删除原 AgentId。
 
 每次分派的有效并行数为六个配置槽、宿主支持容量、依赖已满足且 WriteSet 独立的 Ready 任务数三者中的最小值。没有独立 Ready 任务时，槽位保持空闲；不得为了填满槽位制造重复工作。相关任务完成后优先复用原稳定槽；宿主会话结束时从检查点恢复，不得声称原会话仍在运行。
 

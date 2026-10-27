@@ -26,10 +26,12 @@ LifecyclePolicy:
     - UserOrCoordinatorExplicitlyClosesTheSlot
 
 Slots:
-  # 六个稳定身份可跨阶段复用；具体任务角色以 Ready TaskSpec 和 Coordinator 分派为准。
+  # Existing AgentIds remain the stable identities. A replacement binding must
+  # be recorded as an explicit, auditable slot migration rather than silently
+  # rewriting the registry.
   - SlotId: Worker01
     RoleFamily: BuildAndWorkflowOwner
-    AgentId: "/root/worker01_core"
+    AgentId: "/root/p1_trace_events_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
@@ -40,7 +42,7 @@ Slots:
     Status: Idle
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
-    AgentId: "/root/worker02_providers"
+    AgentId: "/root/p1_code001_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
@@ -52,7 +54,7 @@ Slots:
     Status: Idle
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
-    AgentId: "/root/worker03_memory"
+    AgentId: "/root/p1_gov004_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
@@ -62,7 +64,7 @@ Slots:
     Status: Idle
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
-    AgentId: "/root/worker04_reviewer"
+    AgentId: "/root/p2_validation_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
@@ -72,7 +74,7 @@ Slots:
     Status: Idle
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
-    AgentId: "/root/worker05_validation"
+    AgentId: "/root/p3_validation_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
@@ -82,7 +84,7 @@ Slots:
     Status: Idle
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
-    AgentId: "/root/worker06_integration"
+    AgentId: "/root/p1_par001_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
