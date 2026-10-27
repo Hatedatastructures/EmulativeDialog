@@ -164,7 +164,16 @@ ChangeRequests:
     TargetTaskRevision: 3
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
+    ApprovedByRole: CoreOwner
+    ApprovedByAgentId: /root/p1_code001_luna
+    IndependentReviewerAgentId: /root/p1_trace_events_luna
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 324cd80c726a56b0e8d6552dfc1ffbc2fca8c167
+    IndependentReviewHeadCommit: 9214759ed666fe853f87d598d352f515e74039f8
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 9214759ed666fe853f87d598d352f515e74039f8
     TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
     Scope: >-
       Preserve ED-0109 Goal, CapabilityIds, direct dependencies, ten-path WriteSet, and 80-percent production Core
@@ -239,7 +248,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现可信身份映射与 Core 聊天策略入口
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02
@@ -249,18 +258,20 @@ Tasks:
     ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0109-R4-CorePolicy
+    Branch: Task/ED-0109-R4CorePolicy
     Worktree: H:/Qbot/EmulativeDialog.ED-0109-R4
-    BaselineCommit: ""
+    BaselineCommit: 9214759ed666fe853f87d598d352f515e74039f8
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0109-R4.build
     CurrentRevisionChangeRequest:
       ChangeRequestId: CR-ED-0109-002
       FromRevision: 3
       ToRevision: 4
-      Decision: Proposed
+      Decision: Accepted
       IndependentReviewerAgentId: /root/p1_trace_events_luna
-      IndependentReviewDecision: Pending
-      CoordinatorDecision: Pending
+      IndependentReviewDecision: Approve
+      CoordinatorDecision: Accepted
+      ReviewBaseCommit: 324cd80c726a56b0e8d6552dfc1ffbc2fca8c167
+      ReviewHeadCommit: 9214759ed666fe853f87d598d352f515e74039f8
     SupersededRevision3Evidence:
       TaskRevision: 3
       TaskSpecCommit: 68e83fa16f5fddd2c9c75baee1d64bff04111a93
