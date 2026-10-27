@@ -270,14 +270,21 @@ ChangeRequests:
     ProposedTaskRevision: 8
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
+    ApprovedByRole: Coordinator
+    ApprovedByAgentId: /root
     Supersedes: CR-ED-0124-006
     ProposedTaskSpecBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
     OwnerReviewDecision: Approve
     OwnerReviewerAgentId: /root/p1_trace_events_luna
     OwnerReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
     IndependentReviewerAgentId: /root/p1_par001_luna
-    IndependentReviewDecision: Pending
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
+    IndependentReviewHeadCommit: 562e507e10ea49e458559ac48379923c6501ba61
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 562e507e10ea49e458559ac48379923c6501ba61
     Scope: >-
       Add the existing CMakePresets.json to ED-0124 ReadSet/WriteSet. Keep the generic windows-mingw build/test presets
       unfiltered and usable by adding required GCOV_EXECUTABLE, absolute AGENT_RUNTIME_REPORT_DIR, and PATH-resolved
@@ -1857,7 +1864,7 @@ Tasks:
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 与可复用 Preset
     TaskKind: Build
-    State: Blocked
+    State: Ready
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -1869,6 +1876,7 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0124-R8RootCMakePresetIntegration
     Worktree: H:/Qbot/EmulativeDialog.ED-0124-R8
+    BaselineCommit: 562e507e10ea49e458559ac48379923c6501ba61
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -1895,19 +1903,20 @@ Tasks:
       ToRevision: 8
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: Proposed
+      Decision: Accepted
       ProposedTaskSpecBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
-      ApprovedByRole: ""
-      ApprovedByAgentId: ""
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
       OwnerReviewDecision: Approve
       OwnerReviewerAgentId: /root/p1_trace_events_luna
       OwnerReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
       IndependentReviewerAgentId: /root/p1_par001_luna
-      IndependentReviewDecision: Pending
+      IndependentReviewDecision: Approve
       IndependentReviewBaseCommit: 17094f99bffd25d170c49b890449ac863f539aa3
-      IndependentReviewHeadCommit: ""
-      CoordinatorDecision: Pending
-      CoordinatorDecisionAgentId: ""
+      IndependentReviewHeadCommit: 562e507e10ea49e458559ac48379923c6501ba61
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionHeadCommit: 562e507e10ea49e458559ac48379923c6501ba61
       Scope: >-
         Preserve the ED-0124/R7 product behavior and add the existing CMakePresets.json to ReadSet/WriteSet. Define
         task-specific Windows configure/build/test presets. Add the required GCOV_EXECUTABLE, absolute AgentRuntime
