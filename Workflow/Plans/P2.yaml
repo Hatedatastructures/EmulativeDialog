@@ -169,11 +169,12 @@ ChangeRequests:
     Scope: >-
       Preserve ED-0109 Goal, CapabilityIds, direct dependencies, ten-path WriteSet, and 80-percent production Core
       coverage requirement. Freeze the CoreAuthorizedAction typed read API and private CoreChatService-only
-      construction, a typed CoreActionIdSource seam that lets tests pre-script correlated IDs without constructing
-      actions, the FakeChannel test path within the existing Core test file, the CoreAgent-compatible
+      construction. Extend its ReadSet with Standards/CppEngineeringStandard.md and Standards/SecurityAndPrivacy.md,
+      keeping the 12-file reference cap. Freeze a typed CoreActionIdSource seam that lets tests pre-script correlated
+      IDs without constructing actions and AC-7, the FakeChannel test path within the existing Core test file, the CoreAgent-compatible
       AgentRunResult-to-CoreAgent state/error mapping including typed OutputLimitReached, the provider contract V1.2 frozen pin, the SharedLock shared with ED-0125, and the
-      absolute Windows GCC/gcov commands and tool versions. Add an ID-only CoreActionIdSource injection seam and
-      AC-7 so ED-0125 can pre-script correlated receipts while CoreChatService remains the sole action constructor.
+      absolute Windows GCC/gcov commands and tool versions with each gcov invocation failing fast on nonzero exit,
+      so ED-0125 can pre-script correlated receipts while CoreChatService remains the sole action constructor.
       Refresh the stable Owner/Reviewer AgentIds and R4 paths.
       Keep R4 Blocked until this CR is independently reviewed and the Coordinator freezes BaselineCommit at assignment.
     Reason: >-
