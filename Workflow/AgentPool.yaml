@@ -37,7 +37,7 @@ Slots:
       - RootBuildAndDependencies
       - AgentWorkflowController
     CurrentTaskId: "ED-0124/R6"
-    Status: Assigned
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
