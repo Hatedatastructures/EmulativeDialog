@@ -237,6 +237,36 @@ ChangeRequests:
     PreserveGoal: true
     PreserveDependencies: true
 
+  - ChangeRequestId: CR-ED-0101-002
+    TargetTaskId: ED-0101
+    TargetTaskRevision: 3
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    IndependentReviewerAgentId: /root/p1_trace_events_luna
+    IndependentReviewDecision: Pending
+    ReviewBaseCommit: 1114d44460534062474b3ead07cd1db19ff4565c
+    TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+    Scope: >-
+      Preserve ED-0101 Goal, CapabilityIds, dependencies, WriteSet, out-of-scope boundaries, and the 80-percent
+      AgentRuntime.cpp line-coverage threshold. Update Owner/Reviewer AgentIds to their current stable slots,
+      pin ModelProviderContract V1.2 frozen at ED-0130/R1, add CoreChatService.h within the 12-reference cap,
+      define typed AgentRunResult behavior for final/refusal, empty text, ToolHandoff, and OutputLimitReached,
+      and replace unpinned validation commands with exact Windows CMake/CTest/GCC/gcov paths and versions,
+      including fail-fast gcov error propagation. Bind R4 branch, worktree, and build paths. Keep R4 Blocked
+      until independent review and assignment-time dependency validation.
+    Reason: >-
+      R3 points to retired Owner/Reviewer sessions, references ModelProvider V1.1 after V1.2 was frozen,
+      omits CoreChatService.h even though the vertical slice uses that API, and cannot reproduce its CMake,
+      compiler, or coverage commands deterministically. The acceptance also needs to prove that AgentRuntime
+      returns typed results and does not turn output-limit, partial text, empty text, unsupported ToolHandoff,
+      cancellation, or unknown outcome into an authorized channel send.
+    PreserveGoal: true
+    PreserveCapabilityIds: true
+    PreserveDependencies: true
+    PreserveWriteSet: true
+    PreserveOutOfScope: true
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -524,7 +554,7 @@ Tasks:
       FollowUpTaskIds: [ED-0125, ED-0101, ED-0108, ED-0110, ED-0111, ED-0115]
 
   - TaskId: ED-0101
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-06
     Title: 实现 C++ AgentRuntime 首轮循环与产品纵向切片
     TaskKind: CapabilitySlice
@@ -532,14 +562,14 @@ Tasks:
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
-    OwnerAgentId: "/root/agent_core"
+    OwnerAgentId: "/root/p1_code001_luna"
     ReviewerRole: MemoryContextOwner
     ReviewerSlotId: Worker06
-    ReviewerAgentId: "/root/memory_context"
+    ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0101-R3-AgentRuntimeSlice
-    Worktree: H:/Qbot/EmulativeDialog.ED-0101-R3
+    Branch: Task/ED-0101-R4-AgentRuntimeSlice
+    Worktree: H:/Qbot/EmulativeDialog.ED-0101-R4
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -551,16 +581,22 @@ Tasks:
       HeadCommit: ""
       Reason: "Worker06 fixed TaskSpec readiness review found that the end-to-end slice must depend on the separate ED-0125 MockChannel migration to the Core-only CoreAuthorizedAction type. No branch or source write began."
     RevisionChangeRequest:
-      ChangeRequestId: CR-ED-0101-001
+      ChangeRequestId: CR-ED-0101-002
+      FromRevision: 3
+      ToRevision: 4
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: Accepted
-      ApprovedByRole: Coordinator
-      ApprovedByAgentId: /root
-      Scope: "Preserve ED-0101 Goal, Acceptance, ReadSet/WriteSet, owner, and reviewer; add ED-0125 as an explicit dependency before compiling the vertical slice."
-      Reason: "The first-slice test must compile against the Core-owned authorization type without allowing the old MockChannel test stand-in to shadow it."
-      PreserveGoalAcceptanceWriteSet: true
-      PreserveOwnerReviewer: true
+      Decision: Proposed
+      IndependentReviewerAgentId: /root/p1_trace_events_luna
+      IndependentReviewDecision: Pending
+      CoordinatorDecision: Pending
+      Scope: "Correct stale AgentIds, Provider V1.2 pin, CoreChatService ReadSet, typed terminal/output-limit acceptance, and absolute Windows build/coverage commands while preserving the approved first-slice task scope."
+      Reason: "The R3 spec is not executable with the present AgentPool or toolchain and does not explicitly test the typed no-send boundary for truncated or unsupported results."
+      PreserveGoal: true
+      PreserveCapabilityIds: true
+      PreserveDependencies: true
+      PreserveWriteSet: true
+      PreserveOutOfScope: true
     SupersededRevision2Evidence:
       TaskRevision: 2
       TaskSpecCommit: 35620b0fff5a5c95961c583eeee04db076fe71c1
@@ -581,6 +617,19 @@ Tasks:
       Scope: "Preserve ED-0101/R2 Goal, Acceptance, WriteSet, dependencies, Owner, and Reviewer. Bind the task build/worktree paths and add exact Windows C++20 coverage instrumentation, execution, gcov, and report-location commands."
       Reason: "The frozen validation commands used an undefined TaskBuildDir token and could not produce the AC-4 coverage evidence."
       PreserveGoalAcceptanceWriteSetDependencies: true
+    SupersededRevision3Evidence:
+      TaskRevision: 3
+      TaskSpecCommit: 9ae889971c10e118a23ab56af738d74689f10a44
+      TaskSpecBlob: 718dc4a383aa2a1169cc5e7df87fdd84fc187a8c
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0101-R3-AgentRuntimeSlice
+      Worktree: H:/Qbot/EmulativeDialog.ED-0101-R3
+      HeadCommit: ""
+      PriorRevisionChangeRequestId: CR-ED-0101-001
+      Reason: >-
+        R3 is superseded before code changes to correct stale task identities, the provider contract pin, authorized
+        context, result acceptance and Windows build/coverage command pins. No implementation worktree or source write began.
     CapabilityIds: [AgentTurnOrchestration]
     Goal: >-
       实现一个完整 C++ AgentRuntime turn：消费 Core 授权的上下文，调用 ModelProviderPort，校验事件关联与唯一终态，
@@ -589,7 +638,7 @@ Tasks:
     DependsOn: [ED-0109, ED-0125, ED-0015, ED-0016, ED-0018, ED-0020]
     ContractVersion:
       - Architecture/Contracts/CoreAgentContract.md V1
-      - Architecture/Contracts/ModelProviderContract.md V1.1
+      - Architecture/Contracts/ModelProviderContract.md V1.2 Frozen (ED-0130/R1 merge bd2ecf0c3a9f096c34a28de66745391eb76673ff; blob dbf47b1deed06db79adec0b3b0a621a93ac5876b)
       - Architecture/Contracts/ChannelAdapterContract.md V1
     Context:
       ModuleId: AgentRuntime
@@ -601,6 +650,7 @@ Tasks:
         - Architecture/Modules/HostCoreAgent.yaml
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/ModelProviderContract.md
+        - Source/Core/CoreChatService.h
         - Source/Core/AgentRuntimePort.h
         - Source/Providers/Contracts/ModelProviderPort.h
         - Tests/Contract/Providers/Contracts/FakeProvider.h
@@ -625,8 +675,8 @@ Tasks:
         Description: "AgentRuntime creates one provider request from the Core-authorized context and enforces request/turn/sequence correlation."
         Evidence: "FakeProvider captured request and contract assertions for malformed, duplicate, or mismatched events."
       - AcceptanceId: AC-2
-        Description: "Partial text is never sent; only ResponseCompleted with an allowed final/refusal result can reach Core as final text."
-        Evidence: "Failure, cancellation, output limit, unknown outcome, incomplete tool handoff, and invalid stream tests produce no Channel.SendAction call."
+        Description: "Only a non-empty ResponseCompleted(FinalAnswer/Refusal) may produce AgentRunResult::ResponseReady. ToolHandoff and empty final text fail closed; ResponseOutputLimited maps to typed OutputLimitReached, while provider failure, cancellation and unknown outcome keep their distinct typed results. None can create a CoreAuthorizedAction or call Channel.SendAction."
+        Evidence: "FakeProvider tests assert ToolHandoff/empty-text rejection, typed OutputLimitReached, Failure, Cancelled, Unsupported and UnknownOutcome, one terminal only, no partial-text delivery, and zero Channel.SendAction calls for every non-final result; vertical test completes only after the exact correlated Succeeded receipt."
       - AcceptanceId: AC-3
         Description: "A Windows-native C++20 build target executes the complete Mock-to-Mock vertical slice and verifies a correlated Succeeded receipt."
         Evidence: "AgentRuntimeVerticalSliceTests CTest output covers inbound identity, provider turn, action correlation, and one receipt."
@@ -634,39 +684,55 @@ Tasks:
         Description: "Changed production Agent sources meet at least 80 percent line coverage."
         Evidence: "Fresh build gcov report with per-source denominator, exclusions, and tool version in ReviewBundle."
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0101-R3.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0101-R4.build
+      Toolchain:
+        CompilerPath: C:/msys64/ucrt64/bin/g++.exe
+        CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
+        CoveragePath: C:/msys64/ucrt64/bin/gcov.exe
+        CoverageVersion: "gcov (Rev5, Built by MSYS2 project) 16.1.0"
+        CMakePath: I:/cmake/bin/cmake.exe
+        CMakeVersion: "cmake version 4.3.0-rc1"
+        CTestPath: I:/cmake/bin/ctest.exe
+        CTestVersion: "ctest version 4.3.0-rc1"
+        Generator: "MinGW Makefiles"
+        MakeProgram: C:/msys64/ucrt64/bin/mingw32-make.exe
       Coverage:
         Required: true
         ProductionSources: [Source/Agent/AgentRuntime.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0101-R3.build/Reports
+        ReportFormat: gcov JSON v2
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0101-R4.build/Reports
       RequiredTargets: [AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests]
       TargetedBuild:
-        - "cmake -S Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0101-R3.build/Cmake -DCMAKE_CXX_STANDARD=20 -DBUILD_TESTING=ON -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
-        - "cmake --build H:/Qbot/EmulativeDialog.ED-0101-R3.build/Cmake --target AgentRuntimeContractTests AgentRuntimeVerticalSliceTests --parallel 4"
-        - "ctest --test-dir H:/Qbot/EmulativeDialog.ED-0101-R3.build/Cmake --output-on-failure -R AgentRuntime"
-        - "New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects,H:/Qbot/EmulativeDialog.ED-0101-R3.build/Reports | Out-Null"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Source/Agent/AgentRuntime.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntime.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Source/Core/IdentityPolicy.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/IdentityPolicy.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Source/Core/OperationRecord.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/OperationRecord.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Source/Core/CoreChatService.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/CoreChatService.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Tests/Contract/Providers/Contracts/FakeProvider.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/FakeProvider.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/MockChannelAdapter.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Tests/Contract/Agent/AgentRuntimeContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntimeContractTests.o"
-        - "g++ --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I. -c Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntimeVerticalSliceTests.o"
-        - "g++ --coverage H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntime.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/IdentityPolicy.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/OperationRecord.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/CoreChatService.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntimeContractTests.o -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/AgentRuntimeContractCoverageTests.exe"
-        - "g++ --coverage H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntime.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/IdentityPolicy.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/OperationRecord.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/CoreChatService.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntimeVerticalSliceTests.o -o H:/Qbot/EmulativeDialog.ED-0101-R3.build/AgentRuntimeVerticalSliceCoverageTests.exe"
-        - "H:/Qbot/EmulativeDialog.ED-0101-R3.build/AgentRuntimeContractCoverageTests.exe"
-        - "H:/Qbot/EmulativeDialog.ED-0101-R3.build/AgentRuntimeVerticalSliceCoverageTests.exe"
-      ContractFixtures: ["FakeProvider final/failed/cancelled/unknown events; MockChannel trusted ingress and correlated receipt."]
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0101-R4/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake -G 'MinGW Makefiles' -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_STANDARD=20 -DBUILD_TESTING=ON -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake --target AgentRuntimeContractTests AgentRuntimeVerticalSliceTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake --output-on-failure -R AgentRuntime"
+        - "New-Item -ItemType Directory -Force -Path H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects,H:/Qbot/EmulativeDialog.ED-0101-R4.build/Reports | Out-Null"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Source/Agent/AgentRuntime.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntime.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Source/Core/IdentityPolicy.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/IdentityPolicy.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Source/Core/OperationRecord.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/OperationRecord.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Source/Core/CoreChatService.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/CoreChatService.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Tests/Contract/Providers/Contracts/FakeProvider.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/FakeProvider.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/MockChannelAdapter.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Tests/Contract/Agent/AgentRuntimeContractTests.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntimeContractTests.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I H:/Qbot/EmulativeDialog.ED-0101-R4 -c H:/Qbot/EmulativeDialog.ED-0101-R4/Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntimeVerticalSliceTests.o"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntime.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/IdentityPolicy.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/OperationRecord.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/CoreChatService.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntimeContractTests.o -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/AgentRuntimeContractCoverageTests.exe"
+        - "C:/msys64/ucrt64/bin/g++.exe --coverage H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntime.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/IdentityPolicy.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/OperationRecord.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/CoreChatService.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/FakeProvider.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/MockChannelAdapter.o H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntimeVerticalSliceTests.o -o H:/Qbot/EmulativeDialog.ED-0101-R4.build/AgentRuntimeVerticalSliceCoverageTests.exe"
+        - "H:/Qbot/EmulativeDialog.ED-0101-R4.build/AgentRuntimeContractCoverageTests.exe"
+        - "H:/Qbot/EmulativeDialog.ED-0101-R4.build/AgentRuntimeVerticalSliceCoverageTests.exe"
+      ContractFixtures: ["FakeProvider final/failed/cancelled/output-limited/unknown events; MockChannel trusted ingress and correlated receipt."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal frozen WriteSet"
-        - "gcov --version"
-        - "powershell -NoProfile -Command \"Push-Location 'H:/Qbot/EmulativeDialog.ED-0101-R3.build/Reports'; try { gcov --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0101-R3.build/Objects/AgentRuntime.o' 'H:/Qbot/EmulativeDialog.ED-0101-R3/Source/Agent/AgentRuntime.cpp' } finally { Pop-Location }\""
-        - "Verify AgentRuntime.cpp line coverage is >=80 percent with numerator, denominator, exclusions, and gcov version; retain reports only under BuildDirectory/Reports."
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "I:/cmake/bin/cmake.exe --version"
+        - "I:/cmake/bin/ctest.exe --version"
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"Push-Location 'H:/Qbot/EmulativeDialog.ED-0101-R4.build/Reports'; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0101-R4.build/Objects/AgentRuntime.o' 'H:/Qbot/EmulativeDialog.ED-0101-R4/Source/Agent/AgentRuntime.cpp'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } } finally { Pop-Location }\""
+        - "Verify only the unique gcov JSON v2 files[].file record matching Source/Agent/AgentRuntime.cpp; count executable lines, exclude headers/standard library, and require >=80 percent."
+        - "Retain generated reports and profile files only under TaskBuildDirectory/Reports and TaskBuildDirectory/Objects."
       LiveSideEffects: Forbidden
-      NotRunReason: "The test uses only synthetic MockChannel/FakeProvider fixtures and no credentials or external accounts."
+      NotRunReason: "The first-slice tests use only synthetic MockChannel/FakeProvider fixtures; no provider network, credentials, or live QQ account."
     RiskLevel: High
     RiskOwnerRole: AgentRuntimeOwner
     RequiresCredentials: false
