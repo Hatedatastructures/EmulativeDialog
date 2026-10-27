@@ -661,7 +661,7 @@ ChangeRequests:
     ProposedTaskRevision: 2
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
     TaskRevisionTransition: {FromRevision: 1, ToRevision: 2}
     Scope: >-
       Preserve ED-0131/R1 Goal, WriteSet, Acceptance, Owner, Reviewer, dependencies, Boost pin, security boundaries,
@@ -693,8 +693,19 @@ ChangeRequests:
         - "I:/cmake/bin/ctest --preset windows-agent-slice --no-tests=error"
         - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
         - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
-    OwnerReviewDecision: Pending
-    IndependentReviewDecision: Pending
+    OwnerReviewAgentId: /root/p1_trace_events_luna
+    OwnerReviewDecision: Approve
+    OwnerReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    OwnerReviewHeadCommit: 8ef311ff6f3541548f85a5b5088d85674542f5b9
+    OwnerReviewFindingCount: 0
+    IndependentReviewerAgentId: /root/p1_par001_luna
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    IndependentReviewHeadCommit: 8ef311ff6f3541548f85a5b5088d85674542f5b9
+    IndependentReviewFindingCount: 0
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 8ef311ff6f3541548f85a5b5088d85674542f5b9
     PreserveGoal: true
     PreserveReadSet: false
     PreserveWriteSet: true
@@ -703,6 +714,11 @@ ChangeRequests:
     PreserveOwnerReviewer: true
     PreserveDependencies: true
     PreserveNoLiveSideEffects: true
+    ReviewEvidence:
+      OwnerReviewEventId: 54f41a27-8de2-4c3f-b1ab-5ae33a9569fb
+      IndependentReviewEventId: 9e16d3c7-1dc4-4662-9f62-ce12dcbf4c31
+      ChangeRequestApprovalEventId: ec86bcf8-6c1e-40c2-94eb-7e164a5f7423
+      ReadinessEventId: 452f4b46-812e-44e2-9cbe-390e69102f55
 
 ParallelGroups:
   - GroupId: FirstProductSlice
@@ -2565,7 +2581,7 @@ Tasks:
     EpicId: EP-06
     Title: 建立固定 Boost.Asio 1.92.0 的 C++20 协程构建基线
     TaskKind: Build
-    State: Proposed
+    State: Ready
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -2577,15 +2593,15 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0131-BoostAsioBuildFoundationR2
     Worktree: H:/Qbot/EmulativeDialog.ED-0131-R2
-    BaselineCommit: ""
+    BaselineCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
     TaskSpecChangeRequestId: CR-ED-0131-002
     RevisionChangeRequest:
       ChangeRequestId: CR-ED-0131-002
       FromRevision: 1
       ToRevision: 2
-      Decision: Proposed
-      OwnerReviewDecision: Pending
-      IndependentReviewDecision: Pending
+      Decision: Accepted
+      OwnerReviewDecision: Approve
+      IndependentReviewDecision: Approve
       Scope: "Preserve the accepted R1 Goal, WriteSet, Acceptance, Owner, Reviewer, dependencies, and safety boundary. Add CMakePresets.json to ReadSet; use windows-agent-slice configure/build/test presets for tests that need preset PATH; split direct BuildProbe filters; require --no-tests=error on every CTest command; advance branch, worktree, and build paths to R2."
       Reason: "R1 was approved and Ready but, before assignment, Owner review found that raw ctest --test-dir would not load the preset PATH required by WorkflowController.Contract. R2 changes Controller/AgentRuntime tests to use the preset environment and adds --no-tests=error so absent probe registrations fail instead of returning a vacuous success. No code branch or source change began."
       PreserveGoal: true
