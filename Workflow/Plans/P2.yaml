@@ -278,6 +278,35 @@ ChangeRequests:
     PreserveWriteSet: true
     PreserveOutOfScope: true
 
+  - ChangeRequestId: CR-ED-0101-003
+    TargetTaskId: ED-0101
+    TargetTaskRevision: 4
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    IndependentReviewerAgentId: /root/p1_trace_events_luna
+    IndependentReviewDecision: Pending
+    ReviewBaseCommit: 2588611aa74c75d080bb853ee1fd35e8a6623825
+    TaskRevisionTransition: {FromRevision: 4, ToRevision: 5}
+    Scope: >-
+      Preserve the accepted ED-0101/R4 goal, capability, dependencies, WriteSet, ReadSet, Acceptance, toolchain,
+      Owner/Reviewer identities, and product/security boundary. Change only the revision-specific Branch,
+      Worktree, TaskBuildDirectory, and corresponding validation paths to a TaskRevision 5 branch topic containing
+      only alphanumeric characters after Task/ED-0101-. Keep the task Blocked until this CR is independently
+      reviewed and a new assignment baseline is frozen.
+    Reason: >-
+      WorkflowController validates that the branch topic after Task/<TaskId>- contains only alphanumeric characters.
+      The accepted R4 topic R4-AgentRuntimeSlice includes a hyphen and failed validate-assignment with exit code 1;
+      no branch, worktree, TaskAssigned event, or source change was created. R5 will use the valid topic
+      R5AgentRuntimeSlice and matching revision-specific worktree/build paths.
+    PreserveGoal: true
+    PreserveCapabilityIds: true
+    PreserveDependencies: true
+    PreserveAcceptance: true
+    PreserveReadSet: true
+    PreserveWriteSet: true
+    PreserveOwnerReviewer: true
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -565,7 +594,7 @@ Tasks:
       FollowUpTaskIds: [ED-0125, ED-0101, ED-0108, ED-0110, ED-0111, ED-0115]
 
   - TaskId: ED-0101
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-06
     Title: 实现 C++ AgentRuntime 首轮循环与产品纵向切片
     TaskKind: CapabilitySlice
@@ -579,8 +608,8 @@ Tasks:
     ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0101-R4-AgentRuntimeSlice
-    Worktree: H:/Qbot/EmulativeDialog.ED-0101-R4
+    Branch: Task/ED-0101-R5AgentRuntimeSlice
+    Worktree: H:/Qbot/EmulativeDialog.ED-0101-R5
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -592,28 +621,24 @@ Tasks:
       HeadCommit: ""
       Reason: "Worker06 fixed TaskSpec readiness review found that the end-to-end slice must depend on the separate ED-0125 MockChannel migration to the Core-only CoreAuthorizedAction type. No branch or source write began."
     RevisionChangeRequest:
-      ChangeRequestId: CR-ED-0101-002
-      FromRevision: 3
-      ToRevision: 4
+      ChangeRequestId: CR-ED-0101-003
+      FromRevision: 4
+      ToRevision: 5
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      ApprovedByRole: AgentRuntimeOwner
-      ApprovedByAgentId: /root/p1_code001_luna
-      Decision: Accepted
+      Decision: Proposed
       IndependentReviewerAgentId: /root/p1_trace_events_luna
-      IndependentReviewBaseCommit: 1114d44460534062474b3ead07cd1db19ff4565c
-      IndependentReviewHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
-      CoordinatorDecisionAgentId: /root
-      CoordinatorDecisionHeadCommit: 218d9b7b30f3995024fec07b99f5c3d3a2be123a
-      IndependentReviewDecision: Approve
-      CoordinatorDecision: Accepted
-      Scope: "Correct stale AgentIds, Provider V1.2 pin, CoreChatService ReadSet, typed terminal acceptance with Core-approved retry-unavailable/exhausted OutputLimitReached semantics, and absolute Windows build/coverage commands while preserving the approved first-slice task scope."
-      Reason: "R3 is not executable with the current AgentPool/toolchain and omits the CoreAgent V1 OutputLimitReached retry condition; R4 has no continuation seam and must not autonomously retry or compact."
+      IndependentReviewDecision: Pending
+      CoordinatorDecision: Pending
+      Scope: "Change only ED-0101 R4 revision-specific Branch, Worktree, and TaskBuildDirectory to an alphanumeric Controller-accepted branch topic and matching R5 paths. Preserve the accepted Goal, capability, contract pins, ReadSet/WriteSet, dependencies, Acceptance, Owner/Reviewer identities, validation tools, security boundaries, and no-live-side-effect rule."
+      Reason: "The R4 branch topic R4-AgentRuntimeSlice contains a hyphen, but WorkflowController IsAllowedBranch accepts only alphanumeric characters after Task/<TaskId>-. Assignment validation failed with exit 1 before a branch or worktree was created. R5 uses Task/ED-0101-R5AgentRuntimeSlice; no code work began."
       PreserveGoal: true
       PreserveCapabilityIds: true
       PreserveDependencies: true
+      PreserveAcceptance: true
+      PreserveReadSet: true
       PreserveWriteSet: true
-      PreserveOutOfScope: true
+      PreserveOwnerReviewer: true
     SupersededRevision2Evidence:
       TaskRevision: 2
       TaskSpecCommit: 35620b0fff5a5c95961c583eeee04db076fe71c1
@@ -647,6 +672,21 @@ Tasks:
       Reason: >-
         R3 is superseded before code changes to correct stale task identities, the provider contract pin, authorized
         context, result acceptance and Windows build/coverage command pins. No implementation worktree or source write began.
+    SupersededRevision4Evidence:
+      TaskRevision: 4
+      TaskSpecCommit: c41bdc87fb10a70bfbe86ba7b0eb1cc692d0e6d3
+      TaskSpecBlob: 234ebc893e90bf5f30fff805fff9af1d655c26cd
+      State: Blocked
+      Disposition: SupersededBeforeCodeChanges
+      Branch: Task/ED-0101-R4-AgentRuntimeSlice
+      Worktree: H:/Qbot/EmulativeDialog.ED-0101-R4
+      AttemptedBaselineCommit: 2588611aa74c75d080bb853ee1fd35e8a6623825
+      AssignmentValidationExitCode: 1
+      HeadCommit: ""
+      PriorRevisionChangeRequestId: CR-ED-0101-002
+      Reason: >-
+        The accepted R4 TaskSpec was not assigned because its branch topic fails the WorkflowController alphanumeric
+        suffix rule. The assignment validation failed before branch/worktree creation; no code changes occurred.
     CapabilityIds: [AgentTurnOrchestration]
     Goal: >-
       实现一个完整 C++ AgentRuntime turn：消费 Core 授权的上下文，调用 ModelProviderPort，校验事件关联与唯一终态，
@@ -701,7 +741,7 @@ Tasks:
         Description: "Changed production Agent sources meet at least 80 percent line coverage."
         Evidence: "Fresh build gcov report with per-source denominator, exclusions, and tool version in ReviewBundle."
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0101-R4.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0101-R5.build
       Toolchain:
         CompilerPath: C:/msys64/ucrt64/bin/g++.exe
         CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
@@ -718,13 +758,13 @@ Tasks:
         ProductionSources: [Source/Agent/AgentRuntime.cpp]
         MinimumLinePercent: 80
         ReportFormat: gcov JSON v2
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0101-R4.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0101-R5.build/Reports
       RequiredTargets: [AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests]
       TargetedBuild:
-        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0101-R4/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0101-R4.build/Reports -DCMAKE_CXX_STANDARD=20 -DBUILD_TESTING=ON -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
-        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake --target AgentRuntimeContractTests AgentRuntimeVerticalSliceTests --parallel 4"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake --output-on-failure -R AgentRuntime"
-        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0101-R4.build/Cmake --target AgentRuntimeCoverageReport --parallel 4"
+        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0101-R5/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0101-R5.build/Cmake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0101-R5.build/Reports -DCMAKE_CXX_STANDARD=20 -DBUILD_TESTING=ON -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage"
+        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0101-R5.build/Cmake --target AgentRuntimeContractTests AgentRuntimeVerticalSliceTests --parallel 4"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0101-R5.build/Cmake --output-on-failure -R AgentRuntime"
+        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0101-R5.build/Cmake --target AgentRuntimeCoverageReport --parallel 4"
       ContractFixtures: ["FakeProvider final/failed/cancelled/output-limited/unknown events; MockChannel trusted ingress and correlated receipt."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
