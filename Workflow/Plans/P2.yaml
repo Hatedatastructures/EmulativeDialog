@@ -248,7 +248,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现可信身份映射与 Core 聊天策略入口
     TaskKind: CapabilitySlice
-    State: Verified
+    State: MergeQueued
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02
