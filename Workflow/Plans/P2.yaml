@@ -339,7 +339,8 @@ ChangeRequests:
     ProposedBranch: Task/ED-0124-R9RootCMakePresetIntegration
     ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0124-R9
     ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R9.build
-    ProposedTaskKind: Integration
+    ProposedTaskKind: IntegrationTask
+    ProposedTaskKindEvidenceRefs: ["Workflow/Plans/P2.yaml#TaskId=ED-0110", "Workflow/Plans/P2.yaml#TaskId=ED-0120"]
     ProposedModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
     ProposedContextModuleId: RootBuildAndDependencies
     ProposedAdditionalModuleIds: [AgentWorkflowController]
@@ -2053,7 +2054,8 @@ Tasks:
       ProposedBranch: Task/ED-0124-R9RootCMakePresetIntegration
       ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0124-R9
       ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R9.build
-      ProposedTaskKind: Integration
+      ProposedTaskKind: IntegrationTask
+      ProposedTaskKindEvidenceRefs: ["Workflow/Plans/P2.yaml#TaskId=ED-0110", "Workflow/Plans/P2.yaml#TaskId=ED-0120"]
       ProposedModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
       ProposedContextModuleId: RootBuildAndDependencies
       ProposedAdditionalModuleIds: [AgentWorkflowController]
