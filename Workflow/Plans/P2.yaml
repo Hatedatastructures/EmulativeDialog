@@ -26,7 +26,7 @@ TaskSpecRegistration:
     - ED-0111
     - ED-0112
     - ED-0115
-  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125]
+  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125, ED-0131]
   AllTaskSpecsFrozenBeforeAssignment: true
 
 ChangeRequests:
@@ -599,6 +599,126 @@ ChangeRequests:
     PreserveReadSet: true
     PreserveWriteSet: true
     PreserveOwnerReviewer: true
+
+  - ChangeRequestId: CR-ED-0131-001
+    TargetTaskId: ED-0131
+    ProposedTaskRevision: 1
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    ApprovedByRole: Coordinator
+    ApprovedByAgentId: /root
+    OwnerReviewAgentId: /root/p1_trace_events_luna
+    OwnerReviewDecision: Approve
+    OwnerReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    OwnerReviewHeadCommit: d5e5d5d2eafbb0e2aad73fef81ce20e3e6c72763
+    OwnerReviewFindingCount: 0
+    IndependentReviewerAgentId: /root/p1_par001_luna
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    IndependentReviewHeadCommit: d5e5d5d2eafbb0e2aad73fef81ce20e3e6c72763
+    IndependentReviewFindingCount: 0
+    CoordinatorDecisionHeadCommit: d5e5d5d2eafbb0e2aad73fef81ce20e3e6c72763
+    Scope: >-
+      Register a Windows-native C++20 build task that consumes the already pinned Boost 1.92.0 superproject commit,
+      exposes one reusable CMake interface target for Boost.Asio headers, and compiles/runs a coroutine probe using
+      awaitable, co_spawn, an io_context, and the selected executor. Keep all fetched dependency sources, CMake outputs,
+      reports, and logs under the central task sibling build directory. Do not change the Boost pin, provider/core
+      contracts, TLS policy, provider adapters, or runtime package.
+    Reason: >-
+      ED-0124/R9 is now merged and unlocks the next C++20 product work. The repository pins Boost 1.92.0 but has never
+      compiled that dependency with the Windows MinGW toolchain; the local MSYS2 headers are Boost 1.91 and cannot
+      serve as evidence for the pinned version. A pinned coroutine build target is required before asynchronous
+      Provider and AgentRuntime contracts can depend on Asio.
+    ProposedModuleId: RootBuildAndDependencies
+    ProposedOwnerSlotId: Worker01
+    ProposedReviewerSlotId: Worker06
+    ProposedWriteSet:
+      - CMakeLists.txt
+      - CMake/BoostAsioDependency.cmake
+      - CMake/BoostAsioCoroutineProbe.cpp
+      - Standards/DependencyPolicy.md
+    ProposedAcceptanceIds: [AC-1, AC-2, AC-3, AC-4]
+    ProposedValidation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0131.build
+      FetchContentBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131/Dependencies
+      Configure: "I:/cmake/bin/cmake --preset windows-agent-slice -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131/Dependencies -DBUILD_TESTING=ON"
+      Builds:
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --parallel 4"
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --target BoostAsioCoroutineProbe BuildProbe --parallel 4"
+      Tests:
+        - "I:/cmake/bin/ctest --preset windows-agent-slice"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0131.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0131.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
+    OwnerReviewDecision: Approve
+    IndependentReviewDecision: Approve
+    RiskLevel: Medium
+    NoLiveSideEffects: true
+
+  - ChangeRequestId: CR-ED-0131-002
+    TargetTaskId: ED-0131
+    TargetTaskRevision: 1
+    ProposedTaskRevision: 2
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    TaskRevisionTransition: {FromRevision: 1, ToRevision: 2}
+    Scope: >-
+      Preserve ED-0131/R1 Goal, WriteSet, Acceptance, Owner, Reviewer, dependencies, Boost pin, security boundaries,
+      and no-live-socket rule. Add CMakePresets.json to ReadSet. Replace direct CMake -S/-B configure/build commands
+      and raw CTest invocations with the frozen windows-agent-slice configure/build/test presets so
+      WorkflowController.Contract receives the I:/cmake/bin PATH declared by its CTest preset. Keep separate direct
+      --test-dir filters only for BuildProbe.Cxx20 and BoostAsioCxx20, which do not invoke CMake subprocesses. Require
+      --no-tests=error on every CTest invocation so a missing probe cannot pass as a vacuous zero-test run. Use a
+      revision-specific branch/worktree/build/cache directory. Do not change product runtime code or dependency pins.
+    Reason: >-
+      After R1 received fixed-head approval and became Ready, Owner review found that ctest --test-dir does not load
+      the windows-agent-slice test preset environment. WorkflowController.Contract launches cmake --version and had
+      already failed under this condition when I:/cmake/bin was missing from PATH. R1's fixed CTest commands used simple
+      individual filters. R2 uses the test preset for the Controller/AgentRuntime cases and keeps separate simple
+      filters for the build probes. A missing filtered probe previously produced a successful zero-test CTest run, so
+      every R2 test command now uses --no-tests=error and the probes are built before those filters run. The follow-up
+      reference now names the registered ED-0120 transport-contract task. No implementation branch, worktree, or source
+      change had started; the acceptance goal and code WriteSet remain unchanged.
+    ProposedOwnerSlotId: Worker01
+    ProposedReviewerSlotId: Worker06
+    ProposedValidation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0131-R2.build
+      FetchContentBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
+      Configure: "I:/cmake/bin/cmake --preset windows-agent-slice -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+      Builds:
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --parallel 4"
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --target BoostAsioCoroutineProbe BuildProbe --parallel 4"
+      Tests:
+        - "I:/cmake/bin/ctest --preset windows-agent-slice --no-tests=error"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
+    OwnerReviewAgentId: /root/p1_trace_events_luna
+    OwnerReviewDecision: Approve
+    OwnerReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    OwnerReviewHeadCommit: 8ef311ff6f3541548f85a5b5088d85674542f5b9
+    OwnerReviewFindingCount: 0
+    IndependentReviewerAgentId: /root/p1_par001_luna
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    IndependentReviewHeadCommit: 8ef311ff6f3541548f85a5b5088d85674542f5b9
+    IndependentReviewFindingCount: 0
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 8ef311ff6f3541548f85a5b5088d85674542f5b9
+    PreserveGoal: true
+    PreserveReadSet: false
+    PreserveWriteSet: true
+    PreserveAcceptance: true
+    PreserveValidation: false
+    PreserveOwnerReviewer: true
+    PreserveDependencies: true
+    PreserveNoLiveSideEffects: true
+    ReviewEvidence:
+      OwnerReviewEventId: 54f41a27-8de2-4c3f-b1ab-5ae33a9569fb
+      IndependentReviewEventId: 9e16d3c7-1dc4-4662-9f62-ce12dcbf4c31
+      ChangeRequestApprovalEventId: ec86bcf8-6c1e-40c2-94eb-7e164a5f7423
+      ReadinessEventId: 452f4b46-812e-44e2-9cbe-390e69102f55
 
 ParallelGroups:
   - GroupId: FirstProductSlice
@@ -1994,7 +2114,7 @@ Tasks:
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片与 WorkflowController 夹具接入 Windows 根 CMake
     TaskKind: IntegrationTask
-    State: Ready
+    State: Merged
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -2006,7 +2126,11 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0124-R9RootCMakePresetIntegration
     Worktree: H:/Qbot/EmulativeDialog.ED-0124-R9
-    BaselineCommit: 9e7fbaccf8c15bd04ae55aa11f8ff0be7fafde52
+    BaselineCommit: 8029d6f83dba91cad580753facc2e69fc4e00e35
+    HeadCommit: 5b45482fc9348e0285bbed139c16b1dc4de5b63d
+    PullRequest: https://github.com/Hatedatastructures/EmulativeDialog/pull/1
+    IntegrationCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    MergeMethod: squash
     ModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -2451,3 +2575,115 @@ Tasks:
       SoftDefaults: []
       ApprovedOverrides: ["CR-ED-0018-002 narrows receipt matching from object address to exact ActionId/OperationId while preserving one-shot correlated receipt semantics."]
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0101]}
+
+  - TaskId: ED-0131
+    TaskRevision: 2
+    EpicId: EP-06
+    Title: 建立固定 Boost.Asio 1.92.0 的 C++20 协程构建基线
+    TaskKind: Build
+    State: Ready
+    Phase: P2
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/p1_trace_events_luna"
+    ReviewerRole: MemoryContextOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/p1_par001_luna"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0131-BoostAsioBuildFoundationR2
+    Worktree: H:/Qbot/EmulativeDialog.ED-0131-R2
+    BaselineCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+    TaskSpecChangeRequestId: CR-ED-0131-002
+    RevisionChangeRequest:
+      ChangeRequestId: CR-ED-0131-002
+      FromRevision: 1
+      ToRevision: 2
+      Decision: Accepted
+      OwnerReviewDecision: Approve
+      IndependentReviewDecision: Approve
+      Scope: "Preserve the accepted R1 Goal, WriteSet, Acceptance, Owner, Reviewer, dependencies, and safety boundary. Add CMakePresets.json to ReadSet; use windows-agent-slice configure/build/test presets for tests that need preset PATH; split direct BuildProbe filters; require --no-tests=error on every CTest command; advance branch, worktree, and build paths to R2."
+      Reason: "R1 was approved and Ready but, before assignment, Owner review found that raw ctest --test-dir would not load the preset PATH required by WorkflowController.Contract. R2 changes Controller/AgentRuntime tests to use the preset environment and adds --no-tests=error so absent probe registrations fail instead of returning a vacuous success. No code branch or source change began."
+      PreserveGoal: true
+      PreserveReadSet: false
+      PreserveWriteSet: true
+      PreserveAcceptance: true
+      PreserveValidation: false
+      PreserveOwnerReviewer: true
+      PreserveDependencies: true
+      PreserveNoLiveSideEffects: true
+    SupersededRevision1Evidence:
+      TaskRevision: 1
+      TaskSpecCommit: 9059862684dff9d29bb172828059a1114f551490
+      TaskSpecBlob: 33c62a92f3ba4287c6e25ddfb0915b1173afbae5
+      State: Ready
+      Disposition: SupersededBeforeCodeChanges
+      RevisionChangeRequestId: CR-ED-0131-002
+      PlannedBranch: Task/ED-0131-BoostAsioBuildFoundation
+      PlannedWorktree: H:/Qbot/EmulativeDialog.ED-0131
+      OwnerAgentId: /root/p1_trace_events_luna
+      OwnerReviewDecision: Approve
+      ReviewerAgentId: /root/p1_par001_luna
+      IndependentReviewDecision: Approve
+      ReviewBaseCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
+      ReviewHeadCommit: 9059862684dff9d29bb172828059a1114f551490
+      AssignmentCreated: false
+      Reason: >-
+        CR-ED-0131-002 supersedes R1 after the Owner found that the frozen Controller.Contract CTest command did not load
+        the test preset PATH. R2 corrects ReadSet, commands, and revision-specific paths; no code assignment, branch,
+        worktree, or source change began.
+    Goal: "让 Windows 原生 C++20 根构建通过锁定的 Boost 1.92.0 Asio 编译和协程行为探针，为后续异步 HTTP、Provider 和 AgentRuntime 合同提供可复用构建目标。"
+    OutOfScope: ["更新 Boost 版本或提交", "TLS/证书/proxy 策略", "Provider 或 AgentRuntime API 修改", "Responses/Chat Completions/Anthropic Adapter 实现", "真实网络请求", "引入其他语言运行时"]
+    DependsOn: [ED-0006, ED-0124]
+    ContractVersion: "Boost 1.92.0 pinned commit afdfa32505af73e3d208144b3f623f0096cb62b6; C++20 root baseline ED-0006"
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/BuildRelease.yaml, Standards/CppEngineeringStandard.md, Standards/DependencyPolicy.md, CMakeLists.txt, CMakePresets.json, CMake/DependencyPins.cmake, CMake/BuildProbe.cpp, Tests/Contract/Agent/CMakeLists.txt]
+      OnDemandSet: []
+      ForbiddenSet: ["Source/Providers/", "Source/Core/", "Source/Agent/", "Source/Channels/QQ/", "Workflow/Events/Bootstrap/P1.jsonl"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [CMakeLists.txt, CMake/BoostAsioDependency.cmake, CMake/BoostAsioCoroutineProbe.cpp, Standards/DependencyPolicy.md]
+    SharedLocks: [RootCMakeAndPresets, DependencyLock]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "The root C++20 build configures Boost.Asio from exactly Boost 1.92.0 / afdfa32505af73e3d208144b3f623f0096cb62b6 and resolves no MSYS2/system Boost fallback.", Evidence: "Pinned FetchContent source revision plus CMake target include provenance under the central Dependencies directory."}
+      - {AcceptanceId: AC-2, Description: "A native Windows MinGW executable compiles and runs a C++20 coroutine probe using Boost.Asio awaitable, co_spawn, io_context, and the selected executor.", Evidence: "BuildProbe.BoostAsioCxx20 CTest result and compiler command showing C++20."}
+      - {AcceptanceId: AC-3, Description: "The reusable EmulativeDialogBoostAsio CMake interface target supplies pinned Asio headers to later consumers without introducing a non-C++ runtime or a new runtime DLL.", Evidence: "CMake target graph and probe link result; no dependency version change."}
+      - {AcceptanceId: AC-4, Description: "DependencyPolicy records the exact Windows compile evidence, Boost Software License 1.0 distribution notice, and header-only/runtime dependency boundary.", Evidence: "Updated dependency row and required license notice."}
+    Validation:
+      RequiredTargets: [BoostAsioCoroutineProbe, BuildProbe, WorkflowController, AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests]
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0131-R2.build
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "The WriteSet changes CMake dependency wiring, dependency documentation, and a standalone build probe only; it adds no product runtime source or behavior."
+        ProductionSources: []
+        TestSupportSources: [CMake/BoostAsioCoroutineProbe.cpp]
+        MinimumLinePercent: 0
+        ReportDirectory: ""
+      TargetedBuild:
+        - "I:/cmake/bin/cmake --preset windows-agent-slice -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --parallel 4"
+        - "I:/cmake/bin/cmake --build --preset windows-agent-slice --target BoostAsioCoroutineProbe BuildProbe --parallel 4"
+        - "I:/cmake/bin/ctest --preset windows-agent-slice --no-tests=error"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
+      ContractFixtures: ["Synthetic io_context coroutine probe; no socket, DNS, TLS, provider API key, or external account is used."]
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen four-path WriteSet."
+        - "FetchContent checkout commit equals afdfa32505af73e3d208144b3f623f0096cb62b6 and source/build outputs remain in the central task build tree."
+        - "The Asio interface target consumes headers from the pinned Boost source, never C:/msys64/ucrt64/include/boost."
+        - "Frozen command-line strings passed to WorkflowController contain no shell pipeline, alternation, or anchors; the windows-agent-slice preset supplies its own CTest filter."
+        - "WorkflowController.Contract is run through the frozen windows-agent-slice test preset so its declared I:/cmake/bin PATH is loaded."
+        - "Every CTest invocation uses --no-tests=error, and the probe targets are built before either filtered test command runs."
+        - "No Boost version pin, TLS policy, provider/core contract, or product runtime package is changed."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The coroutine probe uses only an in-process io_context and synthetic operations; no live socket is opened."
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, PAR-002, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0120, ED-0122]}
