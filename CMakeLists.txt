@@ -23,6 +23,7 @@ set_target_properties(
 
 if(BUILD_TESTING)
   add_test(NAME BuildProbe.Cxx20 COMMAND $<TARGET_FILE:BuildProbe>)
+  add_subdirectory(Tests/Contract/Agent)
 endif()
 
 add_library(WorkflowControllerCore STATIC
@@ -46,6 +47,7 @@ target_compile_features(WorkflowController PRIVATE cxx_std_20)
 
 add_executable(WorkflowControllerContractTests
   Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp
+  Tests/Contract/WorkflowController/WorkflowControllerTestWorkspace.hpp
 )
 target_link_libraries(WorkflowControllerContractTests PRIVATE WorkflowControllerCore)
 target_compile_features(WorkflowControllerContractTests PRIVATE cxx_std_20)
@@ -53,3 +55,27 @@ add_test(
   NAME WorkflowController.Contract
   COMMAND $<TARGET_FILE:WorkflowControllerContractTests>
 )
+
+if(BUILD_TESTING)
+  set(WORKFLOW_CONTROLLER_COVERAGE_REPORT_DIR
+      "${AGENT_RUNTIME_REPORT_DIR}/WorkflowController")
+  set(WORKFLOW_CONTROLLER_COVERAGE_REPORT_FILE
+      "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_DIR}/WorkflowControllerContractTests.cpp.gcov.json.gz")
+  set(WORKFLOW_CONTROLLER_GCOV_RAW_REPORT_FILE
+      "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_DIR}/WorkflowControllerContractTests.gcov.json.gz")
+  file(MAKE_DIRECTORY "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_DIR}")
+  add_custom_target(WorkflowControllerTestWorkspaceCoverageReport
+    BYPRODUCTS "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_FILE}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f "${WORKFLOW_CONTROLLER_GCOV_RAW_REPORT_FILE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/WorkflowControllerContractTests.dir/Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp.obj"
+            "${CMAKE_CURRENT_SOURCE_DIR}/Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_FILE}"
+    COMMAND "${CMAKE_COMMAND}" -E rename "${WORKFLOW_CONTROLLER_GCOV_RAW_REPORT_FILE}"
+            "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_FILE}"
+    WORKING_DIRECTORY "${WORKFLOW_CONTROLLER_COVERAGE_REPORT_DIR}"
+    VERBATIM
+    COMMENT "Generating WorkflowController test-workspace gcov JSON v2 coverage")
+  add_dependencies(WorkflowControllerTestWorkspaceCoverageReport
+                   WorkflowControllerContractTests)
+endif()

@@ -1,4 +1,5 @@
 #include "WorkflowController.h"
+#include "WorkflowControllerTestWorkspace.hpp"
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -26,6 +27,9 @@
 namespace {
 
 using namespace EmulativeDialog::WorkflowController;
+using EmulativeDialog::WorkflowController::TestSupport::WorkflowControllerTestWorkspace;
+
+std::filesystem::path WorkflowControllerExecutable();
 
 void Check(bool Condition, const std::string& Message) {
   if (!Condition) {
@@ -43,40 +47,6 @@ void ExpectWorkflowError(Function&& Action, const std::string& Message) {
   }
   Check(Rejected, Message);
 }
-
-std::string UniqueSuffix() {
-  return std::to_string(GetCurrentProcessId()) + "-" +
-         std::to_string(GetTickCount64());
-}
-
-class OwnedTempDirectory final {
- public:
-  OwnedTempDirectory() {
-    Path = std::filesystem::temp_directory_path() /
-           ("EmulativeDialog-WorkflowController-" + UniqueSuffix());
-    std::filesystem::create_directories(Path);
-    Marker = Path / "OwnedByWorkflowControllerContractTests.txt";
-    std::ofstream Output(Marker, std::ios::binary);
-    Output << "WorkflowControllerContractTests:" << Path.filename().string();
-    Output.close();
-    Check(static_cast<bool>(Output), "Unable to create temporary ownership marker");
-  }
-
-  ~OwnedTempDirectory() {
-    std::ifstream Input(Marker, std::ios::binary);
-    std::string Value((std::istreambuf_iterator<char>(Input)),
-                      std::istreambuf_iterator<char>());
-    const std::string Expected =
-        "WorkflowControllerContractTests:" + Path.filename().string();
-    if (Value == Expected && Path.parent_path() == std::filesystem::temp_directory_path()) {
-      std::error_code Error;
-      std::filesystem::remove_all(Path, Error);
-    }
-  }
-
-  std::filesystem::path Path;
-  std::filesystem::path Marker;
-};
 
 void WriteText(const std::filesystem::path& Path, const std::string& Value) {
   std::filesystem::create_directories(Path.parent_path());
@@ -100,41 +70,6 @@ std::string TrimText(std::string Value) {
   return Value;
 }
 
-
-class OwnedBuildTempDirectory final {
- public:
-  OwnedBuildTempDirectory(const std::filesystem::path& BuildDirectory,
-                          std::string FixtureName)
-      : FixtureName(std::move(FixtureName)) {
-    EvidenceRoot = std::filesystem::absolute(BuildDirectory) /
-                   "WorkflowControllerEvidence" / "ED-0014-R9" / "ContractFixtures";
-    Path = EvidenceRoot / (this->FixtureName + "-" + UniqueSuffix());
-    std::filesystem::create_directories(Path);
-    Marker = Path / "OwnedByWorkflowControllerContractTests.txt";
-    MarkerText = "WorkflowControllerContractTests:" + Path.filename().string();
-    WriteText(Marker, MarkerText);
-  }
-
-  ~OwnedBuildTempDirectory() {
-    try {
-      if (Path.parent_path() == EvidenceRoot &&
-          Path.filename().string().starts_with(FixtureName + "-") &&
-          std::filesystem::is_regular_file(Marker) && ReadText(Marker) == MarkerText) {
-        std::error_code Error;
-        std::filesystem::remove_all(Path, Error);
-      }
-    } catch (...) {
-    }
-  }
-
-  std::filesystem::path Path;
-
- private:
-  std::string FixtureName;
-  std::filesystem::path EvidenceRoot;
-  std::filesystem::path Marker;
-  std::string MarkerText;
-};
 
 struct RepositoryFixture {
   explicit RepositoryFixture(const std::filesystem::path& Root) : Root(Root) {
@@ -239,9 +174,22 @@ class PinnedSnapshotProcessRunner final : public ProcessRunner {
   ProcessResult Run(const std::vector<std::string>& Arguments,
                     const std::filesystem::path&) override {
     ++Calls;
-    Check(Arguments.size() >= 4 && Arguments[0] == "git" && Arguments[1] == "-C" &&
-              std::filesystem::path(Arguments[2]) == RepositoryRoot,
-          "Pinned snapshot loader issued an unexpected process command");
+    std::error_code RepositoryPathError;
+    const bool RepositoryPathMatches =
+        Arguments.size() >= 3 &&
+        std::filesystem::equivalent(std::filesystem::path(Arguments[2]), RepositoryRoot,
+                                    RepositoryPathError) &&
+        !RepositoryPathError;
+    if (Arguments.size() < 4 || Arguments[0] != "git" || Arguments[1] != "-C" ||
+        !RepositoryPathMatches) {
+      const std::string ActualExecutable = Arguments.empty() ? "<empty>" : Arguments[0];
+      const std::string ActualOption = Arguments.size() < 2 ? "<missing>" : Arguments[1];
+      const std::string ActualPath = Arguments.size() < 3 ? "<missing>" : Arguments[2];
+      throw std::runtime_error(
+          "Pinned snapshot loader issued an unexpected process command: executable=" +
+          ActualExecutable + ", option=" + ActualOption + ", repository=" + ActualPath +
+          ", expected repository=" + RepositoryRoot.string());
+    }
     if (Arguments[3] == "show" && Arguments.size() == 5 &&
         Arguments[4] == TaskSpecCommit + ":Workflow/TaskIndex.yaml") {
       return {0, TaskIndexText};
@@ -290,9 +238,22 @@ class ReadSetSnapshotProcessRunner final : public ProcessRunner {
 
   ProcessResult Run(const std::vector<std::string>& Arguments,
                     const std::filesystem::path&) override {
-    Check(Arguments.size() >= 5 && Arguments[0] == "git" && Arguments[1] == "-C" &&
-              std::filesystem::path(Arguments[2]) == RepositoryRoot,
-          "Pinned ReadSet fixture received an unexpected Git command");
+    std::error_code RepositoryPathError;
+    const bool RepositoryPathMatches =
+        Arguments.size() >= 3 &&
+        std::filesystem::equivalent(std::filesystem::path(Arguments[2]), RepositoryRoot,
+                                    RepositoryPathError) &&
+        !RepositoryPathError;
+    if (Arguments.size() < 5 || Arguments[0] != "git" || Arguments[1] != "-C" ||
+        !RepositoryPathMatches) {
+      const std::string ActualExecutable = Arguments.empty() ? "<empty>" : Arguments[0];
+      const std::string ActualOption = Arguments.size() < 2 ? "<missing>" : Arguments[1];
+      const std::string ActualPath = Arguments.size() < 3 ? "<missing>" : Arguments[2];
+      throw std::runtime_error(
+          "Pinned ReadSet fixture received an unexpected Git command: executable=" +
+          ActualExecutable + ", option=" + ActualOption + ", repository=" + ActualPath +
+          ", expected repository=" + RepositoryRoot.string());
+    }
     if (Arguments[3] == "ls-tree" && Arguments.size() == 7 && Arguments[5] == "--") {
       return {0, "100644 blob " + std::string(40, 'a') + "\t" + Arguments[6] + "\n"};
     }
@@ -345,14 +306,15 @@ void TestTaskRoutingAndAssignment(const std::filesystem::path& Root) {
 }
 
 void TestPinnedTaskSpecAssignment(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  const RepositoryFixture Fixture(Temp.Path / "Repository");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "PinnedTaskSpecAssignment");
+  const RepositoryFixture Fixture(Temp.GetPath() / "Repository");
   const std::string TaskSpecCommit(40, 'a');
   const std::string TaskSpecBlobId(40, 'b');
   const std::string AssignmentEventCommit(40, 'c');
   const std::string CodeBaseCommit(40, 'd');
   const std::string BudgetCorrectionEventCommit(40, 'e');
-  const auto Worktree = Temp.Path / "AssignedWorktree";
+  const auto Worktree = Temp.GetPath() / "AssignedWorktree";
   std::ostringstream TaskIndex;
   TaskIndex << "CurrentReleaseId: Bootstrap\n"
             << "PhasePlans:\n"
@@ -539,8 +501,9 @@ void TestReadSetAndWriteSetBoundaries(const std::filesystem::path& Root) {
 }
 
 void TestTaskOwnedPathResolution(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  const RepositoryFixture Fixture(Temp.Path / "Repository");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "TaskOwnedPathResolution");
+  const RepositoryFixture Fixture(Temp.GetPath() / "Repository");
   TaskSpec Task = LoadTaskSpec(Fixture.Root, "Workflow/TaskIndex.yaml", "P1", "ED-0002");
   Task.EventShard = "../../Outside/events.jsonl";
   ExpectWorkflowError(
@@ -655,9 +618,10 @@ void RunGit(WindowsProcessRunner& Runner,
 }
 
 void TestIsolatedWorktree(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  const auto Repository = Temp.Path / "Repository";
-  const auto Worktree = Temp.Path / "LinkedWorktree";
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "IsolatedWorktree");
+  const auto Repository = Temp.GetPath() / "Repository";
+  const auto Worktree = Temp.GetPath() / "LinkedWorktree";
   std::filesystem::create_directories(Repository);
   WindowsProcessRunner Runner;
   RunGit(Runner, Repository, {"git", "init", "--initial-branch", "main"});
@@ -697,7 +661,7 @@ void TestIsolatedWorktree(const std::filesystem::path& Root) {
       [&] { (void)VerifyExistingWorktreeForReview({Repository, Assignment}, "Ready", Runner); },
       "Read-only ReviewBundle verification accepted an unreviewable state");
   AssignmentRequest MissingReview = Assignment;
-  MissingReview.Worktree = Temp.Path / "MissingReviewWorktree";
+  MissingReview.Worktree = Temp.GetPath() / "MissingReviewWorktree";
   ExpectWorkflowError(
       [&] { (void)VerifyExistingWorktreeForReview({Repository, MissingReview}, "Review", Runner); },
       "Read-only ReviewBundle verification created a missing worktree");
@@ -716,8 +680,9 @@ void TestIsolatedWorktree(const std::filesystem::path& Root) {
 }
 
 void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  const auto EventPath = Temp.Path / "Workflow/Events/P1.jsonl";
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "EventsCheckpointsMessages");
+  const auto EventPath = Temp.GetPath() / "Workflow/Events/P1.jsonl";
   EventStore Events(EventPath);
   WorkflowEvent Event;
   Event.EventId = "event-1";
@@ -727,7 +692,7 @@ void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Roo
   Event.TaskRevision = 2;
   Event.AgentId = "/root/test-agent";
   Event.Command = "cmake --preset windows-mingw --token fixture-secret Authorization: Bearer secret-value";
-  Event.WorkingDirectory = Temp.Path.string();
+  Event.WorkingDirectory = Temp.GetPath().string();
   Event.ExitCode = 0;
   Event.EvidencePath = "evidence.log";
   Event.Result = "Succeeded";
@@ -749,13 +714,13 @@ void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Roo
   CheckpointValue.TaskId = "ED-0002";
   CheckpointValue.TaskRevision = 2;
   CheckpointValue.Branch = "Task/ED-0002-ControllerFixture";
-  CheckpointValue.Worktree = (Temp.Path / "LinkedWorktree").string();
+  CheckpointValue.Worktree = (Temp.GetPath() / "LinkedWorktree").string();
   CheckpointValue.BaseCommit = std::string(40, 'a');
   CheckpointValue.HeadCommit = std::string(40, 'b');
   CheckpointValue.NextAction = "Resume the bounded controller task";
   CheckpointValue.LastValidationResult =
       "api_token=fixture-secret; Authorization: Bearer secret-value was redacted";
-  const auto CheckpointPath = Temp.Path / "Workflow/Checkpoints/ED-0002.yaml";
+  const auto CheckpointPath = Temp.GetPath() / "Workflow/Checkpoints/ED-0002.yaml";
   CheckpointStore::Save(CheckpointPath, CheckpointValue);
   const Checkpoint Recovered = CheckpointStore::Recover(CheckpointPath, "ED-0002", 2);
   Check(Recovered.NextAction == CheckpointValue.NextAction &&
@@ -769,7 +734,7 @@ void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Roo
       [&] { (void)CheckpointStore::Recover(CheckpointPath, "ED-0003", 2); },
       "Checkpoint was recovered for a different task");
 
-  TaskScopedMessageStore Messages(Temp.Path / "Workflow/Communications/P1.jsonl");
+  TaskScopedMessageStore Messages(Temp.GetPath() / "Workflow/Communications/P1.jsonl");
   Messages.Append({"message-1", "ED-0002", 2, "/root/worker", "/root/coordinator",
                    "Question", "Open", "Budget", "Need a scoped fixture approval", {"test-ref"}});
   Messages.Append({"message-2", "ED-0003", 1, "/root/worker", "/root/coordinator",
@@ -786,7 +751,7 @@ void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Roo
   Check(OpenMessages.size() == 1 && OpenMessages.front().MessageId == "message-4",
         "Message store did not filter by TaskId and open status");
 
-  const auto DuplicatePath = Temp.Path / "Workflow/Events/DuplicateIds.jsonl";
+  const auto DuplicatePath = Temp.GetPath() / "Workflow/Events/DuplicateIds.jsonl";
   EventStore DuplicateStore(DuplicatePath);
   WorkflowEvent UniqueEvent = Event;
   UniqueEvent.EventId = "duplicate-fixture-id";
@@ -810,7 +775,7 @@ void TestEventsCheckpointsAndTaskScopedMessages(const std::filesystem::path& Roo
   ExpectWorkflowError([&] { (void)DuplicateStore.ReadTaskEvents("ED-0002"); },
                       "Conflicting records with the same EventId were accepted");
 
-  const auto FlushFailurePath = Temp.Path / "Workflow/Events/FlushFailure.jsonl";
+  const auto FlushFailurePath = Temp.GetPath() / "Workflow/Events/FlushFailure.jsonl";
   EventStore FlushFailure(FlushFailurePath, [] {
     SetLastError(ERROR_WRITE_FAULT);
     return false;
@@ -937,9 +902,10 @@ ProcessResult RunRecoveryCli(WindowsProcessRunner& Runner,
 }
 
 void TestEventIdConflictRecovery(const std::filesystem::path& Root) {
-  OwnedBuildTempDirectory Temp(WorkflowControllerExecutable().parent_path(), "RecoveryCli");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "RecoveryCli");
   const RecoveryFixtureInfo Fixture =
-      CreateRecoveryFixtureRepository(Temp.Path / "RecoveryRepository");
+      CreateRecoveryFixtureRepository(Temp.GetPath() / "RecoveryRepository");
   const auto EventPath = Fixture.Root / "Workflow/Events/Bootstrap/P1.jsonl";
   const std::string OriginalShard = ReadText(EventPath);
   WindowsProcessRunner Runner;
@@ -1369,9 +1335,10 @@ ProcessResult RunControllerCli(WindowsProcessRunner& Runner,
 }
 
 void TestControllerCliSurface(const std::filesystem::path& Root) {
-  OwnedBuildTempDirectory Temp(WorkflowControllerExecutable().parent_path(), "ControllerCli");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "ControllerCli");
   const CliFixtureInfo Fixture = CreateControllerCliFixture(
-      Temp.Path / "CliRepository", Temp.Path / "CliAssignedWorktree");
+      Temp.GetPath() / "CliRepository", Temp.GetPath() / "CliAssignedWorktree");
   WindowsProcessRunner Runner;
   const std::string Repo = Fixture.Root.string();
   Check(RunControllerCli(Runner, Fixture.Root,
@@ -1609,11 +1576,12 @@ ReviewCliFixtureInfo CreateReviewCliFixture(
 }
 
 void TestReviewBundleCli(const std::filesystem::path& Root) {
-  OwnedBuildTempDirectory Temp(WorkflowControllerExecutable().parent_path(), "ReviewBundleCli");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "ReviewBundleCli");
   const ReviewCliFixtureInfo Fixture = CreateReviewCliFixture(
-      Temp.Path / "ReviewRepository",
-      Temp.Path / "ReviewWorktree",
-      Temp.Path / "ReviewBundles/ED-0002/ReviewBundle.json");
+      Temp.GetPath() / "ReviewRepository",
+      Temp.GetPath() / "ReviewWorktree",
+      Temp.GetPath() / "ReviewBundles/ED-0002/ReviewBundle.json");
   WindowsProcessRunner Runner;
   const std::string Repo = Fixture.Root.string();
   const std::vector<std::string> Pins{
@@ -1654,14 +1622,15 @@ void TestReviewBundleCli(const std::filesystem::path& Root) {
 }
 
 void TestBudgetOverrideEvent(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  RepositoryFixture Fixture(Temp.Path / "Repository");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "BudgetOverrideEvent");
+  RepositoryFixture Fixture(Temp.GetPath() / "Repository");
   TaskSpec Task = LoadTaskSpec(Fixture.Root, "Workflow/TaskIndex.yaml", "P1", "ED-0002");
   Task.EventShard = "Workflow/Events/Bootstrap/P1.jsonl";
   Task.OwnerAgentId = "/root/test-agent";
   Task.ReviewerAgentId = "/root/independent-reviewer";
   Task.Branch = "Task/ED-0002-ControllerFixture";
-  Task.Worktree = (Temp.Path / "AssignedWorktree").generic_string();
+  Task.Worktree = (Temp.GetPath() / "AssignedWorktree").generic_string();
   Task.BaselineCommit = std::string(40, 'b');
   Task.CodeBaseCommit = Task.BaselineCommit;
   Task.TaskSpecCommit = std::string(40, 'c');
@@ -1754,8 +1723,9 @@ void TestBudgetOverrideEvent(const std::filesystem::path& Root) {
 }
 
 void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  const RepositoryFixture Fixture(Temp.Path / "Repository");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "ValidationAndReviewBundle");
+  const RepositoryFixture Fixture(Temp.GetPath() / "Repository");
   WindowsProcessRunner GitRunner;
   RunGit(GitRunner, Fixture.Root, {"git", "init", "--initial-branch", "main"});
   RunGit(GitRunner, Fixture.Root, {"git", "config", "user.name", "Controller Fixture"});
@@ -1772,7 +1742,7 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
   Task.OwnerAgentId = "/root/test-agent";
   Task.ReviewerAgentId = "/root/independent-reviewer";
   Task.Branch = "Task/ED-0002-ReviewBundleFixture";
-  const auto Worktree = Temp.Path / "ReviewWorktree";
+  const auto Worktree = Temp.GetPath() / "ReviewWorktree";
   Task.Worktree = Worktree.generic_string();
   Task.BaselineCommit = BaseCommit;
   Task.CodeBaseCommit = Task.BaselineCommit;
@@ -1833,7 +1803,7 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
         "Frozen validations were not recorded as unique task-scoped events");
   ExpectWorkflowError(
       [&] { (void)RunFrozenValidation(Task, "cmake --build --preset windows-mingw",
-                                      Fixture.Root, Temp.Path / "Evidence/unlisted.log",
+                                      Fixture.Root, Temp.GetPath() / "Evidence/unlisted.log",
                                       Runner, Events, "/root/test-agent", "unlisted"); },
       "Unlisted validation command was executed");
   const int CallsBeforeRejectedShell = Runner.Calls;
@@ -1841,7 +1811,7 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
   ShellTask.ValidationCommands.push_back("cmake --preset windows-mingw && whoami");
   ExpectWorkflowError(
       [&] { (void)RunFrozenValidation(ShellTask, ShellTask.ValidationCommands.back(), Fixture.Root,
-                                      Temp.Path / "Evidence/shell.log", Runner, Events,
+                                      Temp.GetPath() / "Evidence/shell.log", Runner, Events,
                                       "/root/test-agent", "shell"); },
       "Shell operator in a frozen validation command was accepted");
   Check(Runner.Calls == CallsBeforeRejectedShell,
@@ -1956,8 +1926,9 @@ void TestValidationAndReviewBundle(const std::filesystem::path& Root) {
 }
 
 void TestReviewBundleRevisionScopedValidations(const std::filesystem::path& Root) {
-  OwnedTempDirectory Temp;
-  const RepositoryFixture Fixture(Temp.Path / "Repository");
+  WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                       "RevisionScopedValidations");
+  const RepositoryFixture Fixture(Temp.GetPath() / "Repository");
   TaskSpec Task = LoadTaskSpec(Fixture.Root, "Workflow/TaskIndex.yaml", "P1", "ED-0002");
   Task.TaskRevision = 4;
   Task.ReleaseId = "Bootstrap";
@@ -2222,25 +2193,121 @@ void TestForbiddenGovernanceOperations() {
                       "Controller allowed an unscoped history read");
 }
 
+void TestWorkflowControllerTestWorkspaceCleanup() {
+  const std::filesystem::path BuildDirectory =
+      WorkflowControllerExecutable().parent_path();
+  WorkflowControllerTestWorkspace Sentinel(BuildDirectory, "CleanupSentinel");
+  const std::filesystem::path SentinelFile = Sentinel.GetPath() / "Keep.txt";
+  WriteText(SentinelFile, "cleanup must not follow a reparse point\n");
+
+  WorkflowControllerTestWorkspace Workspace(BuildDirectory, "CleanupSafety");
+  const std::filesystem::path WorkspacePath = Workspace.GetPath();
+  const std::filesystem::path NestedPath = WorkspacePath / "Nested";
+  std::filesystem::create_directory(NestedPath);
+  Check(!WorkflowControllerTestWorkspace::CleanupOwnedWorkspace(
+            BuildDirectory, NestedPath, Workspace.GetFixturePrefix(),
+            Workspace.GetExpectedMarkerText()),
+        "Workspace cleanup accepted a candidate below the exact T parent");
+  Check(!WorkflowControllerTestWorkspace::CleanupOwnedWorkspace(
+            BuildDirectory, WorkspacePath, "WrongFixturePrefix-",
+            Workspace.GetExpectedMarkerText()),
+        "Workspace cleanup accepted a mismatched fixture prefix");
+  Check(std::filesystem::exists(WorkspacePath),
+        "Rejected cleanup changed the marker-owned workspace");
+
+  const std::filesystem::path ReparseLink = WorkspacePath / "SentinelLink";
+  const DWORD DirectorySymlinkFlags = SYMBOLIC_LINK_FLAG_DIRECTORY |
+                                      SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+  if (!CreateSymbolicLinkW(ReparseLink.c_str(), Sentinel.GetPath().c_str(),
+                           DirectorySymlinkFlags)) {
+    throw std::runtime_error("Windows test environment cannot create the test-workspace reparse fixture; error " +
+                             std::to_string(GetLastError()));
+  }
+
+  const std::filesystem::path ReparseCandidate =
+      Workspace.GetTempRoot() /
+      ("WorkflowControllerTestWorkspace-ReparseCandidate-" +
+       std::to_string(GetCurrentProcessId()) + "-" +
+       std::to_string(GetTickCount64()));
+  if (!CreateSymbolicLinkW(ReparseCandidate.c_str(), Sentinel.GetPath().c_str(),
+                           DirectorySymlinkFlags)) {
+    throw std::runtime_error("Windows test environment cannot create the candidate reparse fixture; error " +
+                             std::to_string(GetLastError()));
+  }
+  Check(!WorkflowControllerTestWorkspace::CleanupOwnedWorkspace(
+            BuildDirectory, ReparseCandidate,
+            "WorkflowControllerTestWorkspace-ReparseCandidate-",
+            Sentinel.GetExpectedMarkerText()),
+        "Workspace cleanup accepted a reparse-point candidate");
+  Check(std::filesystem::exists(SentinelFile),
+        "Rejected reparse cleanup changed the external sentinel");
+  Check(RemoveDirectoryW(ReparseCandidate.c_str()) != 0,
+        "Unable to remove the owned reparse fixture itself");
+
+  const std::filesystem::path ReadOnlyGitObject =
+      WorkspacePath / "ReadOnlyGitObject.txt";
+  WriteText(ReadOnlyGitObject, "readonly cleanup fixture\n");
+  const DWORD FileAttributes = GetFileAttributesW(ReadOnlyGitObject.c_str());
+  Check(FileAttributes != INVALID_FILE_ATTRIBUTES &&
+            SetFileAttributesW(ReadOnlyGitObject.c_str(),
+                               FileAttributes | FILE_ATTRIBUTE_READONLY) != 0,
+        "Unable to mark the cleanup fixture read-only");
+
+  WriteText(Workspace.GetMarkerPath(), "mismatched marker\n");
+  Check(!Workspace.Cleanup(),
+        "Workspace cleanup accepted a mismatched marker");
+  Check(std::filesystem::exists(WorkspacePath) &&
+            std::filesystem::exists(ReadOnlyGitObject),
+        "Mismatched-marker cleanup changed the owned tree");
+
+  WriteText(Workspace.GetMarkerPath(), Workspace.GetExpectedMarkerText());
+  const DWORD MarkerAttributes = GetFileAttributesW(Workspace.GetMarkerPath().c_str());
+  const DWORD WorkspaceAttributes = GetFileAttributesW(WorkspacePath.c_str());
+  Check(MarkerAttributes != INVALID_FILE_ATTRIBUTES &&
+            SetFileAttributesW(Workspace.GetMarkerPath().c_str(),
+                               MarkerAttributes | FILE_ATTRIBUTE_READONLY) != 0,
+        "Unable to mark the ownership marker read-only");
+  Check(WorkspaceAttributes != INVALID_FILE_ATTRIBUTES &&
+            SetFileAttributesW(WorkspacePath.c_str(),
+                               WorkspaceAttributes | FILE_ATTRIBUTE_READONLY) != 0,
+        "Unable to mark the owned workspace read-only");
+
+  Check(Workspace.Cleanup(),
+        "Workspace cleanup did not remove its read-only Git fixtures");
+  Check(!std::filesystem::exists(WorkspacePath),
+        "Workspace cleanup left an owned fixture directory");
+  Check(std::filesystem::exists(SentinelFile),
+        "Workspace cleanup traversed the sentinel reparse target");
+  Check(std::filesystem::is_directory(Workspace.GetTempRoot()),
+        "Shared T root was removed while another workspace remained");
+  Check(Sentinel.Cleanup(), "Unable to clean the sentinel workspace");
+  Check(!std::filesystem::exists(Sentinel.GetTempRoot()),
+        "Empty shared T root was not removed after the last owned workspace");
+  Check(Workspace.Cleanup(), "Workspace cleanup was not idempotent");
+}
+
 }  // namespace
 
 int main() {
   try {
-    OwnedTempDirectory Temp;
-    TestTaskRoutingAndAssignment(Temp.Path / "Routing");
-    TestPinnedTaskSpecAssignment(Temp.Path / "PinnedTaskSpec");
-    TestReadSetAndWriteSetBoundaries(Temp.Path / "Boundaries");
-    TestTaskOwnedPathResolution(Temp.Path / "TaskPaths");
-    TestReadSetYamlFragmentSelectors(Temp.Path / "YamlSelectors");
-    TestIsolatedWorktree(Temp.Path / "Unused");
-    TestEventsCheckpointsAndTaskScopedMessages(Temp.Path / "Persistence");
-    TestEventIdConflictRecovery(Temp.Path / "EventIdConflictRecovery");
-    TestControllerCliSurface(Temp.Path / "CliSurface");
-    TestReviewBundleCli(Temp.Path / "ReviewBundleCli");
-    TestBudgetOverrideEvent(Temp.Path / "Budget");
-    TestValidationAndReviewBundle(Temp.Path / "Validation");
-    TestReviewBundleRevisionScopedValidations(Temp.Path / "RevisionScopedBundle");
+    WorkflowControllerTestWorkspace Temp(WorkflowControllerExecutable().parent_path(),
+                                         "ContractSuite");
+    TestTaskRoutingAndAssignment(Temp.GetPath() / "Routing");
+    TestPinnedTaskSpecAssignment(Temp.GetPath() / "PinnedTaskSpec");
+    TestReadSetAndWriteSetBoundaries(Temp.GetPath() / "Boundaries");
+    TestTaskOwnedPathResolution(Temp.GetPath() / "TaskPaths");
+    TestReadSetYamlFragmentSelectors(Temp.GetPath() / "YamlSelectors");
+    TestIsolatedWorktree(Temp.GetPath() / "Unused");
+    TestEventsCheckpointsAndTaskScopedMessages(Temp.GetPath() / "Persistence");
+    TestEventIdConflictRecovery(Temp.GetPath() / "EventIdConflictRecovery");
+    TestControllerCliSurface(Temp.GetPath() / "CliSurface");
+    TestReviewBundleCli(Temp.GetPath() / "ReviewBundleCli");
+    TestBudgetOverrideEvent(Temp.GetPath() / "Budget");
+    TestValidationAndReviewBundle(Temp.GetPath() / "Validation");
+    TestReviewBundleRevisionScopedValidations(Temp.GetPath() / "RevisionScopedBundle");
     TestForbiddenGovernanceOperations();
+    Check(Temp.Cleanup(), "Unable to clean WorkflowController contract suite workspace");
+    TestWorkflowControllerTestWorkspaceCleanup();
     std::cout << "WorkflowController AC-1..AC-6 contract fixtures passed\n";
     return 0;
   } catch (const std::exception& Error) {

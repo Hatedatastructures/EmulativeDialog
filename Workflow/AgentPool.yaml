@@ -36,8 +36,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: "ED-0124/R6"
-    Status: Rework
+    CurrentTaskId: "ED-0124/R8"
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
@@ -89,8 +89,8 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: "ED-0124/R6"
-    Status: Rework
+    CurrentTaskId: "ED-0124/R8"
+    Status: Assigned
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。
