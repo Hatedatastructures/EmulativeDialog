@@ -26,12 +26,14 @@ LifecyclePolicy:
     - UserOrCoordinatorExplicitlyClosesTheSlot
 
 Slots:
-  # Worker01/Worker06 为 P1 支持槽；Worker02-Worker05 为四个实现槽。
+  # Existing AgentIds remain the stable identities. A replacement binding must
+  # be recorded as an explicit, auditable slot migration rather than silently
+  # rewriting the registry.
   - SlotId: Worker01
     RoleFamily: BuildAndWorkflowOwner
     AgentId: "/root/p1_trace_events_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - RootBuildAndDependencies
@@ -41,8 +43,8 @@ Slots:
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - AgentRuntime
@@ -53,8 +55,8 @@ Slots:
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/p1_gov004_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIResponses
@@ -63,8 +65,8 @@ Slots:
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/p2_validation_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - ProviderOpenAIChatCompletions
@@ -73,8 +75,8 @@ Slots:
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/p3_validation_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - ProviderAnthropicMessages
@@ -83,8 +85,8 @@ Slots:
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
     AgentId: "/root/p1_par001_luna"
-    ModelRequest: gpt-6-luna
-    ReasoningEffort: max
+    ModelRequest: InheritCoordinator
+    ReasoningEffort: InheritCoordinator
     HostSessionRef: ""
     ModuleIds:
       - Memory
