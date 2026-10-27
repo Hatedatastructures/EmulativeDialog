@@ -1821,6 +1821,7 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0124-R6RootCMakeIntegration
     Worktree: H:/Qbot/EmulativeDialog.ED-0124-R6
+    BaselineCommit: 47ad5b87fc7f8dde0fe8c99fa62e229c5f06289f
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
