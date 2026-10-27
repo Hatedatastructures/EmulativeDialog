@@ -1652,7 +1652,7 @@ Tasks:
     EpicId: EP-06
     Title: 让 MockChannel 使用 Core 专属动作与可关联回执
     TaskKind: TestSupport
-    State: Active
+    State: Merged
     Phase: P2
     OwnerRole: ContractOwner
     OwnerSlotId: Worker02
@@ -1666,6 +1666,16 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0125-R3
     BaselineCommit: d4bff6c36c4fc2cceda49cd0609ad80639029954
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0125-R3.build
+    HeadCommit: fee99c9d2c05d38a1c681e2785c14f5c3982f405
+    MergeTargetBranch: codex/integration
+    MergeCommit: 5be9f296dddcf9c7c254afc8d908e2d00d675ae0
+    ReviewerDecision: Approved
+    ReviewBaseCommit: d4bff6c36c4fc2cceda49cd0609ad80639029954
+    ReviewHeadCommit: fee99c9d2c05d38a1c681e2785c14f5c3982f405
+    ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0125-R3
+    ReviewBundleManifestSHA256: 2B88C491E552378E4F984D6EB4D2CBC90F2D4511D9C77EB753BE9480C1C7521B
+    PullRequestCreated: false
+    PullRequestAttemptHttpStatus: 403
     ChangeRequestId: CR-ED-0018-002
     CurrentRevisionChangeRequest:
       ChangeRequestId: CR-ED-0125-001

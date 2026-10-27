@@ -115,7 +115,7 @@ ExecutionGates:
     CoordinatorSignoffEventId: a4de8064-e080-4331-9981-ac62b1ee6c6c
     EvidenceManifestSHA256: 770f3b3d0913e49cf70a2aff16b6afa44c1e7754dab179d5d201cba5c0205ecc
     ProductCodeScope: FirstVerticalSliceOnly
-    ProductImplementationCodeReady: BlockedOnED0125ED0101ED0124
+    ProductImplementationCodeReady: BlockedOnED0101ED0124
   LargeScaleProductImplementation:
     State: BlockedUnverified
     RequiredConditions: [FormalPullRequest, IndependentReviewer, RequiredChecks, ProtectedIntegrationBranch]
