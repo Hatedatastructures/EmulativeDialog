@@ -340,11 +340,22 @@ ChangeRequests:
     ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0124-R9
     ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R9.build
     ProposedTaskKind: IntegrationTask
-    ProposedTaskKindEvidenceRefs: ["Workflow/Plans/P2.yaml#TaskId=ED-0110", "Workflow/Plans/P2.yaml#TaskId=ED-0120"]
+    ProposedTaskKindEvidenceRefs: ["Workflow/Plans/P2.yaml#TaskId=ED-0108", "Workflow/Plans/P2.yaml#TaskId=ED-0112", "Workflow/Plans/P2.yaml#TaskId=ED-0115"]
+    PriorFixedHeadReview:
+      BaseCommit: 8120b27699358eb184f38f499d6c3a0036d09748
+      HeadCommit: 1a6799f845b5aeefa6737bf5b6808a3f28babb97
+      TaskSpecBlobId: 7ab19dedb3db903a484b700422f9682eaa9805e5
+      OwnerDecision: Approve
+      OwnerFindingCount: 1
+      IndependentReviewerAgentId: /root/p1_par001_luna
+      IndependentReviewDecision: RequestChanges
+      IndependentFindingCount: 2
+      CorrectionStatus: CorrectedInSuccessorHead
     ProposedModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
     ProposedContextModuleId: RootBuildAndDependencies
     ProposedAdditionalModuleIds: [AgentWorkflowController]
     ProposedDependencies: [ED-0101, ED-0109]
+    ProposedFixtureRoot: 'std::filesystem::absolute(BuildDirectory) / "T"'
     ProposedReadSet:
       - AGENTS.md
       - Workflow/CurrentState.md
@@ -2063,11 +2074,22 @@ Tasks:
       ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0124-R9
       ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R9.build
       ProposedTaskKind: IntegrationTask
-      ProposedTaskKindEvidenceRefs: ["Workflow/Plans/P2.yaml#TaskId=ED-0110", "Workflow/Plans/P2.yaml#TaskId=ED-0120"]
+      ProposedTaskKindEvidenceRefs: ["Workflow/Plans/P2.yaml#TaskId=ED-0108", "Workflow/Plans/P2.yaml#TaskId=ED-0112", "Workflow/Plans/P2.yaml#TaskId=ED-0115"]
+      PriorFixedHeadReview:
+        BaseCommit: 8120b27699358eb184f38f499d6c3a0036d09748
+        HeadCommit: 1a6799f845b5aeefa6737bf5b6808a3f28babb97
+        TaskSpecBlobId: 7ab19dedb3db903a484b700422f9682eaa9805e5
+        OwnerDecision: Approve
+        OwnerFindingCount: 1
+        IndependentReviewerAgentId: /root/p1_par001_luna
+        IndependentReviewDecision: RequestChanges
+        IndependentFindingCount: 2
+        CorrectionStatus: CorrectedInSuccessorHead
       ProposedModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
       ProposedContextModuleId: RootBuildAndDependencies
       ProposedAdditionalModuleIds: [AgentWorkflowController]
       ProposedDependencies: [ED-0101, ED-0109]
+      ProposedFixtureRoot: 'std::filesystem::absolute(BuildDirectory) / "T"'
       ProposedReadSet:
         - AGENTS.md
         - Workflow/CurrentState.md
@@ -2087,7 +2109,6 @@ Tasks:
         - Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp
         - Tests/Contract/WorkflowController/WorkflowControllerTestWorkspace.hpp
       ProposedSharedLocks: [RootCMakeAndPresets]
-      ProposedFixtureRoot: "std::filesystem::absolute(BuildDirectory) / T"
       ProposedCoverageTarget: WorkflowControllerTestWorkspaceCoverageReport
       ProposedCoverageReportFile: H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/Reports/WorkflowController/WorkflowControllerContractTests.cpp.gcov.json.gz
       ProposedCoverageFileRecord: "WorkflowControllerTestWorkspace.hpp"
