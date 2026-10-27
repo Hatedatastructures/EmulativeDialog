@@ -21,7 +21,7 @@
 ## 目标范围与下一项产品切片
 
 - 保持 ADR-0002 范围：Windows 原生 C++20；Responses、兼容 Chat Completions、Anthropic Messages；首渠道 QQ；微信 Deferred。CLI/IDE、开发工作流、Shell/主机状态、任意文件/网络/MCP 工具、TUI 不阻塞 Agent 核心。
-- P1 Gate 签署后，首条切片按依赖执行 ED-0109 Core 身份/策略 → ED-0125 MockChannel 授权接缝 → ED-0101 C++ AgentRuntime 回合 → ED-0124 根 CMake/CTest 集成。ED-0109/R4 与 ED-0125/R3 已集成；下一步是修订并重新审查 ED-0101 TaskSpec，然后实现 C++ AgentRuntime。验收要求 Mock 入站身份可信、拒绝/去重不调用 Runtime、FakeProvider 只在完整终态后交付答案、Core 只发送一次授权文本并核对相关 Mock 回执；Core 与 Agent 生产源逐模块覆盖率至少 80%。
+- P1 Gate 签署后，首条切片按依赖执行 ED-0109 Core 身份/策略 → ED-0125 MockChannel 授权接缝 → ED-0101 C++ AgentRuntime 回合 → ED-0124 根 CMake/CTest 集成。ED-0109/R4 与 ED-0125/R3 已集成；ED-0101/R4 TaskSpec 已接受并固定，仍需在分派时验证全部依赖、冻结 BaselineCommit 并创建隔离 worktree，然后实现 C++ AgentRuntime。验收要求 Mock 入站身份可信、拒绝/去重不调用 Runtime、FakeProvider 只在完整终态后交付答案、Core 只发送一次授权文本并核对相关 Mock 回执；Core 与 Agent 生产源逐模块覆盖率至少 80%。
 - ED-0120 冻结共用 HTTPS Transport Port；首条切片通过后，ED-0121 WinHTTP/Schannel 与 ED-0104/0105/0106 三个 Provider Adapter 可用互不重叠写集并行推进。Context、Memory、取消、工具、错误恢复等按 P2/P3 依赖继续分派。
 - 真实 QQ 登录/发送仍须等待官方授权路径和能力证据；本轮不接微信。
 
@@ -29,4 +29,4 @@
 
 - R7 Bundle 的 9 个内容哈希已核验；固定 Head 的六路径核对和 `git diff --check` 退出 0；MAN-003 的 20/20 RuleId 与 blocker union 一致；10 个 Markdown 链接无断链。
 - WorkflowController query H:/Qbot/EmulativeDialog.integration P2 ED-0109 4 显示 ED-0109 已 Merged。ED-0125/R3 Base..Head 仅有 3/3 WriteSet 路径；MSYS2 g++ 16.1.0 的五 TU 编译、链接、行为测试均 exit 0，Coordinator 复跑测试 exit 0；本任务生产 TU 覆盖率按 TaskSpec 为 NotApplicable。固定 Head Reviewer Approve；GitHub PR 尝试 HTTP 403；本地 ReviewBundle manifest SHA256 为 2B88C491E552378E4F984D6EB4D2CBC90F2D4511D9C77EB753BE9480C1C7521B，单一 squash 集成提交 5be9f296dddcf9c7c254afc8d908e2d00d675ae0 已推送。
-- 下一步：通过新 ChangeRequest 修订 ED-0101 TaskSpec 中的 Owner/Reviewer AgentId、ModelProvider V1.2 冻结合同 pin、Windows C++20 编译器/gcov 工具链与退出码传播、CoreChatService.h ReadSet 及 AgentRunResult/output-limit 验收；经独立固定 Head Reviewer 批准后，按序实现 C++ AgentRuntime，再由 ED-0124 接入根 CMake/CTest。Provider 与 Memory/Context 继续等待首片和 LargeScale PR 门。
+- ED-0101/R4 TaskSpec 已在 commit c41bdc87fb10a70bfbe86ba7b0eb1cc692d0e6d3 固定；CR-ED-0101-002 已由 Worker02 Owner 和 Worker01 independent reviewer 批准。六项冻结依赖均经 WorkflowController 查询为 Merged；TaskState 仍 Blocked，尚无 TaskAssigned 事件或代码分支。下一步冻结 assignment BaselineCommit 并创建独立 R4 worktree，然后立即实现 AgentRuntime 行为。ED-0124 在 AgentRuntime code 验收后接入根 CMake/CTest。Provider 与 Memory/Context 继续等待首片和 LargeScale PR 门。
