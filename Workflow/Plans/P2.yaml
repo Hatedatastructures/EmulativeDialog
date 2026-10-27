@@ -668,15 +668,18 @@ ChangeRequests:
       and no-live-socket rule. Add CMakePresets.json to ReadSet. Replace direct CMake -S/-B configure/build commands
       and raw CTest invocations with the frozen windows-agent-slice configure/build/test presets so
       WorkflowController.Contract receives the I:/cmake/bin PATH declared by its CTest preset. Keep separate direct
-      --test-dir filters only for BuildProbe.Cxx20 and BoostAsioCxx20, which do not invoke CMake subprocesses. Use a
+      --test-dir filters only for BuildProbe.Cxx20 and BoostAsioCxx20, which do not invoke CMake subprocesses. Require
+      --no-tests=error on every CTest invocation so a missing probe cannot pass as a vacuous zero-test run. Use a
       revision-specific branch/worktree/build/cache directory. Do not change product runtime code or dependency pins.
     Reason: >-
       After R1 received fixed-head approval and became Ready, Owner review found that ctest --test-dir does not load
       the windows-agent-slice test preset environment. WorkflowController.Contract launches cmake --version and had
       already failed under this condition when I:/cmake/bin was missing from PATH. R1's fixed CTest commands used simple
       individual filters. R2 uses the test preset for the Controller/AgentRuntime cases and keeps separate simple
-      filters for the build probes. No implementation branch,
-      worktree, or source change had started; the acceptance goal and code WriteSet remain unchanged.
+      filters for the build probes. A missing filtered probe previously produced a successful zero-test CTest run, so
+      every R2 test command now uses --no-tests=error and the probes are built before those filters run. The follow-up
+      reference now names the registered ED-0120 transport-contract task. No implementation branch, worktree, or source
+      change had started; the acceptance goal and code WriteSet remain unchanged.
     ProposedOwnerSlotId: Worker01
     ProposedReviewerSlotId: Worker06
     ProposedValidation:
@@ -687,9 +690,9 @@ ChangeRequests:
         - "I:/cmake/bin/cmake --build --preset windows-agent-slice --parallel 4"
         - "I:/cmake/bin/cmake --build --preset windows-agent-slice --target BoostAsioCoroutineProbe BuildProbe --parallel 4"
       Tests:
-        - "I:/cmake/bin/ctest --preset windows-agent-slice"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
+        - "I:/cmake/bin/ctest --preset windows-agent-slice --no-tests=error"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
     OwnerReviewDecision: Pending
     IndependentReviewDecision: Pending
     PreserveGoal: true
@@ -2583,8 +2586,8 @@ Tasks:
       Decision: Proposed
       OwnerReviewDecision: Pending
       IndependentReviewDecision: Pending
-      Scope: "Preserve the accepted R1 Goal, WriteSet, Acceptance, Owner, Reviewer, dependencies, and safety boundary. Add CMakePresets.json to ReadSet; use windows-agent-slice configure/build/test presets for tests that need preset PATH; split direct BuildProbe filters; advance branch, worktree, and build paths to R2."
-      Reason: "R1 was approved and Ready but, before assignment, Owner review found that raw ctest --test-dir would not load the preset PATH required by WorkflowController.Contract. R2 changes Controller/AgentRuntime tests to use the preset environment. No code branch or source change began."
+      Scope: "Preserve the accepted R1 Goal, WriteSet, Acceptance, Owner, Reviewer, dependencies, and safety boundary. Add CMakePresets.json to ReadSet; use windows-agent-slice configure/build/test presets for tests that need preset PATH; split direct BuildProbe filters; require --no-tests=error on every CTest command; advance branch, worktree, and build paths to R2."
+      Reason: "R1 was approved and Ready but, before assignment, Owner review found that raw ctest --test-dir would not load the preset PATH required by WorkflowController.Contract. R2 changes Controller/AgentRuntime tests to use the preset environment and adds --no-tests=error so absent probe registrations fail instead of returning a vacuous success. No code branch or source change began."
       PreserveGoal: true
       PreserveReadSet: false
       PreserveWriteSet: true
@@ -2647,9 +2650,9 @@ Tasks:
         - "I:/cmake/bin/cmake --preset windows-agent-slice -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
         - "I:/cmake/bin/cmake --build --preset windows-agent-slice --parallel 4"
         - "I:/cmake/bin/cmake --build --preset windows-agent-slice --target BoostAsioCoroutineProbe BuildProbe --parallel 4"
-        - "I:/cmake/bin/ctest --preset windows-agent-slice"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
+        - "I:/cmake/bin/ctest --preset windows-agent-slice --no-tests=error"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.Cxx20"
+        - "I:/cmake/bin/ctest --no-tests=error --test-dir H:/Qbot/EmulativeDialog.ED-0131-R2.build/windows-agent-slice --output-on-failure -R BuildProbe.BoostAsioCxx20"
       ContractFixtures: ["Synthetic io_context coroutine probe; no socket, DNS, TLS, provider API key, or external account is used."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
@@ -2658,6 +2661,7 @@ Tasks:
         - "The Asio interface target consumes headers from the pinned Boost source, never C:/msys64/ucrt64/include/boost."
         - "Frozen command-line strings passed to WorkflowController contain no shell pipeline, alternation, or anchors; the windows-agent-slice preset supplies its own CTest filter."
         - "WorkflowController.Contract is run through the frozen windows-agent-slice test preset so its declared I:/cmake/bin PATH is loaded."
+        - "Every CTest invocation uses --no-tests=error, and the probe targets are built before either filtered test command runs."
         - "No Boost version pin, TLS policy, provider/core contract, or product runtime package is changed."
       LiveSideEffects: Forbidden
       NotRunReason: "The coroutine probe uses only an in-process io_context and synthetic operations; no live socket is opened."
@@ -2666,4 +2670,4 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, PAR-002, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
-    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0132, ED-0122]}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0120, ED-0122]}
