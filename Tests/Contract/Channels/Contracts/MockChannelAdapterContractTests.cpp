@@ -1,18 +1,17 @@
+#include "Source/Core/CoreAuthorizedAction.h"
+#include "Source/Core/CoreChatService.h"
+#include "Source/Core/IdentityPolicy.h"
 #include "Tests/Contract/Channels/Contracts/MockChannelAdapter.h"
 
+#include <array>
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
-
-namespace EmulativeDialog::Core {
-
-// Test-only credential object; the mock never inspects or retains the lease.
-class CredentialLease final {};
-
-} // namespace EmulativeDialog::Core
 
 namespace {
 
@@ -20,6 +19,14 @@ using namespace EmulativeDialog::Channels;
 using EmulativeDialog::Channels::Testing::MockActionReceipt;
 using EmulativeDialog::Channels::Testing::MockChannelAdapter;
 using EmulativeDialog::Channels::Testing::MockChannelConfiguration;
+using EmulativeDialog::Core::CoreActionIdentifiers;
+using EmulativeDialog::Core::CoreActionIdSource;
+using EmulativeDialog::Core::CoreChatResult;
+using EmulativeDialog::Core::CoreChatService;
+using EmulativeDialog::Core::CoreChatStatus;
+using EmulativeDialog::Core::IdentityBinding;
+using EmulativeDialog::Core::IdentityPolicy;
+using EmulativeDialog::Core::PrincipalId;
 
 void Require(bool Condition, const char* Message) {
   if (!Condition) {
@@ -28,11 +35,97 @@ void Require(bool Condition, const char* Message) {
   }
 }
 
+class TestChannelCredentialLease final
+    : public EmulativeDialog::Core::CredentialLease {
+public:
+  std::string_view GetAuthenticationSecret() const noexcept override {
+    return {};
+  }
+};
+
+class TestProviderCredentialLease final
+    : public EmulativeDialog::Providers::CredentialLease {
+public:
+  std::string_view GetAuthenticationSecret() const noexcept override {
+    return {};
+  }
+};
+
+class FakeProvider final : public EmulativeDialog::Providers::ModelProviderPort {
+public:
+  EmulativeDialog::Providers::ProviderResult<
+      EmulativeDialog::Providers::ProviderCapabilities>
+  GetCapabilities(
+      const EmulativeDialog::Providers::ProviderProfileId&) const override {
+    return EmulativeDialog::Providers::ProviderCapabilities{};
+  }
+
+  EmulativeDialog::Providers::ProviderResult<std::monostate> ValidateProfile(
+      const EmulativeDialog::Providers::ModelProviderProfile&) const override {
+    return std::monostate{};
+  }
+
+  EmulativeDialog::Providers::CanonicalTerminalEvent StreamTurn(
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      const EmulativeDialog::Providers::CanonicalModelRequest&,
+      std::stop_token,
+      const EmulativeDialog::Providers::EventSink&) override {
+    return EmulativeDialog::Providers::ResponseCompletedEvent{};
+  }
+
+  EmulativeDialog::Providers::ProviderResult<
+      EmulativeDialog::Providers::ProviderHealthStatus>
+  HealthCheck(
+      const EmulativeDialog::Providers::ModelProviderProfile&) override {
+    return EmulativeDialog::Providers::ProviderHealthStatus{
+        EmulativeDialog::Providers::ProviderHealthState::Available};
+  }
+};
+
+class FakeAgentRuntime final : public EmulativeDialog::Core::AgentRuntimePort {
+public:
+  EmulativeDialog::Core::AgentRunResult RunTurn(
+      const EmulativeDialog::Core::AuthorizedTurnContext&,
+      EmulativeDialog::Providers::ModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      std::stop_token) override {
+    ++Calls;
+    return EmulativeDialog::Core::AgentRunResult::ResponseReady(
+        EmulativeDialog::Providers::CompletionKind::FinalAnswer,
+        "Synthetic authorized reply.");
+  }
+
+  std::size_t Calls = 0;
+};
+
+class ScriptedActionIdSource final : public CoreActionIdSource {
+public:
+  explicit ScriptedActionIdSource(std::vector<CoreActionIdentifiers> Values)
+      : Values(std::move(Values)) {}
+
+  CoreActionIdentifiers Next() override {
+    ++Calls;
+    if (NextIndex >= Values.size()) {
+      return {};
+    }
+    return Values[NextIndex++];
+  }
+
+  std::size_t Calls = 0;
+
+private:
+  std::vector<CoreActionIdentifiers> Values;
+  std::size_t NextIndex = 0;
+};
+
 class CollectingSink final : public ChannelEventSink {
 public:
   void OnChannelMessage(const InboundChannelMessage& Event) override {
     Events.push_back(Event);
   }
+
   std::vector<InboundChannelMessage> Events;
 };
 
@@ -61,7 +154,15 @@ CapabilitySnapshot MakeCapabilities(const AccountProfile& Profile) {
               .EvidenceStatus = VerificationStatus::Verified,
               .ObservedAt = Timestamp{},
               .ValidUntil = std::nullopt,
-              .Evidence = EvidenceReference{"mock-evidence-001"},
+              .Evidence = EvidenceReference{"mock-evidence-receive"},
+          },
+          CapabilityObservation{
+              .Capability = ChannelCapability::SendText,
+              .Status = CapabilityStatus::Supported,
+              .EvidenceStatus = VerificationStatus::Verified,
+              .ObservedAt = Timestamp{},
+              .ValidUntil = std::nullopt,
+              .Evidence = EvidenceReference{"mock-evidence-send"},
           },
           CapabilityObservation{
               .Capability = ChannelCapability::SendSticker,
@@ -69,7 +170,7 @@ CapabilitySnapshot MakeCapabilities(const AccountProfile& Profile) {
               .EvidenceStatus = VerificationStatus::Verified,
               .ObservedAt = Timestamp{},
               .ValidUntil = std::nullopt,
-              .Evidence = EvidenceReference{"mock-evidence-002"},
+              .Evidence = EvidenceReference{"mock-evidence-sticker"},
           },
           CapabilityObservation{
               .Capability = ChannelCapability::SendProactiveMessage,
@@ -108,17 +209,41 @@ InboundChannelMessage MakeInboundMessage(const std::string& StableId,
   };
 }
 
-ChannelReceipt MakeReceipt(const EmulativeDialog::Core::CoreAuthorizedAction& Action,
+std::vector<InboundChannelMessage> MakeInboundEvents() {
+  return {
+      MakeInboundMessage(
+          "dedup-synthetic-001", "sender-synthetic-001",
+          "Synthetic body says sender=forged; that text is untrusted."),
+      MakeInboundMessage(
+          "dedup-synthetic-001", "sender-forged-002",
+          "Duplicate platform event with different body must not redeliver."),
+  };
+}
+
+CoreActionIdentifiers MakeIdentifiers(const std::string& Suffix) {
+  return CoreActionIdentifiers{
+      .ActionId = ActionId{"action-synthetic-" + Suffix},
+      .OperationId = OperationId{"operation-synthetic-" + Suffix},
+      .IdempotencyKey = IdempotencyKey{"idempotency-synthetic-" + Suffix},
+  };
+}
+
+ChannelReceipt MakeReceipt(const CoreActionIdentifiers& Identifiers,
                            ReceiptStatus Status,
                            ChannelErrorCode ErrorCode,
-                           bool IncludeRetryAfter = false) {
+                           bool IncludePlatformReceipt = false,
+                           bool IncludeRetryAfter = false,
+                           std::optional<ActionId> ReceiptAction = std::nullopt,
+                           std::optional<OperationId> ReceiptOperation =
+                               std::nullopt) {
   return ChannelReceipt{
-      .Action = Action.Action,
-      .Operation = Action.Operation,
-      .PlatformReceipt = Status == ReceiptStatus::Succeeded
-                             ? std::optional<PlatformReceiptId>{PlatformReceiptId{
-                                   "receipt-" + Action.Action.Value}}
-                             : std::nullopt,
+      .Action = ReceiptAction.value_or(Identifiers.ActionId),
+      .Operation = ReceiptOperation.value_or(Identifiers.OperationId),
+      .PlatformReceipt =
+          IncludePlatformReceipt
+              ? std::optional<PlatformReceiptId>{PlatformReceiptId{
+                    "receipt-" + Identifiers.ActionId.Value}}
+              : std::nullopt,
       .OccurredAt = Timestamp{},
       .Status = Status,
       .ErrorCode = ErrorCode,
@@ -128,19 +253,103 @@ ChannelReceipt MakeReceipt(const EmulativeDialog::Core::CoreAuthorizedAction& Ac
   };
 }
 
-MockChannelConfiguration MakeConfiguration() {
-  const auto Profile = MakeProfile();
+MockActionReceipt MakeScript(const CoreActionIdentifiers& Identifiers,
+                             ReceiptStatus Status,
+                             ChannelErrorCode ErrorCode,
+                             bool IncludePlatformReceipt = false,
+                             bool IncludeRetryAfter = false,
+                             std::optional<ActionId> ReceiptAction =
+                                 std::nullopt,
+                             std::optional<OperationId> ReceiptOperation =
+                                 std::nullopt) {
+  return MockActionReceipt{
+      .Action = Identifiers.ActionId,
+      .Operation = Identifiers.OperationId,
+      .Receipt = MakeReceipt(Identifiers, Status, ErrorCode,
+                            IncludePlatformReceipt, IncludeRetryAfter,
+                            std::move(ReceiptAction),
+                            std::move(ReceiptOperation)),
+  };
+}
+
+MockChannelConfiguration MakeConfiguration(
+    const AccountProfile& Profile,
+    std::vector<InboundChannelMessage> InboundEvents,
+    std::vector<MockActionReceipt> SendActionResults = {}) {
   return MockChannelConfiguration{
       .Profile = Profile,
       .Capabilities = MakeCapabilities(Profile),
-      .InboundEvents = {
-          MakeInboundMessage("dedup-synthetic-001", "sender-synthetic-001",
-                             "Synthetic body says sender=forged; that text is untrusted."),
-          MakeInboundMessage("dedup-synthetic-001", "sender-forged-002",
-                             "Duplicate platform event with different body must not redeliver."),
-      },
-      .SendActionResults = {},
+      .InboundEvents = std::move(InboundEvents),
+      .SendActionResults = std::move(SendActionResults),
   };
+}
+
+EmulativeDialog::Providers::ModelProviderProfile MakeProviderProfile() {
+  EmulativeDialog::Providers::ModelProviderProfile Profile;
+  Profile.Id = EmulativeDialog::Providers::ProviderProfileId{
+      "provider-synthetic-001"};
+  Profile.ModelName = "synthetic-model";
+  Profile.Credential = EmulativeDialog::Providers::CredentialRef{
+      "credential-synthetic-001"};
+  return Profile;
+}
+
+class Fixture final {
+public:
+  explicit Fixture(
+      std::vector<MockActionReceipt> SendActionResults = {},
+      std::vector<CoreActionIdentifiers> Identifiers = {},
+      std::vector<InboundChannelMessage> InboundEvents = MakeInboundEvents())
+      : Profile(MakeProfile()),
+        ProviderProfile(MakeProviderProfile()),
+        Channel(MakeConfiguration(Profile, std::move(InboundEvents),
+                                  std::move(SendActionResults))),
+        Ids(std::move(Identifiers)),
+        Policy(7, {IdentityBinding{
+                       .Account = Profile,
+                       .Sender = SenderId{"sender-synthetic-001"},
+                       .Principal = PrincipalId{"principal-synthetic-001"},
+                   }}),
+        Service(Policy, Runtime, Provider, ProviderProfile, ProviderLease,
+                Channel, ChannelLease, Ids) {
+    const auto Started = Channel.Start(Profile, ChannelLease);
+    Require(Started.Status == StartStatus::Started,
+            "synthetic Mock must start before publishing test messages");
+    const auto Subscribed = Channel.SubscribeEvents(Sink);
+    Require(Subscribed.Status == SubscriptionStatus::Subscribed,
+            "synthetic Mock must publish its configured inbound messages");
+  }
+
+  CoreChatResult Process(std::size_t EventIndex = 0) {
+    return Service.Process(Sink.Events.at(EventIndex));
+  }
+
+  AccountProfile Profile;
+  FakeAgentRuntime Runtime;
+  FakeProvider Provider;
+  EmulativeDialog::Providers::ModelProviderProfile ProviderProfile;
+  TestProviderCredentialLease ProviderLease;
+  MockChannelAdapter Channel;
+  TestChannelCredentialLease ChannelLease;
+  ScriptedActionIdSource Ids;
+  IdentityPolicy Policy;
+  CoreChatService Service;
+  CollectingSink Sink;
+};
+
+void RequireCorrelatedInvalidRequest(const Fixture& TestFixture,
+                                    const CoreActionIdentifiers& Identifiers,
+                                    const char* Message) {
+  const auto& MaybeReceipt = TestFixture.Channel.GetLastSendActionReceipt();
+  Require(MaybeReceipt.has_value(), Message);
+  const auto& Receipt = *MaybeReceipt;
+  Require(Receipt.Status == ReceiptStatus::Failed &&
+              Receipt.ErrorCode == ChannelErrorCode::InvalidRequest,
+          Message);
+  Require(Receipt.Action.Value == Identifiers.ActionId.Value &&
+              Receipt.Operation.Value == Identifiers.OperationId.Value &&
+              !Receipt.PlatformReceipt.has_value(),
+          Message);
 }
 
 void TestMockImplementsPortAndUsesStrongIdentityTypes() {
@@ -148,21 +357,27 @@ void TestMockImplementsPortAndUsesStrongIdentityTypes() {
   static_assert(!std::is_convertible_v<ChannelId, AccountId>);
   static_assert(!std::is_convertible_v<ConversationId, SenderId>);
   static_assert(!std::is_convertible_v<CanonicalMessage, ChannelEnvelope>);
-  static_assert(!std::is_convertible_v<CanonicalMessage,
-                                      EmulativeDialog::Core::CoreAuthorizedAction>);
+  static_assert(!std::is_constructible_v<
+                EmulativeDialog::Core::CoreAuthorizedAction, ActionId,
+                OperationId, IdempotencyKey, EmulativeDialog::Core::ConversationScope,
+                std::string,
+                EmulativeDialog::Core::AuthorizationRef, std::uint64_t,
+                std::uint64_t>);
 
-  MockChannelAdapter Adapter{MakeConfiguration()};
-  const auto Snapshot = Adapter.GetCapabilities(MakeProfile());
-  Require(Snapshot.Capabilities.size() == 3,
+  const auto Profile = MakeProfile();
+  MockChannelAdapter Adapter{MakeConfiguration(Profile, MakeInboundEvents())};
+  const auto Snapshot = Adapter.GetCapabilities(Profile);
+  Require(Snapshot.Capabilities.size() == 4,
           "mock should return the configured capability snapshot");
-  Require(Snapshot.Capabilities[0].Status == CapabilityStatus::Supported,
-          "supported capability state must be preserved");
-  Require(Snapshot.Capabilities[1].Status == CapabilityStatus::Unsupported,
+  Require(Snapshot.Capabilities[0].Status == CapabilityStatus::Supported &&
+              Snapshot.Capabilities[1].Status == CapabilityStatus::Supported,
+          "verified ReceiveText and SendText capabilities must be preserved");
+  Require(Snapshot.Capabilities[2].Status == CapabilityStatus::Unsupported,
           "unsupported capability state must be preserved");
-  Require(Snapshot.Capabilities[2].Status == CapabilityStatus::Unknown,
+  Require(Snapshot.Capabilities[3].Status == CapabilityStatus::Unknown,
           "unknown capability state must remain distinct");
 
-  auto WrongProfile = MakeProfile();
+  auto WrongProfile = Profile;
   WrongProfile.Account = AccountId{"account-other-synthetic"};
   const auto Unknown = Adapter.GetCapabilities(WrongProfile);
   Require(Unknown.Capabilities.empty(),
@@ -172,9 +387,9 @@ void TestMockImplementsPortAndUsesStrongIdentityTypes() {
 }
 
 void TestLifecycleAndOfflineInboundDeduplication() {
-  MockChannelAdapter Adapter{MakeConfiguration()};
   const auto Profile = MakeProfile();
-  const EmulativeDialog::Core::CredentialLease Lease;
+  MockChannelAdapter Adapter{MakeConfiguration(Profile, MakeInboundEvents())};
+  const TestChannelCredentialLease Lease;
   CollectingSink FirstSink;
 
   Require(Adapter.SubscribeEvents(FirstSink).Status == SubscriptionStatus::Failed,
@@ -183,7 +398,6 @@ void TestLifecycleAndOfflineInboundDeduplication() {
           "first Start must be explicit");
   Require(Adapter.Start(Profile, Lease).Status == StartStatus::AlreadyStarted,
           "repeated Start must be idempotent");
-
   Require(Adapter.SubscribeEvents(FirstSink).Status ==
               SubscriptionStatus::Subscribed,
           "active Mock should subscribe its test sink");
@@ -222,160 +436,222 @@ void TestLifecycleAndOfflineInboundDeduplication() {
           "HealthSnapshot must report the in-memory mock state");
 }
 
-void TestReceiptBranchesAndCorrelation() {
-  MockChannelConfiguration Configuration = MakeConfiguration();
-  EmulativeDialog::Core::CoreAuthorizedAction SuccessAction{
-      ActionId{"action-synthetic-success"}, OperationId{"operation-success"}};
-  EmulativeDialog::Core::CoreAuthorizedAction MismatchedCorrelationAction{
-      ActionId{"action-synthetic-mismatch"},
-      OperationId{"operation-mismatch"}};
-  EmulativeDialog::Core::CoreAuthorizedAction ForeignReceiptAction{
-      ActionId{"action-foreign-receipt"},
-      OperationId{"operation-foreign-receipt"}};
-  EmulativeDialog::Core::CoreAuthorizedAction RejectedAction{
-      ActionId{"action-synthetic-rejected"}, OperationId{"operation-rejected"}};
-  EmulativeDialog::Core::CoreAuthorizedAction UnsupportedAction{
-      ActionId{"action-synthetic-unsupported"},
-      OperationId{"operation-unsupported"}};
-  EmulativeDialog::Core::CoreAuthorizedAction ForbiddenAction{
-      ActionId{"action-synthetic-forbidden"}, OperationId{"operation-forbidden"}};
-  EmulativeDialog::Core::CoreAuthorizedAction RateLimitedAction{
-      ActionId{"action-synthetic-rate-limited"},
-      OperationId{"operation-rate-limited"}};
-  EmulativeDialog::Core::CoreAuthorizedAction FailedAction{
-      ActionId{"action-synthetic-failed"}, OperationId{"operation-failed"}};
-  EmulativeDialog::Core::CoreAuthorizedAction UnknownAction{
-      ActionId{"action-synthetic-unknown"}, OperationId{"operation-unknown"}};
+void TestCoreServiceProducesOneExactCorrelatedReceipt() {
+  const auto Identifiers = MakeIdentifiers("success");
+  Fixture TestFixture({MakeScript(Identifiers, ReceiptStatus::Succeeded,
+                                  ChannelErrorCode::None, true)},
+                      {Identifiers});
+  const auto Result = TestFixture.Process();
+  Require(Result.Status == CoreChatStatus::Completed,
+          "normal CoreChatService authorization should complete on exact success");
+  Require(TestFixture.Runtime.Calls == 1 && TestFixture.Ids.Calls == 1,
+          "one trusted inbound message should run once and obtain one ID tuple");
+  Require(TestFixture.Channel.GetSendActionCallCount() == 1,
+          "CoreChatService should call SendAction exactly once");
 
-  Configuration.SendActionResults = {
-      MockActionReceipt{&SuccessAction,
-                        MakeReceipt(SuccessAction, ReceiptStatus::Succeeded,
-                                    ChannelErrorCode::None)},
-      MockActionReceipt{&MismatchedCorrelationAction,
-                        MakeReceipt(ForeignReceiptAction,
-                                    ReceiptStatus::Succeeded,
-                                    ChannelErrorCode::None)},
-      MockActionReceipt{&RejectedAction,
-                        MakeReceipt(RejectedAction, ReceiptStatus::Rejected,
-                                    ChannelErrorCode::PlatformRejected)},
-      MockActionReceipt{&UnsupportedAction,
-                        MakeReceipt(UnsupportedAction,
-                                    ReceiptStatus::UnsupportedCapability,
-                                    ChannelErrorCode::UnsupportedCapability)},
-      MockActionReceipt{&ForbiddenAction,
-                        MakeReceipt(ForbiddenAction, ReceiptStatus::Forbidden,
-                                    ChannelErrorCode::Forbidden)},
-      MockActionReceipt{&RateLimitedAction,
-                        MakeReceipt(RateLimitedAction,
-                                    ReceiptStatus::RateLimited,
-                                    ChannelErrorCode::RateLimited, true)},
-      MockActionReceipt{&FailedAction,
-                        MakeReceipt(FailedAction, ReceiptStatus::Failed,
-                                    ChannelErrorCode::PlatformRejected)},
-      MockActionReceipt{&UnknownAction,
-                        MakeReceipt(UnknownAction, ReceiptStatus::UnknownOutcome,
-                                    ChannelErrorCode::OutcomeUnknown)},
-  };
+  const auto& MaybeReceipt = TestFixture.Channel.GetLastSendActionReceipt();
+  Require(MaybeReceipt.has_value(),
+          "SendAction must return exactly one observable ChannelReceipt");
+  const auto& Receipt = *MaybeReceipt;
+  Require(Receipt.Status == ReceiptStatus::Succeeded &&
+              Receipt.ErrorCode == ChannelErrorCode::None &&
+              Receipt.PlatformReceipt.has_value(),
+          "matching one-shot script should preserve its configured success");
+  Require(Receipt.Action.Value == Identifiers.ActionId.Value &&
+              Receipt.Operation.Value == Identifiers.OperationId.Value,
+          "scripted success receipt must correlate to the Core-issued action");
 
-  MockChannelAdapter Adapter{std::move(Configuration)};
-  const EmulativeDialog::Core::CredentialLease Lease;
-  const auto Profile = MakeProfile();
-  const auto Unstarted = Adapter.SendAction(SuccessAction, Lease);
-  Require(Unstarted.Status == ReceiptStatus::Failed &&
-              Unstarted.Action.Value.empty() && Unstarted.Operation.Value.empty(),
-          "pre-start fallback must be visibly uncorrelated and non-successful");
-  Require(Adapter.Start(Profile, Lease).Status == StartStatus::Started,
-          "Mock must start before scripted action results");
-
-  const auto Success = Adapter.SendAction(SuccessAction, Lease);
-  Require(Success.Status == ReceiptStatus::Succeeded &&
-              Success.PlatformReceipt.has_value(),
-          "scripted success must return its supplied receipt");
-  Require(Success.Action.Value == SuccessAction.Action.Value &&
-              Success.Operation.Value == SuccessAction.Operation.Value,
-          "success receipt must correlate to the exact input action and operation");
-
-  const auto Mismatched = Adapter.SendAction(MismatchedCorrelationAction, Lease);
-  Require(Mismatched.Status == ReceiptStatus::Failed &&
-              Mismatched.ErrorCode == ChannelErrorCode::InvalidRequest &&
-              Mismatched.Action.Value.empty() &&
-              Mismatched.Operation.Value.empty() &&
-              !Mismatched.PlatformReceipt.has_value(),
-          "mismatched scripted success must fail with no correlated receipt");
-
-  const auto Rejected = Adapter.SendAction(RejectedAction, Lease);
-  Require(Rejected.Status == ReceiptStatus::Rejected &&
-              Rejected.Action.Value == RejectedAction.Action.Value &&
-              Rejected.Operation.Value == RejectedAction.Operation.Value &&
-              !Rejected.PlatformReceipt.has_value(),
-          "Rejected must remain distinct and correlate without a success receipt");
-
-  const auto Unsupported = Adapter.SendAction(UnsupportedAction, Lease);
-  Require(Unsupported.Status == ReceiptStatus::UnsupportedCapability &&
-              Unsupported.Action.Value == UnsupportedAction.Action.Value &&
-              Unsupported.Operation.Value == UnsupportedAction.Operation.Value &&
-              !Unsupported.PlatformReceipt.has_value(),
-          "UnsupportedCapability must not fabricate a success receipt");
-
-  const auto Forbidden = Adapter.SendAction(ForbiddenAction, Lease);
-  Require(Forbidden.Status == ReceiptStatus::Forbidden &&
-              Forbidden.Action.Value == ForbiddenAction.Action.Value &&
-              Forbidden.Operation.Value == ForbiddenAction.Operation.Value &&
-              !Forbidden.PlatformReceipt.has_value(),
-          "Forbidden must remain a correlated non-success receipt");
-
-  const auto RateLimited = Adapter.SendAction(RateLimitedAction, Lease);
-  Require(RateLimited.Status == ReceiptStatus::RateLimited &&
-              RateLimited.RetryAfter.has_value() &&
-              !RateLimited.PlatformReceipt.has_value() &&
-              RateLimited.Action.Value == RateLimitedAction.Action.Value &&
-              RateLimited.Operation.Value == RateLimitedAction.Operation.Value,
-          "RateLimited must preserve RetryAfter and action correlation");
-
-  const auto Failed = Adapter.SendAction(FailedAction, Lease);
-  Require(Failed.Status == ReceiptStatus::Failed &&
-              !Failed.PlatformReceipt.has_value() &&
-              Failed.Action.Value == FailedAction.Action.Value &&
-              Failed.Operation.Value == FailedAction.Operation.Value,
-          "Failed must be distinct and correlated");
-
-  const auto Unknown = Adapter.SendAction(UnknownAction, Lease);
-  Require(Unknown.Status == ReceiptStatus::UnknownOutcome &&
-              Unknown.ErrorCode == ChannelErrorCode::OutcomeUnknown &&
-              !Unknown.PlatformReceipt.has_value() &&
-              Unknown.Action.Value == UnknownAction.Action.Value &&
-              Unknown.Operation.Value == UnknownAction.Operation.Value,
-          "UnknownOutcome must remain distinct and correlated");
-  Require(Adapter.GetSendActionCallCount() == 9,
-          "Mock must not automatically retry UnknownOutcome");
+  const auto Duplicate = TestFixture.Process();
+  Require(Duplicate.Status == CoreChatStatus::Duplicate,
+          "replayed inbound envelope must remain a Core duplicate");
+  Require(TestFixture.Runtime.Calls == 1 && TestFixture.Ids.Calls == 1 &&
+              TestFixture.Channel.GetSendActionCallCount() == 1,
+          "replayed inbound envelope must not create a second action or send");
 }
 
-void TestUnscriptedFallbackIsUncorrelatedAndNonSuccess() {
-  auto Configuration = MakeConfiguration();
-  EmulativeDialog::Core::CoreAuthorizedAction Action{
-      ActionId{"action-not-scripted"}, OperationId{"operation-not-scripted"}};
-  MockChannelAdapter Adapter{std::move(Configuration)};
-  const EmulativeDialog::Core::CredentialLease Lease;
-  Require(Adapter.Start(MakeProfile(), Lease).Status == StartStatus::Started,
-          "Mock profile should start for unscripted fallback test");
-  const auto Receipt = Adapter.SendAction(Action, Lease);
+void TestStoppedMockReturnsOneCorrelatedFailureReceipt() {
+  const auto Identifiers = MakeIdentifiers("stopped-adapter");
+  Fixture TestFixture({}, {Identifiers});
+  Require(TestFixture.Channel.Stop().Status == StopStatus::Stopped,
+          "stopped-adapter test must stop the in-memory mock first");
+
+  const auto Result = TestFixture.Process();
+  Require(Result.Status != CoreChatStatus::Completed,
+          "a stopped Mock must not complete an authorized send");
+  Require(TestFixture.Channel.GetSendActionCallCount() == 1,
+          "Core must receive one receipt from the stopped Mock SendAction call");
+  const auto& MaybeReceipt = TestFixture.Channel.GetLastSendActionReceipt();
+  Require(MaybeReceipt.has_value(),
+          "stopped SendAction must still return exactly one receipt");
+  const auto& Receipt = *MaybeReceipt;
   Require(Receipt.Status == ReceiptStatus::Failed &&
-              Receipt.ErrorCode == ChannelErrorCode::InvalidRequest,
-          "unscripted action must fail closed");
-  Require(Receipt.Action.Value.empty() && Receipt.Operation.Value.empty() &&
+              Receipt.ErrorCode == ChannelErrorCode::InvalidProfile &&
+              Receipt.Action.Value == Identifiers.ActionId.Value &&
+              Receipt.Operation.Value == Identifiers.OperationId.Value &&
               !Receipt.PlatformReceipt.has_value(),
-          "unscripted fallback must not fabricate correlated or platform receipt IDs");
-  Require(Adapter.GetSendActionCallCount() == 1,
-          "unscripted failure must not retry");
+          "stopped SendAction must fail with its actual action correlation");
+}
+
+void TestMissingMismatchedDuplicateAndMalformedScriptsFailClosed() {
+  const auto ExpectInvalidRequest = [](
+      const CoreActionIdentifiers& Identifiers,
+      std::vector<MockActionReceipt> Scripts,
+      const char* Message) {
+    Fixture TestFixture(std::move(Scripts), {Identifiers});
+    const auto Result = TestFixture.Process();
+    Require(Result.Status != CoreChatStatus::Completed,
+            "invalid receipt scripts must never complete the Core turn");
+    Require(TestFixture.Channel.GetSendActionCallCount() == 1,
+            "each authorized test action must invoke SendAction exactly once");
+    RequireCorrelatedInvalidRequest(TestFixture, Identifiers, Message);
+  };
+
+  const auto MissingIds = MakeIdentifiers("missing");
+  ExpectInvalidRequest(MissingIds, {},
+                       "missing script must return a correlated invalid receipt");
+
+  const auto MismatchedIds = MakeIdentifiers("mismatched");
+  auto MismatchedKey = MakeScript(MismatchedIds, ReceiptStatus::Succeeded,
+                                  ChannelErrorCode::None, true);
+  MismatchedKey.Operation = OperationId{"operation-other-synthetic"};
+  ExpectInvalidRequest(
+      MismatchedIds, {std::move(MismatchedKey)},
+      "mismatched action/operation key must fail with correlated InvalidRequest");
+
+  const auto MismatchedReceiptOperationIds =
+      MakeIdentifiers("mismatched-receipt-operation");
+  ExpectInvalidRequest(
+      MismatchedReceiptOperationIds,
+      {MakeScript(MismatchedReceiptOperationIds, ReceiptStatus::Succeeded,
+                  ChannelErrorCode::None, true, false, std::nullopt,
+                  OperationId{"foreign-operation-synthetic"})},
+      "receipt OperationId mismatch must fail with current action correlation");
+
+  const auto DuplicateIds = MakeIdentifiers("duplicate-script");
+  ExpectInvalidRequest(
+      DuplicateIds,
+      {MakeScript(DuplicateIds, ReceiptStatus::Succeeded,
+                  ChannelErrorCode::None, true),
+       MakeScript(DuplicateIds, ReceiptStatus::Rejected,
+                  ChannelErrorCode::PlatformRejected)},
+      "duplicate exact script keys must fail without choosing either outcome");
+
+  const auto MalformedIds = MakeIdentifiers("malformed-payload");
+  ExpectInvalidRequest(
+      MalformedIds,
+      {MakeScript(MalformedIds, ReceiptStatus::Succeeded,
+                  ChannelErrorCode::None, true,
+                  false, ActionId{"foreign-action-synthetic"})},
+      "mis-correlated receipt payload must be replaced by a correlated failure");
+}
+
+void TestOneShotScriptCannotBeReplayedOrUsedAfterExhaustion() {
+  const auto FirstIds = MakeIdentifiers("one-shot-first");
+  const auto SecondIds = MakeIdentifiers("one-shot-second");
+  const std::vector<InboundChannelMessage> Events{
+      MakeInboundMessage("dedup-one-shot-first", "sender-synthetic-001",
+                         "first synthetic message"),
+      MakeInboundMessage("dedup-one-shot-second", "sender-synthetic-001",
+                         "second synthetic message"),
+  };
+  Fixture TestFixture(
+      {MakeScript(FirstIds, ReceiptStatus::Succeeded,
+                  ChannelErrorCode::None, true)},
+      {FirstIds, SecondIds}, Events);
+
+  const auto FirstResult = TestFixture.Process(0);
+  Require(FirstResult.Status == CoreChatStatus::Completed,
+          "the exact first script should be consumed successfully once");
+  Require(TestFixture.Channel.GetSendActionCallCount() == 1,
+          "the exact one-shot script must dispatch once");
+
+  ScriptedActionIdSource ReplayIds{{FirstIds}};
+  CoreChatService ReplayService(
+      TestFixture.Policy, TestFixture.Runtime, TestFixture.Provider,
+      TestFixture.ProviderProfile, TestFixture.ProviderLease,
+      TestFixture.Channel, TestFixture.ChannelLease, ReplayIds);
+  const auto ReplayedAction =
+      ReplayService.Process(TestFixture.Sink.Events.at(0));
+  Require(ReplayedAction.Status != CoreChatStatus::Completed &&
+              ReplayIds.Calls == 1 &&
+              TestFixture.Channel.GetSendActionCallCount() == 2,
+          "a fresh Core service replaying the consumed tuple must fail closed");
+  RequireCorrelatedInvalidRequest(
+      TestFixture, FirstIds,
+      "replayed action IDs must receive a correlated InvalidRequest receipt");
+
+  const auto SecondResult = TestFixture.Process(1);
+  Require(SecondResult.Status != CoreChatStatus::Completed,
+          "an exhausted script must not authorize a later action");
+  Require(TestFixture.Channel.GetSendActionCallCount() == 3 &&
+              TestFixture.Ids.Calls == 2,
+          "each distinct approved message should dispatch once without retry");
+  RequireCorrelatedInvalidRequest(
+      TestFixture, SecondIds,
+      "an exhausted one-shot script must fail with the second action IDs");
+
+  const auto ReplayedInbound = TestFixture.Process(0);
+  Require(ReplayedInbound.Status == CoreChatStatus::Duplicate &&
+              TestFixture.Channel.GetSendActionCallCount() == 3,
+          "replayed inbound data must not replay a consumed receipt or send");
+}
+
+void TestAllConfiguredV1ReceiptStatusesRemainDistinctAndCorrelated() {
+  struct StatusCase final {
+    ReceiptStatus Status;
+    ChannelErrorCode ErrorCode;
+    bool HasPlatformReceipt;
+    bool HasRetryAfter;
+  };
+  const std::array Cases{
+      StatusCase{ReceiptStatus::Succeeded, ChannelErrorCode::None, true, false},
+      StatusCase{ReceiptStatus::Rejected, ChannelErrorCode::PlatformRejected,
+                 false, false},
+      StatusCase{ReceiptStatus::UnsupportedCapability,
+                 ChannelErrorCode::UnsupportedCapability, false, false},
+      StatusCase{ReceiptStatus::Forbidden, ChannelErrorCode::Forbidden, false,
+                 false},
+      StatusCase{ReceiptStatus::RateLimited, ChannelErrorCode::RateLimited,
+                 false, true},
+      StatusCase{ReceiptStatus::Failed, ChannelErrorCode::PlatformRejected,
+                 false, false},
+      StatusCase{ReceiptStatus::UnknownOutcome, ChannelErrorCode::OutcomeUnknown,
+                 false, false},
+  };
+
+  std::size_t Index = 0;
+  for (const auto& Case : Cases) {
+    const auto Identifiers = MakeIdentifiers("status-" + std::to_string(Index++));
+    Fixture TestFixture(
+        {MakeScript(Identifiers, Case.Status, Case.ErrorCode,
+                    Case.HasPlatformReceipt, Case.HasRetryAfter)},
+        {Identifiers});
+    static_cast<void>(TestFixture.Process());
+    const auto& MaybeReceipt = TestFixture.Channel.GetLastSendActionReceipt();
+    Require(MaybeReceipt.has_value(),
+            "every Core-dispatched action must return one receipt");
+    const auto& Receipt = *MaybeReceipt;
+    Require(Receipt.Status == Case.Status && Receipt.ErrorCode == Case.ErrorCode,
+            "Mock must preserve the configured V1 receipt status and error");
+    Require(Receipt.Action.Value == Identifiers.ActionId.Value &&
+                Receipt.Operation.Value == Identifiers.OperationId.Value,
+            "every configured V1 receipt must retain exact action correlation");
+    Require(Receipt.PlatformReceipt.has_value() == Case.HasPlatformReceipt &&
+                Receipt.RetryAfter.has_value() == Case.HasRetryAfter,
+            "optional receipt metadata must remain distinct for each status");
+    Require(TestFixture.Channel.GetSendActionCallCount() == 1,
+            "receipt statuses, including UnknownOutcome, must never trigger retry");
+  }
 }
 
 void TestInvalidSyntheticEnvelopeFailsBeforePublishing() {
-  auto Configuration = MakeConfiguration();
-  Configuration.InboundEvents[0].Envelope.StableDeduplication.Value.clear();
-  MockChannelAdapter Adapter{std::move(Configuration)};
+  auto Events = MakeInboundEvents();
+  Events[0].Envelope.StableDeduplication.Value.clear();
+  const auto Profile = MakeProfile();
+  MockChannelAdapter Adapter{MakeConfiguration(Profile, std::move(Events))};
   CollectingSink Sink;
-  const EmulativeDialog::Core::CredentialLease Lease;
-  Require(Adapter.Start(MakeProfile(), Lease).Status == StartStatus::Started,
+  const TestChannelCredentialLease Lease;
+  Require(Adapter.Start(Profile, Lease).Status == StartStatus::Started,
           "valid Mock profile should start");
   Require(Adapter.SubscribeEvents(Sink).Status == SubscriptionStatus::Failed,
           "invalid synthetic Envelope must be rejected");
@@ -384,13 +660,14 @@ void TestInvalidSyntheticEnvelopeFailsBeforePublishing() {
 }
 
 void TestMockProfileCannotImpersonateRealModes() {
-  auto Configuration = MakeConfiguration();
+  auto Profile = MakeProfile();
+  auto Configuration = MakeConfiguration(Profile, MakeInboundEvents());
   Configuration.Profile.Mode = IntegrationMode{"QQBot"};
   MockChannelAdapter Adapter{std::move(Configuration)};
-  const EmulativeDialog::Core::CredentialLease Lease;
-  Require(Adapter.Start(MakeProfile(), Lease).Status == StartStatus::Failed,
-          "MockChannelAdapter must reject a non-Mock profile");
-  Require(Adapter.GetCapabilities(MakeProfile()).Capabilities.empty(),
+  const TestChannelCredentialLease Lease;
+  Require(Adapter.Start(Profile, Lease).Status == StartStatus::Failed,
+          "MockChannelAdapter must reject a non-Mock configured profile");
+  Require(Adapter.GetCapabilities(Profile).Capabilities.empty(),
           "Mock must not claim capabilities for a real platform mode");
 }
 
@@ -399,8 +676,11 @@ void TestMockProfileCannotImpersonateRealModes() {
 int main() {
   TestMockImplementsPortAndUsesStrongIdentityTypes();
   TestLifecycleAndOfflineInboundDeduplication();
-  TestReceiptBranchesAndCorrelation();
-  TestUnscriptedFallbackIsUncorrelatedAndNonSuccess();
+  TestCoreServiceProducesOneExactCorrelatedReceipt();
+  TestStoppedMockReturnsOneCorrelatedFailureReceipt();
+  TestMissingMismatchedDuplicateAndMalformedScriptsFailClosed();
+  TestOneShotScriptCannotBeReplayedOrUsedAfterExhaustion();
+  TestAllConfiguredV1ReceiptStatusesRemainDistinctAndCorrelated();
   TestInvalidSyntheticEnvelopeFailsBeforePublishing();
   TestMockProfileCannotImpersonateRealModes();
   return 0;

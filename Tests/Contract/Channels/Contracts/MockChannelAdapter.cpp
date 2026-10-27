@@ -80,26 +80,42 @@ ChannelReceipt MockChannelAdapter::SendAction(
   static_cast<void>(Lease);
   ++SendActionCallCount;
   if (!Started || !HasValidMockConfiguration()) {
-    return MakeUnscriptedFailureReceipt(ChannelErrorCode::InvalidProfile);
+    return StoreSendActionReceipt(
+        MakeUnscriptedFailureReceipt(Action, ChannelErrorCode::InvalidProfile));
   }
 
-  const auto Result = std::find_if(
+  const auto MatchesAction = [&Action](const MockActionReceipt& Candidate) {
+    return Candidate.Action.Value == Action.GetActionId().Value &&
+           Candidate.Operation.Value == Action.GetOperationId().Value;
+  };
+  const std::size_t MatchCount = static_cast<std::size_t>(std::count_if(
       Configuration.SendActionResults.begin(),
-      Configuration.SendActionResults.end(),
-      [&Action](const MockActionReceipt& Candidate) {
-        return Candidate.Action == &Action;
-      });
-  if (Result == Configuration.SendActionResults.end()) {
-    return MakeUnscriptedFailureReceipt(ChannelErrorCode::InvalidRequest);
+      Configuration.SendActionResults.end(), MatchesAction));
+  if (MatchCount != 1) {
+    // Duplicate keys are invalid as a group. Consume them so a later replay
+    // cannot accidentally select one of the conflicting scripted outcomes.
+    if (MatchCount > 1) {
+      const auto NewEnd = std::remove_if(
+          Configuration.SendActionResults.begin(),
+          Configuration.SendActionResults.end(), MatchesAction);
+      Configuration.SendActionResults.erase(NewEnd,
+                                             Configuration.SendActionResults.end());
+    }
+    return StoreSendActionReceipt(
+        MakeUnscriptedFailureReceipt(Action, ChannelErrorCode::InvalidRequest));
   }
 
+  const auto Result = std::find_if(Configuration.SendActionResults.begin(),
+                                   Configuration.SendActionResults.end(),
+                                   MatchesAction);
   const ChannelReceipt Receipt = Result->Receipt;
   Configuration.SendActionResults.erase(Result);
-  if (Receipt.Action.Value != Action.Action.Value ||
-      Receipt.Operation.Value != Action.Operation.Value) {
-    return MakeUnscriptedFailureReceipt(ChannelErrorCode::InvalidRequest);
+  if (Receipt.Action.Value != Action.GetActionId().Value ||
+      Receipt.Operation.Value != Action.GetOperationId().Value) {
+    return StoreSendActionReceipt(
+        MakeUnscriptedFailureReceipt(Action, ChannelErrorCode::InvalidRequest));
   }
-  return Receipt;
+  return StoreSendActionReceipt(Receipt);
 }
 
 HealthSnapshot MockChannelAdapter::GetHealthSnapshot() const {
@@ -120,6 +136,11 @@ std::size_t MockChannelAdapter::GetDeliveredEventCount() const noexcept {
 
 std::size_t MockChannelAdapter::GetSendActionCallCount() const noexcept {
   return SendActionCallCount;
+}
+
+const std::optional<ChannelReceipt>&
+MockChannelAdapter::GetLastSendActionReceipt() const noexcept {
+  return LastSendActionReceipt;
 }
 
 bool MockChannelAdapter::IsStarted() const noexcept {
@@ -175,18 +196,23 @@ CapabilitySnapshot MockChannelAdapter::MakeUnknownCapabilitySnapshot(
 }
 
 ChannelReceipt MockChannelAdapter::MakeUnscriptedFailureReceipt(
+    const Core::CoreAuthorizedAction& Action,
     ChannelErrorCode ErrorCode) const {
-  // Empty IDs deliberately make this fallback visibly uncorrelated. It can
-  // never be mistaken for a receipt for the supplied CoreAuthorizedAction.
   return ChannelReceipt{
-      .Action = ActionId{std::string{}},
-      .Operation = OperationId{std::string{}},
+      .Action = Action.GetActionId(),
+      .Operation = Action.GetOperationId(),
       .PlatformReceipt = std::nullopt,
       .OccurredAt = Timestamp{},
       .Status = ReceiptStatus::Failed,
       .ErrorCode = ErrorCode,
       .RetryAfter = std::nullopt,
   };
+}
+
+ChannelReceipt MockChannelAdapter::StoreSendActionReceipt(
+    ChannelReceipt Receipt) {
+  LastSendActionReceipt = Receipt;
+  return Receipt;
 }
 
 } // namespace EmulativeDialog::Channels::Testing

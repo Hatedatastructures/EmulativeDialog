@@ -1,30 +1,22 @@
 #pragma once
 
 #include "Source/Channels/Contracts/ChannelAdapterPort.h"
+#include "Source/Core/CoreAuthorizedAction.h"
 
 #include <cstddef>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
 
-namespace EmulativeDialog::Core {
-
-// Test-only stand-in exposing action correlation IDs. It has no authorization
-// state or behavior and is not a product CoreAuthorizedAction definition.
-struct CoreAuthorizedAction final {
-  Channels::ActionId Action;
-  Channels::OperationId Operation;
-};
-
-} // namespace EmulativeDialog::Core
-
 namespace EmulativeDialog::Channels::Testing {
 
-// A scripted receipt is associated with one exact CoreAuthorizedAction instance.
-// The referenced action must outlive its queued result; the mock compares only its
-// address and never reads or stores authorization fields.
+// A synthetic receipt is one-shot and keyed by the exact Core-issued action and
+// operation IDs. The adapter copies only the configured status payload into the
+// returned receipt after validating that the receipt itself is correctly paired.
 struct MockActionReceipt {
-  const Core::CoreAuthorizedAction* Action;
+  ActionId Action;
+  OperationId Operation;
   ChannelReceipt Receipt;
 };
 
@@ -38,7 +30,7 @@ struct MockChannelConfiguration {
 };
 
 // Deterministic, in-memory, offline ChannelAdapterPort implementation for tests.
-// SendAction returns only the receipt scripted for the exact input action and
+// SendAction returns only the receipt scripted for the exact input action IDs and
 // never performs a retry or synthesizes a correlated success receipt.
 class MockChannelAdapter final : public ChannelAdapterPort {
 public:
@@ -61,6 +53,7 @@ public:
 
   std::size_t GetDeliveredEventCount() const noexcept;
   std::size_t GetSendActionCallCount() const noexcept;
+  const std::optional<ChannelReceipt>& GetLastSendActionReceipt() const noexcept;
   bool IsStarted() const noexcept;
 
 private:
@@ -69,13 +62,17 @@ private:
   bool IsValidInboundEvent(const InboundChannelMessage& Event) const noexcept;
   CapabilitySnapshot MakeUnknownCapabilitySnapshot(
       const AccountProfile& Profile) const;
-  ChannelReceipt MakeUnscriptedFailureReceipt(ChannelErrorCode ErrorCode) const;
+  ChannelReceipt MakeUnscriptedFailureReceipt(
+      const Core::CoreAuthorizedAction& Action,
+      ChannelErrorCode ErrorCode) const;
+  ChannelReceipt StoreSendActionReceipt(ChannelReceipt Receipt);
 
   MockChannelConfiguration Configuration;
   std::set<std::string> DeliveredDeduplicationIds;
   ChannelEventSink* ActiveSink = nullptr;
   std::size_t DeliveredEventCount = 0;
   std::size_t SendActionCallCount = 0;
+  std::optional<ChannelReceipt> LastSendActionReceipt;
   bool Started = false;
 };
 
