@@ -52,11 +52,11 @@ WorkflowController AC-1..AC-6 contract fixtures passed
 PATHSAFE_DIAGNOSTIC_EXIT=0
 ```
 
-The shorter root made the complete test pass. Inspection then found generated fixture directories containing read-only Git object files; the existing test cleanup did not remove every fixture directory. R9 therefore must keep the fixture root short **and** the separate AgentWorkflowController test-support task must make marker-owned Windows cleanup reliable without traversing reparse points or deleting unowned paths.
+The shorter root made the complete test pass. Inspection then found generated fixture directories containing read-only Git object files; the existing test cleanup did not remove every fixture directory. The planned implementation must use the exact `BuildDirectory / "T"` parent, keep the marker guard, clear read-only attributes only inside the exact owned directory, skip reparse points, and remove the shared temp root only when empty.
 
 ## Scope and side effects
 
 - No source file in the task worktree was changed during diagnosis; R8 still has only its two uncommitted CMake changes.
 - All temporary binaries, copied sources, and fixture repositories were created under the centralized `.build` root.
 - The failing test used synthetic local Git repositories only; no provider, QQ account, external service, credential, or live user data was involved.
-- The test-source fix is outside `RootBuildAndDependencies` WriteRoots, so it is proposed as a separate `AgentWorkflowController` task. The R9 root build task will retain its two-file CMake WriteSet and depend on that task.
+- The test-source fix is outside `RootBuildAndDependencies` WriteRoots, so CR-ED-0124-009 is an explicit cross-module `IntegrationTask` with both module IDs and both module shards in ReadSet. Its four paths are exactly two BuildRelease roots and two WorkflowTools test roots. R9 adds the `WorkflowControllerTestWorkspaceCoverageReport` target; validation invokes it through the allowlisted CMake build command, and the target runs the pinned gcov tool internally. The JSON v2 report is selected by the `WorkflowControllerTestWorkspace.hpp` file record, and the evidence records its executed-line count, executable-line count, and calculated percentage.
