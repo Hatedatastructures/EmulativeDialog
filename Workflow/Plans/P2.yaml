@@ -79,7 +79,6 @@ ChangeRequests:
       - {TaskId: ED-0123, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0124, FromRevision: 1, ToRevision: 2}
       - {TaskId: ED-0125, FromRevision: 1, ToRevision: 2}
-      - {TaskId: ED-0125, FromRevision: 2, ToRevision: 3}
     Scope: >-
       Supersede the blocked-before-code P2/P3 task revisions that contain an undefined <TaskBuildDir> token or lack
       executable coverage instrumentation. Assign an absolute sibling TaskBuildDirectory and unique future branch/worktree
