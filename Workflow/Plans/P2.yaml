@@ -1809,7 +1809,7 @@ Tasks:
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
     TaskKind: Build
-    State: Ready
+    State: Assigned
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -1822,11 +1822,14 @@ Tasks:
     Branch: Task/ED-0124-R6RootCMakeIntegration
     Worktree: H:/Qbot/EmulativeDialog.ED-0124-R6
     BaselineCommit: 47ad5b87fc7f8dde0fe8c99fa62e229c5f06289f
+    TaskSpecCommit: cb88bb09b0da99dfac9b1fe593131b4ac7df0a48
+    TaskSpecBlob: 59554d2854a6a34117b477b5f4c0758b4afbcbdc
+    AssignmentEventId: bbae3eab-b198-46a9-a931-26c05b3effbb
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
       TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
-      State: Ready
+      State: Assigned
       Disposition: SupersededBeforeCodeChanges
       Branch: ""
       Worktree: ""
@@ -1873,7 +1876,7 @@ Tasks:
       TaskRevision: 2
       TaskSpecCommit: 05250a2402db4d660ff70088ad163375badb6826
       TaskSpecBlob: d6fbaa0e59ba377343d92df08adb24c4dfd589b6
-      State: Ready
+      State: Assigned
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R2-RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R2
@@ -1886,7 +1889,7 @@ Tasks:
       TaskRevision: 3
       TaskSpecCommit: 8a91a3d3cf90e18afd48b4f129f6fae453a452d3
       TaskSpecBlob: c983c20c5a1bc168c5c5252d505f5864aa9bc691
-      State: Ready
+      State: Assigned
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R3RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R3
@@ -1906,7 +1909,7 @@ Tasks:
       TaskRevision: 4
       TaskSpecCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
       TaskSpecBlob: 56993036ce39679ead354bc66dd63d78e5d4f1ec
-      State: Ready
+      State: Assigned
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R4RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R4
@@ -1925,7 +1928,7 @@ Tasks:
       TaskRevision: 5
       TaskSpecCommit: b0ff9a92b4ee7d739969d4a7c9de62808ba545ec
       TaskSpecBlob: 5c7d95352d0300c3998d413dc75c6a6eb3cce954
-      State: Ready
+      State: Assigned
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R5RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R5
