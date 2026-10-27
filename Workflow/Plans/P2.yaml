@@ -283,10 +283,18 @@ ChangeRequests:
     TargetTaskRevision: 4
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
     IndependentReviewerAgentId: /root/p1_trace_events_luna
-    IndependentReviewDecision: Pending
+    IndependentReviewDecision: Approve
     ReviewBaseCommit: 2588611aa74c75d080bb853ee1fd35e8a6623825
+    ReviewHeadCommit: be90819d4625a85a54ba31ece99e574f5b5e5e53
+    ApprovedByRole: AgentRuntimeOwner
+    ApprovedByAgentId: /root/p1_code001_luna
+    IndependentReviewBaseCommit: 2588611aa74c75d080bb853ee1fd35e8a6623825
+    IndependentReviewHeadCommit: be90819d4625a85a54ba31ece99e574f5b5e5e53
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: be90819d4625a85a54ba31ece99e574f5b5e5e53
     TaskRevisionTransition: {FromRevision: 4, ToRevision: 5}
     Scope: >-
       Preserve the accepted ED-0101/R4 goal, capability, dependencies, WriteSet, ReadSet, Acceptance, toolchain,
@@ -626,10 +634,16 @@ Tasks:
       ToRevision: 5
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: Proposed
+      ApprovedByRole: AgentRuntimeOwner
+      ApprovedByAgentId: /root/p1_code001_luna
+      Decision: Accepted
       IndependentReviewerAgentId: /root/p1_trace_events_luna
-      IndependentReviewDecision: Pending
-      CoordinatorDecision: Pending
+      IndependentReviewBaseCommit: 2588611aa74c75d080bb853ee1fd35e8a6623825
+      IndependentReviewHeadCommit: be90819d4625a85a54ba31ece99e574f5b5e5e53
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionHeadCommit: be90819d4625a85a54ba31ece99e574f5b5e5e53
+      IndependentReviewDecision: Approve
+      CoordinatorDecision: Accepted
       Scope: "Change only ED-0101 R4 revision-specific Branch, Worktree, and TaskBuildDirectory to an alphanumeric Controller-accepted branch topic and matching R5 paths. Preserve the accepted Goal, capability, contract pins, ReadSet/WriteSet, dependencies, Acceptance, Owner/Reviewer identities, validation tools, security boundaries, and no-live-side-effect rule."
       Reason: "The R4 branch topic R4-AgentRuntimeSlice contains a hyphen, but WorkflowController IsAllowedBranch accepts only alphanumeric characters after Task/<TaskId>-. Assignment validation failed with exit 1 before a branch or worktree was created. R5 uses Task/ED-0101-R5AgentRuntimeSlice; no code work began."
       PreserveGoal: true
