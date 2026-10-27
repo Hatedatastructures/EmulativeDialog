@@ -297,6 +297,44 @@ ChangeRequests:
       root AgentRuntime integration repeatable and centralizes build outputs. The existing generic configure preset has
       BUILD_TESTING=ON, so it also needs the Agent report/gcov and MakeProgram cache settings to remain valid after the
       Agent test subtree is added.
+  - ChangeRequestId: CR-ED-0124-008
+    TargetTaskId: ED-0124
+    TargetTaskRevision: 8
+    ProposedTaskRevision: 9
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    ProposedTaskSpecBaseCommit: 7984f8cee6acc5f6c72c862528c39f5fc9c45f7f
+    OwnerAgentId: /root/p1_trace_events_luna
+    IndependentReviewerAgentId: /root/p1_par001_luna
+    ProposedBranch: Task/ED-0124-R9RootCMakePresetIntegration
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0124-R9
+    ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R9.build
+    ProposedReadSet: [Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp]
+    ProposedWriteSet: [CMakeLists.txt, CMakePresets.json, Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp]
+    Scope: >-
+      Preserve ED-0124/R8 Goal, dependencies, CMake behavior, offline fixtures, and shared lock. Add the existing
+      WorkflowController contract test source to ReadSet/WriteSet and shorten only OwnedBuildTempDirectory's
+      marker-guarded temporary fixture root to a short child under the task build directory. Keep every generated test
+      repository inside the centralized task build output. Do not change product runtime behavior, skip tests, change
+      global Git settings, or alter dependency pins. Re-freeze the focused CTest acceptance against the central build
+      junction.
+    Reason: >-
+      The R8 configure and build passed and AgentRuntime.VerticalSlice passed, but WorkflowController.Contract failed
+      under the required central build path with a Controller error from Git: failed to stat the pinned
+      Workflow/Events/Bootstrap/P1.jsonl object path, Filename too long. A diagnostic test binary at the same junction
+      reproduced the error; the same test source completed successfully from a short directory under the central build
+      root. The existing test fixture nests its temporary repository below
+      WorkflowControllerEvidence/ED-0014-R9/ContractFixtures, exceeding the Windows path limit for the Controller's
+      pinned Git lookup. Moving only the owned temporary fixture root to a short directory within the build tree keeps
+      the frozen test meaningful and all generated files centralized. Skipping the test or changing machine-wide Git
+      settings would weaken acceptance or affect unrelated work.
+    Alternatives: ["Keep the long fixture path and leave R8 failing", "Skip WorkflowController.Contract", "Change global core.longpaths configuration"]
+    TargetedValidation:
+      - "Configure and build the frozen windows-agent-slice presets."
+      - "Run both AgentRuntime.VerticalSlice and WorkflowController.Contract from the task sibling .build junction."
+      - "Verify all temporary fixture roots remain inside the centralized .build directory and marker-owned directories are removed after the contract test."
+      - "Verify the generic windows-mingw test preset remains unfiltered and git diff --check passes."
   - ChangeRequestId: CR-P2-FIRSTSLICE-001
     RequestedBy: Coordinator
     ApprovedBy: Coordinator
@@ -1864,7 +1902,7 @@ Tasks:
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 与可复用 Preset
     TaskKind: Build
-    State: Active
+    State: Rework
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -1940,6 +1978,19 @@ Tasks:
       PreserveDependencies: true
       PreserveAcceptance: false
       PreserveNoLiveSideEffects: true
+    PendingRevisionChangeRequest:
+      ChangeRequestId: CR-ED-0124-008
+      FromRevision: 8
+      ToRevision: 9
+      Decision: Proposed
+      OwnerAgentId: /root/p1_trace_events_luna
+      IndependentReviewerAgentId: /root/p1_par001_luna
+      ProposedBranch: Task/ED-0124-R9RootCMakePresetIntegration
+      ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0124-R9
+      ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R9.build
+      ProposedReadSet: [Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp]
+      ProposedWriteSet: [CMakeLists.txt, CMakePresets.json, Tests/Contract/WorkflowController/WorkflowControllerContractTests.cpp]
+      Reason: "The long marker-owned fixture path fails the pinned Git lookup on Windows; shortening the fixture root inside the centralized build tree preserves the existing contract test and avoids changing global Git configuration."
     SupersededRevision2Evidence:
       TaskRevision: 2
       TaskSpecCommit: 05250a2402db4d660ff70088ad163375badb6826
