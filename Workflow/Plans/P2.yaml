@@ -201,7 +201,16 @@ ChangeRequests:
     TargetTaskRevision: 2
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
+    ApprovedByRole: ContractOwner
+    ApprovedByAgentId: /root/p1_code001_luna
+    IndependentReviewerAgentId: /root/p1_trace_events_luna
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 3cfbe15d8986f6703bcfbb3613a40f88adf71270
+    IndependentReviewHeadCommit: 98f829d1360b9f0b2643594b65bdd1fef12d943e
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 98f829d1360b9f0b2643594b65bdd1fef12d943e
     TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
     Scope: >-
       Preserve ED-0125 Goal, direct dependencies, and offline-only test-support boundary, while updating the task to
@@ -1662,10 +1671,12 @@ Tasks:
       ChangeRequestId: CR-ED-0125-001
       FromRevision: 2
       ToRevision: 3
-      Decision: Proposed
+      Decision: Accepted
       IndependentReviewerAgentId: /root/p1_trace_events_luna
-      IndependentReviewDecision: Pending
-      CoordinatorDecision: Pending
+      IndependentReviewDecision: Approve
+      CoordinatorDecision: Accepted
+      ReviewBaseCommit: 3cfbe15d8986f6703bcfbb3613a40f88adf71270
+      ReviewHeadCommit: 98f829d1360b9f0b2643594b65bdd1fef12d943e
     SupersededRevision2Evidence:
       TaskRevision: 2
       TaskSpecCommit: 3cfbe15d8986f6703bcfbb3613a40f88adf71270
