@@ -242,6 +242,24 @@ ChangeRequests:
       Fixed-Head R5 independent review found that `CMakeLists.txt` requires the exact shared lock `RootCMakeAndPresets`;
       the R5 task uses a different lock name and would be rejected by WorkflowController before assignment. R5 remains
       unassigned and contains no source changes.
+  - ChangeRequestId: CR-ED-0124-006
+    TargetTaskId: ED-0124
+    TargetTaskRevision: 6
+    ProposedTaskRevision: 7
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    ProposedTaskSpecBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
+    Scope: >-
+      Preserve ED-0124/R6 Goal, ModuleId, Owner/Reviewer, WriteSet, shared lock, dependencies, Acceptance, and offline
+      boundary. Add the existing WorkflowController executable to RequiredTargets and the frozen root build target list,
+      because WorkflowController.Contract requires `WorkflowController.exe` beside its test executable. Advance only the
+      TaskRevision and revision-specific Branch/Worktree/Build paths. Do not change product CMake source behavior beyond
+      the existing Agent test subdirectory registration.
+    Reason: >-
+      ED-0124/R6 configure, build, and AgentRuntime.VerticalSlice passed. WorkflowController.Contract exited 8 because
+      the build command compiled WorkflowControllerContractTests but omitted the WorkflowController executable required
+      beside it. The failure and R6 uncommitted one-file CMake diff are recorded in P2 evidence; no code commit or PR exists.
   - ChangeRequestId: CR-P2-FIRSTSLICE-001
     RequestedBy: Coordinator
     ApprovedBy: Coordinator
@@ -1805,11 +1823,11 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106, ED-0121]}
   - TaskId: ED-0124
-    TaskRevision: 6
+    TaskRevision: 7
     EpicId: EP-06
     Title: 将 AgentRuntime 纵向切片接入 Windows 根 CMake 构建
     TaskKind: Build
-    State: Active
+    State: Blocked
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -1819,17 +1837,13 @@ Tasks:
     ReviewerAgentId: "/root/p1_par001_luna"
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0124-R6RootCMakeIntegration
-    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R6
-    BaselineCommit: 47ad5b87fc7f8dde0fe8c99fa62e229c5f06289f
-    TaskSpecCommit: cb88bb09b0da99dfac9b1fe593131b4ac7df0a48
-    TaskSpecBlob: 59554d2854a6a34117b477b5f4c0758b4afbcbdc
-    AssignmentEventId: bbae3eab-b198-46a9-a931-26c05b3effbb
+    Branch: Task/ED-0124-R7RootCMakeIntegration
+    Worktree: H:/Qbot/EmulativeDialog.ED-0124-R7
     SupersededRevision1Evidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
       TaskSpecBlob: fd672b8de1919a8efed89f8b27961789b631859a
-      State: Active
+      State: Blocked
       Disposition: SupersededBeforeCodeChanges
       Branch: ""
       Worktree: ""
@@ -1845,27 +1859,25 @@ Tasks:
       Scope: "Preserve ED-0124/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
     RevisionChangeRequest:
-      ChangeRequestId: CR-ED-0124-005
-      PriorRevisionChangeRequestId: CR-ED-0124-004
-      FromRevision: 5
-      ToRevision: 6
+      ChangeRequestId: CR-ED-0124-006
+      PriorRevisionChangeRequestId: CR-ED-0124-005
+      FromRevision: 6
+      ToRevision: 7
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: Accepted
-      ProposedTaskSpecBaseCommit: b0ff9a92b4ee7d739969d4a7c9de62808ba545ec
-      ApprovedByRole: BuildAndDependencyOwner
-      ApprovedByAgentId: /root/p1_trace_events_luna
+      Decision: Proposed
+      ProposedTaskSpecBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
+      ApprovedByRole: ""
+      ApprovedByAgentId: ""
       IndependentReviewerAgentId: /root/p1_par001_luna
-      IndependentReviewDecision: Approve
-      IndependentReviewBaseCommit: b0ff9a92b4ee7d739969d4a7c9de62808ba545ec
-      IndependentReviewHeadCommit: 409a28165fcd250bc781cd132b869551ef1af5ed
-      CoordinatorDecision: Accepted
-      CoordinatorDecisionAgentId: /root
-      CoordinatorDecisionHeadCommit: 409a28165fcd250bc781cd132b869551ef1af5ed
-      Scope: "Change only ED-0124 SharedLocks to the exact RootCMakeAndPresets lock required for CMakeLists.txt; preserve all product and validation scope from R5."
-      Reason: "Fixed R5 review found the R5 lock name does not match the WorkflowController-enforced CMakeLists.txt lock."
+      IndependentReviewDecision: Pending
+      IndependentReviewBaseCommit: 772baac9f8142b4a9b19eb6566f734bf9ceac290
+      IndependentReviewHeadCommit: ""
+      CoordinatorDecision: Pending
+      CoordinatorDecisionAgentId: ""
+      Scope: "Add WorkflowController to ED-0124 RequiredTargets and the frozen build command so WorkflowController.Contract runs beside its required executable. Preserve RootBuild/AgentRuntime product behavior, WriteSet, shared lock, dependencies and other validation commands; update only revision-specific paths."
+      Reason: "R6 CTest showed WorkflowController.Contract fails when WorkflowControllerContractTests is built without WorkflowController.exe in the same binary directory."
       PreserveGoal: true
-      PreserveRiskLevel: true
       PreserveModuleId: true
       PreserveReadSet: true
       PreserveWriteSet: true
@@ -1876,7 +1888,7 @@ Tasks:
       TaskRevision: 2
       TaskSpecCommit: 05250a2402db4d660ff70088ad163375badb6826
       TaskSpecBlob: d6fbaa0e59ba377343d92df08adb24c4dfd589b6
-      State: Active
+      State: Blocked
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R2-RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R2
@@ -1889,7 +1901,7 @@ Tasks:
       TaskRevision: 3
       TaskSpecCommit: 8a91a3d3cf90e18afd48b4f129f6fae453a452d3
       TaskSpecBlob: c983c20c5a1bc168c5c5252d505f5864aa9bc691
-      State: Active
+      State: Blocked
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R3RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R3
@@ -1909,7 +1921,7 @@ Tasks:
       TaskRevision: 4
       TaskSpecCommit: 563f264ba546b00655a93e55c30fe7d8151e1141
       TaskSpecBlob: 56993036ce39679ead354bc66dd63d78e5d4f1ec
-      State: Active
+      State: Blocked
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R4RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R4
@@ -1928,7 +1940,7 @@ Tasks:
       TaskRevision: 5
       TaskSpecCommit: b0ff9a92b4ee7d739969d4a7c9de62808ba545ec
       TaskSpecBlob: 5c7d95352d0300c3998d413dc75c6a6eb3cce954
-      State: Active
+      State: Blocked
       Disposition: SupersededBeforeCodeChanges
       Branch: Task/ED-0124-R5RootCMakeIntegration
       Worktree: H:/Qbot/EmulativeDialog.ED-0124-R5
@@ -1944,6 +1956,28 @@ Tasks:
         The independent fixed-Head review found that CMakeLists.txt requires the exact SharedLock RootCMakeAndPresets;
         R5 used RootCmakeAndCtestRegistry and would be rejected by WorkflowController before assignment. R5 was never
         assigned and contains no product source changes.
+    SupersededRevision6Evidence:
+      TaskRevision: 6
+      TaskSpecCommit: cb88bb09b0da99dfac9b1fe593131b4ac7df0a48
+      TaskSpecBlob: 59554d2854a6a34117b477b5f4c0758b4afbcbdc
+      State: Rework
+      Disposition: SupersededAfterValidationFailureBeforeCommit
+      Branch: Task/ED-0124-R6RootCMakeIntegration
+      Worktree: H:/Qbot/EmulativeDialog.ED-0124-R6
+      BaselineCommit: 47ad5b87fc7f8dde0fe8c99fa62e229c5f06289f
+      AssignmentEventId: bbae3eab-b198-46a9-a931-26c05b3effbb
+      HeadCommit: 47ad5b87fc7f8dde0fe8c99fa62e229c5f06289f
+      WorkingTreeDirty: true
+      ChangedPaths: [CMakeLists.txt]
+      WorkingPatchSHA256: 9297F7177BF1CE2DDD56DB9759A29F784F7F9BB3C8C95F319E6EA2CF6B32879C
+      ReviewerAgentId: /root/p1_par001_luna
+      ValidationResults: [Configure=0, Build=0, AgentRuntimeVerticalSlice=0, WorkflowController.Contract=8]
+      FailureLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0124-R6/WorkflowControllerEvidence/ED-0124/r6/Validation-3-41510219007600.log
+      Reason: >-
+        The R6 CMake change added the Agent test subdirectory, but the frozen build target omitted the existing
+        WorkflowController executable. The existing WorkflowController.Contract test failed because the executable was
+        not built beside WorkflowControllerContractTests. No R6 code commit or push was made; the uncommitted CMake patch
+        is preserved in the central task build folder for R7 owner reuse.
     Goal: "把已独立验证的 Core/AgentRuntime 纵向切片 C++ target 加入根 Windows CMake/CTest，使常规根构建能执行其行为验收。"
     OutOfScope: ["修改 Core/AgentRuntime 源码", "增加 Provider/Channel 运行时", "全仓重构 CMake", "修改依赖版本"]
     DependsOn: [ED-0101, ED-0109]
@@ -1962,7 +1996,7 @@ Tasks:
       - {AcceptanceId: AC-1, Description: "Existing Windows root configuration builds AgentRuntimeVerticalSliceTests without changing dependency pins or unrelated targets.", Evidence: "Native CMake configure/build output for only the new product test target."}
       - {AcceptanceId: AC-2, Description: "Root CTest discovers and passes the focused AgentRuntime.VerticalSlice test.", Evidence: "Targeted CTest output and unchanged prior focused Controller test."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R6.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0124-R7.build
       Toolchain:
         CompilerPath: C:/msys64/ucrt64/bin/g++.exe
         CompilerVersion: "g++.exe (Rev5, Built by MSYS2 project) 16.1.0"
@@ -1981,13 +2015,13 @@ Tasks:
         NotApplicableReason: "Build-system-only WriteSet; no production C++ implementation source is modified by this task. The Agent subdirectory still requires a pinned gcov path and absolute reports directory at configure time."
         ProductionSources: []
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0124-R6.build/Reports
-      RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests]
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0124-R7.build/Reports
+      RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
       TargetedBuild:
-        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0124-R6 -B H:/Qbot/EmulativeDialog.ED-0124-R6.build/CMake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0124-R6.build/Reports -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
-        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0124-R6.build/CMake --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests --parallel 4"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R6.build/CMake --output-on-failure -R AgentRuntime.VerticalSlice"
-        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R6.build/CMake --output-on-failure -R WorkflowController.Contract"
+        - "I:/cmake/bin/cmake -S H:/Qbot/EmulativeDialog.ED-0124-R7 -B H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake -G \"MinGW Makefiles\" -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0124-R7.build/Reports -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF"
+        - "I:/cmake/bin/cmake --build H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake --target AgentRuntimeVerticalSliceTests WorkflowControllerContractTests WorkflowController --parallel 4"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake --output-on-failure -R AgentRuntime.VerticalSlice"
+        - "I:/cmake/bin/ctest --test-dir H:/Qbot/EmulativeDialog.ED-0124-R7.build/CMake --output-on-failure -R WorkflowController.Contract"
       ContractFixtures: ["Uses the frozen FakeProvider and MockChannel synthetic fixtures; no provider, QQ, or external account."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
