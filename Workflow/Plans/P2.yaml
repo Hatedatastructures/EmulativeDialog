@@ -248,7 +248,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现可信身份映射与 Core 聊天策略入口
     TaskKind: CapabilitySlice
-    State: MergeQueued
+    State: Merged
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02
@@ -262,6 +262,15 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0109-R4
     BaselineCommit: 9214759ed666fe853f87d598d352f515e74039f8
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0109-R4.build
+    MergeTargetBranch: codex/integration
+    MergeCommit: 77401e7881b819cb5ec9b869a2906343b1d534c6
+    ReviewerDecision: Approved
+    ReviewBaseCommit: 9214759ed666fe853f87d598d352f515e74039f8
+    ReviewHeadCommit: 6dbe8d7e839a596fc3a2806aad2cac3f04ddc035
+    ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0109-R4
+    ReviewBundleManifestSHA256: 53FFD8CC1E385447083A8F0B72CE5041522E617D8D19539E471975BCBA1F958D
+    PullRequestCreated: false
+    PullRequestAttemptHttpStatus: 403
     CurrentRevisionChangeRequest:
       ChangeRequestId: CR-ED-0109-002
       FromRevision: 3
