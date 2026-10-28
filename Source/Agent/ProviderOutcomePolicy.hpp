@@ -48,6 +48,8 @@ struct ProviderOutcomeInput final {
     std::optional<Providers::ProviderError> Error;
     std::optional<Platform::Network::TransportFailureCode> TransportFailure;
     std::optional<Platform::Network::TransportTimeoutPhase> Timeout;
+    // Honored only up to RetryPolicyConfig::MaximumDelay. A server-provided
+    // delay never bypasses the local retry ceiling.
     std::optional<std::chrono::seconds> RetryAfter;
     bool CancelledBeforeSend{false};
     bool CancelledAfterSendUnconfirmed{false};
@@ -60,6 +62,7 @@ enum class RetryDecisionReason : std::uint8_t {
     UnsafeSideEffects,
     Cancelled,
     TerminalAlreadyEmitted,
+    InvalidAttempt,
 };
 
 [[nodiscard]] std::string_view RetryReasonCodeName(
