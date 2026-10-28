@@ -429,6 +429,12 @@ Tasks:
     Title: 实现授权、身份和会话隔离的聊天 Memory
     TaskKind: CapabilitySlice
     State: Assigned
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0113-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Memory/ConversationMemory.hpp in place of the planned .h path and add Tests/Contract/Memory/CMakeLists.txt so the memory contract test is registered."
+      AcceptedAt: 2026-10-28
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0113-DEPS-001
       Decision: Accepted
@@ -663,6 +669,12 @@ Tasks:
     AssignmentNote: "ED-0120 merged; implementation cherry-picked onto main and pushed."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0121-R2-rebase
     AssignedBranch: Task/ED-0121-R2-WinHttpTransport-rebase
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0121-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Platform/Network/WinHttpTransport.hpp in place of the planned .h path under the user file-naming rule; all other WriteSet paths unchanged."
+      AcceptedAt: 2026-10-28
     PullRequestCreated: true
     PullRequestNumber: 11
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/11
@@ -903,6 +915,12 @@ Tasks:
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0123-R3
     AssignedBranch: Task/ED-0123-R3-SqliteStore
     LocalCompletionHead: 070b0ad
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0123-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Storage/SqliteStore.hpp in place of the planned .h path under the user file-naming rule; allow the existing Tests/Contract/Storage/CMakeLists.txt to set EMULATIVEDIALOG_TEST_DATA_DIR for root CTest isolation."
+      AcceptedAt: 2026-10-28
     Phase: P3
     OwnerRole: StorageOwner
     OwnerSlotId: Worker06

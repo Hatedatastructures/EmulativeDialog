@@ -1837,6 +1837,12 @@ Tasks:
     Title: 实现 Provider 失败分类与有界重试策略
     TaskKind: CapabilitySlice
     State: Assigned
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0111-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Agent/ProviderOutcomePolicy.hpp in place of the planned .h path and add Tests/Contract/Agent/CMakeLists.txt so the policy contract test and coverage target are registered."
+      AcceptedAt: 2026-10-28
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0111-DEPS-001
       Decision: Accepted
