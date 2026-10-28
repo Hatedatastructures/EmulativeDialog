@@ -38,7 +38,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0105
+    CurrentTaskId: ED-0146
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -60,7 +60,7 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0105
+    CurrentTaskId: ED-0146
     Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner

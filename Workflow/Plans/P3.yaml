@@ -1,7 +1,7 @@
 SchemaVersion: 1
 PhaseId: P3
 PhaseName: Provider Protocols and Durable Memory
-State: PendingP1AndP2ExitGates
+State: PendingHttpTransportContractFreeze
 
 EntryGate:
   RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
@@ -9,8 +9,10 @@ EntryGate:
   RequiredP2GateId: FirstCppAgentRuntimeVerticalSliceVerified
   RequiredP2State: Passed
   RequiredAdditionalContracts:
-    - HttpTransportContract V1 (ED-0120)
+    - HttpTransportContract V1 (ED-0120, hardened by ED-0146)
+  RequiredAdditionalTaskIds: [ED-0146]
   State: Pending
+  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed; corrective task ED-0146 must be approved, implemented, independently reviewed, and verified before this contract can be frozen.
 
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
@@ -107,6 +109,64 @@ ChangeRequests:
       `-o <exact .gcno path>` exits 0 and reports 958/1046 (91.59%) lines for ChatCompletionsProvider.cpp in gcov
       JSON v2 with GCC/gcov 16.1.0.
     PreserveProductGoalWriteSetAcceptanceDependenciesContractsOwnerAndReviewer: true
+    AcceptedAt: 2026-10-28
+
+  - ChangeRequestId: CR-ED-0114-R3-COVERAGE-001
+    RequestedByRole: IndependentValidator
+    RequestedByAgentId: /root/worker03_ed0114_validation
+    ApprovedByRole: Coordinator
+    ApprovedByAgentId: /root
+    Decision: Accepted
+    TaskIds: [ED-0114]
+    TaskRevisionTransitions:
+      - {TaskId: ED-0114, FromRevision: 3, ToRevision: 4}
+    Scope: >-
+      Preserve the R3 product Goal, four Acceptance items, dependencies, contracts, owner, reviewer, and 17-path WriteSet
+      size. Add Core to ModuleIds for Source/Core/CoreChatService.cpp. Move the shared usage-normalization test from the
+      unowned Tests/Contract/Providers/ parent into the AgentRuntime-owned Tests/Contract/Agent/ directory and update the
+      WriteSet/CMake source path. Require Tests/Contract/Agent/CMakeLists.txt to register every RequiredTarget as a build
+      target and list the six RequiredCTestTests separately; ED0114CoverageReport is a build target invoked after CTest,
+      not a required CTest name. Correct CoreChatService coverage by sharing one instrumented object or unioning gcov
+      records by unique source line, counting each source line once. Missing targets/sources fail validation. Use a fresh
+      ED-0114/R4 sibling .build directory.
+    Reason: >-
+      Worker03 found unregistered test/coverage targets and duplicate CoreChatService object counters; Worker01 additionally
+      found that the shared usage-normalization source path was outside every ModuleMap write root and that build targets
+      had been conflated with CTest names. These corrections make the frozen WriteSet module-owned and make target,
+      CTest, and coverage evidence executable and auditable.
+    Impact: "One shared test path moves under AgentRuntime's existing write root; CMake target/test registration and gcov aggregation are corrected. Product protocol behavior, persistent formats, and runtime dependencies do not change."
+    Rollback: "If the revised module-owned test path or target/coverage topology cannot pass, keep ED-0114 unmerged and revert only the unmerged Agent test/CMake changes; no product data migration is involved."
+    PreserveGoalAcceptanceDependenciesContractsOwnerReviewer: true
+    PreserveWriteSetPathCount: 17
+    WriteSetPathMove: {From: Tests/Contract/Providers/UsageNormalizationTests.cpp, To: Tests/Contract/Agent/UsageNormalizationTests.cpp, Reason: "No ModuleMap root owns the provider parent path; AgentRuntime owns the Agent contract test root."}
+    AcceptedAt: 2026-10-28
+
+  - ChangeRequestId: CR-ED-0144-R3-TTL-001
+    RequestedByRole: MemoryOwner
+    RequestedByAgentId: /root/worker05_ed0144_memory
+    ApprovedByRole: Coordinator
+    ApprovedByAgentId: /root
+    Decision: Accepted
+    TaskIds: [ED-0144]
+    TaskRevisionTransitions:
+      - {TaskId: ED-0144, FromRevision: 2, ToRevision: 3}
+    Scope: >-
+      Preserve the current four-path Memory adapter WriteSet, physical SQLite schema, dependencies, contracts, owner and
+      reviewer. In RecallBackup, use SqliteStore::ListActiveRecords and the existing full MemoryRecord conversion so
+      ExpiresAt survives; fixed-head review independently confirmed its scope validation, active/tombstone predicate,
+      expiry filter and ordering match RecallBackupForScope exactly. Add real SQLite tests for future expiry through
+      backup recall, close/reopen and ConversationMemory::RestoreBackup, then prove the record is unavailable at/after
+      its original expiry. Perform configure/build/CTest/gcov from a fresh ED-0144/R3 sibling .build directory.
+    Reason: >-
+      Independent fixed-head review found a Major persistence defect: HydrateBackupRecord drops ExpiresAt, so restoring
+      an unexpired backup record rewrites it without TTL and can make finite-lived memory permanent. MemoryOwner and
+      Reviewer verified ListActiveRecords and RecallBackupForScope use identical SQL scope, active-state, expiration,
+      and ordering predicates; the former hydrates the complete MemoryRecord and preserves expiry without changing the
+      Storage API or writing Storage-owned paths.
+    Impact: "Adapter behavior and its existing real SQLite contract tests change; on-disk schema, encoded ProposalId format, consent policy, and Storage API remain unchanged."
+    Rollback: "If the R3 expiry regression cannot pass, keep PR #25 open and revert only the unmerged adapter/test changes; no schema migration or persisted-data rewrite is performed."
+    PreserveGoalWriteSetDependenciesContractsOwnerReviewerAndPhysicalSchema: true
+    PreserveFourPathWriteSet: true
     AcceptedAt: 2026-10-28
 
 ParallelGroups:
@@ -255,14 +315,50 @@ Tasks:
       Decision: Accepted
       ApprovedByRole: Coordinator
       Scope: "Assign independent fixed-head review to Worker06 because the original Worker04 provider task session was unavailable; preserve all review acceptance criteria."
-    State: Rework
+    State: Merged
     BaselineCommit: 1d8863b286f8e752edc06c2a671721af0a9a74f3
     PullRequestCreated: true
     PullRequestNumber: 24
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/24
+    PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+    PullRequestHeadCommit: cbe69782fdcba391bfe6ed99455cd19fe2bd7179
+    HeadCommit: cbe69782fdcba391bfe6ed99455cd19fe2bd7179
+    AuthorValidation:
+      ConfigureExitCode: 0
+      TargetBuildExitCode: 0
+      CTest: "Provider.ChatCompletions 1/1 passed, exit 0"
+      Coverage: "ChatCompletionsProvider.cpp 958/1046 (91.59%), gcov JSON v2, GCC/gcov 16.1.0"
+      DiffCheckExitCode: 0
+      ChangedFiles: 4
+      MergeableAtUpdate: true
+      Report: H:/Qbot/EmulativeDialog.ED-0105-R6.build/Reports/ChatCompletionsProvider##H~#Qbot#EmulativeDialog.ED-0105-R4#Source#Providers#OpenAIChatCompletions#ChatCompletionsProvider.gcov.json.gz
+    ReviewBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+    ReviewHeadCommit: cbe69782fdcba391bfe6ed99455cd19fe2bd7179
+    IndependentValidatorAgentId: /root/worker03_ed0114_validation
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewStatus: Approved
+    ReviewerDecision: APPROVE
+    ReviewerDecisionAgentId: /root/worker06_ed0105_review
+    IndependentValidation:
+      Status: Passed
+      BaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+      HeadCommit: cbe69782fdcba391bfe6ed99455cd19fe2bd7179
+      ConfigureExitCode: 0
+      TargetBuildExitCode: 0
+      CTest: "Provider.ChatCompletions 1/1 passed, exit 0"
+      Coverage: "ChatCompletionsProvider.cpp 958/1046 (91.59%), gcov JSON v2, GCC/gcov 16.1.0"
+      DiffCheckExitCode: 0
+      ChangedFiles: 4
+      ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0105-R7-IndependentValidation-cbe69782/ReviewResult.md
+      CoverageReportTarget: "Not required by R7 TaskSpec and not run; the frozen manual exact-.gcno command passed."
+    StaticReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0105-R7-Review-cbe6978/ReviewResult.md
+    MergeMethod: squash
+    MergeCommit: 461735e50657bdc8ace070b46db3682cfb03460f
+    MergedAtUtc: 2026-10-28T11:56:55Z
+    RemoteTaskBranchRetired: true
+    GitHubReviewSubmission: "No GitHub review record; independent Worker06 fixed-head ReviewBundle approved, and the repository had no configured required status checks."
     PriorRevision4ReviewBaseCommit: 21b3278d0b13e787d48921a2813cdddbf91ff8f7
     PriorRevision4ReviewHeadCommit: d544b5ad0d59a472eb9f3772d3fc28411c18a73f
-    ReviewStatus: Rework
     PriorRevision4ReviewDecision: CHANGES_REQUESTED
     PriorRevision4ReviewFindings:
       - {FindingId: ED0105-R4-F1, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "390-397", Summary: "Response/Idle timeout after provider response head can be incorrectly marked retryable; unknown side-effect outcome must fail closed."}
@@ -314,6 +410,7 @@ Tasks:
       TaskRevisionTransition: {FromRevision: 5, ToRevision: 6}
       PreserveGoalWriteSetAcceptanceDependenciesContractsOwnerReviewer: true
       AcceptedAt: 2026-10-28
+
     PriorRevision6Record:
       TaskRevision: 6
       Disposition: SupersededByRevision7GcovPathCorrection
@@ -748,11 +845,17 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0112, ED-0115]}
 
   - TaskId: ED-0114
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Rework
+    State: Blocked
+    BlockedBy: "ED-0114/R4 TaskSpec is in the Coordinator governance candidate only; implementation may resume after fixed-head owner/reviewer review and merge to main."
+    PreviousRevision3:
+      TaskRevision: 3
+      Disposition: SupersededBeforeFinalValidation
+      Reason: "R3 validation named unregistered CMake targets and did not define correct multi-object line coverage aggregation for CoreChatService.cpp; see CR-ED-0114-R3-COVERAGE-001."
+      HeadAtSupersession: 337b659f59feefa75c3df0edaa9aac45ef850820
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0114-OWNER-002
       Decision: Accepted
@@ -788,6 +891,18 @@ Tasks:
       TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
       PreservePositiveContinuationAsOpenCapability: true
       PreserveDependenciesOwnerReviewerAndPR: true
+      AcceptedAt: 2026-10-28
+    Revision4ChangeRequest:
+      ChangeRequestId: CR-ED-0114-R3-COVERAGE-001
+      RequestedByRole: IndependentValidator
+      RequestedByAgentId: /root/worker03_ed0114_validation
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+      Scope: "Add Core module ownership for CoreChatService.cpp; move the shared usage-normalization test from the unowned Providers parent to the AgentRuntime-owned Agent test directory while preserving 17 changed paths; separate required build targets from required CTest names; aggregate duplicate CoreChatService gcov objects by unique source line; use a fresh R4 build directory."
+      PreserveGoalAcceptanceDependenciesContractsOwnerReviewer: true
+      PreserveWriteSetPathCount: 17
       AcceptedAt: 2026-10-28
     BaselineCommit: 1d8863b286f8e752edc06c2a671721af0a9a74f3
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0114-R2
@@ -848,7 +963,7 @@ Tasks:
       Reason: "The prior command was descriptive only and did not produce AC-3 per-module gcov evidence."
       PreserveGoalAcceptanceWriteSetDependencies: true
     CapabilityIds: [ProviderUsageAndOutputLimits]
-    ModuleIds: [AgentRuntime, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    ModuleIds: [Core, AgentRuntime, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
     PriorRevision2Goal: "保留三协议 usage completeness/缓存/推理 token 语义，并由 AgentRuntime 按模型预算区分正常完成、可安全续跑与 OutputLimitReached。"
     Goal: "保留三协议 usage completeness/缓存/推理 token 语义；缺失或不可用 usage 时 fail closed，OutputLimit 不派发不完整工具调用，并在 Core turn 结束时释放预算状态。未经 Core 授权的续跑始终拒绝。"
     OutOfScope: ["未由协议提供的 token 数推算", "把内部 reasoning 暴露给用户/渠道", "对未知结果盲目续跑", "正向 Core 批准压缩后的续跑（仍是未完成能力，须单独冻结合同与实现任务）"]
@@ -857,7 +972,7 @@ Tasks:
     Context:
       ModuleId: AgentRuntime
       ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/CoreAgentContract.md, Source/Providers/Contracts/ModelProviderPort.h, Source/Core/CoreChatService.h, Source/Core/CoreChatService.cpp]
-      OnDemandSet: [Tests/Contract/Agent/AgentRuntimeContractTests.cpp, Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp, Tests/Contract/Agent/ToolCallRoundTripTests.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Providers/UsageNormalizationTests.cpp, Tests/Contract/Core/CorePolicyAndActionContractTests.cpp]
+      OnDemandSet: [Tests/Contract/Agent/AgentRuntimeContractTests.cpp, Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp, Tests/Contract/Agent/ToolCallRoundTripTests.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Agent/UsageNormalizationTests.cpp, Tests/Contract/Core/CorePolicyAndActionContractTests.cpp]
       ContextExpanded:
         - {Path: Source/Core/CoreChatService.h, Reason: "Verify the sole production Process boundary and the existing Core-to-AgentRuntime API before adding turn-scoped cleanup.", AcceptanceId: AC-4, WriteSetChanged: false}
         - {Path: Source/Core/CoreChatService.cpp, Reason: "Place budget-ledger cleanup at the outer Core turn lifecycle so every return and exception releases the AgentTurn.", AcceptanceId: AC-4, WriteSetChanged: true}
@@ -869,7 +984,7 @@ Tasks:
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
-    WriteSet: [Source/Agent/OutputBudgetController.hpp, Source/Agent/OutputBudgetController.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.hpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.hpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.hpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp, Source/Agent/AgentRuntime.cpp, Source/Agent/ToolCallCoordinator.cpp, Source/Core/CoreChatService.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Providers/UsageNormalizationTests.cpp, Tests/Contract/Agent/AgentRuntimeContractTests.cpp, Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp, Tests/Contract/Agent/ToolCallRoundTripTests.cpp, Tests/Contract/Agent/CMakeLists.txt]
+    WriteSet: [Source/Agent/OutputBudgetController.hpp, Source/Agent/OutputBudgetController.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.hpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.hpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.hpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp, Source/Agent/AgentRuntime.cpp, Source/Agent/ToolCallCoordinator.cpp, Source/Core/CoreChatService.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Agent/UsageNormalizationTests.cpp, Tests/Contract/Agent/AgentRuntimeContractTests.cpp, Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp, Tests/Contract/Agent/ToolCallRoundTripTests.cpp, Tests/Contract/Agent/CMakeLists.txt]
     SharedLocks: []
     Acceptance:
       - {AcceptanceId: AC-1, Description: "Provider usage maps preserve Partial/Final/Unavailable and protocol-specific fields without false precision.", Evidence: "One fixture group per protocol with absent/partial/final usage."}
@@ -877,26 +992,29 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "Every changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 report for each of the seven changed production sources with numerator, denominator, exclusions, and tool version."}
       - {AcceptanceId: AC-4, Description: "CoreChatService releases this AgentTurn's budget ledger entry on every Process exit, including exceptions and all terminal statuses.", Evidence: "Production Core vertical-slice tests assert no turn/request retention after completed, rejected, failed, cancelled, unsupported, and unknown outcomes."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone
       Coverage:
         Required: true
         ProductionSources: [Source/Core/CoreChatService.cpp, Source/Agent/AgentRuntime.cpp, Source/Agent/OutputBudgetController.cpp, Source/Agent/ToolCallCoordinator.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone/Reports
       RequiredTargets: [OutputBudgetControllerTests, UsageNormalizationTests, AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests, ToolCallRoundTripTests, CorePolicyAndActionContractTests, ED0114CoverageReport]
+      RequiredCTestTests: [Agent.OutputBudgetController, Providers.UsageNormalization, AgentRuntime.Contract, AgentRuntime.VerticalSlice, Agent.ToolCallRoundTrip, Core.PolicyAndAction]
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0114-R2/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone/Reports -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone --target OutputBudgetControllerTests UsageNormalizationTests AgentRuntimeContractTests AgentRuntimeVerticalSliceTests ToolCallRoundTripTests CorePolicyAndActionContractTests --parallel 4"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R3.build/Standalone --target ED0114CoverageReport --parallel 4"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0114-R2/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone/Reports -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --target OutputBudgetControllerTests UsageNormalizationTests AgentRuntimeContractTests AgentRuntimeVerticalSliceTests ToolCallRoundTripTests CorePolicyAndActionContractTests --parallel 4"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --output-on-failure --no-tests=error -R \"^(Agent.OutputBudgetController|Providers.UsageNormalization|AgentRuntime.Contract|AgentRuntime.VerticalSlice|Agent.ToolCallRoundTrip|Core.PolicyAndAction)$\""
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --target ED0114CoverageReport --parallel 4"
       ContractFixtures: ["Synthetic absent/partial/final/Unavailable protocol usage; missing usage fail-closed; output-limit/incomplete tool arguments never execute; no continuation without Core authorization; Core turn exit clears ledger state; existing Core policy/action contract cases remain green."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
+        - "Every RequiredTargets entry is registered by the task CMake project and builds; every RequiredCTestTests entry appears in ctest -N and passes. The coverage report is a build target invoked only after those tests, not a CTest name."
         - "Every production and test object is compiled with --coverage; every required test target is linked with --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
         - "The ED0114CoverageReport CMake target emits gcov JSON v2 for every ProductionSources item under ReportDirectory after all required tests have run."
+        - "If a ProductionSource has multiple instrumented objects, merge gcov records by unique source line or share one instrumented object; never sum duplicate line denominators or select an arbitrary object report."
         - "Verify every ProductionSources report is at least 80 percent line-covered with numerator, denominator, exclusions, and gcov version; reports stay under TaskBuildDirectory/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "No real provider request or user conversation is used."
@@ -1371,11 +1489,12 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
 
   - TaskId: ED-0144
-    TaskRevision: 2
+    TaskRevision: 3
     EpicId: EP-06
     Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Blocked
+    BlockedBy: "P3 EntryGate remains pending ED-0146; the R3 TaskSpec is not yet merged to main."
     AssignmentNote: "Dependencies ED-0113 and ED-0123 are merged; root CMake ownership is reserved to ED-0145 to avoid WriteSet conflict."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0144-002
@@ -1390,7 +1509,24 @@ Tasks:
     PreviousRevision1CompletionHead: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
     PreviousRevision1Coverage: "SqliteMemoryStorageAdapter.cpp 289/306 (94.44%), gcov JSON v2, GCC/gcov 16.1.0; H:/Qbot/EmulativeDialog.ED-0144.build/Standalone/Reports/SqliteMemoryStorageAdapter##H~#Qbot#EmulativeDialog.ED-0144#Source#Memory#SqliteMemoryStorageAdapter.gcov.json.gz"
     PreviousRevision1Validation: "Windows C++20 configure 0; focused target build 0; standalone all-target build 0; CTest 4/4; git diff --check Base Head 0; four changed paths exactly match WriteSet."
-    ReviewStatus: AwaitingRevision2Head
+    PreviousRevision2ReviewStatus: CHANGES_REQUESTED
+    PreviousRevision2HeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+    PreviousRevision2PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+    PreviousRevision2PullRequestHeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+    PreviousRevision2ReviewBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+    PreviousRevision2ReviewHeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+    PreviousRevision2AuthorValidation:
+      ConfigureExitCode: 0
+      TargetBuildExitCode: 0
+      FullBuildExitCode: 0
+      CTest: "4/4 passed, exit 0"
+      Coverage: "SqliteMemoryStorageAdapter.cpp 381/407 (93.61%), gcov JSON v2, GCC/gcov 16.1.0"
+      DiffCheckExitCode: 0
+      ChangedFiles: 4
+      MergeableAtUpdate: true
+      BuildDirectory: H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    IndependentValidationStatus: Pending
     PreviousRevision1ReviewBaseCommit: 8a608831ce94020a0187cf586abd66a4834de966
     PreviousRevision1ReviewHeadCommit: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
     PreviousRevision1ReviewDecision: CHANGES_REQUESTED
@@ -1426,11 +1562,40 @@ Tasks:
       Scope: "If ProposalId is absent, write EDMemoryV1/<Category>/<0|1>. A present ProposalId must be non-empty and is written as EDMemoryV2/<Category>/<0|1>/P<byte-length>:<lowercase hex of exact ProposalId bytes>, where byte-length is the exact std::string byte count. Decode V1 as absent and V2 as present; require canonical decimal length, reject arithmetic overflow before multiplication/allocation, require exactly 2*byte-length lowercase hex digits and no trailing bytes, validate category and bit, and fail closed on an empty ID or malformed/unknown/future versions. Preserve all non-empty ProposalId bytes exactly, including embedded NUL. Require the full encoded MemoryKind to fit INT_MAX bytes on write and read, matching SqliteStore::BindText's int length."
       Evidence: "SQLite real-file tests prove V1 compatibility without inventing a missing ProposalId and exact V2 ProposalId round trips through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup, including delimiter, embedded-NUL and non-UTF-8 bytes; empty and mismatched proposal-bound IDs fail closed. Malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future encodings fail closed on active and backup reads."
       PreserveGoalWriteSetDependenciesAcceptanceAndPhysicalSchema: true
+    Revision3ImplementationDecision:
+      ImplementationDecisionId: ED-0144-TTL-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "SqliteMemoryStorageAdapter::RecallBackup uses ListActiveRecords and FromStorageRecord(MemoryRecord) to keep the exact expiry timestamp while retaining the same scope, active-state, expiry and ordering semantics."
+      Evidence: "Real SQLite regression verifies exact future expiry through backup recall, close/reopen and ConversationMemory restore; querying at/after expiry returns no active recall."
+      PreserveStorageSchemaAndWriteSet: true
     PullRequestCreated: true
     PullRequestNumber: 25
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/25
-    PullRequestBaseCommit: 1d8863b286f8e752edc06c2a671721af0a9a74f3
+    PreviousRevision1PullRequestBaseCommitAtCreation: 1d8863b286f8e752edc06c2a671721af0a9a74f3
     PullRequestMergeableAtCreation: true
+    PreviousRevision2:
+      TaskRevision: 2
+      Disposition: SupersededAfterFixedHeadMajorFinding
+      HeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+      PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+      ReviewFindingId: ED-0144-R2-F001
+      Severity: Major
+      Summary: "Backup recall hydration drops ExpiresAt; restoring a future-expiring record removes TTL and can make it permanent. Existing R2 coverage artifacts contain libgcov profile checksum conflicts and cannot be reused for R3 acceptance."
+      Reviewer: /root/worker06_ed0105_review
+      ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0144-R2-Review-9dc44d3/ReviewResult.md
+    ReviewStatus: AwaitingRevision3Head
+    Revision3ChangeRequest:
+      ChangeRequestId: CR-ED-0144-R3-TTL-001
+      RequestedByRole: MemoryOwner
+      RequestedByAgentId: /root/worker05_ed0144_memory
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+      Scope: "Preserve four-path WriteSet; route backup recall through ListActiveRecords to preserve ExpiresAt; add future-expiry round-trip/restore/after-expiration real SQLite tests; validate in a fresh R3 build directory."
+      PreserveGoalWriteSetDependenciesContractsOwnerReviewerAndPhysicalSchema: true
+      AcceptedAt: 2026-10-28
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
@@ -1467,28 +1632,30 @@ Tasks:
       - {AcceptanceId: AC-2, Description: "Direct/Group scope kind 入 schema，私聊与群记忆不可互读。", Evidence: "同 ID 不同 kind 隔离测试。"}
       - {AcceptanceId: AC-3, Description: "独立 Memory 合同目标可编译并运行；根 CMake/CTest 注册由 ED-0145 统一完成。", Evidence: "Standalone CMake target and CTest pass; ED-0145 later verifies the root suite."}
       - {AcceptanceId: AC-4, Description: "SQLite adapter losslessly preserves valid optional ProposalId while keeping existing V1 rows readable and rejecting malformed/future encodings; exact proposal-bound consent survives recall and backup restore.", Evidence: "Real SQLite tests cover nullopt V1 with no inferred ProposalId and non-empty delimiter-containing, embedded-NUL and non-UTF-8 ProposalId byte sequences through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup; empty and mismatched proposal-bound IDs fail closed; malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future values fail closed on active and backup reads."}
+      - {AcceptanceId: AC-5, Description: "Backup recall and authorized restore preserve each record's optional ExpiresAt; an expired record is unavailable after its original expiry and cannot become permanent through restore.", Evidence: "Real SQLite test stores a future-expiring record, recalls backup and restarts the database, restores through ConversationMemory, verifies exact expiry equality, then verifies no Recall/ListActive result at or after the original expiry."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone
       Coverage:
         Required: true
         ProductionSources: [Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone/Reports
       RequiredTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.ED-0144.build/Dependencies -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone --target SqliteMemoryStorageAdapterTests --parallel 4"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.ED-0144.build/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone --target SqliteMemoryStorageAdapterTests --parallel 4"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone --output-on-failure --no-tests=error"
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
+        - "The fresh CTest and gcov logs contain no libgcov profiling checksum or overwrite warnings; any such warning invalidates coverage evidence and requires a new fresh build directory."
         - "Encoded MemoryKind bytes stay <= INT_MAX before SqliteStore binding; decoded V2 payload bytes exactly equal the declared length before buffer allocation"
         - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
         - "Generate a gcov JSON v2 report for SqliteMemoryStorageAdapter.cpp under TaskBuildDirectory/Reports and verify at least 80 percent line coverage with numerator and denominator."
       CoverageCommand: >-
-        $ErrorActionPreference='Stop'; $build='H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone'; $report=Join-Path $build 'Reports'; New-Item -ItemType Directory -Force -Path $report | Out-Null; $gcno=Get-ChildItem -LiteralPath $build -Recurse -Filter 'SqliteMemoryStorageAdapter.cpp.gcno' | Select-Object -First 1; if($null -eq $gcno){throw 'Missing SqliteMemoryStorageAdapter.cpp.gcno'}; Push-Location $report; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $gcno.FullName 'H:/Qbot/EmulativeDialog.ED-0144/Source/Memory/SqliteMemoryStorageAdapter.cpp'; if($LASTEXITCODE -ne 0){throw 'gcov failure'} } finally { Pop-Location }; $gz=Get-ChildItem -LiteralPath $report -Filter 'SqliteMemoryStorageAdapter*.gcov.json.gz' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if($null -eq $gz){throw 'Missing gcov JSON output'}; $inputStream=[System.IO.File]::OpenRead($gz.FullName); try { $zip=[System.IO.Compression.GzipStream]::new($inputStream,[System.IO.Compression.CompressionMode]::Decompress); try { $reader=[System.IO.StreamReader]::new($zip); try { $json=ConvertFrom-Json -InputObject $reader.ReadToEnd() } finally {$reader.Dispose()} } finally {$zip.Dispose()} } finally {$inputStream.Dispose()}; $file=$json.files | Where-Object { $_.file -match 'SqliteMemoryStorageAdapter\.cpp$' } | Select-Object -First 1; if($null -eq $file){throw 'Adapter source not found in gcov JSON'}; $lines=@($file.lines); $executed=@($lines | Where-Object { $_.count -gt 0 }).Count; Write-Output "FORMAT=$($json.format_version) GCC=$($json.gcc_version) COVERED=$executed TOTAL=$($lines.Count) PERCENT=$([Math]::Round(100*$executed/$lines.Count,2)) REPORT=$($gz.FullName)"; & 'C:/msys64/ucrt64/bin/gcov.exe' --version | Select-Object -First 1
+        $ErrorActionPreference='Stop'; $build='H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone'; $report=Join-Path $build 'Reports'; New-Item -ItemType Directory -Force -Path $report | Out-Null; $gcno=Get-ChildItem -LiteralPath $build -Recurse -Filter 'SqliteMemoryStorageAdapter.cpp.gcno' | Select-Object -First 1; if($null -eq $gcno){throw 'Missing SqliteMemoryStorageAdapter.cpp.gcno'}; Push-Location $report; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $gcno.FullName 'H:/Qbot/EmulativeDialog.ED-0144/Source/Memory/SqliteMemoryStorageAdapter.cpp'; if($LASTEXITCODE -ne 0){throw 'gcov failure'} } finally { Pop-Location }; $gz=Get-ChildItem -LiteralPath $report -Filter 'SqliteMemoryStorageAdapter*.gcov.json.gz' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if($null -eq $gz){throw 'Missing gcov JSON output'}; $inputStream=[System.IO.File]::OpenRead($gz.FullName); try { $zip=[System.IO.Compression.GzipStream]::new($inputStream,[System.IO.Compression.CompressionMode]::Decompress); try { $reader=[System.IO.StreamReader]::new($zip); try { $json=ConvertFrom-Json -InputObject $reader.ReadToEnd() } finally {$reader.Dispose()} } finally {$zip.Dispose()} } finally {$inputStream.Dispose()}; $file=$json.files | Where-Object { $_.file -match 'SqliteMemoryStorageAdapter\.cpp$' } | Select-Object -First 1; if($null -eq $file){throw 'Adapter source not found in gcov JSON'}; $lines=@($file.lines); $executed=@($lines | Where-Object { $_.count -gt 0 }).Count; Write-Output "FORMAT=$($json.format_version) GCC=$($json.gcc_version) COVERED=$executed TOTAL=$($lines.Count) PERCENT=$([Math]::Round(100*$executed/$lines.Count,2)) REPORT=$($gz.FullName)"; & 'C:/msys64/ucrt64/bin/gcov.exe' --version | Select-Object -First 1
       LiveSideEffects: Forbidden
       NotRunReason: "使用任务构建目录内的隔离 SQLite 文件。"
     RiskLevel: High

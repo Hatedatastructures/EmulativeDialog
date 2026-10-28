@@ -26,10 +26,39 @@ TaskSpecRegistration:
     - ED-0111
     - ED-0112
     - ED-0115
-  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125, ED-0131]
+  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125, ED-0131, ED-0146]
   AllTaskSpecsFrozenBeforeAssignment: true
 
 ChangeRequests:
+  - ChangeRequestId: CR-ED-0120-003
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0146
+    ProposedTaskRevision: 1
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker01_ed0105_owner
+    IndependentReviewerAgentId: /root/worker03_ed0114_validation
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    FindingId: ED-0120-R2-F001
+    Scope: >-
+      Keep the existing HttpTransportContract V1 proxy, TLS, timeout, redirect, compression,
+      cancellation, and unknown-outcome semantics. Add a corrective cross-module task that makes
+      Core endpoint grant validation mandatory at the public HttpTransportPort boundary, prevents
+      provider-facing code from constructing arbitrary grant IDs, adapts the WinHTTP implementation
+      and offline fakes to the guarded template method, and compiles the three merged provider test
+      consumers. Correct the prior .h WriteSet reference to the actual .hpp file.
+    Reason: >-
+      Worker03 fixed-head review of ED-0120/R2 found that ScriptedTransport can be constructed with
+      a null resolver, skips Validate, and still returns CompletedTransport. This is a fail-open
+      endpoint-grant boundary. The original R2 PR is already merged, so the correction is tracked as
+      a separately reviewable task and P3 remains locked until its acceptance passes.
+    PreserveExistingContractSemantics: true
+    RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
+    EvidenceRefs:
+      - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
+      - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/Manifest.json
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=fca1ee83-0cfa-4bbd-800d-f5afcdfac81b
   - ChangeRequestId: CR-ED-0018-002
     TargetTaskId: ED-0018
     TargetTaskRevision: 2
@@ -764,7 +793,16 @@ ExitGate:
   Unlocks:
     - P2FollowupTasks
     - P3ProviderAndMemoryTasks
-  State: Pending
+  State: Passed
+  EvaluatedAtUtc: 2026-10-28T14:09:52Z
+  EvaluatedBy: /root
+  ReviewerAgentId: /root/worker06_ed0105_review
+  ReviewerDecision: Approve
+  ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0124-R9
+  ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
+  EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
+  P3EntryGateState: Pending
+  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; endpoint grant validation remains bypassable through an optional resolver. HttpTransportContract V1 is not frozen; corrective task ED-0146 is proposed and awaits owner and independent review.
 
 Tasks:
   - TaskId: ED-0109
@@ -2266,7 +2304,17 @@ Tasks:
       - "Proxy-Authorization is injectable via generic Headers while contract promises proxy credentials cannot be expressed."
       - "Host/Content-Length ownership between Adapter and Transport needs to be explicit."
       - "Compression clause contained an unimplementable Adapter-decodes sentence."
-    ReviewRound3Status: AwaitingFixAndReview
+    ReviewRound3Status: ChangesRequested
+    ReviewRound3BaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewRound3HeadCommit: 688df038ae4c8dcafbe37009fc7de12db194fc47
+    ReviewRound3Decision: RequestChanges
+    ReviewRound3ReviewerAgentId: /root/worker03_ed0114_validation
+    ReviewRound3FindingIds: [ED-0120-R2-F001]
+    ReviewRound3ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df
+    ReviewRound3ReviewBundleManifestSHA256: A63408EAFF0D83CF7075D45209CA10E87C84F0EE1D93D28C366C77EEE741C0BE
+    ContractFreezeStatus: PendingCorrectiveRevision
+    ReviewRound3PRMetadataNote: PR #8 is merged at 13fe929573de105e09af9b56f022ffbe62d07ba7; GitHub review submissions and threads were empty, and its body names stale Head 406283e.
+    ReviewRound3WriteSetNote: R2 TaskSpec named HttpTransportPort.h, while the fixed Head correctly created HttpTransportPort.hpp; update the next revision WriteSet to the actual .hpp path.
     Phase: P2
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -2366,6 +2414,11 @@ Tasks:
     PullRequest: https://github.com/Hatedatastructures/EmulativeDialog/pull/1
     IntegrationCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
     MergeMethod: squash
+    ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0124-R9
+    ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
+    BundleReviewAgentId: /root/worker06_ed0105_review
+    BundleReviewDecision: Approve
+    BundleReviewEventId: 46ea4210-9d2c-42ab-9faa-3e311cb876af
     ModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -3076,3 +3129,132 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, TEST-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0146
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 强制 HTTPS Transport Port 执行 Core endpoint grant 校验
+    TaskKind: IntegrationTask
+    State: Proposed
+    Phase: P2
+    CorrectiveToTaskId: ED-0120
+    CorrectiveFindingId: ED-0120-R2-F001
+    ChangeRequestId: CR-ED-0120-003
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: /root/worker01_ed0105_owner
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: /root/worker03_ed0114_validation
+    ReviewerIndependence: Required
+    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
+    TaskSpecOwnerDecision: Pending
+    TaskSpecReviewerDecision: Pending
+    TaskSpecCoordinatorDecision: Pending
+    BaselineCommit: ""
+    Branch: ""
+    Worktree: ""
+    AssignedToSlot: ""
+    AssignmentNote: "Not assignable until CR-ED-0120-003 and this exact TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
+    Goal: "让所有 HTTPS TransportPort 实现都无法绕过 Core endpoint grant 验证；阻断无效授权后才允许进入任何 DNS/connect、回调或底层 transport 操作，并保证已合并的三种 Provider 测试消费者适配同一公共合同。"
+    OutOfScope:
+      - "修改三种 Provider 的生产 wire protocol 行为"
+      - "新增任意网络、Shell、主机状态、文件或通用 MCP 工具"
+      - "真实外网请求、真实凭据、QQ 或微信接入"
+      - "更改 TLS、代理、重定向、超时、压缩、取消及 unknown-outcome 既有 V1 语义"
+      - "根 CMakeLists.txt、依赖 pin 或其他 Provider 生产源修改"
+    DependsOn: [ED-0120, ED-0006, ED-0124]
+    ContractVersion: "HttpTransportContract V1 hardening; status remains candidate until ED-0146 passes."
+    ModuleIds: [NetworkPlatform, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    Context:
+      ModuleId: NetworkPlatform
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Platform.yaml
+        - Architecture/Modules/Providers.yaml
+        - Standards/DependencyPolicy.md
+        - Standards/SecurityAndPrivacy.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+        - Source/Platform/Network/HttpTransportPort.hpp
+        - Source/Platform/Network/WinHttpTransport.hpp
+        - Source/Platform/Network/WinHttpTransport.cpp
+        - Tests/Contract/Platform/Network/CMakeLists.txt
+        - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+        - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+        - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+        - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+        - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
+      OnDemandSet:
+        - Workflow/Plans/P2.yaml#TaskId=ED-0120
+        - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
+        - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewedDiff.patch
+      ForbiddenSet:
+        - Source/Core/
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Channels/
+        - CMakeLists.txt
+        - CMake/
+        - CMakePresets.json
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 24
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Workflow/OpenDecisions.md
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Source/Platform/Network/HttpTransportPort.hpp
+      - Source/Platform/Network/WinHttpTransport.hpp
+      - Source/Platform/Network/WinHttpTransport.cpp
+      - Tests/Contract/Platform/Network/CMakeLists.txt
+      - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+      - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+      - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+      - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+      - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
+    SharedLocks: [OD-0007, HttpTransportContractV1, WindowsTlsPolicy, HttpTransportPort]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "HttpTransportPort requires a non-null Core-owned EndpointGrantResolver reference; its public Stream entry is non-virtual and validates the request grant exactly once before any callback or DoStream/network operation.", Evidence: "Fixed API review proves no derived type can override or bypass Stream; valid grant reaches DoStream only after Validate, and invalid grants never reach DoStream."}
+      - {AcceptanceId: AC-2, Description: "Missing, expired, or destination-mismatched grants map to EndpointNotGranted; invalid requests trigger no response-head or chunk sink and no DNS/connect/send.", Evidence: "Offline scripted-resolver tests assert resolver status, exact call ordering/count, DoStream count zero, and both sink counts zero."}
+      - {AcceptanceId: AC-3, Description: "EndpointGrantId has no public default/string constructor or public raw value; only the Core-owned resolver implementation can issue or inspect grant tokens.", Evidence: "Compile-time negative constructibility/member-access assertions plus a positive resolver-issued token test."}
+      - {AcceptanceId: AC-4, Description: "WinHttpTransport, its system wrapper, and the three provider test fakes use the guarded base entry; the concrete adapter does not duplicate or bypass grant validation.", Evidence: "Windows transport and all three provider contract targets compile and pass their focused offline CTest cases."}
+      - {AcceptanceId: AC-5, Description: "Existing system/direct proxy, Proxy-Authorization rejection, Host/Content-Length framing, redirect denial, no-compression, timeout, cancellation, terminal, and unknown-outcome semantics remain unchanged.", Evidence: "Existing fixed fixtures remain green; added identity/non-identity compression cases stay in the platform offline suite."}
+      - {AcceptanceId: AC-6, Description: "Production transport behavior retains at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 report for WinHttpTransport.cpp meets 80 percent with unique source lines, exact numerator/denominator and compiler version; no stale gcda or checksum warnings."}
+    Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Platform/Network/WinHttpTransport.cpp]
+        TestSupportSources: [Source/Platform/Network/HttpTransportPort.hpp]
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Reports
+        ReportFormat: gcov JSON v2
+        FreshDirectoryRequired: true
+      RequiredBuildTargets: [HttpTransportPortTests, WinHttpTransportTests, OpenAIResponsesProviderTests, ChatCompletionsProviderTests, AnthropicMessagesProviderTests]
+      RequiredCTestTests: [Platform.Network.HttpTransportPort, Platform.Network.WinHttpTransport, Provider.OpenAIResponses, Provider.ChatCompletions, Provider.AnthropicMessages]
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146 -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146 --target HttpTransportPortTests WinHttpTransportTests OpenAIResponsesProviderTests ChatCompletionsProviderTests AnthropicMessagesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146 --output-on-failure --no-tests=error"
+        - "Generate and verify gcov JSON v2 for Source/Platform/Network/WinHttpTransport.cpp under TaskBuildDirectory/Reports; count unique executable source lines and record GCC/gcov version."
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen 12-path WriteSet."
+        - "No provider production source, Core source, root CMake, dependency pin, or live network call is changed."
+        - "HttpTransportPort.hpp has no default/null resolver route; no derived class overrides the public Stream entry."
+        - "Every non-Valid endpoint grant is denied before DoStream, callbacks, DNS, or connect."
+        - "Coverage data comes only from the fresh ED-0146 build; no libgcov checksum/overwrite warnings."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The task uses scripted resolver and offline transport/provider fixtures only."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0121, ED-0104, ED-0105, ED-0106]}
