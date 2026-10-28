@@ -19,7 +19,7 @@ Core 唯一负责：
 - Action Allowlist、参数 schema、CapabilitySet、限频、一次性授权和审批；
 - `ConversationScope` 与 `MemoryScope` 的解析、记忆授权、持久化事务和 `OperationRecord`；
 - Provider/Channel Port 注册和版本化能力快照；
-- 幂等键、外部副作用结果、UnknownOutcome 和恢复策略。
+- 幂等键、外部副作用结果、`OperationState::UnknownOutcome`、`AgentTurn::OutcomeUnknown` 和恢复策略。
 
 Core 不把身份、权限或副作用策略交给 prompt、Provider、AgentRuntime、Channel Adapter 或 TUI。`CoreAgentContract` 是 Core policy 的唯一权威定义。
 
@@ -57,18 +57,20 @@ OperationState 为 `Prepared`、`Authorized`、`Dispatched`、`Succeeded`、`Rej
 | `Failed` | 确定的 Provider、策略、持久化或 Adapter 错误终态。 |
 | `Cancelled` | 取消发生在任何外部写操作 dispatch 之前，或取消已确定且无未决副作用。 |
 | `Unsupported` | 当前 Action/目标能力明确不支持，且没有成功回执；Agent 不得宣称完成。 |
-| `UnknownOutcome` | Provider stream 或外部写操作在 dispatch 后无确定终态/回执；禁止自动重放。 |
+| `OutcomeUnknown` | Provider stream 或外部写操作在 dispatch 后无确定终态/回执；禁止自动重放。 |
+
+AgentTurn 的终态集合固定为 `Completed`、`Cancelled`、`Failed`、`Unsupported`、`OutcomeUnknown`。恢复记录必须保留重启时的原始 phase、tool execution state 和 operation state；恢复决策不得把五个终态折叠成单一的 `AlreadyTerminal` 结果。
 
 ProviderRequest 的 `ResponseCompleted` 表示该模型响应结束，不等于 AgentTurn `Completed`。带工具提案的响应由 Core 授权后续跑；最终答复只有成功发送回执后才算完成。状态记录关联 `AgentTurnId`、`RequestId`、`OperationId`、`ProviderProfileId` 和可用的 `ChannelReceiptId`。
 
-ProviderRequest 的 `ResponseOutputLimited` 不得执行未完成的工具参数。AgentRuntime 只能在 Core 批准 ContextSelector 重新压缩/预算后，使用新 RequestId 发起有界续跑；若预算耗尽则 AgentTurn 以稳定 `OutputLimitReached` 错误结束。`ResponseFailed` 仅按 profile 明列的安全 retry policy 处理；`ResponseCancelled` 在无未决副作用时转 `Cancelled`；`ResponseOutcomeUnknown` 转 `UnknownOutcome`，不重新生成或派发工具。
+ProviderRequest 的 `ResponseOutputLimited` 不得执行未完成的工具参数。AgentRuntime 只能在 Core 批准 ContextSelector 重新压缩/预算后，使用新 RequestId 发起有界续跑；若预算耗尽则 AgentTurn 以稳定 `OutputLimitReached` 错误结束。`ResponseFailed` 仅按 profile 明列的安全 retry policy 处理；`ResponseCancelled` 在无未决副作用时转 `Cancelled`；`ResponseOutcomeUnknown` 转 AgentTurn `OutcomeUnknown`，不重新生成或派发工具。
 
 V1 的 Provider `TextDelta`/`RefusalDelta` 只作为 AgentEvent 内部流事件；不直接变为 ChannelAction。Core 只在完整 `ResponseCompleted` 后按 policy 审核最终文本/动作并授权发送。失败、截断、取消或未知终态不得把已有 partial text 当作成功回复。
 
 ## 取消、错误与恢复规则
 
 - 取消在 ChannelAction dispatch 前发生：终止为 `Cancelled`，不得发送动作。
-- 取消或进程中断发生在外部动作已 dispatch、回执未确认时：终止为 `UnknownOutcome`，不得重发。
+- 取消或进程中断发生在外部动作已 dispatch、回执未确认时：AgentTurn 终止为 `OutcomeUnknown`，不得重发。
 - Provider stream 断开且没有终态时，AgentRuntime 不得假定响应已完成；不执行尚未被 ResponseCompleted 确认的工具提案。
 - 重启恢复必须先加载持久化的 Turn/Operation 状态和 dedup 标记。只恢复安全的上下文关联；对 `Dispatched` 无回执记录执行 reconciliation，不重放。
 - 所有错误使用稳定 ErrorCode 与脱敏说明；日志和崩溃报告不得含明文聊天、密钥或完整工具敏感参数。
@@ -86,5 +88,5 @@ V1 的 Provider `TextDelta`/`RefusalDelta` 只作为 AgentEvent 内部流事件�
 - 未登记账号、未知 conversation、重放 dedup key、跨群/跨发送者 Scope 均失败关闭。
 - 未授权/未声明工具、Schema 错误、超过频率限制和不支持 Channel capability 分别得到稳定拒绝结果。
 - ProviderResponseCompleted 不会在工具结果回送前结束 AgentTurn；完整过程最多产生一个成功终态。
-- 外部动作无回执、Provider stream 断连、取消、Core 重启分别得到确定状态；UnknownOutcome 不会自动重发。
+- 外部动作无回执、Provider stream 断连、取消、Core 重启分别得到确定状态；`OperationState::UnknownOutcome` 和 AgentTurn `OutcomeUnknown` 均不会自动重发。
 - FakeProvider/MockChannel 的合同实现不需要依赖任一生产 Provider 或真实 QQ 账号。

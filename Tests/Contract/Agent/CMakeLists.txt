@@ -111,6 +111,58 @@ target_compile_options(ToolCallRoundTripTests PRIVATE
 
 add_test(NAME Agent.ToolCallRoundTrip COMMAND ToolCallRoundTripTests)
 
+set(TURN_CHECKPOINT_STORE_SOURCE
+    "${PROJECT_ROOT}/Source/Storage/TurnCheckpointStore.cpp")
+set(TURN_RECOVERY_COORDINATOR_SOURCE
+    "${PROJECT_ROOT}/Source/Core/TurnRecoveryCoordinator.cpp")
+
+add_library(TurnCheckpointStoreObject OBJECT
+    "${TURN_CHECKPOINT_STORE_SOURCE}")
+target_include_directories(TurnCheckpointStoreObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(TurnCheckpointStoreObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_library(TurnRecoveryCoordinatorObject OBJECT
+    "${TURN_RECOVERY_COORDINATOR_SOURCE}")
+target_include_directories(TurnRecoveryCoordinatorObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(TurnRecoveryCoordinatorObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_executable(TurnCheckpointStoreTests
+    "${PROJECT_ROOT}/Tests/Contract/Storage/TurnCheckpointStoreTests.cpp")
+target_include_directories(TurnCheckpointStoreTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(TurnCheckpointStoreTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(TurnCheckpointStoreTests
+    PRIVATE TurnCheckpointStoreObject Threads::Threads)
+add_test(NAME Storage.TurnCheckpointStore
+         COMMAND TurnCheckpointStoreTests)
+
+add_executable(TurnRecoveryCoordinatorTests
+    "${PROJECT_ROOT}/Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp")
+target_include_directories(TurnRecoveryCoordinatorTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(TurnRecoveryCoordinatorTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(TurnRecoveryCoordinatorTests
+    PRIVATE TurnCheckpointStoreObject TurnRecoveryCoordinatorObject)
+add_test(NAME Core.TurnRecoveryCoordinator
+         COMMAND TurnRecoveryCoordinatorTests)
+
+set(TURN_CHECKPOINT_TEST_DATA
+    "${AGENT_RUNTIME_REPORT_DIR}/TestData/TurnCheckpoint")
+set(TURN_RECOVERY_TEST_DATA
+    "${AGENT_RUNTIME_REPORT_DIR}/TestData/TurnRecovery")
+file(MAKE_DIRECTORY "${TURN_CHECKPOINT_TEST_DATA}"
+     "${TURN_RECOVERY_TEST_DATA}")
+set_tests_properties(Storage.TurnCheckpointStore PROPERTIES
+    RUN_SERIAL TRUE
+    ENVIRONMENT
+      "TEMP=${TURN_CHECKPOINT_TEST_DATA};TMP=${TURN_CHECKPOINT_TEST_DATA}")
+set_tests_properties(Core.TurnRecoveryCoordinator PROPERTIES
+    RUN_SERIAL TRUE
+    ENVIRONMENT
+      "TEMP=${TURN_RECOVERY_TEST_DATA};TMP=${TURN_RECOVERY_TEST_DATA}")
+
 add_custom_target(AgentRuntimeCoverageReport
     COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
             -o "$<TARGET_OBJECTS:AgentRuntimeObject>" "${AGENT_RUNTIME_SOURCE}"
@@ -188,3 +240,25 @@ add_custom_target(ProviderOutcomePolicyCoverageReport
     COMMENT "Generating ProviderOutcomePolicy.cpp gcov JSON v2 and text reports")
 add_dependencies(ProviderOutcomePolicyCoverageReport
                  ProviderOutcomePolicyTests)
+
+add_custom_target(TurnCheckpointStoreCoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:TurnCheckpointStoreObject>"
+            "${TURN_CHECKPOINT_STORE_SOURCE}"
+    WORKING_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating TurnCheckpointStore.cpp gcov JSON v2 coverage")
+add_dependencies(TurnCheckpointStoreCoverageReport
+    TurnCheckpointStoreTests)
+
+add_custom_target(TurnRecoveryCoordinatorCoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:TurnRecoveryCoordinatorObject>"
+            "${TURN_RECOVERY_COORDINATOR_SOURCE}"
+    WORKING_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating TurnRecoveryCoordinator.cpp gcov JSON v2 coverage")
+add_dependencies(TurnRecoveryCoordinatorCoverageReport
+    TurnRecoveryCoordinatorTests)
