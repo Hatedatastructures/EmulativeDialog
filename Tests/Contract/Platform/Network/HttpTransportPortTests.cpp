@@ -111,6 +111,10 @@ public:
         LastDestination = Request.Destination;
         LastBody = Request.BodyUtf8;
         LastProxyMode = Request.Proxy;
+        // Framing is transport-owned: derive Host and Content-Length from the
+        // resolved destination and body, ignoring any adapter-supplied copy.
+        LastEffectiveHost = Request.Destination.Host;
+        LastEffectiveContentLength = Request.BodyUtf8.size();
 
         // Pre-cancel before any request byte could be written.
         if (CancellationToken.stop_requested()) {
@@ -217,6 +221,8 @@ public:
     std::string LastBody;
     std::uint64_t ReceivedBodyBytes{0};
     TransportProxyMode LastProxyMode{TransportProxyMode::System};
+    std::string LastEffectiveHost;
+    std::size_t LastEffectiveContentLength{0};
 
 private:
     static void Emit(const ResponseChunkSink& Sink, std::string_view Text) {
@@ -412,12 +418,19 @@ void TestGrantValidationFailsClosed() {
         ScriptedGrantResolver Resolver(Status);
         ScriptedTransport Transport(
             ScriptedTransport::Script::NormalTwoChunks, &Resolver);
-        const TransportTerminal Terminal =
-            Transport.Stream(MakeRequest(), {}, {}, std::stop_token{});
+        int HeadCalls = 0;
+        int ChunkCalls = 0;
+        const TransportTerminal Terminal = Transport.Stream(
+            MakeRequest(),
+            [&HeadCalls](const ResponseHeadMetadata&) { ++HeadCalls; },
+            [&ChunkCalls](std::span<const std::byte>) { ++ChunkCalls; },
+            std::stop_token{});
         Expect(std::holds_alternative<FailedTransport>(Terminal));
         Expect(std::get<FailedTransport>(Terminal).Code ==
                TransportFailureCode::EndpointNotGranted);
         Expect(Transport.ReceivedBodyBytes == 0);
+        Expect(HeadCalls == 0);
+        Expect(ChunkCalls == 0);
     }
 
     ScriptedGrantResolver ValidResolver(EndpointGrantStatus::Valid);
@@ -469,6 +482,40 @@ void TestSinkExceptionCannotBecomeSuccess() {
            TransportFailureCode::InternalError);
 }
 
+void TestProxyAuthorizationRejected() {
+    ScriptedTransport Transport(
+        ScriptedTransport::Script::HeaderInjectionRejected);
+    TransportRequest Request = MakeRequest();
+    Request.Headers.push_back(TransportHeader{
+        .Name = "Proxy-Authorization", .Value = "Basic c2VjcmV0"});
+    const TransportTerminal Terminal =
+        Transport.Stream(Request, {}, {}, std::stop_token{});
+    Expect(std::holds_alternative<FailedTransport>(Terminal));
+    Expect(std::get<FailedTransport>(Terminal).Code ==
+           TransportFailureCode::InvalidRequest);
+    Expect(IsForbiddenHopByHopHeader("Proxy-Authorization"));
+    Expect(IsAdapterForbiddenHeader("proxy-authorization"));
+}
+
+void TestFramingHeadersAreTransportOwned() {
+    Expect(IsAdapterForbiddenHeader("Host"));
+    Expect(IsAdapterForbiddenHeader("content-length"));
+    Expect(!IsAdapterForbiddenHeader("Content-Type"));
+
+    ScriptedTransport Transport(ScriptedTransport::Script::NormalTwoChunks);
+    TransportRequest Request = MakeRequest("{\"input\":\"framing\"}");
+    Request.Headers.push_back(
+        TransportHeader{.Name = "Host", .Value = "spoofed.example"});
+    Request.Headers.push_back(
+        TransportHeader{.Name = "Content-Length", .Value = "999"});
+    const TransportTerminal Terminal =
+        Transport.Stream(Request, {}, {}, std::stop_token{});
+    Expect(std::holds_alternative<CompletedTransport>(Terminal));
+    // Adapter-supplied framing values never become the effective ones.
+    Expect(Transport.LastEffectiveHost == "provider.example");
+    Expect(Transport.LastEffectiveContentLength == Request.BodyUtf8.size());
+}
+
 } // namespace
 
 int main() {
@@ -486,5 +533,7 @@ int main() {
     TestHopByHopHeadersRejected();
     TestPreCancelledRequestSendsNothing();
     TestSinkExceptionCannotBecomeSuccess();
+    TestProxyAuthorizationRejected();
+    TestFramingHeadersAreTransportOwned();
     return 0;
 }

@@ -144,10 +144,20 @@ constexpr bool IsForbiddenHopByHopHeader(std::string_view Name) noexcept {
     return EqualsAsciiNoCase(Name, "connection") ||
            EqualsAsciiNoCase(Name, "keep-alive") ||
            EqualsAsciiNoCase(Name, "proxy-connection") ||
+           EqualsAsciiNoCase(Name, "proxy-authorization") ||
            EqualsAsciiNoCase(Name, "te") ||
            EqualsAsciiNoCase(Name, "trailer") ||
            EqualsAsciiNoCase(Name, "transfer-encoding") ||
            EqualsAsciiNoCase(Name, "upgrade");
+}
+
+// Content framing is transport-owned. Adapters must not be able to spoof the
+// authority or body length; the transport derives Host from HttpsDestination
+// and Content-Length from BodyUtf8 and ignores adapter-supplied values.
+constexpr bool IsAdapterForbiddenHeader(std::string_view Name) noexcept {
+    return IsForbiddenHopByHopHeader(Name) ||
+           EqualsAsciiNoCase(Name, "host") ||
+           EqualsAsciiNoCase(Name, "content-length");
 }
 
 enum class TransportFailureCode : std::uint8_t {
