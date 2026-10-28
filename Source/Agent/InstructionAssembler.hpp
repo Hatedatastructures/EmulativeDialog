@@ -20,6 +20,7 @@ enum class InstructionAssemblyFailureCode : std::uint8_t {
   DuplicateItem,
   UnsupportedItemKind,
   InvalidUtf8,
+  MissingSourceReference,
 };
 
 struct InstructionAssemblyFailure final {

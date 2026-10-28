@@ -1,6 +1,8 @@
 #include "Source/Agent/InstructionAssembler.hpp"
 
 #include <algorithm>
+#include <cassert>
+#include <cstdlib>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -27,12 +29,46 @@ Providers::MessageRole ToProviderRole(
   case Context::ProviderMessageRole::Assistant:
     return Providers::MessageRole::Assistant;
   }
-  return Providers::MessageRole::Assistant;
+  assert(false && "InstructionPolicy returned an unexpected provider role");
+  std::abort();
 }
 
 bool ContainsId(const std::vector<std::string>& Seen,
                 std::string_view Candidate) {
   return std::find(Seen.begin(), Seen.end(), Candidate) != Seen.end();
+}
+
+bool IsBlank(std::string_view Text) {
+  return std::all_of(Text.begin(), Text.end(), [](char Value) {
+    switch (Value) {
+    case ' ':
+    case '\t':
+    case '\n':
+    case '\r':
+    case '\f':
+    case '\v':
+      return true;
+    default:
+      return false;
+    }
+  });
+}
+
+bool EndsWithDisclosureParagraph(std::string_view Text,
+                                 std::string_view Disclosure) {
+  if (Text == Disclosure) {
+    return true;
+  }
+  if (Text.size() < Disclosure.size() + 2U) {
+    return false;
+  }
+  const std::size_t Start = Text.size() - Disclosure.size();
+  if (Text.compare(Start, Disclosure.size(), Disclosure) != 0) {
+    return false;
+  }
+  // The disclosure must be its own final paragraph, so an inline quotation or
+  // negation in the preceding sentence cannot satisfy the policy.
+  return Text.substr(0, Start).ends_with("\n\n");
 }
 
 } // namespace
@@ -85,7 +121,11 @@ InstructionAssemblyResult InstructionAssembler::Assemble(
         !Core::InstructionPolicy::IsCanonicalUtf8(Item.Utf8Text)) {
       return Failure(InstructionAssemblyFailureCode::InvalidUtf8);
     }
-    if (Item.Utf8Text.empty()) {
+    if (Item.Source.SourceMessageId.empty() &&
+        Item.Source.SourceOperationId.empty()) {
+      return Failure(InstructionAssemblyFailureCode::MissingSourceReference);
+    }
+    if (IsBlank(Item.Utf8Text)) {
       return Failure(InstructionAssemblyFailureCode::InvalidBundle);
     }
 
@@ -168,8 +208,10 @@ InstructionAssemblyResult InstructionAssembler::Assemble(
     return Failure(InstructionAssemblyFailureCode::MissingRequiredContext);
   }
 
-  if (Assembled.SystemInstructions.find(Policy.GetAiDisclosure()) ==
-      std::string::npos) {
+  // The disclosure must be the exact final paragraph. A mere mention,
+  // quotation, or negation of the disclosure text does not satisfy policy.
+  if (!EndsWithDisclosureParagraph(Assembled.SystemInstructions,
+                                   Policy.GetAiDisclosure())) {
     Assembled.SystemInstructions.append("\n\n");
     Assembled.SystemInstructions.append(Policy.GetAiDisclosure());
     Assembled.AiDisclosureInjected = true;
