@@ -73,14 +73,35 @@ public:
         : Current(Selected) {}
 
     [[nodiscard]] EndpointGrantStatus Validate(
-        const EndpointGrantId&,
-        const HttpsDestination&) const noexcept override {
+        const EndpointGrantId& Grant,
+        const HttpsDestination& Requested) const noexcept override {
+        ++ValidateCallCount;
+        LastGrant = &Grant;
+        LastDestination = &Requested;
         return Current;
     }
+
+    mutable int ValidateCallCount{0};
+    mutable const EndpointGrantId* LastGrant{nullptr};
+    mutable const HttpsDestination* LastDestination{nullptr};
 
 private:
     EndpointGrantStatus Current;
 };
+
+class AlwaysValidGrantResolver final : public EndpointGrantResolver {
+public:
+    [[nodiscard]] EndpointGrantStatus Validate(
+        const EndpointGrantId&,
+        const HttpsDestination&) const noexcept override {
+        return EndpointGrantStatus::Valid;
+    }
+};
+
+const EndpointGrantResolver& DefaultGrantResolver() {
+    static const AlwaysValidGrantResolver Resolver;
+    return Resolver;
+}
 
 class ScriptedTransport final : public HttpTransportPort {
 public:
@@ -97,12 +118,15 @@ public:
         SinkException
     };
 
-    explicit ScriptedTransport(Script Selected,
-                               const EndpointGrantResolver* GrantResolver =
-                                   nullptr)
-        : Current(Selected), Resolver(GrantResolver) {}
+    explicit ScriptedTransport(
+        Script Selected,
+        const EndpointGrantResolver& GrantResolver = DefaultGrantResolver())
+        : HttpTransportPort(GrantResolver), Current(Selected) {}
+    ScriptedTransport(Script, EndpointGrantResolver&&) = delete;
+    ScriptedTransport(Script, const EndpointGrantResolver&&) = delete;
 
-    [[nodiscard]] TransportTerminal Stream(
+protected:
+    [[nodiscard]] TransportTerminal DoStream(
         const TransportRequest& Request,
         const ResponseHeadSink& OnHead,
         const ResponseChunkSink& OnChunk,
@@ -120,14 +144,6 @@ public:
         if (CancellationToken.stop_requested()) {
             return CancelledTransport{
                 .RequestMayHaveReachedEndpoint = false};
-        }
-
-        // Grant validation completes before DNS/connect is attempted.
-        if (Resolver != nullptr &&
-            Resolver->Validate(Request.Grant, Request.Destination) !=
-                EndpointGrantStatus::Valid) {
-            return FailedTransport{
-                .Code = TransportFailureCode::EndpointNotGranted};
         }
 
         const ResponseHeadMetadata Head{
@@ -212,6 +228,7 @@ public:
         return FailedTransport{.Code = TransportFailureCode::InternalError};
     }
 
+public:
     [[nodiscard]] TransportHealthState Health(std::stop_token) noexcept override {
         return TransportHealthState::Ready;
     }
@@ -234,8 +251,17 @@ private:
     }
 
     Script Current;
-    const EndpointGrantResolver* Resolver;
 };
+
+static_assert(std::is_constructible_v<ScriptedTransport,
+                                      ScriptedTransport::Script,
+                                      const EndpointGrantResolver&>);
+static_assert(!std::is_constructible_v<ScriptedTransport,
+                                       ScriptedTransport::Script,
+                                       EndpointGrantResolver&&>);
+static_assert(!std::is_constructible_v<ScriptedTransport,
+                                       ScriptedTransport::Script,
+                                       const EndpointGrantResolver&&>);
 
 struct CapturedBody final {
     std::vector<std::string> Chunks;
@@ -417,17 +443,22 @@ void TestGrantValidationFailsClosed() {
     for (const EndpointGrantStatus Status : Rejected) {
         ScriptedGrantResolver Resolver(Status);
         ScriptedTransport Transport(
-            ScriptedTransport::Script::NormalTwoChunks, &Resolver);
+            ScriptedTransport::Script::NormalTwoChunks, Resolver);
+        const TransportRequest Request = MakeRequest();
         int HeadCalls = 0;
         int ChunkCalls = 0;
         const TransportTerminal Terminal = Transport.Stream(
-            MakeRequest(),
+            Request,
             [&HeadCalls](const ResponseHeadMetadata&) { ++HeadCalls; },
             [&ChunkCalls](std::span<const std::byte>) { ++ChunkCalls; },
             std::stop_token{});
         Expect(std::holds_alternative<FailedTransport>(Terminal));
         Expect(std::get<FailedTransport>(Terminal).Code ==
                TransportFailureCode::EndpointNotGranted);
+        Expect(Resolver.ValidateCallCount == 1);
+        Expect(Resolver.LastGrant == &Request.Grant);
+        Expect(Resolver.LastDestination == &Request.Destination);
+        Expect(Transport.CallCount == 0);
         Expect(Transport.ReceivedBodyBytes == 0);
         Expect(HeadCalls == 0);
         Expect(ChunkCalls == 0);
@@ -435,10 +466,15 @@ void TestGrantValidationFailsClosed() {
 
     ScriptedGrantResolver ValidResolver(EndpointGrantStatus::Valid);
     ScriptedTransport ValidTransport(
-        ScriptedTransport::Script::NormalTwoChunks, &ValidResolver);
+        ScriptedTransport::Script::NormalTwoChunks, ValidResolver);
+    const TransportRequest ValidRequest = MakeRequest();
     const TransportTerminal ValidTerminal =
-        ValidTransport.Stream(MakeRequest(), {}, {}, std::stop_token{});
+        ValidTransport.Stream(ValidRequest, {}, {}, std::stop_token{});
     Expect(std::holds_alternative<CompletedTransport>(ValidTerminal));
+    Expect(ValidResolver.ValidateCallCount == 1);
+    Expect(ValidResolver.LastGrant == &ValidRequest.Grant);
+    Expect(ValidResolver.LastDestination == &ValidRequest.Destination);
+    Expect(ValidTransport.CallCount == 1);
 }
 
 void TestHopByHopHeadersRejected() {
