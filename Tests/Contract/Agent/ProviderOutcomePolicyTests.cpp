@@ -3,10 +3,12 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <optional>
 #include <stop_token>
 #include <string>
 #include <string_view>
+#include <thread>
 
 namespace {
 
@@ -216,14 +218,53 @@ void TestRetryAfterHandling() {
     const RetryDecision Decision =
         Policy.Decide(RateLimited, RetrySafety{}, 1, std::stop_token{});
     Check(Decision.Retry, "retry-after schedules a retry");
-    Check(Decision.NextDelay == std::chrono::seconds(7),
-          "retry-after overrides smaller backoff");
+    Check(Decision.NextDelay == std::chrono::milliseconds(500),
+          "retry-after is capped at the local maximum delay");
 
     RateLimited.RetryAfter = std::chrono::seconds(0);
     const RetryDecision Small =
         Policy.Decide(RateLimited, RetrySafety{}, 1, std::stop_token{});
     Check(Small.NextDelay == std::chrono::milliseconds(100),
           "small retry-after keeps computed backoff");
+}
+
+void TestMixedUnknownSignalsFailClosed() {
+    {
+        ProviderOutcomeInput Input = WithError(FailureCode::RateLimited);
+        Input.Timeout = TransportTimeoutPhase::Send;
+        Check(ProviderOutcomePolicy::Classify(Input) ==
+                  ProviderOutcomeClass::UnknownOutcomeNoRetry,
+              "rate limit with post-send timeout is unknown outcome");
+        ProviderOutcomePolicy Policy(NoJitterConfig());
+        const RetryDecision Decision =
+            Policy.Decide(Input, RetrySafety{}, 1, std::stop_token{});
+        Check(!Decision.Retry &&
+                  Decision.Classification ==
+                      ProviderOutcomeClass::UnknownOutcomeNoRetry,
+              "mixed rate limit and timeout never retries");
+    }
+    {
+        ProviderOutcomeInput Input = WithError(FailureCode::RateLimited);
+        Input.TransportFailure = TransportFailureCode::RequestWriteFailure;
+        Check(ProviderOutcomePolicy::Classify(Input) ==
+                  ProviderOutcomeClass::UnknownOutcomeNoRetry,
+              "rate limit with write failure is unknown outcome");
+    }
+    {
+        ProviderOutcomeInput Input =
+            WithError(FailureCode::TransportFailure);
+        Input.CancelledAfterSendUnconfirmed = true;
+        Check(ProviderOutcomePolicy::Classify(Input) ==
+                  ProviderOutcomeClass::UnknownOutcomeNoRetry,
+              "transport failure with unconfirmed cancellation is unknown");
+    }
+    {
+        ProviderOutcomeInput Input = WithError(FailureCode::RateLimited);
+        Input.TransportFailure = TransportFailureCode::ResponseReadFailure;
+        Check(ProviderOutcomePolicy::Classify(Input) ==
+                  ProviderOutcomeClass::UnknownOutcomeNoRetry,
+              "rate limit with read failure is unknown outcome");
+    }
 }
 
 void TestSafetyGates() {
@@ -276,6 +317,62 @@ void TestCancellationAndTerminalInteraction() {
                       RetryDecisionReason::TerminalAlreadyEmitted,
               "terminal event blocks retries");
     }
+}
+
+void TestInvalidAttempt() {
+    ProviderOutcomePolicy Policy(NoJitterConfig());
+    const RetryDecision Decision =
+        Policy.Decide(WithError(FailureCode::TransportFailure), RetrySafety{},
+                      0, std::stop_token{});
+    Check(!Decision.Retry &&
+              Decision.Reason == RetryDecisionReason::InvalidAttempt,
+          "attempt zero is rejected");
+    Check(Decision.NextDelay == std::chrono::milliseconds(0),
+          "invalid attempt schedules no delay");
+}
+
+void TestDefaultSleeperObservesCancellation() {
+    RetryPolicyConfig Config = NoJitterConfig();
+    Config.BaseDelay = std::chrono::seconds(1);
+    Config.MaximumDelay = std::chrono::seconds(1);
+    ProviderOutcomePolicy Policy(Config);
+    std::stop_source Source;
+    const RetryDecision Decision =
+        Policy.Decide(WithError(FailureCode::RateLimited), RetrySafety{}, 1,
+                      Source.get_token());
+    Check(Decision.Retry &&
+              Decision.NextDelay == std::chrono::seconds(1),
+          "one-second retry scheduled");
+
+    std::thread Canceller([&Source] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(80));
+        Source.request_stop();
+    });
+    const auto Started = std::chrono::steady_clock::now();
+    const bool Waited =
+        Policy.WaitForRetry(Decision, Source.get_token());
+    const auto Elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - Started);
+    Canceller.join();
+    Check(!Waited, "default sleeper stops after cancellation");
+    Check(Elapsed < std::chrono::milliseconds(500),
+          "default sleeper observes cancellation promptly");
+}
+
+void TestBackoffOverflowSafety() {
+    RetryPolicyConfig Config;
+    Config.MaximumAttempts = 32;
+    Config.BaseDelay = std::chrono::milliseconds(
+        std::numeric_limits<std::int64_t>::max() / 4);
+    Config.MaximumDelay = Config.BaseDelay;
+    Config.JitterRatio = 0.0;
+    ProviderOutcomePolicy Policy(Config);
+    const RetryDecision Decision =
+        Policy.Decide(WithError(FailureCode::TransportFailure), RetrySafety{},
+                      10, std::stop_token{});
+    Check(Decision.Retry, "overflowing backoff stays retryable");
+    Check(Decision.NextDelay == Config.MaximumDelay,
+          "overflow clamps to maximum delay");
 }
 
 void TestNonRetryableOutcomes() {
@@ -387,6 +484,7 @@ void TestReasonCodes() {
         {RetryDecisionReason::Cancelled, "Cancelled"},
         {RetryDecisionReason::TerminalAlreadyEmitted,
          "TerminalAlreadyEmitted"},
+        {RetryDecisionReason::InvalidAttempt, "InvalidAttempt"},
     };
     for (const auto& Current : Cases) {
         Check(RetryReasonCodeName(Current.Reason) == Current.Code,
@@ -403,8 +501,12 @@ int main() {
     TestRetryableBackoffSequence();
     TestJitterBounds();
     TestRetryAfterHandling();
+    TestMixedUnknownSignalsFailClosed();
     TestSafetyGates();
     TestCancellationAndTerminalInteraction();
+    TestInvalidAttempt();
+    TestDefaultSleeperObservesCancellation();
+    TestBackoffOverflowSafety();
     TestNonRetryableOutcomes();
     TestWaitForRetry();
     TestClockAndConfigurationNormalization();

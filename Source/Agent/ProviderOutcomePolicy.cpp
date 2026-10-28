@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <thread>
 #include <utility>
 
@@ -34,6 +35,17 @@ std::chrono::milliseconds Clamp(std::chrono::milliseconds Value,
     return Value;
 }
 
+bool IsUnknownOutcomeTransport(TransportFailureCode Code) noexcept {
+    return Code == TransportFailureCode::RequestWriteFailure ||
+           Code == TransportFailureCode::ResponseReadFailure;
+}
+
+bool IsUnknownOutcomeTimeout(TransportTimeoutPhase Phase) noexcept {
+    return Phase == TransportTimeoutPhase::Send ||
+           Phase == TransportTimeoutPhase::Response ||
+           Phase == TransportTimeoutPhase::Idle;
+}
+
 } // namespace
 
 std::string_view RetryReasonCodeName(RetryDecisionReason Reason) noexcept {
@@ -50,6 +62,8 @@ std::string_view RetryReasonCodeName(RetryDecisionReason Reason) noexcept {
         return "Cancelled";
     case RetryDecisionReason::TerminalAlreadyEmitted:
         return "TerminalAlreadyEmitted";
+    case RetryDecisionReason::InvalidAttempt:
+        return "InvalidAttempt";
     }
     return "Unknown";
 }
@@ -64,11 +78,22 @@ ProviderOutcomePolicy::ProviderOutcomePolicy(RetryPolicyConfig InConfig,
       Sleep(InSleep ? std::move(InSleep)
                     : [](std::chrono::milliseconds Delay,
                          std::stop_token Token) {
-                          if (Token.stop_requested()) {
-                              return false;
+                          using namespace std::chrono;
+                          constexpr milliseconds Slice{50};
+                          const auto Deadline = steady_clock::now() + Delay;
+                          while (true) {
+                              if (Token.stop_requested()) {
+                                  return false;
+                              }
+                              const auto Remaining =
+                                  duration_cast<milliseconds>(
+                                      Deadline - steady_clock::now());
+                              if (Remaining <= milliseconds::zero()) {
+                                  return true;
+                              }
+                              std::this_thread::sleep_for(
+                                  std::min(Remaining, Slice));
                           }
-                          std::this_thread::sleep_for(Delay);
-                          return !Token.stop_requested();
                       }) {
     Config.MaximumAttempts = std::max<std::uint32_t>(1, Config.MaximumAttempts);
     Config.MaximumDelay =
@@ -79,7 +104,18 @@ ProviderOutcomePolicy::ProviderOutcomePolicy(RetryPolicyConfig InConfig,
 
 ProviderOutcomeClass ProviderOutcomePolicy::Classify(
     const ProviderOutcomeInput& Input) noexcept {
+    // Unknown-outcome signals win over any accompanying ProviderError. A
+    // retryable-looking error (for example RateLimited) must never cause a
+    // resend when the request may already have reached the provider.
     if (Input.CancelledAfterSendUnconfirmed) {
+        return ProviderOutcomeClass::UnknownOutcomeNoRetry;
+    }
+    if (Input.TransportFailure.has_value() &&
+        IsUnknownOutcomeTransport(*Input.TransportFailure)) {
+        return ProviderOutcomeClass::UnknownOutcomeNoRetry;
+    }
+    if (Input.Timeout.has_value() &&
+        IsUnknownOutcomeTimeout(*Input.Timeout)) {
         return ProviderOutcomeClass::UnknownOutcomeNoRetry;
     }
     if (Input.Error.has_value()) {
@@ -147,12 +183,16 @@ std::chrono::milliseconds ProviderOutcomePolicy::ComputeBackoff(
     const auto Multiplier = static_cast<std::int64_t>(
         std::uint64_t{1} << Shift);
     const auto Base = Config.BaseDelay.count();
-    const std::int64_t Doubled = Base * Multiplier;
-    std::int64_t Raw = Doubled;
     const auto Maximum = std::max<std::int64_t>(
         0, Config.MaximumDelay.count());
-    if (Raw > Maximum) {
-        Raw = Maximum;
+    std::int64_t Raw = 0;
+    if (Base > 0) {
+        if (Multiplier >
+            std::numeric_limits<std::int64_t>::max() / Base) {
+            Raw = Maximum;
+        } else {
+            Raw = std::min(Base * Multiplier, Maximum);
+        }
     }
 
     if (Config.JitterRatio > 0.0 && Raw > 0) {
@@ -161,8 +201,13 @@ std::chrono::milliseconds ProviderOutcomePolicy::ComputeBackoff(
             static_cast<double>(Hash) / 4294967295.0;
         const double Factor =
             1.0 - Config.JitterRatio + 2.0 * Config.JitterRatio * Unit;
-        Raw = static_cast<std::int64_t>(
-            std::llround(static_cast<double>(Raw) * Factor));
+        const double Scaled = static_cast<double>(Raw) * Factor;
+        if (Scaled >=
+            static_cast<double>(std::numeric_limits<std::int64_t>::max())) {
+            Raw = Maximum;
+        } else {
+            Raw = static_cast<std::int64_t>(std::llround(Scaled));
+        }
         if (Raw < 0) {
             Raw = 0;
         }
@@ -189,6 +234,9 @@ RetryDecision ProviderOutcomePolicy::Decide(
         return Decision;
     };
 
+    if (Attempt == 0) {
+        return Stop(RetryDecisionReason::InvalidAttempt);
+    }
     if (CancellationToken.stop_requested() || Input.CancelledBeforeSend) {
         return Stop(RetryDecisionReason::Cancelled);
     }
@@ -215,8 +263,13 @@ RetryDecision ProviderOutcomePolicy::Decide(
         const auto ServerDelay =
             std::chrono::duration_cast<std::chrono::milliseconds>(
                 *Input.RetryAfter);
-        if (ServerDelay > Delay) {
-            Delay = ServerDelay;
+        // A provider Retry-After is honored but never bypasses the local
+        // retry ceiling.
+        const auto BoundedServerDelay =
+            std::min(std::max(ServerDelay, std::chrono::milliseconds::zero()),
+                     Config.MaximumDelay);
+        if (BoundedServerDelay > Delay) {
+            Delay = BoundedServerDelay;
         }
     }
     Decision.Retry = true;
