@@ -52,6 +52,30 @@ target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE AgentRuntimeObject)
 add_test(NAME AgentRuntime.Contract COMMAND AgentRuntimeContractTests)
 add_test(NAME AgentRuntime.VerticalSlice COMMAND AgentRuntimeVerticalSliceTests)
 
+set(CONVERSATION_SESSION_STATE_TEST
+    "${PROJECT_ROOT}/Tests/Contract/Core/ConversationSessionStateTests.cpp")
+set(CONTEXT_SELECTOR_TEST
+    "${PROJECT_ROOT}/Tests/Contract/Context/ContextSelectorTests.cpp")
+
+add_executable(ConversationSessionStateTests
+    "${PROJECT_ROOT}/Source/Core/ConversationSessionState.cpp"
+    "${CONVERSATION_SESSION_STATE_TEST}")
+target_include_directories(ConversationSessionStateTests PRIVATE
+    "${PROJECT_ROOT}")
+target_compile_options(ConversationSessionStateTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_executable(ContextSelectorTests
+    "${PROJECT_ROOT}/Source/Context/ContextSelector.cpp"
+    "${CONTEXT_SELECTOR_TEST}")
+target_include_directories(ContextSelectorTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(ContextSelectorTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_test(NAME ConversationSessionState.Contract
+         COMMAND ConversationSessionStateTests)
+add_test(NAME ContextSelector.Contract COMMAND ContextSelectorTests)
+
 set(INSTRUCTION_POLICY_SOURCE
     "${PROJECT_ROOT}/Source/Core/InstructionPolicy.cpp")
 set(INSTRUCTION_ASSEMBLER_SOURCE
