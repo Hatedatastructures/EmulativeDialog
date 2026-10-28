@@ -79,6 +79,8 @@ Tasks:
     TaskKind: CapabilitySlice
     State: Assigned
     AssignmentNote: "Dependencies ED-0015/ED-0009/ED-0120 are Merged; temporarily reassigned to Worker01 while Worker03 owns ED-0143."
+    LocalCompletionHead: 96d61ec44ab0f757dff47e902f1e8bb4fa8922e8
+    LocalCoverage: "80.74% lines (570/706)"
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0104-OWNER-001
       Decision: Accepted
@@ -191,6 +193,8 @@ Tasks:
     TaskKind: CapabilitySlice
     State: Assigned
     AssignmentNote: "Dependencies ED-0015/ED-0010/ED-0120 are Merged; assigned to Worker04; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
+    LocalCompletionHead: 4542d0e
+    LocalCoverage: "89.30% lines (835/935), diagnostic Boost 1.91 build"
     Phase: P3
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -317,6 +321,8 @@ Tasks:
     TaskKind: CapabilitySlice
     State: Assigned
     AssignmentNote: "Dependencies ED-0015/ED-0011/ED-0120 are Merged; assigned to Worker05; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
+    LocalCompletionHead: 6797cea
+    LocalCoverage: "95.30% lines (771/809), 124/124 fixture assertions"
     Phase: P3
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -422,7 +428,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现授权、身份和会话隔离的聊天 Memory
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0113-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0113 on top of the completed ED-0123 SqliteStore branch while its PR is under review. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0113-R4
+    AssignedBranch: Task/ED-0113-R4-ChatMemory
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker06

@@ -1624,7 +1624,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现受 Core 授权的业务工具调用往返
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0108-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0108 on top of the completed ED-0107 AgentEventProjector branch; provider adapters integrate after merge. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0108-R2
+    AssignedBranch: Task/ED-0108-R2-ToolCallCoordinator
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1713,7 +1720,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现 turn 与三协议 Provider 统一取消生命周期
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0110-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0110 against the frozen canonical event and stop_token contracts while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0110-R4-main
+    AssignedBranch: Task/ED-0110-R4-TurnCancellation
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1822,7 +1836,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider 失败分类与有界重试策略
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0111-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0111 against frozen ProviderError and canonical transport semantics while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0111-R3
+    AssignedBranch: Task/ED-0111-R3-ProviderOutcomePolicy
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
