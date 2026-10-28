@@ -1946,13 +1946,16 @@ Tasks:
     EpicId: EP-06
     Title: 实现受 Core 授权的业务工具调用往返
     TaskKind: IntegrationTask
-    State: Review
+    State: Merged
     PullRequestCreated: true
     PullRequestNumber: 19
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/19
     ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
     ReviewHeadCommit: ee8c7a9d847182bf27b931c62a163a97690838b7
     ReviewStatus: Approved
+    MergeCommit: 981aebb1c1f2f1c0639823ba9827a08819461047
+    MergedAt: 2026-10-28T03:56:59Z
+    MergeMethod: squash
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0108-002
       Decision: Accepted
@@ -2311,9 +2314,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     TaskSpecChangeRequestId: CR-ED-0112-006
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
     TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
@@ -2322,6 +2325,10 @@ Tasks:
     TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+    AssignedToSlot: Worker02
+    AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR to main; all six dependencies are merged. The exact eight-path implementation assignment is bound to main baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may begin only after this assignment-ledger PR merges; do not reuse or merge the protected R2 worktrees."
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
@@ -2402,9 +2409,6 @@ Tasks:
     TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
     TaskSpecOwnerDecision: Pending
     TaskSpecIndependentReviewerDecision: Pending
-    ProposedBaseCommit: 461735e50657bdc8ace070b46db3682cfb03460f
-    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R5
-    ProposedBranch: Task/ED-0112-R5TurnRecovery
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
