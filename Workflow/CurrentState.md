@@ -73,3 +73,12 @@
 - P3 EntryGate 保持 Pending，必须等 ED-0146 与 ED-0147 的合同和实现均通过验证。ED-0114/R4 TaskSpec 的 Worker02 Owner 与 Worker04 独立 Reviewer 已对 Base `461735e`、Head `204cfe4` Approve；但其实现仍受 P3 gate 阻塞。PR #20 的 R2 固定 Head `a23f252` 被 Worker03 RequestChanges，发现 usage 缺失 fail-open、自授权续跑、turn ledger 无生产清理、拒绝 Handoff 后 pending 未清理、WriteSet/coverage 清单不匹配；R4 源码未完成新鲜验证和固定头审查。
 - PR #25 仍 Open。ED-0144/R3 继续被 P3 gate、未合入的 TaskSpec 与 ED-0148 consent 修复阻塞；其原 PR worktree/分支保持原样。
 - 本次只验证任务查询、YAML 任务解析、JSONL 结构和 `git diff --check`，没有运行 C++ 构建或测试。代码重写仍未完成；main 上已有同步 AgentRuntime 纵向切片，异步 C++20 AgentRuntime 生命周期及三种 Provider 的最终 wire adapter 等能力仍待实现与验收。下一步是固定候选提交，完成三组独立 TaskSpec 审查，然后建立正式 PR 并尽快进入 C++ 实现任务。
+
+## 2026-10-29 当前协调快照（17:05 UTC）
+
+- 权威基线为 `origin/main=461735e50657bdc8ace070b46db3682cfb03460f`。当前本地治理分支 `Task/ED-0146-GrantBoundaryTaskSpec` 仍未推送；远端分支为 3/4（`main`、ED-0114 PR #20 分支、ED-0144 PR #25 分支）。GitHub 插件实时查询确认 PR #20 与 #25 均 Open，均无提交的 GitHub review；PR #20 的报告 base/head SHA 为 `5531594...` / `a23f252...`，PR #25 为 `4e4dbc7...` / `9dc44d3...`。本轮未创建 PR。
+- 固定头 `Base=461735e50657bdc8ace070b46db3682cfb03460f`、`Head=58d7bc45d23d335f9d5d954c50d203973f28da93` 的 ED-0146/R4、ED-0147/R3、ED-0148/R3 TaskSpec 复审已完成。ED-0146 Owner 与 Reviewer 均 RequestChanges：root `data_file` 不适合作源码身份校验；Owner 另发现聚合 LastTest.log 可能用兄弟测试的通过结果掩盖目标测试失败。ED-0147 Owner Approve、Reviewer RequestChanges；ED-0148 Owner 与 Reviewer 均 RequestChanges。三个 finding 组均已记录，未批准实现。
+- 当前未冻结候选为 ED-0146/R5、ED-0147/R4、ED-0148/R4。三个计划保留 Goal/依赖/WriteSet/范围边界；数据源身份用精确 `files[].file` 记录，coverage 数据新鲜度用唯一构建目录、精确 `.gcno`、配对 `.gcda` 和当前 CTest 证据。ED-0146 的 LastTest.log 脚本按目标测试块核对 CTest `Test Passed.`，避免 sibling-pass 误判。本机 MSYS2 GCC/gcov 16.1.0 JSON 只作为路径差异观察，不称为跨机器二进制 pin，也不参与源身份断言。P3 EntryGate 仍 Pending；ED-0148 的 scoped exception 仍不解锁其他 P3 任务。
+- WorkflowController 对 ED-0146/R5、ED-0147/R4、ED-0148/R4 的 query 均返回 Proposed；ED-0109/R4 仍返回 Merged。六个 CoverageCommand/FreshBuildPreflight PowerShell 块均通过 AST 解析；按固定任务格式对现有 CTest LastTest.log 的目标测试块做了只读脚本核对并通过。新的三组 revision-specific build 目录尚不存在；本轮没有运行 C++ build/CTest，也没有修改产品 C++ 源码。
+- Worker01/03 分别负责 ED-0146/R5 Owner/Reviewer，Worker02/04 负责 ED-0147/R4，Worker05/06 负责 ED-0148/R4。六槽已复用为固定头 TaskSpec 审查；全部 followup 未覆盖主会话模型或推理强度。宿主未暴露可核实的实际显示模型标签，因此不猜测名称。新一轮固定 Head 提交后立即开始审查。
+- 原 Worker02 ED-0114/R4 dirty worktree、Worker05 ED-0144 worktree 及现有 PR 分支本轮未修改。项目 main 仍只有同步 C++ AgentRuntime 纵向切片；异步 AgentRuntime 生命周期及剩余 Codex Keep/Redesign 能力还没有完成。接下来先把三份 task spec 审完并通过正式 PR 合入，再按门推进实际 C++ 行为实现；TaskSpec 或 WorkflowController 记录都不算 Agent 核心重写完成。
