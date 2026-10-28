@@ -233,6 +233,278 @@ const std::vector<StoredMemory>* StorageValue(
   return std::get_if<std::vector<StoredMemory>>(&Result);
 }
 
+ConversationScopeKey StorageScopeForTest(const StoredMemory& Scope) {
+  const std::string_view Prefix =
+      Scope.ScopeKind == ConversationScopeKind::Group
+          ? "EmulativeDialog.ScopeV1.Group/"
+          : "EmulativeDialog.ScopeV1.Direct/";
+  return ConversationScopeKey{
+      .ChannelId = Scope.ChannelId,
+      .AccountId = Scope.AccountId,
+      .ConversationId = std::string(Prefix) + Scope.ConversationId,
+      .PrincipalId = Scope.PrincipalId,
+  };
+}
+
+MemoryRecord MakeRawRecord(const StoredMemory& Scope, std::string MemoryId,
+                           std::string MemoryKind) {
+  const auto Timestamp = std::chrono::duration_cast<std::chrono::seconds>(
+                             Now().time_since_epoch())
+                             .count();
+  return MemoryRecord{
+      .MemoryId = std::move(MemoryId),
+      .MemoryKind = std::move(MemoryKind),
+      .Scope = StorageScopeForTest(Scope),
+      .SubjectId = Scope.PrincipalId,
+      .Content = "synthetic content",
+      .SourceReference = "fixture-message",
+      .CreatedAtUnixSeconds = Timestamp - 5,
+      .UpdatedAtUnixSeconds = Timestamp,
+      .ExpiresAtUnixSeconds = std::nullopt,
+      .Provenance = StorageMemoryProvenance::UserExplicit,
+      .ConsentId = "consent-raw",
+      .DeleteState = MemoryDeleteState::Active,
+      .Version = 1,
+  };
+}
+
+void PutRawRecord(SqliteStore& Store, const MemoryRecord& Record) {
+  auto Begin = Store.BeginTransaction();
+  auto* Transaction =
+      std::get_if<std::unique_ptr<SqliteStoreTransaction>>(&Begin);
+  Check(Transaction != nullptr, "raw SQLite fixture transaction starts");
+  if (Transaction == nullptr) {
+    return;
+  }
+  const auto Put = Store.PutRecord(**Transaction, Record);
+  Check(std::holds_alternative<std::monostate>(Put),
+        "raw SQLite fixture record is stored");
+  if (std::holds_alternative<SqliteStoreError>(Put)) {
+    static_cast<void>((*Transaction)->Rollback());
+    return;
+  }
+  Check(std::holds_alternative<std::monostate>((*Transaction)->Commit()),
+        "raw SQLite fixture transaction commits");
+}
+
+class SplitSqliteBackupStorage final
+    : public EmulativeDialog::Memory::MemoryStoragePort {
+public:
+  SplitSqliteBackupStorage(SqliteMemoryStorageAdapter& Destination,
+                           SqliteMemoryStorageAdapter& BackupSource) noexcept
+      : Destination_(Destination), BackupSource_(BackupSource) {}
+
+  EmulativeDialog::Memory::MemoryStorageResult<std::monostate>
+  ApplyAtomically(const MemoryMutationBatch& Batch) override {
+    return Destination_.ApplyAtomically(Batch);
+  }
+
+  EmulativeDialog::Memory::MemoryStorageResult<std::vector<StoredMemory>>
+  ListActive(const StoredMemory& ScopeTemplate,
+             std::chrono::sys_seconds Current) const override {
+    return Destination_.ListActive(ScopeTemplate, Current);
+  }
+
+  EmulativeDialog::Memory::MemoryStorageResult<std::vector<StoredMemory>>
+  RecallBackup(const StoredMemory& ScopeTemplate,
+               std::chrono::sys_seconds Current) const override {
+    return BackupSource_.RecallBackup(ScopeTemplate, Current);
+  }
+
+private:
+  SqliteMemoryStorageAdapter& Destination_;
+  SqliteMemoryStorageAdapter& BackupSource_;
+};
+
+void TestV1MemoryKindCompatibility() {
+  TemporaryDatabase Database{"V1Compatibility"};
+  if (!Database.IsReady()) {
+    Check(false, "test database directory is available");
+    return;
+  }
+  auto Store = OpenStore(Database.Path());
+  if (!Store) {
+    return;
+  }
+
+  const StoredMemory Scope = ScopeTemplate(Context());
+  PutRawRecord(*Store, MakeRawRecord(
+                           Scope, "legacy-v1",
+                           "EDMemoryV1/IdentityPreference/1"));
+  SqliteMemoryStorageAdapter Adapter{*Store};
+  const auto Active = Adapter.ListActive(Scope, Now());
+  const auto* ActiveRecords = StorageValue(Active);
+  Check(ActiveRecords != nullptr && ActiveRecords->size() == 1U,
+        "legacy V1 row remains readable from active storage");
+  if (ActiveRecords != nullptr && ActiveRecords->size() == 1U) {
+    Check(!ActiveRecords->front().ProposalId.has_value(),
+          "legacy V1 row does not invent a ProposalId");
+    Check(ActiveRecords->front().UserConfirmed,
+          "legacy V1 confirmation bit remains readable");
+  }
+  const auto Backup = Adapter.RecallBackup(Scope, Now());
+  const auto* BackupRecords = StorageValue(Backup);
+  Check(BackupRecords != nullptr && BackupRecords->size() == 1U,
+        "legacy V1 row remains readable from backup storage");
+  if (BackupRecords != nullptr && BackupRecords->size() == 1U) {
+    Check(!BackupRecords->front().ProposalId.has_value(),
+          "legacy V1 backup does not infer a ProposalId");
+  }
+}
+
+void TestProposalIdRoundTripAndBackupRestore() {
+  TemporaryDatabase SourceDatabase{"ProposalSource"};
+  TemporaryDatabase DestinationDatabase{"ProposalDestination"};
+  TemporaryDatabase MismatchDatabase{"ProposalMismatch"};
+  if (!SourceDatabase.IsReady() || !DestinationDatabase.IsReady() ||
+      !MismatchDatabase.IsReady()) {
+    Check(false, "proposal round-trip databases are available");
+    return;
+  }
+
+  std::string ProposalId{"proposal/:delimiters"};
+  ProposalId.push_back('\0');
+  ProposalId.push_back(static_cast<char>(0xff));
+  ProposalId.push_back(static_cast<char>(0xc3));
+  const AuthorizedMemoryContext ContextValue = Context();
+  const StoredMemory Scope = ScopeTemplate(ContextValue);
+
+  {
+    auto Store = OpenStore(SourceDatabase.Path());
+    if (!Store) {
+      return;
+    }
+    SqliteMemoryStorageAdapter Adapter{*Store};
+    ConversationMemory Memory{Adapter};
+    ConsentGrant Grant = MakeGrant(ContextValue);
+    Grant.ProposalId = ProposalId;
+    Check(std::holds_alternative<std::monostate>(Memory.RegisterConsent(Grant)),
+          "proposal-bound consent registers");
+    MemoryWriteRequest Request = MakeWriteRequest("proposal-memory", true);
+    Request.ProposalId = ProposalId;
+    Check(std::holds_alternative<std::monostate>(
+              Memory.Write(ContextValue, Request, Now())),
+          "proposal-bound write reaches SQLite ApplyAtomically");
+
+    const auto CurrentUnixSeconds = std::chrono::duration_cast<
+        std::chrono::seconds>(Now().time_since_epoch()).count();
+    const auto Raw = Store->GetActiveRecord(
+        StorageScopeForTest(Scope), "proposal-memory", CurrentUnixSeconds);
+    const auto* RawRecord = std::get_if<MemoryRecord>(&Raw);
+    constexpr std::string_view ExpectedMemoryKind =
+        "EDMemoryV2/IdentityPreference/1/P23:"
+        "70726f706f73616c2f3a64656c696d697465727300ffc3";
+    Check(RawRecord != nullptr &&
+              RawRecord->MemoryKind == ExpectedMemoryKind,
+          "V2 storage kind uses canonical length and lowercase exact-byte hex");
+
+    const auto Active = Adapter.ListActive(Scope, Now());
+    const auto* ActiveRecords = StorageValue(Active);
+    Check(ActiveRecords != nullptr && ActiveRecords->size() == 1U,
+          "V2 proposal row is listed while the SQLite connection is open");
+    if (ActiveRecords != nullptr && ActiveRecords->size() == 1U) {
+      Check(ActiveRecords->front().ProposalId == ProposalId,
+            "active read preserves delimiters, NUL and non-UTF-8 bytes");
+    }
+    const auto Backup = Adapter.RecallBackup(Scope, Now());
+    const auto* BackupRecords = StorageValue(Backup);
+    Check(BackupRecords != nullptr && BackupRecords->size() == 1U,
+          "V2 proposal row is available to SQLite backup recall");
+    if (BackupRecords != nullptr && BackupRecords->size() == 1U) {
+      Check(BackupRecords->front().ProposalId == ProposalId,
+            "backup read preserves exact proposal bytes");
+    }
+  }
+
+  std::unique_ptr<SqliteStore> SourceStore = OpenStore(SourceDatabase.Path());
+  std::unique_ptr<SqliteStore> DestinationStore =
+      OpenStore(DestinationDatabase.Path());
+  std::unique_ptr<SqliteStore> MismatchStore =
+      OpenStore(MismatchDatabase.Path());
+  if (!SourceStore || !DestinationStore || !MismatchStore) {
+    return;
+  }
+  SqliteMemoryStorageAdapter SourceAdapter{*SourceStore};
+  SqliteMemoryStorageAdapter DestinationAdapter{*DestinationStore};
+  SqliteMemoryStorageAdapter MismatchAdapter{*MismatchStore};
+
+  ConversationMemory ReopenedMemory{SourceAdapter};
+  ConsentGrant ExactGrant = MakeGrant(ContextValue);
+  ExactGrant.ProposalId = ProposalId;
+  Check(std::holds_alternative<std::monostate>(
+            ReopenedMemory.RegisterConsent(ExactGrant)),
+        "exact proposal consent is registered after reopening the source DB");
+  const auto Recalled = ReopenedMemory.Recall(ContextValue, Now(), 256U);
+  const auto* RecalledItems = std::get_if<std::vector<
+      EmulativeDialog::Context::ContextCandidate>>(&Recalled);
+  Check(RecalledItems != nullptr && RecalledItems->size() == 1U,
+        "exact proposal-bound consent survives SQLite-backed recall after reopen");
+  ConversationMemory MismatchedMemory{SourceAdapter};
+  ConsentGrant WrongRecallGrant = ExactGrant;
+  WrongRecallGrant.ProposalId->back() = static_cast<char>(0xc4);
+  Check(std::holds_alternative<std::monostate>(
+            MismatchedMemory.RegisterConsent(WrongRecallGrant)),
+        "different proposal-bound consent registers for negative recall test");
+  const auto MismatchedRecall =
+      MismatchedMemory.Recall(ContextValue, Now(), 256U);
+  const auto* MismatchedItems = std::get_if<std::vector<
+      EmulativeDialog::Context::ContextCandidate>>(&MismatchedRecall);
+  Check(MismatchedItems != nullptr && MismatchedItems->empty(),
+        "mismatched proposal-bound consent fails closed on recall");
+
+  SplitSqliteBackupStorage RestoreStorage{DestinationAdapter, SourceAdapter};
+  ConversationMemory Restorer{RestoreStorage};
+  Check(std::holds_alternative<std::monostate>(Restorer.RegisterConsent(ExactGrant)),
+        "exact proposal consent registers for backup restoration");
+  const auto Restore = Restorer.RestoreBackup(ContextValue, Now());
+  const auto* RestoredCount = std::get_if<std::size_t>(&Restore);
+  Check(RestoredCount != nullptr && *RestoredCount == 1U,
+        "matching proposal-bound consent restores SQLite backup row");
+  const auto RestoredRows = DestinationAdapter.ListActive(Scope, Now());
+  const auto* RestoredRecords = StorageValue(RestoredRows);
+  Check(RestoredRecords != nullptr && RestoredRecords->size() == 1U,
+        "restored proposal row is present in destination SQLite database");
+  if (RestoredRecords != nullptr && RestoredRecords->size() == 1U) {
+    Check(RestoredRecords->front().ProposalId == ProposalId,
+          "SQLite backup restore preserves exact proposal bytes");
+  }
+  ConversationMemory RestoredMemory{DestinationAdapter};
+  Check(std::holds_alternative<std::monostate>(
+            RestoredMemory.RegisterConsent(ExactGrant)),
+        "exact proposal consent registers after destination restore");
+  const auto RestoredRecall =
+      RestoredMemory.Recall(ContextValue, Now(), 256U);
+  const auto* RestoredItems = std::get_if<std::vector<
+      EmulativeDialog::Context::ContextCandidate>>(&RestoredRecall);
+  Check(RestoredItems != nullptr && RestoredItems->size() == 1U,
+        "restored proposal remains recallable under exact consent");
+
+  SplitSqliteBackupStorage MismatchRestoreStorage{MismatchAdapter,
+                                                   SourceAdapter};
+  ConversationMemory MismatchRestorer{MismatchRestoreStorage};
+  Check(std::holds_alternative<std::monostate>(
+            MismatchRestorer.RegisterConsent(WrongRecallGrant)),
+        "different proposal-bound consent registers for negative restore test");
+  const auto MismatchRestore =
+      MismatchRestorer.RestoreBackup(ContextValue, Now());
+  const auto* MismatchCount = std::get_if<std::size_t>(&MismatchRestore);
+  Check(MismatchCount != nullptr && *MismatchCount == 0U,
+        "mismatched proposal-bound consent fails closed on backup restore");
+  const auto MismatchRows = MismatchAdapter.ListActive(Scope, Now());
+  Check(StorageValue(MismatchRows) != nullptr &&
+            StorageValue(MismatchRows)->empty(),
+        "mismatched proposal restore writes no SQLite row");
+
+  MemoryMutationBatch EmptyProposalBatch;
+  EmptyProposalBatch.Scope = Scope;
+  StoredMemory EmptyProposal = MakeRecord(Scope, "empty-proposal");
+  EmptyProposal.ProposalId = std::string{};
+  EmptyProposalBatch.Upserts.push_back(std::move(EmptyProposal));
+  Check(HasStorageError(DestinationAdapter.ApplyAtomically(EmptyProposalBatch),
+                        MemoryStorageErrorCode::InvalidArgument),
+        "present but empty ProposalId is rejected before SQLite write");
+}
+
 void TestCategoryAndProvenanceRoundTrip() {
   TemporaryDatabase Database{"CategoryProvenance"};
   if (!Database.IsReady()) {
@@ -679,6 +951,21 @@ void TestMalformedStoredKindsFailClosed() {
       "EDMemoryV1/UnknownCategory/1",
       "EDMemoryV1/IdentityPreference",
       "EDMemoryV1/IdentityPreference/true",
+      "EDMemoryV1/IdentityPreference/1/trailing",
+      "EDMemoryV2/UnknownCategory/0/P1:00",
+      "EDMemoryV2/IdentityPreference/2/P1:00",
+      "EDMemoryV2/IdentityPreference/0/P0:",
+      "EDMemoryV2/IdentityPreference/0/P01:00",
+      "EDMemoryV2/IdentityPreference/0/P1:0",
+      "EDMemoryV2/IdentityPreference/0/P2:00",
+      "EDMemoryV2/IdentityPreference/0/P1:0g",
+      "EDMemoryV2/IdentityPreference/0/P1:AF",
+      "EDMemoryV2/IdentityPreference/0/P1:0000",
+      "EDMemoryV2/IdentityPreference/0/P1:00x",
+      "EDMemoryV2/IdentityPreference/0/P18446744073709551616:",
+      "EDMemoryV2/IdentityPreference/0/P2147483647:00",
+      "EDMemoryV3/IdentityPreference/0/P1:00",
+      "EDMemoryV999/IdentityPreference/0/P1:00",
   };
   for (std::size_t Index = 0; Index < std::size(Kinds); ++Index) {
     TemporaryDatabase Database{"MalformedKind" + std::to_string(Index)};
@@ -746,6 +1033,8 @@ void TestMalformedStoredKindsFailClosed() {
 } // namespace
 
 int main() {
+  TestV1MemoryKindCompatibility();
+  TestProposalIdRoundTripAndBackupRestore();
   TestCategoryAndProvenanceRoundTrip();
   TestScopeKindIsolation();
   TestTransactionalRollbackAndVersionConflict();

@@ -1,9 +1,12 @@
 #include "Source/Memory/SqliteMemoryStorageAdapter.hpp"
 
 #include <algorithm>
+#include <array>
+#include <charconv>
 #include <chrono>
 #include <cstdint>
 #include <limits>
+#include <new>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -104,47 +107,188 @@ std::optional<MemoryCategory> FromStorageCategoryName(
 }
 
 std::optional<std::string> ToStorageMemoryKind(
-    MemoryCategory Category, bool UserConfirmed) {
+    MemoryCategory Category, bool UserConfirmed,
+    const std::optional<std::string>& ProposalId) {
   const auto CategoryName = ToStorageCategoryName(Category);
-  if (!CategoryName.has_value()) {
+  if (!CategoryName.has_value() ||
+      (ProposalId.has_value() && ProposalId->empty())) {
     return std::nullopt;
   }
-  std::string Kind{"EDMemoryV1/"};
+  constexpr std::size_t MaximumKindLength =
+      static_cast<std::size_t>(std::numeric_limits<int>::max());
+  if (!ProposalId.has_value()) {
+    std::string Kind{"EDMemoryV1/"};
+    Kind.append(*CategoryName);
+    Kind.push_back('/');
+    Kind.push_back(UserConfirmed ? '1' : '0');
+    if (Kind.size() > MaximumKindLength) {
+      return std::nullopt;
+    }
+    return Kind;
+  }
+
+  constexpr std::string_view Prefix{"EDMemoryV2/"};
+  std::array<char, std::numeric_limits<std::size_t>::digits10 + 1U>
+      LengthBuffer{};
+  const auto [LengthEnd, LengthError] = std::to_chars(
+      LengthBuffer.data(), LengthBuffer.data() + LengthBuffer.size(),
+      ProposalId->size());
+  if (LengthError != std::errc{}) {
+    return std::nullopt;
+  }
+  const std::size_t DecimalLength =
+      static_cast<std::size_t>(LengthEnd - LengthBuffer.data());
+  constexpr std::size_t FixedSuffixLength = 5U; // "/<bit>/P" plus ':'
+  const std::size_t FixedLength =
+      Prefix.size() + CategoryName->size() + FixedSuffixLength +
+      DecimalLength;
+  if (FixedLength > MaximumKindLength ||
+      ProposalId->size() > (MaximumKindLength - FixedLength) / 2U) {
+    return std::nullopt;
+  }
+  const std::size_t EncodedLength =
+      FixedLength + ProposalId->size() * 2U;
+
+  std::string Kind;
+  Kind.reserve(EncodedLength);
+  Kind.append(Prefix);
   Kind.append(*CategoryName);
   Kind.push_back('/');
   Kind.push_back(UserConfirmed ? '1' : '0');
+  Kind.append("/P");
+  Kind.append(LengthBuffer.data(), DecimalLength);
+  Kind.push_back(':');
+  constexpr char HexDigits[] = "0123456789abcdef";
+  for (const unsigned char Byte : *ProposalId) {
+    Kind.push_back(HexDigits[Byte >> 4U]);
+    Kind.push_back(HexDigits[Byte & 0x0fU]);
+  }
   return Kind;
 }
 
 struct DecodedMemoryKind final {
   MemoryCategory Category;
   bool UserConfirmed;
+  std::optional<std::string> ProposalId;
 };
 
 std::optional<DecodedMemoryKind> FromStorageMemoryKind(
     std::string_view Kind) noexcept {
-  constexpr std::string_view Prefix{"EDMemoryV1/"};
-  if (!Kind.starts_with(Prefix)) {
+  constexpr std::size_t MaximumKindLength =
+      static_cast<std::size_t>(std::numeric_limits<int>::max());
+  if (Kind.size() > MaximumKindLength) {
     return std::nullopt;
   }
 
+  constexpr std::string_view V1Prefix{"EDMemoryV1/"};
+  constexpr std::string_view V2Prefix{"EDMemoryV2/"};
+  const bool IsV1 = Kind.starts_with(V1Prefix);
+  const bool IsV2 = Kind.starts_with(V2Prefix);
+  if (!IsV1 && !IsV2) {
+    return std::nullopt;
+  }
+
+  const std::string_view Prefix = IsV1 ? V1Prefix : V2Prefix;
   const std::string_view Encoded = Kind.substr(Prefix.size());
-  const std::size_t Separator = Encoded.rfind('/');
-  if (Separator == std::string_view::npos ||
-      Separator + 2U != Encoded.size()) {
-    return std::nullopt;
-  }
-  const std::string_view Confirmation = Encoded.substr(Separator + 1U);
-  if (Confirmation != "0" && Confirmation != "1") {
+  const std::size_t CategorySeparator = Encoded.find('/');
+  if (CategorySeparator == std::string_view::npos ||
+      CategorySeparator == 0U || CategorySeparator + 2U > Encoded.size()) {
     return std::nullopt;
   }
 
-  const auto Category = FromStorageCategoryName(Encoded.substr(0, Separator));
+  const auto Category =
+      FromStorageCategoryName(Encoded.substr(0, CategorySeparator));
   if (!Category.has_value()) {
     return std::nullopt;
   }
+
+  const std::size_t ConfirmationPosition = CategorySeparator + 1U;
+  if (ConfirmationPosition >= Encoded.size()) {
+    return std::nullopt;
+  }
+  const char Confirmation = Encoded[ConfirmationPosition];
+  if (Confirmation != '0' && Confirmation != '1') {
+    return std::nullopt;
+  }
+
+  std::optional<std::string> ProposalId;
+  if (IsV1) {
+    if (ConfirmationPosition + 1U != Encoded.size()) {
+      return std::nullopt;
+    }
+  } else {
+    if (ConfirmationPosition + 1U >= Encoded.size() ||
+        Encoded[ConfirmationPosition + 1U] != '/') {
+      return std::nullopt;
+    }
+    const std::string_view Payload =
+        Encoded.substr(ConfirmationPosition + 2U);
+    if (Payload.size() < 3U || Payload[0] != 'P') {
+      return std::nullopt;
+    }
+    const std::size_t Colon = Payload.find(':', 1U);
+    if (Colon == std::string_view::npos || Colon == 1U) {
+      return std::nullopt;
+    }
+    const std::string_view DecimalLength = Payload.substr(1U, Colon - 1U);
+    if (DecimalLength.size() > 1U && DecimalLength.front() == '0') {
+      return std::nullopt;
+    }
+    std::size_t DecodedLength = 0U;
+    constexpr std::size_t MaximumSize =
+        std::numeric_limits<std::size_t>::max();
+    for (const char DigitCharacter : DecimalLength) {
+      if (DigitCharacter < '0' || DigitCharacter > '9') {
+        return std::nullopt;
+      }
+      const std::size_t Digit =
+          static_cast<std::size_t>(DigitCharacter - '0');
+      if (DecodedLength > (MaximumSize - Digit) / 10U) {
+        return std::nullopt;
+      }
+      DecodedLength = DecodedLength * 10U + Digit;
+    }
+    if (DecodedLength == 0U) {
+      return std::nullopt;
+    }
+
+    const std::string_view Hex = Payload.substr(Colon + 1U);
+    if ((Hex.size() % 2U) != 0U || DecodedLength != Hex.size() / 2U) {
+      return std::nullopt;
+    }
+
+    const auto DecodeNibble = [](char Character) noexcept
+        -> std::optional<unsigned char> {
+      if (Character >= '0' && Character <= '9') {
+        return static_cast<unsigned char>(Character - '0');
+      }
+      if (Character >= 'a' && Character <= 'f') {
+        return static_cast<unsigned char>(Character - 'a' + 10);
+      }
+      return std::nullopt;
+    };
+    for (const char Character : Hex) {
+      if (!DecodeNibble(Character).has_value()) {
+        return std::nullopt;
+      }
+    }
+    try {
+      std::string Decoded;
+      Decoded.reserve(DecodedLength);
+      for (std::size_t Index = 0; Index < Hex.size(); Index += 2U) {
+        const auto High = DecodeNibble(Hex[Index]);
+        const auto Low = DecodeNibble(Hex[Index + 1U]);
+        Decoded.push_back(static_cast<char>((*High << 4U) | *Low));
+      }
+      ProposalId = std::move(Decoded);
+    } catch (const std::bad_alloc&) {
+      return std::nullopt;
+    }
+  }
+
   return DecodedMemoryKind{.Category = *Category,
-                           .UserConfirmed = Confirmation == "1"};
+                           .UserConfirmed = Confirmation == '1',
+                           .ProposalId = std::move(ProposalId)};
 }
 
 std::optional<Storage::MemoryProvenance> ToStorageProvenance(
@@ -222,7 +366,8 @@ MemoryStorageResult<Storage::MemoryRecord> ToStorageRecord(
   }
 
   const auto Kind =
-      ToStorageMemoryKind(Record.Category, Record.UserConfirmed);
+      ToStorageMemoryKind(Record.Category, Record.UserConfirmed,
+                          Record.ProposalId);
   const auto Provenance = ToStorageProvenance(Record.Provenance);
   if (!Kind.has_value() || !Provenance.has_value()) {
     return InvalidArgument();
@@ -290,6 +435,7 @@ MemoryStorageResult<StoredMemory> FromStorageRecord(
   }
   Result.Provenance = *Provenance;
   Result.UserConfirmed = Kind->UserConfirmed;
+  Result.ProposalId = Kind->ProposalId;
   Result.Version = Record.Version;
   Result.Tombstoned =
       Record.DeleteState == Storage::MemoryDeleteState::Tombstoned;
