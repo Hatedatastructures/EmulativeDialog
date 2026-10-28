@@ -125,3 +125,9 @@
 - 固定头 `Base=461735e50657bdc8ace070b46db3682cfb03460f`、`Head=fb33b663928436f73f4fd181585decab74bc744b` 已完成审查。ED-0112/R5 的 Worker02 Owner 与 Worker06 Reviewer 均 Approve；ED-0148/R4 的 Worker05 Owner 与 Worker06 Reviewer 均 Approve。ED-0146/R6 的 Worker03 Owner 与 Worker01 Reviewer 均 RequestChanges：Provider 模块授权额外包含三个不在十路径 WriteSet 中的 `CMakeLists.txt`，且 Storage 限制被插入 Anthropic 授权造成重复 YAML 键。ED-0147/R6 的 Worker02 Owner 与 Worker04 Reviewer 均 RequestChanges：AssignmentNote 仍等待过时 ED-0146/R5。
 - Worker06 发现 CodexCapabilityMap 将 ED-0112 当前任务指针留在 R4；协调候选将其改为 R5 Proposed，同时保留 `PartialUnmergedCheckpoint` 与能力未完成规则。Memory owner 的只读夹具准备定位了 ProposalId 同意范围的现有 `ConsentMatches` 入口和三组测试路径，但实现仍须等 R4 TaskSpec/CR 正式批准并合入。
 - 当前 PR 候选分支已推送，远端总数为 4/4；由于上述固定头 Finding 尚未修复，本快照未创建 PR。产品 C++ 源码没有修改。接下来在原分支修复授权范围、YAML 键归属和 ED-0147 先决版本，然后对新固定 Head 重做六槽审查。P3 EntryGate 继续 Pending，AgentRuntime 重写仍未完成。
+
+## 2026-10-29 继续执行：P3 预门路由范围
+
+- Worker01 的固定头范围核对指出，`Workflow/TaskIndex.yaml` 虽由 Coordinator 单一 owner 维护，仍需获批 ChangeRequest 才能纳入 PR。已在 P3 计划中新增 `CR-P3-PREGATE-ROUTE-001`：仅授权该文件 P3 `State` 与 `LoadWhen` 两字段，明确不扩展 ED-0146/R6 的十路径实现 WriteSet，也不授权产品实现。
+- Coordinator 已接受该路由 CR；独立 Reviewer 为 Worker01，需在最终固定 Head 上复核。路由只允许在 P1 与首片 P2 门通过后读取并审查 P3 计划；P3 EntryGate 仍为 Pending，后续任务仍须满足自己的 CR、TaskSpec、依赖和合入条件。
+- 当前 PR 候选仍无产品 C++ 源码。原有未跟踪 `$deps/` 保持不动；正式 PR 前会在最终固定 Head 重做 TaskSpec/路由范围审查及账本验证。

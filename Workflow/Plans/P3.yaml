@@ -334,6 +334,41 @@ ChangeRequests:
       - H:/Qbot/EmulativeDialog/Source/Memory/ConversationMemory.cpp#ConsentMatches
       - H:/Qbot/EmulativeDialog/Architecture/Contracts/MemoryContract.md
 
+  - ChangeRequestId: CR-P3-PREGATE-ROUTE-001
+    RequestedBy: Coordinator
+    RequestedByAgentId: /root
+    ApprovedBy: Coordinator
+    ApprovedByAgentId: /root
+    Decision: Accepted
+    RelatedTaskIds: [ED-0146/R6, ED-0147/R6, ED-0148/R4]
+    AffectedPaths:
+      - Workflow/TaskIndex.yaml
+    Scope: >-
+      Change only the P3 PhasePlans State and LoadWhen fields in TaskIndex.yaml so the P3 task-spec records can be
+      loaded for scoped pre-gate review after the P1 and first-slice P2 gates pass, even while P3 EntryGate remains
+      Pending. This is Coordinator-owned routing metadata and does not extend ED-0146's ten-path implementation
+      WriteSet or authorize any product source change. Assignment and implementation remain subject to each task's
+      own approved TaskSpec/ChangeRequest and dependency gates; this route change alone authorizes neither.
+    Reason: >-
+      The previous P3 LoadWhen also required HttpTransportContractFrozen, while the transport contract cannot freeze
+      until ED-0146 closes its grant-validation bypass. That created a review-routing cycle for the corrective
+      ED-0146/R6 and dependent ED-0147/R6 TaskSpecs. The P3 plan already keeps EntryGate Pending and records the
+      scoped ED-0148/R4 exception; the TaskIndex values now describe that pending-gate review state accurately.
+    Impact: "Task-plan loading only; no product behavior, data, contract, or runtime effect."
+    Acceptance:
+      - "TaskIndex P3 State is RegisteredEntryGatePendingWithScopedPreGateTaskReview."
+      - "TaskIndex P3 LoadWhen is AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerified."
+      - "P3 EntryGate.State remains Pending and unrelated PhasePlans routes are unchanged."
+      - "ED-0146/R6 implementation WriteSet remains exactly ten paths."
+    Rollback: >-
+      Restore the previous P3 PhasePlans State and LoadWhen values in TaskIndex.yaml. No product source or user data
+      is changed by this routing metadata.
+    IndependentReviewRequired: true
+    IndependentReviewerAgentId: /root/worker01_ed0105_owner
+    IndependentReviewDecision: Pending
+    RequiresP3EntryGateToRemainPending: true
+    DoesNotAuthorizeImplementationByItself: true
+
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
