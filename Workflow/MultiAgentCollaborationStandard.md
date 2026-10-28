@@ -25,7 +25,7 @@
 
 每次派发都按同一闭环执行：Coordinator 从 Ready 独立任务中选择 Owner，冻结 TaskSpec 和写集，随后 Owner 在独立 worktree 编写、构建、测试并提交；Owner 完成后把 Base/Head、命令和证据回传 Coordinator。Coordinator 同时派发独立 Reviewer，通过后由 IntegrationOwner 检查目标分支、代码差异、覆盖率和冲突。每个模块只有在实现、验证、审查、PR 和合并都完成后才报告完成，后一项任务从更新后的 main 重新建立。
 
-远端分支预算固定为 4 个，其中 main 和 codex/integration 最多各占 1 个，最多 2 个任务 PR 分支同时存在；达到上限时，本地实现 worktree 可继续准备代码，但不得再推送新的远端分支。任务分支合并后必须删除；若旧集成分支有非祖先提交，先记录唯一差异并把本地审计引用保留，再决定归档或删除。
+远端分支预算固定为 4 个：默认集成分支 `main` 占 1 个，最多同时存在 3 个任务/PR 分支；达到上限时，本地实现 worktree 可继续准备代码，但不得再推送新的远端分支。任务分支合并后必须删除；若旧分支有非祖先提交，先记录唯一差异并把本地审计引用保留，再决定归档或删除。
 
 Coordinator 保持六个稳定槽有独立、有产出的工作：实现槽只处理互不重叠的 Ready 写集；合同等待期间，其他槽执行构建复现、固定 Head 审查、依赖获取、测试夹具或后续任务准备，而不是重复分析。下一轮派发依据刚完成的模块和 main 的新 Head，不得沿用过期 Base。
 
@@ -39,7 +39,7 @@ Coordinator 保持六个稳定槽有独立、有产出的工作：实现槽只�
 
 ### 远端分支上限
 
-仓库远端最多保留 4 个分支，包含默认集成分支 `codex/integration`；因此最多同时存在 3 个任务/PR 分支。Coordinator 创建任务分支前必须用 GitHub 插件核对当前分支数，并把分支预算加入 Ready 独立任务的并行度计算。任务完成独立审查并合入目标分支后，按下一小节的判定删除远端任务分支引用；本地 ReviewBundle、TaskSpec、提交和已有 worktree 保留作审计，不因分支清理而删除或重置。若 PR 插件拒绝创建 PR，记录精确错误并按 TaskLifecycle 使用独立 LocalReviewBundle；本地 Bundle 不能冒充 PR。
+仓库远端最多保留 4 个分支：唯一的默认集成分支 `main` 占 1 个，最多同时存在 3 个任务/PR 分支。`main` 是当前默认分支和唯一集成目标；历史快照中出现过的 `codex/integration` 已不存在，不得再作为默认集成分支或 PR 目标。Coordinator 创建任务分支前必须用 GitHub 插件核对当前分支数，并把分支预算加入 Ready 独立任务的并行度计算。任务完成独立审查并合入目标分支后，按下一小节的判定删除远端任务分支引用；本地 ReviewBundle、TaskSpec、提交和已有 worktree 保留作审计，不因分支清理而删除或重置。若 PR 插件拒绝创建 PR，记录精确错误并按 TaskLifecycle 使用独立 LocalReviewBundle；本地 Bundle 不能冒充 PR。
 
 ### 合并方式与分支清理判定
 
