@@ -33,3 +33,15 @@
 - GitHub plugin repo metadata on 2026-10-27 confirms default branch `main` and `admin/push/pull` permissions. PR #1 (`ED-0124/R9`) was created through the plugin, independently approved, squash-merged to `main` as `38cbf4e3d55406a961c8adb7c947bd9fde04690e`, and its remote task branch was retired. The previous 403s for ED-0109/R4, ED-0125/R3, and ED-0101/R5 remain historical.
 - ED-0124/R9 fixed Base `8029d6f83dba91cad580753facc2e69fc4e00e35` → Head `5b45482fc9348e0285bbed139c16b1dc4de5b63d`; Worker06 independently approved. The four-path code diff integrated the AgentRuntime test target and focused Windows preset, added `WorkflowControllerTestWorkspace.hpp`, relocated fixtures to the build `T` root, and added marker/prefix/parent/read-only/reparse-safe cleanup. Configure, build, focused CTest, and coverage target exited 0; `WorkflowController.Contract` and `AgentRuntime.VerticalSlice` passed; gcov JSON v2 coverage was 144/177 (81.36%). Stale `.gcda` was retained under central Diagnostics; no generated source-tree files were added.
 - ED-0131/R1 was superseded before assignment under CR-ED-0131-002 after Owner review found that its frozen CTest command did not load the required CMake PATH. ED-0131/R2 is Proposed with the same Goal/WriteSet/Acceptance and corrected ReadSet/preset commands; no source branch/worktree exists yet. PR #1 completed build/test integration but does not complete the async AgentRuntime rewrite.
+
+## 2026-10-28 协调状态快照
+
+- 权威基线：`origin/main = f47067d5661b277682f3d3f0659fd4334aca39df`。本地 `H:/Qbot/EmulativeDialog` 原为无提交孤儿状态，已通过 `git stash push -u` 保存旧未跟踪快照后用 `git checkout -B main origin/main` 对齐远端；工作区现为干净。
+- 远端分支：`main`、`Task/ED-0131-BoostAsioBuildFoundationR2`、`Task/ED-0140-CollabPrFlow`，共 3 个，低于 4 上限。
+- 已合并：PR #2（ED-0131 前置 Boost 门）、PR #3（ED-0102/ED-0103 合同冻结）、PR #4（ED-0102/R3 SessionState，`a1ad397`）、PR #5（ED-0103/R5 ContextSelector，`f47067d`）。
+- 待审 PR：#6 `Task/ED-0131-BoostAsioBuildFoundationR2 @ a6caa42`（Reviewer Worker03/Worker04/Worker06 固定 Head）、#7 `Task/ED-0140-CollabPrFlow @ a9891e7`（Reviewer Worker04）。
+- 基线验证（Coordinator 本人执行）：`cmake --preset windows-agent-slice` configure 退出码 0；`cmake --build --preset windows-agent-slice --parallel 6` 退出码 0；`ctest --preset windows-agent-slice` 2/2 通过（WorkflowController.Contract、AgentRuntime.VerticalSlice）。
+- 已解锁并派发：ED-0120/R2（HttpTransportContract 冻结 → Worker01）、ED-0115/R2（InstructionAssembler → Worker02）、ED-0122/R3（SQLite 依赖固定 → Worker05）。三者依赖均已 Merged。
+- 仍 Blocked：ED-0104/0105/0106（三 Provider，等 ED-0120 合并）、ED-0107（等三 Provider）、ED-0108/0110/0111/0114（等 ED-0107）、ED-0112（等 ED-0108/0110/0111）、ED-0113（等 ED-0123←ED-0122）、ED-0121（等 ED-0120）、ED-0123（等 ED-0122）。
+- 现有实际 C++ AgentRuntime 行为（已在 main）：`Source/Agent/AgentRuntime.cpp` 同步回合循环、输入映射、事件序列校验、取消、错误映射、终态门；`Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp` 为 QQ Mock → Core → AgentRuntime → FakeProvider → Mock 回执纵向切片。
+- 明确未完成：异步协程化 AgentRuntime、三 Provider 真实 wire adapter、工具调用往返、流式事件投影、统一取消生命周期、失败重试、恢复状态、聊天记忆持久化、QQ 真实接入。不得把上述已合并内容表述为 Codex 重写完成。

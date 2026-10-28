@@ -1229,7 +1229,12 @@ Tasks:
     EpicId: EP-06
     Title: 实现隔离的会话与对话状态管理
     TaskKind: CapabilitySlice
-    State: Ready
+    State: Merged
+    MergeCommit: a1ad397fc3b2ce85ef85233a3c9b56852a798c83
+    PullRequestCreated: true
+    PullRequestNumber: 4
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/4
+    MergedByCoordinatorAt: 2026-10-28
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02
@@ -1341,7 +1346,12 @@ Tasks:
     EpicId: EP-06
     Title: 实现有界且尊重信任层级的 ContextSelector
     TaskKind: CapabilitySlice
-    State: Ready
+    State: Merged
+    MergeCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    PullRequestCreated: true
+    PullRequestNumber: 5
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/5
+    MergedByCoordinatorAt: 2026-10-28
     Phase: P2
     OwnerRole: ContextOwner
     OwnerSlotId: Worker03
@@ -1994,7 +2004,12 @@ Tasks:
     EpicId: EP-06
     Title: 实现指令组装与策略优先级
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0101/ED-0103/ED-0109 are Merged; unblocked by Coordinator on 2026-10-28."
+    AssignedToSlot: Worker02
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0115-R2
+    AssignedBranch: Task/ED-0115-R2-InstructionAssembly
+    AssignmentDate: 2026-10-28
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2083,7 +2098,12 @@ Tasks:
     EpicId: EP-06
     Title: 冻结 Windows 原生 HTTPS Provider Transport 合同与 C++ Port
     TaskKind: ContractFreeze
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0006/ED-0007/ED-0008 are Merged; unblocked by Coordinator on 2026-10-28."
+    AssignedToSlot: Worker01
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0120-R2
+    AssignedBranch: Task/ED-0120-R2-HttpTransportContract
+    AssignmentDate: 2026-10-28
     Phase: P2
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -2633,7 +2653,13 @@ Tasks:
     EpicId: EP-06
     Title: 建立固定 Boost.Asio 1.92.0 的 C++20 协程构建基线
     TaskKind: Build
-    State: Ready
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 6
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/6
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewHeadCommit: a6caa423dd116932359cfeed9ff8499e8617f93b
+    ReviewStartedAt: 2026-10-28
     Phase: P2
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01

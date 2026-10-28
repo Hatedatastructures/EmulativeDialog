@@ -726,7 +726,12 @@ Tasks:
     EpicId: EP-06
     Title: 固定 SQLite Windows 依赖、链接与 Schema 基线
     TaskKind: Build
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0006/ED-0007 are Merged; unblocked by Coordinator on 2026-10-28 and assigned to Worker05 for build-slot balance."
+    AssignedToSlot: Worker05
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0122-R3
+    AssignedBranch: Task/ED-0122-R3-SqliteDependency
+    AssignmentDate: 2026-10-28
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
