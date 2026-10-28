@@ -101,3 +101,33 @@ add_custom_target(AgentRuntimeCoverageReport
 add_dependencies(AgentRuntimeCoverageReport
     AgentRuntimeContractTests
     AgentRuntimeVerticalSliceTests)
+
+find_package(Threads REQUIRED)
+
+set(TURN_CANCELLATION_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/TurnCancellationCoordinator.cpp")
+
+add_library(TurnCancellationObject OBJECT "${TURN_CANCELLATION_SOURCE}")
+target_include_directories(TurnCancellationObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(TurnCancellationObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_executable(TurnCancellationTests
+    "${CMAKE_CURRENT_LIST_DIR}/TurnCancellationTests.cpp")
+target_include_directories(TurnCancellationTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(TurnCancellationTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(TurnCancellationTests
+    PRIVATE TurnCancellationObject Threads::Threads)
+
+add_test(NAME Agent.TurnCancellation COMMAND TurnCancellationTests)
+
+add_custom_target(TurnCancellationCoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:TurnCancellationObject>"
+            "${TURN_CANCELLATION_SOURCE}"
+    WORKING_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating the TurnCancellationCoordinator.cpp gcov JSON v2 report")
+add_dependencies(TurnCancellationCoverageReport TurnCancellationTests)
