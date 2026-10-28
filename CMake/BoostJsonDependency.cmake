@@ -106,13 +106,22 @@ foreach(Submodule IN LISTS EmulativeDialogBoostJsonRequiredSubmodules)
        "${EmulativeDialogBoostSourceDir}/${Submodule}/include")
 endforeach()
 
-add_library(EmulativeDialogBoostJson INTERFACE)
+add_library(
+  EmulativeDialogBoostJson STATIC
+  "${CMAKE_CURRENT_LIST_DIR}/BoostJsonImplementation.cpp")
 target_include_directories(
   EmulativeDialogBoostJson
-  INTERFACE
+  PUBLIC
     ${EmulativeDialogBoostJsonIncludeDirectories}
 )
-target_compile_features(EmulativeDialogBoostJson INTERFACE cxx_std_20)
+target_compile_features(EmulativeDialogBoostJson PUBLIC cxx_std_20)
+set_target_properties(
+  EmulativeDialogBoostJson
+  PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
 
 # Boost.JSON uses process-wide synchronization; on MinGW that would otherwise
 # add libwinpthread-1.dll to every consumer. Link the toolchain pthread support
@@ -120,7 +129,7 @@ target_compile_features(EmulativeDialogBoostJson INTERFACE cxx_std_20)
 if(WIN32 AND MINGW)
   target_link_libraries(
     EmulativeDialogBoostJson
-    INTERFACE
+    PUBLIC
       "-Wl,-Bstatic"
       winpthread
       "-Wl,-Bdynamic")
