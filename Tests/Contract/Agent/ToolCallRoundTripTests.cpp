@@ -105,6 +105,14 @@ Agent::AgentToolHandoffEvent Handoff(std::uint64_t Sequence = 2) {
   };
 }
 
+Agent::AgentEventMetadata Metadata(std::uint64_t Sequence) {
+  return Agent::AgentEventMetadata{
+      .Request = Providers::RequestId{"request-1"},
+      .Turn = Providers::AgentTurnId{"turn-1"},
+      .SequenceNumber = Sequence,
+  };
+}
+
 struct ReceiptCollector final {
   std::vector<Agent::ToolCallReceipt> Receipts;
 
@@ -339,38 +347,82 @@ void FullRoundTripThroughProjectorExecutesOnce() {
         "coordinator state must reflect one terminal and one execution");
 }
 
-void FinalTerminalDiscardsPendingCalls() {
-  int HandlerCalls = 0;
-  Core::BusinessActionRegistry Registry;
-  Check(!Registry.Register(MakeLookupAction(
-                [&HandlerCalls](const Core::BusinessActionInvocation&) {
-                  ++HandlerCalls;
-                  return Succeeded();
-                }))
-             .has_value(),
-        "action must register");
-  ReceiptCollector Collected;
-  Agent::ToolCallCoordinator Coordinator(
-      Registry, MakeAuthorization(), Collected.Sink());
-  Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{ReadyCall(
-                "call-1", "LookupProfile", R"({"query":"x"})")})
-             .has_value(),
-        "ready call must buffer before terminal");
-  Check(HandlerCalls == 0, "buffered calls must not execute early");
-  Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{Agent::AgentFinalEvent{
-                .Metadata =
-                    Agent::AgentEventMetadata{
-                        .Request = Providers::RequestId{"request-1"},
-                        .Turn = Providers::AgentTurnId{"turn-1"},
-                        .SequenceNumber = 2,
-                    }}})
-             .has_value(),
-        "final terminal must be accepted");
-  Check(HandlerCalls == 0 && Collected.Receipts.empty(),
-        "non-handoff terminals must discard pending calls");
-  Check(Coordinator.Accept(Agent::AgentLifecycleEvent{Handoff()}).value().Code ==
-            Agent::ToolCoordinatorErrorCode::EventAfterTerminal,
-        "events after terminal must fail closed");
+void NonHandoffTerminalsDiscardPendingCalls() {
+  const std::vector<std::pair<const char*, Agent::AgentLifecycleEvent>>
+      Cases = {
+          {"final",
+           Agent::AgentLifecycleEvent{
+               Agent::AgentFinalEvent{.Metadata = Metadata(2)}}},
+          {"refusal",
+           Agent::AgentLifecycleEvent{
+               Agent::AgentRefusalEvent{.Metadata = Metadata(2),
+                                        .Category = std::nullopt}}},
+          {"output-limited",
+           Agent::AgentLifecycleEvent{
+               Agent::AgentOutputLimitedEvent{
+                   .Metadata = Metadata(2),
+                   .Kind = Providers::LimitKind::OutputTokens,
+                   .Usage = Providers::UsageSnapshot{},
+                   .HasUnsendablePartialText = false}}},
+          {"provider-failed",
+           Agent::AgentLifecycleEvent{
+               Agent::AgentFailedEvent{
+                   .Metadata = Metadata(2),
+                   .Code = Providers::FailureCode::ProviderRejected,
+                   .Retryable = false}}},
+          {"cancelled",
+           Agent::AgentLifecycleEvent{
+               Agent::AgentCancelledEvent{.Metadata = Metadata(2),
+                                          .ReasonCode = "Cancelled"}}},
+          {"outcome-unknown",
+           Agent::AgentLifecycleEvent{
+               Agent::AgentOutcomeUnknownEvent{
+                   .Metadata = Metadata(2),
+                   .ReasonCode = "OutcomeUnknown"}}},
+      };
+
+  for (const auto& [Name, Terminal] : Cases) {
+    int HandlerCalls = 0;
+    Core::BusinessActionRegistry Registry;
+    Check(!Registry.Register(MakeLookupAction(
+                  [&HandlerCalls](const Core::BusinessActionInvocation&) {
+                    ++HandlerCalls;
+                    return Succeeded();
+                  }))
+               .has_value(),
+          "action must register");
+    ReceiptCollector Collected;
+    Agent::ToolCallCoordinator Coordinator(
+        Registry, MakeAuthorization(), Collected.Sink());
+    Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{ReadyCall(
+                  "call-terminal", "LookupProfile", R"({"query":"x"})")})
+               .has_value(),
+          "ready call must buffer before terminal");
+    Check(Coordinator.PendingCount() == 1U && HandlerCalls == 0,
+          "buffered calls must not execute early");
+    Check(!Coordinator.Accept(Terminal).has_value(),
+          "non-handoff terminal must be accepted");
+    Check(Coordinator.PendingCount() == 0U && Coordinator.HasTerminal(),
+          "non-handoff terminal must clear pending calls");
+    Check(HandlerCalls == 0 && Collected.Receipts.empty() &&
+              Coordinator.HandlerExecutionCount() == 0U &&
+              Coordinator.ReceiptCount() == 0U,
+          "non-handoff terminal must not dispatch or emit receipts");
+    const auto AfterTerminal =
+        Coordinator.Accept(Agent::AgentLifecycleEvent{
+            Agent::AgentStartedEvent{.Metadata = Metadata(3),
+                                     .Response = std::nullopt}});
+    Check(AfterTerminal.has_value() &&
+              AfterTerminal->Code ==
+                  Agent::ToolCoordinatorErrorCode::EventAfterTerminal &&
+              HandlerCalls == 0 &&
+              Coordinator.HandlerExecutionCount() == 0U &&
+              Coordinator.ReceiptCount() == 0U,
+          "events after each non-handoff terminal must fail closed");
+    if (HandlerCalls != 0 || !Collected.Receipts.empty()) {
+      std::cerr << "terminal case: " << Name << '\n';
+    }
+  }
 }
 
 void BusinessValidationRejectsBeforeDispatch() {
@@ -520,9 +572,9 @@ void HandlerOutcomesProduceCorrelatedReceipts() {
           "handoff must be accepted");
     Check(Collected.Receipts.size() == 1U &&
               Collected.Receipts[0].Status ==
-                  Agent::ToolCallReceiptStatus::Failed &&
+                  Agent::ToolCallReceiptStatus::UnknownOutcome &&
               Collected.Receipts[0].ResultCode == "HandlerException",
-          "handler exceptions must become failed receipts");
+          "handler exceptions must become unknown-outcome receipts");
     Check(Coordinator.HandlerExecutionCount() == 1U,
           "exceptions must not be retried automatically");
   }
@@ -656,7 +708,7 @@ int main() {
   RegistryRejectsUnsafeOrInvalidDefinitions();
   ArgumentValidationAcceptsOnlyStrictObjects();
   FullRoundTripThroughProjectorExecutesOnce();
-  FinalTerminalDiscardsPendingCalls();
+  NonHandoffTerminalsDiscardPendingCalls();
   BusinessValidationRejectsBeforeDispatch();
   ReplaysAndDuplicateCallsExecuteAtMostOnce();
   ModelArgumentsCannotSpoofIdentity();

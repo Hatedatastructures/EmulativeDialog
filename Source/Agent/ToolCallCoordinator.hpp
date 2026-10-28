@@ -65,6 +65,9 @@ public:
       const AgentLifecycleEvent& Event);
 
   [[nodiscard]] bool HasTerminal() const noexcept { return TerminalSeen; }
+  [[nodiscard]] std::size_t PendingCount() const noexcept {
+    return Pending.size();
+  }
   [[nodiscard]] std::size_t HandlerExecutionCount() const noexcept {
     return HandlerExecutions;
   }

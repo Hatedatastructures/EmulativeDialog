@@ -135,7 +135,10 @@ void ToolCallCoordinator::HandleToolCall(
       return;
     }
   } catch (...) {
-    Emit(Call, ToolCallReceiptStatus::Failed, "HandlerException");
+    // Dispatch has already occurred, so an exception cannot prove that the
+    // external action had no effect. Preserve the uncertain side effect and
+    // prohibit callers from treating this as a retryable, definite failure.
+    Emit(Call, ToolCallReceiptStatus::UnknownOutcome, "HandlerException");
     return;
   }
 }
