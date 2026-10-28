@@ -442,6 +442,10 @@ Tasks:
       Scope: "Start ED-0113 on top of the completed ED-0123 SqliteStore branch while its PR is under review. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0113-R4
     AssignedBranch: Task/ED-0113-R4-ChatMemory
+    ActualImplementationBranch: Task/ED-0113-R4-ChatMemory-impl
+    ActualImplementationWorktree: H:/Qbot/EmulativeDialog.ED-0113-R4-impl
+    LocalCompletionHead: 0c825c6
+    LocalCoverage: "86.39% lines (273/316)"
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker06
@@ -665,7 +669,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Windows WinHTTP/Schannel Transport
     TaskKind: CapabilitySlice
-    State: Review
+    State: Merged
+    MergeCommit: 0ad9a88ba1e4d298015b6b3b56ab737630951ced
+    MergedByCoordinatorAt: 2026-10-28
     AssignmentNote: "ED-0120 merged; implementation cherry-picked onto main and pushed."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0121-R2-rebase
     AssignedBranch: Task/ED-0121-R2-WinHttpTransport-rebase
@@ -905,7 +911,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现隔离事务、作用域和 tombstone 的 SQLite Storage
     TaskKind: CapabilitySlice
-    State: Review
+    State: Merged
+    MergeCommit: ee7c9b4299a2e9a500a8dc49ec72279f5536df1b
+    MergedByCoordinatorAt: 2026-10-28
     PullRequestCreated: true
     PullRequestNumber: 13
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/13
@@ -1028,7 +1036,7 @@ Tasks:
     EpicId: EP-06
     Title: 固定 Boost.JSON 1.92 子模块并建立 Provider 解析构建探针
     TaskKind: Build
-    State: Assigned
+    State: Review
     AssignmentNote: "Dependencies ED-0131 merged; stacked on ED-0122 branch to avoid shared-file conflicts. Temporarily reassigned to Worker03."
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0143-OWNER-001
@@ -1045,6 +1053,11 @@ Tasks:
     AssignedBranch: Task/ED-0143-BoostJsonDependency
     LocalCompletionHead: 548e926
     LocalValidation: "configure/build/probe/ctest exit 0; single src.hpp TU; no Boost DLL or libwinpthread DLL"
+    PullRequestCreated: true
+    PullRequestNumber: 14
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/14
+    ReviewBaseCommit: ee7c9b4299a2e9a500a8dc49ec72279f5536df1b
+    ReviewHeadCommit: e6dace1
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker03

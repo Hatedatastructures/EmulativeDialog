@@ -1501,7 +1501,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现规范化流式 Agent 事件投影与终态门
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Review
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0107-DEPS-001
       Decision: Accepted
@@ -1518,6 +1518,11 @@ Tasks:
       AcceptedAt: 2026-10-28
     LocalCompletionHead: f63f4c52e14d4cd2e8ad3d8145e95d7486cec0b2
     LocalCoverage: "96.08% lines (441/459), 91.46% branches executed"
+    PullRequestCreated: true
+    PullRequestNumber: 15
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/15
+    ReviewBaseCommit: ee7c9b4299a2e9a500a8dc49ec72279f5536df1b
+    ReviewHeadCommit: f63f4c52e14d4cd2e8ad3d8145e95d7486cec0b2
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1632,6 +1637,8 @@ Tasks:
       Scope: "Start ED-0108 on top of the completed ED-0107 AgentEventProjector branch; provider adapters integrate after merge. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0108-R2
     AssignedBranch: Task/ED-0108-R2-ToolCallCoordinator
+    LocalCompletionHead: a5838bccc7de1b8589d15573ef6baea2ab2cc4be
+    LocalCoverage: "BusinessActionRegistry 86.03%; ToolCallCoordinator 99.14%"
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1720,7 +1727,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 turn 与三协议 Provider 统一取消生命周期
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Review
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0110-DEPS-001
       Decision: Accepted
@@ -1728,6 +1735,13 @@ Tasks:
       Scope: "Start ED-0110 against the frozen canonical event and stop_token contracts while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0110-R4-main
     AssignedBranch: Task/ED-0110-R4-TurnCancellation
+    LocalCompletionHead: 4bee14e48af2384874fdaec9109406e059f624f4
+    LocalCoverage: "96.23% lines (153/159)"
+    PullRequestCreated: true
+    PullRequestNumber: 16
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/16
+    ReviewBaseCommit: ee7c9b4299a2e9a500a8dc49ec72279f5536df1b
+    ReviewHeadCommit: 4bee14e48af2384874fdaec9109406e059f624f4
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1850,6 +1864,8 @@ Tasks:
       Scope: "Start ED-0111 against frozen ProviderError and canonical transport semantics while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0111-R3
     AssignedBranch: Task/ED-0111-R3-ProviderOutcomePolicy
+    LocalCompletionHead: 9ae6af3
+    LocalCoverage: "94.04% lines (142/151)"
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2935,7 +2951,9 @@ Tasks:
     EpicId: EP-06
     Title: 补齐 AgentRuntime 行为覆盖并注册现有合同测试
     TaskKind: TestSupport
-    State: Review
+    State: Merged
+    MergeCommit: 4aa1365f0f11dfdaa8ae5771feac575cd0d605b8
+    MergedByCoordinatorAt: 2026-10-28
     PullRequestCreated: true
     PullRequestNumber: 12
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/12
