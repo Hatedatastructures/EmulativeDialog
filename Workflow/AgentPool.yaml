@@ -38,7 +38,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0112/R2-OwnerCompletionAudit
+    CurrentTaskId: ED-0112/R3-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -50,7 +50,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0147/R5-TaskSpecReview
+    CurrentTaskId: ED-0147/R6-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
@@ -60,7 +60,7 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0146/R5-TaskSpecReview
+    CurrentTaskId: ED-0146/R5-TaskSpecReviewerRecheck
     Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
@@ -70,7 +70,7 @@ Slots:
     HostSessionRef: "/root/worker04_ed0114_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0147/R5-TaskSpecReview
+    CurrentTaskId: ED-0147/R6-TaskSpecIndependentReview
     Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
@@ -80,7 +80,7 @@ Slots:
     HostSessionRef: "/root/worker05_ed0144_memory"
     ModuleIds:
       - ProviderAnthropicMessages
-    CurrentTaskId: ED-0112/R2-FixedHeadReview
+    CurrentTaskId: ED-0148/R4-TaskSpecOwnerRecheck
     Status: Active
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
@@ -91,7 +91,7 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0144/R2-FindingChangeRequest
+    CurrentTaskId: ED-0112/R3-TaskSpecIndependentReview
     Status: Active
 
 AssignmentRules:

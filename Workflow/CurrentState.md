@@ -92,3 +92,23 @@
 - 实际 C++ 进度：ED-0108/R2 的 C++ ToolCallCoordinator/BusinessActionRegistry 已由 PR #19 合入 main。ED-0112/R2 另有干净 stacked worktree H:/Qbot/EmulativeDialog.ED-0112-R2-new，Head 9b312513161a441eb4b94325be176348b34f7e9d，8 路径源码/合同/测试差异；TaskSpec 记录 Windows 全量构建、16/16 CTest 与 80% 以上覆盖率。Worker01 正在只读核验该分支及旧 review findings；原 H:/Qbot/EmulativeDialog.ED-0112-R2 的脏文件和未跟踪文件保持未动。
 - Worker02/04 已分配 ED-0147/R5 TaskSpec 复审，Worker03 已分配 ED-0146/R5 复审；Worker05 正为 PR #25 的 TTL 与 embedded-NUL findings 准备精确 ChangeRequest，之后再回到 ED-0148/R4 复审。Worker01 核验 ED-0112/R2 的既有代码/验证证据，Worker06 独立复核同一固定头。所有 follow-up 未覆盖主会话模型或推理强度；宿主仍未提供可核实的显示模型标签。
 - 下一步：固定本轮治理候选的新提交头并重发未完成的独立审查；同时完成 ED-0112/R2 现有 C++ 实现的证据核验。TaskSpec、审查或控制器记录都不算 Codex Agent 核心重写完成。
+
+## 2026-10-29 当前协调快照（17:33 UTC）
+
+- ED-0147/R5 固定头 `e36deb1` Owner 与 Reviewer 均 RequestChanges，finding `ED0147-R5-F001`：LastTest.log 载入 `$TestLogLines` 后，warning 检查读取未赋值 `$TestLogText`。已推进 ED-0147/R6，在检查前由行数组重建 `$TestLogText`；ED-0146/R5 Owner/Reviewer 在 e36 均 Approve，ED-0148/R4 Owner 在 e36 Approve（Reviewer 旧批准为 Base 461735e → Head 58d7bc4，仍待新头复审）。P3 EntryGate 保持 Pending。
+- 本地治理候选包含 ED-0146/R5、ED-0147/R6、ED-0148/R4；远端仍为 3/4 分支，候选尚未推送/建 PR。Controller 查询三任务均为 Proposed；6 个内嵌 PowerShell 块 AST 解析通过；事件分片共 313 条 JSONL，EventId 唯一，43 条更正引用有效；ED-0147 warning 变量顺序核验通过，R6 专用 fresh build 目录不存在。未运行 C++ 产品构建/CTest。
+- ED-0112/R2 的干净 stacked 分支 `Task/ED-0112-R2-TurnRecovery-stacked` 在 `...ED-0112-R2-new`。Owner 的只读审计发现 Load 接受 terminal 后追加的 checksummed Failed/OutcomeUnknown revision，以及 CoreAgentContract 的 AgentTurn/OperationState 名称混用；Owner 正在现有 WriteSet 内修复并加回归。新鲜诊断输出目标为 `H:/Qbot/EmulativeDialog.ED-0112-R2-new-review.build`；Worker06 已暂停对旧 Head 9b312 的审查，等待修复后的新 Head。ED-0112 的 TaskSpec build/worktree 命令仍指向受保护的旧 worktree，正式验收前须由 Coordinator ChangeRequest 更新；原始 dirty worktree 未动，未 rebase/push。
+- PR #25 独立审查的 F001 为 backup restore 丢 TTL，F002 为 embedded-NUL 的 MemoryKind tail 在 SqliteStore::ReadText 被截断而可能绕过 fail-closed。Worker05 建议在现有 Memory 写集内修 F001，并把 F002 拆成独立 Storage task；该 P3 工作仍受 EntryGate 阻塞，暂无代码修改。
+- 六槽状态：Worker01 实施 ED-0112 终态恢复修复；Worker02/04 准备 ED-0147/R6 Owner/Reviewer 固定头审查；Worker03 准备 ED-0146/R5 Reviewer 复审；Worker05 为 PR #25 提供 CR/后续 ED-0148/R4 复审；Worker06 等待 ED-0112 新 Head 后做独立复审，并在之后复核 ED-0148/R4。所有 follow-up 均继承主会话模型与推理设置，宿主没有可核实的显示模型标签。
+- 当前可确认已合入 main 的产品 C++ 能力包括 ED-0108 工具调用闭环与此前 AgentRuntime 纵向切片。ED-0112 及 PR #20 尚未完成当前固定头/干净验证/集成；本轮没有把 TaskSpec 或 review 工作计为 Codex Agent 核心重写完成。
+
+## 2026-10-29 继续执行快照（17:49 UTC）
+
+- `origin/main=461735e50657bdc8ace070b46db3682cfb03460f`；远端仍是 3/4 分支：`main`、PR #20 的 `Task/ED-0114-R2-UsageLimits`、PR #25 的 `Task/ED-0144-MemorySqliteAdapter`。GitHub 插件实时确认 #20 与 #25 仍 Open；PR 搜索结果与本地远端分支枚举一致。
+- 本快照记录时，本地候选位于 `Task/ED-0146-GrantBoundaryTaskSpec`，尚未提交、推送或建 PR。ED-0147/R6、ED-0146/R5、ED-0148/R4 的候选仍 Proposed；P3 EntryGate 仍 Pending。
+- 新增 ED-0112/R3 TaskSpec/CR 候选：修正 R2 验证指向受保护旧 worktree 的问题；精确写集为 8 条已由既有 CR 授权的源码、合同、测试与 CMake 路径；未来实现 worktree/branch 提议为 `H:/Qbot/EmulativeDialog.ED-0112-R3` / `Task/ED-0112-R3TurnRecovery`，构建与报告放在集中目录 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R3/windows-agent-slice`。TaskSpec 仍 Proposed，无代码写入授权；Owner Worker01、独立 Reviewer Worker06 的固定头复审待提交候选后开始。
+- R3 验收命令现包括 Windows 原生 C++20 根工程配置、两个 recovery contract targets、精确过滤的两项 CTest、两个逐源 gcov JSON v2 报告与 80% 门槛。8 个 FreshBuildPreflight/CoverageCommand PowerShell 块 AST 解析通过；Controller 对 ED-0112/R3、ED-0146/R5、ED-0147/R6、ED-0148/R4 查询均返回 Proposed；R3 worktree/build 路径均不存在，未复用旧输出。
+- Worker01 在独立 R2-new worktree 的实际修复保持未提交：拒绝终态之后的 checksummed revision，并新增 `Completed -> Failed` / `Completed -> OutcomeUnknown` 日志回归；修正 CoreAgentContract 中 AgentTurn `OutcomeUnknown` 与 OperationState `UnknownOutcome` 的术语。其旧诊断构建的定向 CTest 为 2/2、Store 覆盖率 679/775（87.61%）；R3 的新鲜 CTest/两个覆盖率报告尚未运行，旧报告不作为 R3 验收。原始 dirty `...ED-0112-R2` worktree 未触碰。
+- 事件账本现有 P2 234 条、P3 85 条，共 319 条；EventId 全唯一、所有 ProjectStateCorrection 引用有效。`git diff --check` 通过。本次 Coordinator 没有运行 C++ 产品构建。
+- 六个工作槽继续复用：Worker01/06 负责 ED-0112/R3 TaskSpec owner/reviewer；Worker02/04 负责 ED-0147/R6；Worker03 负责 ED-0146/R5；Worker05 负责 ED-0148/R4。复审固定在当前治理候选提交后；完成 R3 TaskSpec 门后，Worker01 回到实际 C++ recovery 实现与提交，Worker06 做固定 Head 源码审查。
+- 已合入 main 的产品 C++ 仍包括同步 AgentRuntime 纵向切片、ED-0108 Core 授权工具调用闭环及之前合并能力。ED-0112 未合入；异步 AgentRuntime 生命周期、三协议最终 wire adapters 和剩余聊天范围 Keep/Redesign 能力仍未完成，Codex Agent 核心重写保持未完成。
