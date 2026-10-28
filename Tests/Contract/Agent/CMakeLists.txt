@@ -188,3 +188,32 @@ add_custom_target(ProviderOutcomePolicyCoverageReport
     COMMENT "Generating ProviderOutcomePolicy.cpp gcov JSON v2 and text reports")
 add_dependencies(ProviderOutcomePolicyCoverageReport
                  ProviderOutcomePolicyTests)
+
+set(OUTPUT_BUDGET_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp")
+set(RESPONSES_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp")
+set(CHAT_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp")
+set(ANTHROPIC_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp")
+
+add_executable(OutputBudgetControllerTests
+    "${OUTPUT_BUDGET_SOURCE}"
+    "${CMAKE_CURRENT_LIST_DIR}/OutputBudgetControllerTests.cpp")
+target_include_directories(OutputBudgetControllerTests PRIVATE
+    "${PROJECT_ROOT}")
+target_compile_options(OutputBudgetControllerTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+add_test(NAME Agent.OutputBudgetController
+         COMMAND OutputBudgetControllerTests)
+
+add_executable(UsageNormalizationTests
+    "${RESPONSES_USAGE_SOURCE}"
+    "${CHAT_USAGE_SOURCE}"
+    "${ANTHROPIC_USAGE_SOURCE}"
+    "${PROJECT_ROOT}/Tests/Contract/Providers/UsageNormalizationTests.cpp")
+target_include_directories(UsageNormalizationTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(UsageNormalizationTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+add_test(NAME Providers.UsageNormalization COMMAND UsageNormalizationTests)
