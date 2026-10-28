@@ -45,3 +45,14 @@
 - 仍 Blocked：ED-0104/0105/0106（三 Provider，等 ED-0120 合并）、ED-0107（等三 Provider）、ED-0108/0110/0111/0114（等 ED-0107）、ED-0112（等 ED-0108/0110/0111）、ED-0113（等 ED-0123←ED-0122）、ED-0121（等 ED-0120）、ED-0123（等 ED-0122）。
 - 现有实际 C++ AgentRuntime 行为（已在 main）：`Source/Agent/AgentRuntime.cpp` 同步回合循环、输入映射、事件序列校验、取消、错误映射、终态门；`Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp` 为 QQ Mock → Core → AgentRuntime → FakeProvider → Mock 回执纵向切片。
 - 明确未完成：异步协程化 AgentRuntime、三 Provider 真实 wire adapter、工具调用往返、流式事件投影、统一取消生命周期、失败重试、恢复状态、聊天记忆持久化、QQ 真实接入。不得把上述已合并内容表述为 Codex 重写完成。
+
+## 2026-10-28 继续执行状态（当前）
+
+- 权威主线：`origin/main = 3fb4db8`；本地 main 工作区干净。远端分支正好 4 个：`main` + `Task/ED-0113-R4-ChatMemory-impl` + `Task/ED-0114-R2-UsageLimits` + `Task/ED-0143-BoostJsonDependency-rebase`。暂不推送新分支，等现有 PR 合并释放名额。
+- 当前开放 PR：#14 ED-0143（Head `3baa40d`，仍需修 build 阶段子模块隐式联网；基础方案及 winpthread 传播问题已被指出）、#20 ED-0114（Head `82c5c0c`，总 usage 未知时误当零且预算门未闭环接入 Runtime/ToolCall）、#23 ED-0113（Head `d68e169`，独立审查发现 revoke/scope/consent/原子写等 P0/P1，修复正在进行）。
+- 已并入 main 的 AgentRuntime 行为 PR：#15 ED-0107 EventProjector、#16 ED-0110 TurnCancellation、#17 ED-0104 Responses adapter、#18 ED-0106 Anthropic adapter、#19 ED-0108 Core-authorized ToolCall、#22 ED-0111 bounded retry；PR #12 ED-0141 同时把 SessionState/ContextSelector 测试注册进 CTest。
+- 未推送的 ED-0112/R2 恢复实现 Head `bbe2944` 被固定 Head 审查 REQUEST_CHANGES：需要区分终态、持久 operation/idempotency、拒绝上下文漂移、Unsupported phase、安全字段 sentinel 与 single-writer 约束；Worker01 正在修复，待分支名额释放后再推 PR。
+- PR #14、#20、#23 外，ED-0108 已合并。当前 Worker01/02/03/05 与两个 Reviewer 槽并行推进 ED-0112、预算闭环、Boost.JSON、Memory scope、固定 Head 审查；所有改动位于隔离 worktree。
+- Coordinator 对 `main@3fb4db8` 实际执行 Windows 原生 CMake configure/build 与全量 `ctest --test-dir H:/Qbot/EmulativeDialog.build/windows-agent-slice`：configure 0、build 0、14/14 tests 通过。结果包含 SessionState、ContextSelector、InstructionAssembler、EventProjector、ToolCall、TurnCancellation、ProviderOutcomePolicy、SQLite probe/store；尚未包含 Provider、Memory 与 Network 独立合同测试目录。
+- Codex 上游基线/许可证仍由 `Workflow/CodexCapabilityMap.yaml` 锁定为 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97`、Apache-2.0；地图列出 15 项 Keep/Redesign（100% 已关联 TaskSpec），但关联不代表实现完成。
+- 尚未闭环：PR #14 Boost.JSON 构建门与 Provider 根 CTest 接入；ED-0105 Chat Completions adapter；ED-0112 恢复及操作幂等；ED-0113 安全修复与后续 ED-0144 Sqlite adapter；ED-0114 预算/续跑闭环；异步协程化 AgentRuntime；正式 Provider/Memory/Network 根 CTest；经授权的 QQ Adapter。CodexCapabilityMap 中所有未有合并 C++ 证据的 Keep/Redesign 继续保持未完成。
