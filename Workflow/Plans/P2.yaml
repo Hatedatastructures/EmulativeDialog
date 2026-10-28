@@ -2013,6 +2013,13 @@ Tasks:
       Decision: Accepted
       ApprovedByRole: Coordinator
       Scope: "Continue ED-0112 review repairs under Worker04 after Worker01 reached its execution budget; preserve Goal, WriteSet and Reviewer."
+    ContractWriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0112-003
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Architecture/Contracts/CoreAgentContract.md to clarify the AgentTurn terminal set (Completed, Cancelled, Failed, Unsupported, OutcomeUnknown) and require recovery decisions to preserve original phase/tool/operation state, so persisted recovery semantics match the frozen product behavior and reviewer acceptance criteria."
+      Reason: "The recovery implementation exposed a contract ambiguity that caused distinct terminal outcomes to collapse; the clarification preserves existing no-replay security semantics and makes recovery state auditable."
+      AcceptedAt: 2026-10-28
     ReviewBaseCommit: a5838bccc7de1b8589d15573ef6baea2ab2cc4be
     ReviewHeadCommit: bbe294475daf221f3babca22db5162bc73839c63
     ReviewStatus: ChangesRequested
