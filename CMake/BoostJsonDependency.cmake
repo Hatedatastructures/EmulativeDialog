@@ -7,6 +7,13 @@ if(NOT DEFINED EmulativeDialogBoostSourceDir OR
     "CMake/BoostJsonDependency.cmake")
 endif()
 
+include(ExternalProject)
+
+option(
+  EMULATIVE_DIALOG_OFFLINE
+  "Require pinned dependency sources to be present without fetching"
+  OFF)
+
 # Boost.JSON is consumed from the same pinned Boost 1.92.0 superproject
 # checkout as Boost.Asio. The shared submodules already required by Asio are
 # listed again so this target is self-verifying when used on its own.
@@ -25,6 +32,81 @@ set(EmulativeDialogBoostJsonRequiredSubmodules
     libs/throw_exception
     libs/type_traits)
 
+# Population is a separate buildstage operation. The verify target below is
+# deliberately read-only so validation never changes a pinned checkout.
+set(EmulativeDialogBoostJsonPopulateScript
+    "${CMAKE_BINARY_DIR}/EmulativeDialogBoostJsonPopulate.cmake")
+file(WRITE "${EmulativeDialogBoostJsonPopulateScript}" "
+set(SourceDir \"${EmulativeDialogBoostSourceDir}\")
+set(RequiredSubmodules \"${EmulativeDialogBoostJsonRequiredSubmodules}\")
+set(MissingSubmodules \"\")
+foreach(Submodule IN LISTS RequiredSubmodules)
+  if(NOT IS_DIRECTORY \"\${SourceDir}/\${Submodule}/include\")
+    list(APPEND MissingSubmodules \"\${Submodule}\")
+  endif()
+endforeach()
+if(NOT MissingSubmodules)
+  message(STATUS \"Boost.JSON submodules are already populated\")
+  return()
+endif()
+if(\"${EMULATIVE_DIALOG_OFFLINE}\")
+  string(REPLACE \";\" \", \" MissingText \"\${MissingSubmodules}\")
+  message(FATAL_ERROR
+    \"EMULATIVE_DIALOG_OFFLINE requires a complete Boost.JSON source tree; missing submodules: \${MissingText}\")
+endif()
+execute_process(
+  COMMAND git -C \"\${SourceDir}\" submodule update --init --
+          \${MissingSubmodules}
+  RESULT_VARIABLE UpdateResult
+  ERROR_VARIABLE UpdateError)
+if(NOT UpdateResult EQUAL 0)
+  message(FATAL_ERROR
+    \"Failed to populate pinned Boost.JSON submodules: \${UpdateError}\")
+endif()
+foreach(Submodule IN LISTS MissingSubmodules)
+  if(NOT IS_DIRECTORY \"\${SourceDir}/\${Submodule}/include\")
+    message(FATAL_ERROR
+      \"Boost.JSON submodule remains incomplete after population: \${Submodule}\")
+  endif()
+endforeach()
+message(STATUS \"Populated pinned Boost.JSON submodules\")
+")
+
+# A cold cache registers EmulativeDialogBoostAsioSource through ED-0131. Add
+# the JSON-specific population to that ExternalProject before configure runs.
+if(TARGET EmulativeDialogBoostAsioSource)
+  ExternalProject_Add_Step(
+    EmulativeDialogBoostAsioSource
+    emulative_dialog_boost_json_populate
+    COMMAND "${CMAKE_COMMAND}" -P
+            "${EmulativeDialogBoostJsonPopulateScript}"
+    COMMENT "Populating pinned Boost.JSON submodules"
+    DEPENDEES download
+    DEPENDERS configure
+    VERBATIM)
+  set(EmulativeDialogBoostJsonPrerequisiteTarget
+      EmulativeDialogBoostAsioSource)
+else()
+  # A cache prepared by ED-0131 has no ExternalProject target because its
+  # checkout already exists. Populate it lazily before any JSON compilation.
+  add_custom_target(
+    EmulativeDialogBoostJsonPopulate
+    COMMAND "${CMAKE_COMMAND}" -P
+            "${EmulativeDialogBoostJsonPopulateScript}"
+    COMMENT "Checking and populating pinned Boost.JSON submodules"
+    VERBATIM)
+  set(EmulativeDialogBoostJsonPrerequisiteTarget
+      EmulativeDialogBoostJsonPopulate)
+endif()
+
+if(EMULATIVE_DIALOG_OFFLINE AND
+   NOT EXISTS "${EmulativeDialogBoostSourceDir}/.git")
+  message(FATAL_ERROR
+    "EMULATIVE_DIALOG_OFFLINE requires an existing pinned Boost checkout at "
+    "${EmulativeDialogBoostSourceDir}; pre-populate "
+    "FETCHCONTENT_BASE_DIR/EmulativeDialogBoostAsioSource before configuring.")
+endif()
+
 set(EmulativeDialogBoostJsonVerifyScript
     "${CMAKE_BINARY_DIR}/EmulativeDialogBoostJsonVerify.cmake")
 file(WRITE "${EmulativeDialogBoostJsonVerifyScript}" "
@@ -40,29 +122,14 @@ if(NOT CommitResult EQUAL 0 OR
     \"Boost checkout resolved to '\${ActualCommit}', expected '${EmulativeDialogBoostCommit}': \${CommitError}\")
 endif()
 set(RequiredSubmodules \"${EmulativeDialogBoostJsonRequiredSubmodules}\")
-set(MissingSubmodules \"\")
 foreach(Submodule IN LISTS RequiredSubmodules)
   if(NOT IS_DIRECTORY \"${EmulativeDialogBoostSourceDir}/\${Submodule}/include\")
-    list(APPEND MissingSubmodules \"\${Submodule}\")
-  endif()
-endforeach()
-if(MissingSubmodules)
-  execute_process(
-    COMMAND git -C \"${EmulativeDialogBoostSourceDir}\" submodule update
-            --init -- \${MissingSubmodules}
-    RESULT_VARIABLE UpdateResult
-    ERROR_VARIABLE UpdateError)
-  if(NOT UpdateResult EQUAL 0)
     message(FATAL_ERROR
-      \"Failed to initialize pinned Boost.JSON submodules: \${UpdateError}\")
-  endif()
-endif()
-foreach(Submodule IN LISTS RequiredSubmodules)
-  if(NOT IS_DIRECTORY \"${EmulativeDialogBoostSourceDir}/\${Submodule}/include\")
-    message(FATAL_ERROR \"Pinned Boost submodule is incomplete: \${Submodule}\")
+      \"Pinned Boost submodule is incomplete: \${Submodule}; run the Boost.JSON populate target\")
   endif()
 endforeach()
 if(NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/json/include/boost/json.hpp\" OR
+   NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/config/include/boost/version.hpp\" OR
    NOT EXISTS \"${EmulativeDialogBoostSourceDir}/LICENSE_1_0.txt\")
   message(FATAL_ERROR
     \"Pinned Boost.JSON source tree is incomplete: ${EmulativeDialogBoostSourceDir}\")
@@ -75,14 +142,10 @@ add_custom_target(
   COMMAND "${CMAKE_COMMAND}" -P "${EmulativeDialogBoostJsonVerifyScript}"
   COMMENT "Verifying pinned Boost.JSON checkout and submodules"
   VERBATIM)
-if(TARGET EmulativeDialogBoostAsioSource)
-  add_dependencies(EmulativeDialogBoostJsonVerify
-                   EmulativeDialogBoostAsioSource)
-endif()
+add_dependencies(EmulativeDialogBoostJsonVerify
+                 ${EmulativeDialogBoostJsonPrerequisiteTarget})
 
 # Surface superproject drift during configure when the cache already exists.
-# Missing submodules are populated by the build-stage verify target so a cold
-# cache can configure without network access.
 if(EXISTS "${EmulativeDialogBoostSourceDir}/.git")
   execute_process(
     COMMAND git -C "${EmulativeDialogBoostSourceDir}" rev-parse HEAD
@@ -115,6 +178,8 @@ target_include_directories(
     ${EmulativeDialogBoostJsonIncludeDirectories}
 )
 target_compile_features(EmulativeDialogBoostJson PUBLIC cxx_std_20)
+add_dependencies(EmulativeDialogBoostJson
+                 ${EmulativeDialogBoostJsonPrerequisiteTarget})
 set_target_properties(
   EmulativeDialogBoostJson
   PROPERTIES
@@ -123,16 +188,39 @@ set_target_properties(
     CXX_EXTENSIONS OFF
 )
 
-# Boost.JSON uses process-wide synchronization; on MinGW that would otherwise
-# add libwinpthread-1.dll to every consumer. Link the toolchain pthread support
-# statically so the only runtime DLLs stay the existing libgcc/libstdc++ pair.
+# A STATIC library cannot carry a private library dependency: CMake exposes it
+# to consumers as $<LINK_ONLY:...>. Keep the static archive neutral and expose
+# one balanced final-link option for executable/test consumers instead.
+set(EmulativeDialogBoostJsonWinPthreadLinkOption "")
+set(EmulativeDialogBoostJsonNoPthreadLinkOption "")
 if(WIN32 AND MINGW)
-  target_link_libraries(
-    EmulativeDialogBoostJson
-    PUBLIC
-      "-Wl,-Bstatic"
-      winpthread
-      "-Wl,-Bdynamic")
+  # GCC otherwise appends its own dynamic -lpthread after the balanced option.
+  set(EmulativeDialogBoostJsonNoPthreadLinkOption "-no-pthread")
+  set(EmulativeDialogBoostJsonWinPthreadLinkOption
+      "-Wl,--push-state,-Bstatic,-lwinpthread,-Bdynamic,--pop-state")
+endif()
+
+get_target_property(
+  EmulativeDialogBoostJsonInterfaceLinkLibraries
+  EmulativeDialogBoostJson
+  INTERFACE_LINK_LIBRARIES)
+if(EmulativeDialogBoostJsonInterfaceLinkLibraries AND
+   EmulativeDialogBoostJsonInterfaceLinkLibraries MATCHES
+       "winpthread|-Wl,-B(static|dynamic)")
+  message(FATAL_ERROR
+    "EmulativeDialogBoostJson must not propagate winpthread or linker modes: "
+    "${EmulativeDialogBoostJsonInterfaceLinkLibraries}")
+endif()
+get_target_property(
+  EmulativeDialogBoostJsonInterfaceLinkOptions
+  EmulativeDialogBoostJson
+  INTERFACE_LINK_OPTIONS)
+if(EmulativeDialogBoostJsonInterfaceLinkOptions AND
+   EmulativeDialogBoostJsonInterfaceLinkOptions MATCHES
+       "winpthread|-Wl,-B(static|dynamic)")
+  message(FATAL_ERROR
+    "EmulativeDialogBoostJson must not propagate winpthread or linker modes: "
+    "${EmulativeDialogBoostJsonInterfaceLinkOptions}")
 endif()
 
 get_target_property(

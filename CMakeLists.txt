@@ -39,6 +39,16 @@ add_executable(BoostJsonProbe CMake/BoostJsonProbe.cpp)
 target_link_libraries(BoostJsonProbe PRIVATE EmulativeDialogBoostJson)
 target_compile_features(BoostJsonProbe PRIVATE cxx_std_20)
 add_dependencies(BoostJsonProbe EmulativeDialogBoostJsonVerify)
+if(WIN32 AND MINGW)
+  target_link_options(
+    BoostJsonProbe
+    PRIVATE
+      "${EmulativeDialogBoostJsonNoPthreadLinkOption}")
+  target_link_libraries(
+    BoostJsonProbe
+    PRIVATE
+      "${EmulativeDialogBoostJsonWinPthreadLinkOption}")
+endif()
 set_target_properties(
   BoostJsonProbe
   PROPERTIES
@@ -57,6 +67,54 @@ if(BUILD_TESTING)
     NAME BuildProbe.BoostJsonCxx20
     COMMAND $<TARGET_FILE:BoostJsonProbe>
   )
+  if(WIN32 AND MINGW)
+    set(EmulativeDialogBoostJsonConsumerLinkScript
+        "${CMAKE_CURRENT_BINARY_DIR}/VerifyBoostJsonConsumerLink.cmake")
+    file(WRITE "${EmulativeDialogBoostJsonConsumerLinkScript}" "
+set(LinkFile \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/BoostJsonProbe.dir/link.txt\")
+if(NOT EXISTS \"\${LinkFile}\")
+  message(FATAL_ERROR \"BoostJsonProbe linker command is missing: \${LinkFile}\")
+endif()
+file(READ \"\${LinkFile}\" LinkCommand)
+set(LinkLibrariesFile
+    \"${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/BoostJsonProbe.dir/linkLibs.rsp\")
+if(NOT EXISTS \"\${LinkLibrariesFile}\")
+  message(FATAL_ERROR
+    \"BoostJsonProbe linker response file is missing: \${LinkLibrariesFile}\")
+endif()
+file(READ \"\${LinkLibrariesFile}\" LinkLibraries)
+string(APPEND LinkCommand \"\\n\${LinkLibraries}\")
+string(FIND \"\${LinkCommand}\" \"libEmulativeDialogBoostJson.a\"
+  BoostJsonLibraryPosition)
+if(BoostJsonLibraryPosition EQUAL -1)
+  message(FATAL_ERROR
+    \"BoostJsonProbe link line does not reference the static implementation library: \${LinkCommand}\")
+endif()
+string(FIND \"\${LinkCommand}\"
+  \"${EmulativeDialogBoostJsonWinPthreadLinkOption}\"
+  WinPthreadOptionPosition)
+if(WinPthreadOptionPosition EQUAL -1)
+  message(FATAL_ERROR
+    \"BoostJsonProbe does not statically link winpthread: \${LinkCommand}\")
+endif()
+if(WinPthreadOptionPosition LESS BoostJsonLibraryPosition)
+  message(FATAL_ERROR
+    \"BoostJsonProbe places static winpthread before the unresolved symbols in EmulativeDialogBoostJson: \${LinkCommand}\")
+endif()
+string(FIND \"\${LinkCommand}\"
+  \"${EmulativeDialogBoostJsonNoPthreadLinkOption}\"
+  NoPthreadOptionPosition)
+if(NoPthreadOptionPosition EQUAL -1)
+  message(FATAL_ERROR
+    \"BoostJsonProbe allows GCC to append dynamic pthread implicitly: \${LinkCommand}\")
+endif()
+message(STATUS \"Verified BoostJsonProbe consumer link options\")
+")
+    add_test(
+      NAME Dependency.BoostJsonWinPthreadLink
+      COMMAND "${CMAKE_COMMAND}" -P
+              "${EmulativeDialogBoostJsonConsumerLinkScript}")
+  endif()
   add_subdirectory(Tests/Contract/Agent)
   add_subdirectory(Tests/Contract/Storage)
 endif()
