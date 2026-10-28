@@ -38,7 +38,8 @@ target_link_libraries(OpenAIChatCompletionsProvider
 add_executable(ChatCompletionsProviderTests
                "${CMAKE_CURRENT_LIST_DIR}/ChatCompletionsProviderTests.cpp")
 target_link_libraries(ChatCompletionsProviderTests
-                      PRIVATE OpenAIChatCompletionsProvider)
+                      PRIVATE OpenAIChatCompletionsProvider
+                              EmulativeDialogBoostJson)
 target_compile_features(ChatCompletionsProviderTests PRIVATE cxx_std_20)
 target_compile_options(ChatCompletionsProviderTests PRIVATE
                        -Wall -Wextra -Wpedantic -Werror)
