@@ -93,8 +93,27 @@ public:
   }
 };
 
+class ValidEndpointGrantResolver final
+    : public EmulativeDialog::Platform::Network::EndpointGrantResolver {
+public:
+  [[nodiscard]] EmulativeDialog::Platform::Network::EndpointGrantStatus
+  Validate(const EmulativeDialog::Platform::Network::EndpointGrantId&,
+           const EmulativeDialog::Platform::Network::HttpsDestination&) const
+      noexcept override {
+    return EmulativeDialog::Platform::Network::EndpointGrantStatus::Valid;
+  }
+};
+
+EmulativeDialog::Platform::Network::EndpointGrantResolver&
+DefaultEndpointGrantResolver() {
+  static ValidEndpointGrantResolver Resolver;
+  return Resolver;
+}
+
 class FakeHttpTransport final : public HttpTransportPort {
 public:
+  FakeHttpTransport() : HttpTransportPort(DefaultEndpointGrantResolver()) {}
+
   std::vector<std::string> Frames;
   TransportTerminal Result{CompletedTransport{.StatusCode = 200,
                                               .ReceivedBodyBytes = 0}};
@@ -104,10 +123,11 @@ public:
   std::optional<TransportRequest> LastRequest;
   int CallCount{0};
 
-  TransportTerminal Stream(const TransportRequest& Request,
-                           const ResponseHeadSink& OnHead,
-                           const ResponseChunkSink& OnChunk,
-                           std::stop_token) override {
+protected:
+  TransportTerminal DoStream(const TransportRequest& Request,
+                             const ResponseHeadSink& OnHead,
+                             const ResponseChunkSink& OnChunk,
+                             std::stop_token) override {
     ++CallCount;
     LastRequest = Request;
     OnHead(Head);
@@ -118,6 +138,7 @@ public:
     return Result;
   }
 
+public:
   TransportHealthState Health(std::stop_token) noexcept override {
     return TransportHealthState::Ready;
   }

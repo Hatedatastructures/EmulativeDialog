@@ -62,8 +62,24 @@ public:
     }
 };
 
+class ValidEndpointGrantResolver final : public EndpointGrantResolver {
+public:
+    [[nodiscard]] EndpointGrantStatus Validate(
+        const EndpointGrantId&,
+        const HttpsDestination&) const noexcept override {
+        return EndpointGrantStatus::Valid;
+    }
+};
+
+EndpointGrantResolver& DefaultEndpointGrantResolver() {
+    static ValidEndpointGrantResolver Resolver;
+    return Resolver;
+}
+
 class FakeHttpTransport final : public HttpTransportPort {
 public:
+    FakeHttpTransport() : HttpTransportPort(DefaultEndpointGrantResolver()) {}
+
     struct Script final {
         std::uint16_t StatusCode{200};
         std::vector<std::string> Chunks;
@@ -75,10 +91,11 @@ public:
     std::size_t HealthCalls{0};
     TransportHealthState HealthState{TransportHealthState::Ready};
 
-    TransportTerminal Stream(const TransportRequest& Request,
-                             const ResponseHeadSink& OnHead,
-                             const ResponseChunkSink& OnChunk,
-                             std::stop_token) override {
+protected:
+    TransportTerminal DoStream(const TransportRequest& Request,
+                               const ResponseHeadSink& OnHead,
+                               const ResponseChunkSink& OnChunk,
+                               std::stop_token) override {
         Requests.push_back(Request);
         if (Next.StatusCode != 0) {
             OnHead(ResponseHeadMetadata{Next.StatusCode, "text/event-stream",
@@ -92,6 +109,7 @@ public:
         return Next.Terminal;
     }
 
+public:
     TransportHealthState Health(std::stop_token) noexcept override {
         ++HealthCalls;
         return HealthState;

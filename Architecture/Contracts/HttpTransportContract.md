@@ -13,6 +13,8 @@
 
 任何一方都不得把 WinHTTP/SSPI 类型、完整 URL 字符串、原始 header 集合或原始响应 body 暴露到 Port 之外。
 
+`HttpTransportPort` 构造时必须接收非临时的 `EndpointGrantResolver` 左值（包括 const 左值）并以只读引用持有；调用方必须保证 resolver 活得比 Port 更久。Base 与 WinHTTP 的临时对象重载显式删除，所有派生 Port 的构造接口也必须保留 lvalue-only 约束，不得通过 forwarding reference 接收临时对象。唯一 public `Stream` 是基类非虚守卫入口：恰好调用一次 `Validate(Grant, Destination)`，仅在 `Valid` 时分派到受保护的 `DoStream`；其他状态都在任何 sink 或传输操作前映射为 `EndpointNotGranted`。
+
 ## 请求模型
 
 一次调用提交恰好一个不可变请求：
@@ -20,7 +22,7 @@
 | 字段 | 语义 |
 |---|---|
 | `TransportRequestId` | Core/Adapter 生成的本地关联 ID；只用于诊断与事件关联，不发给远端。 |
-| `EndpointGrantId` | Core endpoint policy 签发的不可伪造引用。HttpTransport 在构造时注入 Core 提供的只读 `EndpointGrantResolver`；`Stream` 必须先调用 `Validate(Grant, Destination)`，在任何 DNS 解析或 connect 之前完成。`Missing`、`Expired`、`DestinationMismatch` 全部只映射为 `EndpointNotGranted`，不向调用方区分原因。 |
+| `EndpointGrantId` | Core endpoint policy 签发的不可伪造引用。`Stream` 校验必须与此 grant 和请求 destination 一起完成。`Missing`、`Expired`、`DestinationMismatch` 全部只映射为 `EndpointNotGranted`，不向调用方区分原因。 |
 | `TransportMethod` | V1 只有 `Post`；新增动词需要合同修订。 |
 | `HttpsDestination` | 由 grant 解析出的 host（DNS 名或 IP 字面量，不含 scheme/userinfo）、port 与绝对 path+query。redirect 不改变该字段。 |
 | `Headers` | 有界 header 列表。**协议/profile allowlist 由 Adapter 负责**：Transport 看不到 profile，无法也不得判断某个 provider 专属 header 是否被授权。Transport 只负责拒绝 CR/LF 注入、大小/条数超限与 hop-by-hop header；`Host` 与 `Content-Length` 属 Transport 所有，Adapter 不得设置，Transport 依据 `HttpsDestination` 与 `BodyUtf8` 生成并忽略传入值。敏感值不得进入终态、事件或日志。 |

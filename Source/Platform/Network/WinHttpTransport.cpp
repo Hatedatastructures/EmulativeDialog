@@ -24,6 +24,11 @@
 #endif
 
 namespace EmulativeDialog::Platform::Network {
+static TransportTerminal ExecuteWinHttpExchange(
+    WinHttpApi& Api, const TransportRequest& Request,
+    const ResponseHeadSink& OnHead, const ResponseChunkSink& OnChunk,
+    std::stop_token CancellationToken);
+
 namespace {
 
 using Clock = std::chrono::steady_clock;
@@ -578,23 +583,28 @@ public:
 class OwnedSystemWinHttpTransport final : public HttpTransportPort {
 public:
     explicit OwnedSystemWinHttpTransport(const EndpointGrantResolver& Grants)
-        : Transport(Grants, Api) {}
-
-    [[nodiscard]] TransportTerminal Stream(
-        const TransportRequest& Request, const ResponseHeadSink& OnHead,
-        const ResponseChunkSink& OnChunk,
-        std::stop_token CancellationToken) override {
-        return Transport.Stream(Request, OnHead, OnChunk, CancellationToken);
-    }
+        : HttpTransportPort(Grants) {}
+    OwnedSystemWinHttpTransport(EndpointGrantResolver&&) = delete;
+    OwnedSystemWinHttpTransport(const EndpointGrantResolver&&) = delete;
 
     [[nodiscard]] TransportHealthState Health(
         std::stop_token CancellationToken) noexcept override {
-        return Transport.Health(CancellationToken);
+        return CancellationToken.stop_requested()
+                   ? TransportHealthState::Unavailable
+                   : TransportHealthState::Ready;
+    }
+
+protected:
+    [[nodiscard]] TransportTerminal DoStream(
+        const TransportRequest& Request, const ResponseHeadSink& OnHead,
+        const ResponseChunkSink& OnChunk,
+        std::stop_token CancellationToken) override {
+        return ExecuteWinHttpExchange(Api, Request, OnHead, OnChunk,
+                                      CancellationToken);
     }
 
 private:
     SystemWinHttpApi Api;
-    WinHttpTransport Transport;
 };
 
 #endif // _WIN32 && !EMULATIVE_DIALOG_WINHTTP_OFFLINE_TESTS
@@ -603,17 +613,14 @@ private:
 
 WinHttpTransport::WinHttpTransport(const EndpointGrantResolver& Grants,
                                    WinHttpApi& Api)
-    : GrantResolver(Grants), Api(Api) {}
+    : HttpTransportPort(Grants), Api(Api) {}
 
 WinHttpTransport::~WinHttpTransport() = default;
 
-TransportTerminal WinHttpTransport::Stream(
-    const TransportRequest& Request, const ResponseHeadSink& OnHead,
-    const ResponseChunkSink& OnChunk, std::stop_token CancellationToken) {
-    if (GrantResolver.Validate(Request.Grant, Request.Destination) !=
-        EndpointGrantStatus::Valid) {
-        return Failed(TransportFailureCode::EndpointNotGranted);
-    }
+static TransportTerminal ExecuteWinHttpExchange(
+    WinHttpApi& Api, const TransportRequest& Request,
+    const ResponseHeadSink& OnHead, const ResponseChunkSink& OnChunk,
+    std::stop_token CancellationToken) {
     switch (ValidateRequest(Request)) {
     case RequestValidation::Ok:
         break;
@@ -781,6 +788,13 @@ TransportTerminal WinHttpTransport::Stream(
 
     return CompletedTransport{.StatusCode = StatusCode,
                               .ReceivedBodyBytes = TotalBytes};
+}
+
+TransportTerminal WinHttpTransport::DoStream(
+    const TransportRequest& Request, const ResponseHeadSink& OnHead,
+    const ResponseChunkSink& OnChunk, std::stop_token CancellationToken) {
+    return ExecuteWinHttpExchange(Api, Request, OnHead, OnChunk,
+                                  CancellationToken);
 }
 
 TransportHealthState WinHttpTransport::Health(
