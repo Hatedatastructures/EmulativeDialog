@@ -1735,6 +1735,12 @@ Tasks:
       Scope: "Start ED-0110 against the frozen canonical event and stop_token contracts while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0110-R4-main
     AssignedBranch: Task/ED-0110-R4-TurnCancellation
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0110-004
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Agent/TurnCancellationCoordinator.hpp in place of the planned .h path and add Tests/Contract/Agent/CMakeLists.txt so the cancellation contract test is registered in CTest."
+      AcceptedAt: 2026-10-28
     LocalCompletionHead: 4bee14e48af2384874fdaec9109406e059f624f4
     LocalCoverage: "96.23% lines (153/159)"
     PullRequestCreated: true
