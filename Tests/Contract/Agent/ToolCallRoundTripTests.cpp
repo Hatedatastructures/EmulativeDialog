@@ -44,6 +44,7 @@ Agent::ToolCallAuthorizationContext MakeAuthorization(
       .Principal = Core::PrincipalId{"principal-authorized"},
       .Scope = MakeScope(),
       .ActiveTurn = Providers::AgentTurnId{"turn-1"},
+      .AuthorizedRequest = Providers::RequestId{"request-1"},
       .GrantedCapabilities = std::move(Capabilities),
   };
 }
@@ -94,12 +95,14 @@ Agent::AgentToolCallReadyEvent ReadyCall(
   };
 }
 
-Agent::AgentToolHandoffEvent Handoff(std::uint64_t Sequence = 2) {
+Agent::AgentToolHandoffEvent Handoff(
+    std::uint64_t Sequence = 2, std::string Turn = "turn-1",
+    std::string Request = "request-1") {
   return Agent::AgentToolHandoffEvent{
       .Metadata =
           Agent::AgentEventMetadata{
-              .Request = Providers::RequestId{"request-1"},
-              .Turn = Providers::AgentTurnId{"turn-1"},
+              .Request = Providers::RequestId{std::move(Request)},
+              .Turn = Providers::AgentTurnId{std::move(Turn)},
               .SequenceNumber = Sequence,
           },
   };
@@ -425,6 +428,78 @@ void NonHandoffTerminalsDiscardPendingCalls() {
   }
 }
 
+void HandoffCorrelationIsAuthoritative() {
+  int HandlerCalls = 0;
+  Core::BusinessActionRegistry Registry;
+  Check(!Registry.Register(MakeLookupAction(
+                [&HandlerCalls](const Core::BusinessActionInvocation&) {
+                  ++HandlerCalls;
+                  return Succeeded();
+                }))
+             .has_value(),
+        "action must register");
+  ReceiptCollector Collected;
+  Agent::ToolCallCoordinator Coordinator(
+      Registry, MakeAuthorization(), Collected.Sink());
+  Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{ReadyCall(
+                "call-handoff", "LookupProfile", R"({"query":"x"})")})
+             .has_value() &&
+            Coordinator.PendingCount() == 1U,
+        "authorized ready call must be buffered");
+
+  const auto ForeignTurn =
+      Coordinator.Accept(Agent::AgentLifecycleEvent{
+          Handoff(2, "foreign-turn", "request-1")});
+  Check(ForeignTurn.has_value() &&
+            ForeignTurn->Code ==
+                Agent::ToolCoordinatorErrorCode::ForeignHandoff &&
+            Coordinator.PendingCount() == 1U &&
+            !Coordinator.HasTerminal() && HandlerCalls == 0 &&
+            Collected.Receipts.empty(),
+        "foreign-turn handoff must preserve pending state");
+
+  const auto ForeignRequest =
+      Coordinator.Accept(Agent::AgentLifecycleEvent{
+          Handoff(3, "turn-1", "foreign-request")});
+  Check(ForeignRequest.has_value() &&
+            ForeignRequest->Code ==
+                Agent::ToolCoordinatorErrorCode::RequestMismatch &&
+            Coordinator.PendingCount() == 1U &&
+            !Coordinator.HasTerminal() && HandlerCalls == 0 &&
+            Collected.Receipts.empty(),
+        "foreign-request handoff must preserve pending state");
+
+  const auto MissingRequest =
+      Coordinator.Accept(Agent::AgentLifecycleEvent{
+          Handoff(4, "turn-1", "")});
+  Check(MissingRequest.has_value() &&
+            MissingRequest->Code ==
+                Agent::ToolCoordinatorErrorCode::RequestMismatch &&
+            Coordinator.PendingCount() == 1U &&
+            !Coordinator.HasTerminal() && HandlerCalls == 0,
+        "missing handoff request must preserve pending state");
+
+  auto UnconfiguredAuthorization = MakeAuthorization();
+  UnconfiguredAuthorization.AuthorizedRequest = {};
+  Agent::ToolCallCoordinator Unconfigured(
+      Registry, std::move(UnconfiguredAuthorization), Collected.Sink());
+  const auto MissingAuthorization =
+      Unconfigured.Accept(Agent::AgentLifecycleEvent{Handoff()});
+  Check(MissingAuthorization.has_value() &&
+            MissingAuthorization->Code ==
+                Agent::ToolCoordinatorErrorCode::RequestMismatch &&
+            !Unconfigured.HasTerminal(),
+        "missing authorized request must fail closed");
+
+  Check(!Coordinator.Accept(
+                Agent::AgentLifecycleEvent{Handoff(5, "turn-1", "request-1")})
+             .has_value(),
+        "matching handoff must be accepted after rejected foreign terminals");
+  Check(Coordinator.PendingCount() == 0U && Coordinator.HasTerminal() &&
+            HandlerCalls == 1 && Collected.Receipts.size() == 1U,
+        "matching handoff must execute the preserved pending call once");
+}
+
 void BusinessValidationRejectsBeforeDispatch() {
   const auto RunRejected = [](
       Core::BusinessActionDefinition Definition,
@@ -709,6 +784,7 @@ int main() {
   ArgumentValidationAcceptsOnlyStrictObjects();
   FullRoundTripThroughProjectorExecutesOnce();
   NonHandoffTerminalsDiscardPendingCalls();
+  HandoffCorrelationIsAuthoritative();
   BusinessValidationRejectsBeforeDispatch();
   ReplaysAndDuplicateCallsExecuteAtMostOnce();
   ModelArgumentsCannotSpoofIdentity();

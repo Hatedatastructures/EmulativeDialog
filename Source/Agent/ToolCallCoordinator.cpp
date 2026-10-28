@@ -40,11 +40,27 @@ std::optional<ToolCoordinatorError> ToolCallCoordinator::Accept(
       Emit(*Ready, ToolCallReceiptStatus::Rejected, "TurnMismatch");
       return std::nullopt;
     }
+    if (Context.AuthorizedRequest.Value.empty() ||
+        Ready->Metadata.Request.Value != Context.AuthorizedRequest.Value) {
+      Emit(*Ready, ToolCallReceiptStatus::Rejected, "RequestMismatch");
+      return std::nullopt;
+    }
     Pending.push_back(*Ready);
     return std::nullopt;
   }
 
-  if (std::holds_alternative<AgentToolHandoffEvent>(Event)) {
+  if (const auto* Handoff = std::get_if<AgentToolHandoffEvent>(&Event)) {
+    if (Handoff->Metadata.Turn.Value != Context.ActiveTurn.Value) {
+      return ToolCoordinatorError{
+          .Code = ToolCoordinatorErrorCode::ForeignHandoff};
+    }
+    if (Context.AuthorizedRequest.Value.empty() ||
+        Handoff->Metadata.Request.Value.empty() ||
+        Handoff->Metadata.Request.Value !=
+            Context.AuthorizedRequest.Value) {
+      return ToolCoordinatorError{
+          .Code = ToolCoordinatorErrorCode::RequestMismatch};
+    }
     TerminalSeen = true;
     ProcessPending();
     return std::nullopt;

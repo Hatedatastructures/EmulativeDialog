@@ -19,11 +19,14 @@ struct ToolCallAuthorizationContext final {
   Core::PrincipalId Principal;
   Core::ConversationScope Scope;
   Providers::AgentTurnId ActiveTurn;
+  Providers::RequestId AuthorizedRequest;
   std::vector<std::string> GrantedCapabilities;
 };
 
 enum class ToolCoordinatorErrorCode : std::uint8_t {
   EventAfterTerminal,
+  ForeignHandoff,
+  RequestMismatch,
 };
 
 struct ToolCoordinatorError final {
