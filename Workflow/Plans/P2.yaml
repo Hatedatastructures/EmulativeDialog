@@ -1631,7 +1631,19 @@ Tasks:
     EpicId: EP-06
     Title: 实现受 Core 授权的业务工具调用往返
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 19
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/19
+    ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
+    ReviewHeadCommit: 296ab4ace3b7eb005efb8db243c63e415c5a4766
+    ReviewStatus: ChangesRequested
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0108-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Agent/ToolCallCoordinator.hpp and Source/Core/BusinessActionRegistry.hpp in place of planned .h paths, and add Tests/Contract/Agent/CMakeLists.txt to register the round-trip contract test."
+      AcceptedAt: 2026-10-28
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0108-DEPS-001
       Decision: Accepted
@@ -1729,7 +1741,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现 turn 与三协议 Provider 统一取消生命周期
     TaskKind: CapabilitySlice
-    State: Review
+    State: Merged
+    MergeCommit: 44a1b5a54c62402ee2b2d7a5e242fe5a9e5a733b
+    MergedByCoordinatorAt: 2026-10-28
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0110-DEPS-001
       Decision: Accepted
@@ -1858,7 +1872,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider 失败分类与有界重试策略
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Merged
+    MergeCommit: a214ea7ab1c269a71e779e68bcb435e4fa742e3e
+    MergedByCoordinatorAt: 2026-10-28
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0111-002
       Decision: Accepted
@@ -1980,7 +1996,22 @@ Tasks:
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0112-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0112 stacked on the completed ED-0108 ToolCallCoordinator branch while ED-0108/ED-0110/ED-0111 merge reviews complete; provider integration follows after merges."
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0112-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow .hpp file names in place of planned .h paths and register the new recovery tests in the appropriate Tests/Contract CMakeLists.txt."
+      AcceptedAt: 2026-10-28
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
+    AssignedBranch: Task/ED-0112-R2-TurnRecovery-stacked
+    LocalCompletionHead: bbe294475daf221f3babca22db5162bc73839c63
+    LocalValidation: "root ctest 11/11; TurnCheckpointStore 86.36%; TurnRecoveryCoordinator 93.58%"
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02

@@ -77,9 +77,11 @@ Tasks:
     EpicId: EP-06
     Title: 实现 OpenAI Responses C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Merged
+    MergeCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
+    MergedByCoordinatorAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0015/ED-0009/ED-0120 are Merged; temporarily reassigned to Worker01 while Worker03 owns ED-0143."
-    LocalCompletionHead: 96d61ec44ab0f757dff47e902f1e8bb4fa8922e8
+    LocalCompletionHead: 29d39e328c68058dc8350fe01f8ff401f9de9129
     LocalCoverage: "80.74% lines (570/706)"
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0104-OWNER-001
@@ -319,7 +321,15 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Anthropic Messages C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Review
+    State: Merged
+    MergeCommit: 18b7834905faac60bff55f96b12421adee62d0ab
+    MergedByCoordinatorAt: 2026-10-28
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0106-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow AnthropicMessagesProvider.hpp in place of the planned .h path under the user file-naming rule; all other WriteSet paths unchanged."
+      AcceptedAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0015/ED-0011/ED-0120 are Merged; assigned to Worker05; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
     LocalCompletionHead: 6797cea
     LocalCoverage: "95.30% lines (771/809), 124/124 fixture assertions"
@@ -449,7 +459,7 @@ Tasks:
     AssignedBranch: Task/ED-0113-R4-ChatMemory
     ActualImplementationBranch: Task/ED-0113-R4-ChatMemory-impl
     ActualImplementationWorktree: H:/Qbot/EmulativeDialog.ED-0113-R4-impl
-    LocalCompletionHead: 0c825c6
+    LocalCompletionHead: f2029ce
     LocalCoverage: "86.39% lines (273/316)"
     Phase: P3
     OwnerRole: MemoryOwner
@@ -592,8 +602,20 @@ Tasks:
       ApprovedByRole: Coordinator
       Scope: "Allow .hpp file names in place of planned .h paths and add Tests/Contract/Agent/CMakeLists.txt to register the budget and usage normalization tests."
       AcceptedAt: 2026-10-28
+    IntegrationChangeRequest:
+      ChangeRequestId: CR-ED-0114-003
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Agent/AgentRuntime.cpp and Source/Agent/ToolCallCoordinator.cpp plus their contract tests to consume the budget controller and usage normalizers, so OutputLimit blocks further tool dispatch and continuation only happens with a new RequestId under Core-approved compaction."
+      AcceptedAt: 2026-10-28
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0114-R2
     AssignedBranch: Task/ED-0114-R2-UsageLimits
+    PullRequestCreated: true
+    PullRequestNumber: 20
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
+    ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
+    ReviewHeadCommit: 3748abe4dc72d17d9e813188cd8771645d50f3ef
+    ReviewStatus: ChangesRequested
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
     OwnerSlotId: Worker03
@@ -639,7 +661,7 @@ Tasks:
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
-    WriteSet: [Source/Agent/OutputBudgetController.h, Source/Agent/OutputBudgetController.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.h, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.h, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.h, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Providers/UsageNormalizationTests.cpp]
+    WriteSet: [Source/Agent/OutputBudgetController.hpp, Source/Agent/OutputBudgetController.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.hpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.hpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.hpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp, Source/Agent/AgentRuntime.cpp, Source/Agent/ToolCallCoordinator.cpp, Tests/Contract/Agent/OutputBudgetControllerTests.cpp, Tests/Contract/Providers/UsageNormalizationTests.cpp, Tests/Contract/Agent/CMakeLists.txt]
     SharedLocks: []
     Acceptance:
       - {AcceptanceId: AC-1, Description: "Provider usage maps preserve Partial/Final/Unavailable and protocol-specific fields without false precision.", Evidence: "One fixture group per protocol with absent/partial/final usage."}
