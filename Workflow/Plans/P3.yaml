@@ -964,3 +964,57 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, TRACE-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0112, ED-0113]}
+
+  - TaskId: ED-0143
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 固定 Boost.JSON 1.92 子模块并建立 Provider 解析构建探针
+    TaskKind: Build
+    State: Blocked
+    Phase: P3
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker06
+    OwnerAgentId: /root/worker06_coverage_gate
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: /root/worker03_responses_review
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0143-BoostJsonDependency
+    Worktree: H:/Qbot/EmulativeDialog.ED-0143
+    BaselineCommit: c87716fe4c0b9f3f3d2b1e0e9b0e8a1a2b3c4d5e
+    Goal: "为三种 Provider adapter 提供固定的 C++ JSON 解析/序列化能力：在 Boost 1.92.0 pinned checkout 上补充 libs/json 所需子模块，提供 header-only interface target 与编译运行探针，并登记依赖策略；不引入非 C++ 运行时。"
+    OutOfScope: ["Provider wire adapter 实现", "HTTP 传输实现", "替换既有 yaml-cpp/SQLite 固定策略"]
+    DependsOn: [ED-0131, ED-0122]
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet: [AGENTS.md, Architecture/Contracts/ModelProviderContract.md, Standards/DependencyPolicy.md, CMake/BoostAsioDependency.cmake, CMake/DependencyPins.cmake, CMakeLists.txt]
+      OnDemandSet: [Tests/Contract/Providers/OpenAIResponses/Fixtures/FixtureIndex.json]
+      ForbiddenSet: ["Source/Providers/", "Source/Agent/", "Source/Core/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 10
+      ExpansionReasonRequired: true
+    WriteSet: [CMake/BoostJsonDependency.cmake, CMake/BoostJsonProbe.cpp, CMakeLists.txt, Standards/DependencyPolicy.md]
+    SharedLocks: [DependencyLock, RootBuild]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "固定 Boost 1.92.0 checkout 内所需 JSON 子模块（json/container/describe/align/throw_exception 等）齐备，并有构建阶段校验。", Evidence: "校验脚本输出 commit 与子模块清单。"}
+      - {AcceptanceId: AC-2, Description: "C++20 探针真实解析与序列化 JSON（对象/数组/字符串/数字/错误输入），运行成功且错误输入 fail-closed。", Evidence: "BoostJsonProbe 编译运行与 CTest 结果。"}
+      - {AcceptanceId: AC-3, Description: "依赖策略记录版本、许可证、header-only 边界，不新增运行时 DLL。", Evidence: "DependencyPolicy 更新与 objdump 结果。"}
+    Validation:
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "构建依赖与探针任务，无产品生产 .cpp 逻辑。"
+      RequiredTargets: [BoostJsonProbe]
+      TargetedBuild:
+        - "$env:PATH='C:/msys64/ucrt64/bin;'+$env:PATH; I:/cmake/bin/cmake.exe --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --target BoostJsonProbe --parallel 6"
+        - "I:/cmake/bin/ctest.exe --preset windows-agent-slice --output-on-failure -R BoostJson --no-tests=error"
+      LiveSideEffects: Forbidden
+      NotRunReason: "探针仅在进程内解析字符串，无网络与文件系统副作用。"
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, DEP-001, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
