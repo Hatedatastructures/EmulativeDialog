@@ -38,8 +38,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0146
-    Status: Active
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
@@ -51,7 +51,7 @@ Slots:
       - Core
       - ChannelAdapterPort
     CurrentTaskId: ED-0114
-    Status: Active
+    Status: Blocked
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/p1_gov004_luna"
@@ -60,8 +60,8 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0146
-    Status: Active
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/p2_validation_luna"
@@ -70,8 +70,8 @@ Slots:
     HostSessionRef: "/root/worker04_ed0114_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0114
-    Status: Active
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/p3_validation_luna"
@@ -80,8 +80,8 @@ Slots:
     HostSessionRef: "/root/worker05_ed0144_memory"
     ModuleIds:
       - ProviderAnthropicMessages
-    CurrentTaskId: ED-0144
-    Status: Active
+    CurrentTaskId: ""
+    Status: Idle
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
     AgentId: "/root/p1_par001_luna"
@@ -91,8 +91,8 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0144
-    Status: Active
+    CurrentTaskId: ""
+    Status: Idle
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。

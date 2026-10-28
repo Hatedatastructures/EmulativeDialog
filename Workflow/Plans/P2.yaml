@@ -34,7 +34,7 @@ ChangeRequests:
     TargetTaskId: ED-0120
     TargetTaskRevision: 2
     ProposedTaskId: ED-0146
-    ProposedTaskRevision: 1
+    ProposedTaskRevision: 2
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker01_ed0105_owner
@@ -43,16 +43,26 @@ ChangeRequests:
     FindingId: ED-0120-R2-F001
     Scope: >-
       Keep the existing HttpTransportContract V1 proxy, TLS, timeout, redirect, compression,
-      cancellation, and unknown-outcome semantics. Add a corrective cross-module task that makes
-      Core endpoint grant validation mandatory at the public HttpTransportPort boundary, prevents
-      provider-facing code from constructing arbitrary grant IDs, adapts the WinHTTP implementation
-      and offline fakes to the guarded template method, and compiles the three merged provider test
-      consumers. Correct the prior .h WriteSet reference to the actual .hpp file.
+      cancellation, and unknown-outcome semantics. ED-0146/R2 makes endpoint-grant validation
+      mandatory at the public HttpTransportPort boundary and adapts WinHTTP plus offline provider
+      fakes to that non-bypassable entry. It does not claim that grant IDs are opaque or that Core
+      owns their issuer; those requirements move to ED-0147. Correct the prior .h WriteSet reference
+      to the actual .hpp file and freeze separate, executable validation commands for each standalone
+      Network/Provider CMake project.
     Reason: >-
-      Worker03 fixed-head review of ED-0120/R2 found that ScriptedTransport can be constructed with
-      a null resolver, skips Validate, and still returns CompletedTransport. This is a fail-open
-      endpoint-grant boundary. The original R2 PR is already merged, so the correction is tracked as
-      a separately reviewable task and P3 remains locked until its acceptance passes.
+      Worker03 post-merge fixed-head review found that ScriptedTransport can be constructed with a
+      null resolver, skip Validate, and still return CompletedTransport. Worker01 and Worker03
+      fixed-head reviews of ED-0146/R1 also found that its Core-only issuer acceptance was outside
+      the declared ReadSet/WriteSet and that its single CMake command could not build five targets
+      spread across four standalone projects. Split Port enforcement from Core grant authority and
+      freeze reproducible per-project build and coverage evidence before assigning implementation.
+    OwnerReviewDecision: RequestChanges
+    OwnerReviewHeadCommit: 204cfe4fbc43ba00a1ab76eab845e06c6432b5d7
+    OwnerReviewFindingIds: [ED0146-R1-O1, ED0146-R1-O2, ED0146-R1-O3, ED0146-R1-O4]
+    IndependentReviewDecision: RequestChanges
+    IndependentReviewHeadCommit: 204cfe4fbc43ba00a1ab76eab845e06c6432b5d7
+    IndependentReviewFindingIds: [ED0146-R1-I1, ED0146-R1-I2, ED0146-R1-I3]
+    SplitFindingFollowUpTaskId: ED-0147
     PreserveExistingContractSemantics: true
     RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
     EvidenceRefs:
@@ -802,7 +812,7 @@ ExitGate:
   ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
   EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
   P3EntryGateState: Pending
-  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; endpoint grant validation remains bypassable through an optional resolver. HttpTransportContract V1 is not frozen; corrective task ED-0146 is proposed and awaits owner and independent review.
+  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R2 Port enforcement, and ED-0147/R1 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
 
 Tasks:
   - TaskId: ED-0109
@@ -3131,9 +3141,9 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0146
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
-    Title: 强制 HTTPS Transport Port 执行 Core endpoint grant 校验
+    Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
     TaskKind: IntegrationTask
     State: Proposed
     Phase: P2
@@ -3155,16 +3165,17 @@ Tasks:
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until CR-ED-0120-003 and this exact TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
-    Goal: "让所有 HTTPS TransportPort 实现都无法绕过 Core endpoint grant 验证；阻断无效授权后才允许进入任何 DNS/connect、回调或底层 transport 操作，并保证已合并的三种 Provider 测试消费者适配同一公共合同。"
+    AssignmentNote: "Not assignable until CR-ED-0120-003 and this exact R2 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
+    Goal: "让所有 HTTPS TransportPort 实现都必须经过同一 resolver 验证入口；无效 grant 在 DoStream、回调、DNS/connect 或底层 transport 操作前 fail closed，并适配三种已合并 Provider 的离线测试消费者。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 行为"
       - "新增任意网络、Shell、主机状态、文件或通用 MCP 工具"
       - "真实外网请求、真实凭据、QQ 或微信接入"
       - "更改 TLS、代理、重定向、超时、压缩、取消及 unknown-outcome 既有 V1 语义"
+      - "签发不透明 EndpointGrantId、Core endpoint profile allowlist、grant expiry/revocation registry 或生产 Core resolver ownership（由 ED-0147 承担）"
       - "根 CMakeLists.txt、依赖 pin 或其他 Provider 生产源修改"
-    DependsOn: [ED-0120, ED-0006, ED-0124]
-    ContractVersion: "HttpTransportContract V1 hardening; status remains candidate until ED-0146 passes."
+    DependsOn: [ED-0120, ED-0121, ED-0143, ED-0006, ED-0124]
+    ContractVersion: "HttpTransportContract V1 Port guard hardening only; full grant authority remains candidate until ED-0147 passes."
     ModuleIds: [NetworkPlatform, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
     Context:
       ModuleId: NetworkPlatform
@@ -3172,6 +3183,8 @@ Tasks:
         - AGENTS.md
         - Workflow/CurrentState.md
         - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/Platform.yaml
         - Architecture/Modules/Providers.yaml
@@ -3180,21 +3193,31 @@ Tasks:
         - Architecture/Contracts/ModelProviderContract.md
         - Architecture/Contracts/HttpTransportContract.md
         - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+        - CMake/DependencyPins.cmake
+        - CMake/BoostAsioDependency.cmake
+        - CMake/BoostJsonDependency.cmake
+        - CMake/BoostJsonImplementation.cpp
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - Source/Providers/OpenAIResponses/OpenAIResponsesProvider.hpp
+        - Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.hpp
+        - Source/Providers/AnthropicMessages/AnthropicMessagesProvider.hpp
         - Source/Platform/Network/HttpTransportPort.hpp
         - Source/Platform/Network/WinHttpTransport.hpp
         - Source/Platform/Network/WinHttpTransport.cpp
         - Tests/Contract/Platform/Network/CMakeLists.txt
         - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
         - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+        - Tests/Contract/Providers/OpenAIResponses/CMakeLists.txt
         - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+        - Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt
         - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+        - Tests/Contract/Providers/AnthropicMessages/CMakeLists.txt
         - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
       OnDemandSet:
         - Workflow/Plans/P2.yaml#TaskId=ED-0120
         - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
         - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewedDiff.patch
       ForbiddenSet:
-        - Source/Core/
         - Source/Providers/OpenAIResponses/
         - Source/Providers/OpenAIChatCompletions/
         - Source/Providers/AnthropicMessages/
@@ -3203,11 +3226,9 @@ Tasks:
         - CMake/
         - CMakePresets.json
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-      MaxReferenceFiles: 24
+      MaxReferenceFiles: 33
       ExpansionReasonRequired: true
     WriteSet:
-      - Workflow/OpenDecisions.md
-      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
       - Architecture/Contracts/HttpTransportContract.md
       - Source/Platform/Network/HttpTransportPort.hpp
       - Source/Platform/Network/WinHttpTransport.hpp
@@ -3218,20 +3239,19 @@ Tasks:
       - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
       - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
       - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
-    SharedLocks: [OD-0007, HttpTransportContractV1, WindowsTlsPolicy, HttpTransportPort]
+    SharedLocks: [HttpTransportContractV1, WindowsTlsPolicy, HttpTransportPort]
     Acceptance:
-      - {AcceptanceId: AC-1, Description: "HttpTransportPort requires a non-null Core-owned EndpointGrantResolver reference; its public Stream entry is non-virtual and validates the request grant exactly once before any callback or DoStream/network operation.", Evidence: "Fixed API review proves no derived type can override or bypass Stream; valid grant reaches DoStream only after Validate, and invalid grants never reach DoStream."}
-      - {AcceptanceId: AC-2, Description: "Missing, expired, or destination-mismatched grants map to EndpointNotGranted; invalid requests trigger no response-head or chunk sink and no DNS/connect/send.", Evidence: "Offline scripted-resolver tests assert resolver status, exact call ordering/count, DoStream count zero, and both sink counts zero."}
-      - {AcceptanceId: AC-3, Description: "EndpointGrantId has no public default/string constructor or public raw value; only the Core-owned resolver implementation can issue or inspect grant tokens.", Evidence: "Compile-time negative constructibility/member-access assertions plus a positive resolver-issued token test."}
-      - {AcceptanceId: AC-4, Description: "WinHttpTransport, its system wrapper, and the three provider test fakes use the guarded base entry; the concrete adapter does not duplicate or bypass grant validation.", Evidence: "Windows transport and all three provider contract targets compile and pass their focused offline CTest cases."}
-      - {AcceptanceId: AC-5, Description: "Existing system/direct proxy, Proxy-Authorization rejection, Host/Content-Length framing, redirect denial, no-compression, timeout, cancellation, terminal, and unknown-outcome semantics remain unchanged.", Evidence: "Existing fixed fixtures remain green; added identity/non-identity compression cases stay in the platform offline suite."}
-      - {AcceptanceId: AC-6, Description: "Production transport behavior retains at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 report for WinHttpTransport.cpp meets 80 percent with unique source lines, exact numerator/denominator and compiler version; no stale gcda or checksum warnings."}
+      - {AcceptanceId: AC-1, Description: "HttpTransportPort construction requires a non-null EndpointGrantResolver reference; its public Stream entry is non-virtual, calls Validate exactly once with the request grant and destination, and calls neither a sink nor DoStream before a Valid result.", Evidence: "Fixed API review plus offline tests prove valid grants reach DoStream only after one Validate call and non-Valid grants terminate before DoStream or either sink. Core ownership and grant opacity are explicitly outside ED-0146 and remain ED-0147 gates."}
+      - {AcceptanceId: AC-2, Description: "Missing, expired, and destination-mismatched grants all map to EndpointNotGranted; rejected requests perform no response-head/chunk callback and no DNS/connect/send.", Evidence: "Offline scripted-resolver tests assert every status, exact call ordering/count, DoStream count zero, and both sink counts zero."}
+      - {AcceptanceId: AC-3, Description: "WinHttpTransport and its system wrapper implement only the guarded DoStream entry; all three provider test fakes consume the public base Stream and cannot substitute a bypass implementation.", Evidence: "Windows transport and each of the three independently configured Provider contract targets compile and pass their named offline CTest."}
+      - {AcceptanceId: AC-4, Description: "Existing system/direct proxy, Proxy-Authorization rejection, Host/Content-Length framing, redirect denial, no-compression, timeout, cancellation, terminal, and unknown-outcome semantics remain unchanged.", Evidence: "Existing fixed fixtures remain green; added identity/non-identity compression cases stay in the platform offline suite."}
+      - {AcceptanceId: AC-5, Description: "HttpTransportPort.hpp and WinHttpTransport.cpp each retain at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 reports for the header (from HttpTransportPortTests.cpp) and WinHttpTransport.cpp record GCC/gcov versions and exact unique executable-line numerator/denominator; no stale gcda or checksum warnings."}
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146
       Coverage:
         Required: true
-        ProductionSources: [Source/Platform/Network/WinHttpTransport.cpp]
-        TestSupportSources: [Source/Platform/Network/HttpTransportPort.hpp]
+        ProductionSources: [Source/Platform/Network/HttpTransportPort.hpp, Source/Platform/Network/WinHttpTransport.cpp]
+        HeaderCoverageTranslationUnit: Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
         MinimumLinePercent: 80
         ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Reports
         ReportFormat: gcov JSON v2
@@ -3239,16 +3259,27 @@ Tasks:
       RequiredBuildTargets: [HttpTransportPortTests, WinHttpTransportTests, OpenAIResponsesProviderTests, ChatCompletionsProviderTests, AnthropicMessagesProviderTests]
       RequiredCTestTests: [Platform.Network.HttpTransportPort, Platform.Network.WinHttpTransport, Provider.OpenAIResponses, Provider.ChatCompletions, Provider.AnthropicMessages]
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146 -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146 --target HttpTransportPortTests WinHttpTransportTests OpenAIResponsesProviderTests ChatCompletionsProviderTests AnthropicMessagesProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146 --output-on-failure --no-tests=error"
-        - "Generate and verify gcov JSON v2 for Source/Platform/Network/WinHttpTransport.cpp under TaskBuildDirectory/Reports; count unique executable source lines and record GCC/gcov version."
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network --target HttpTransportPortTests WinHttpTransportTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network -R Platform.Network.HttpTransportPort --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network -R Platform.Network.WinHttpTransport --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIResponses -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIResponses -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogOpenAIResponsesContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIResponses --target OpenAIResponsesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIResponses -R Provider.OpenAIResponses --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIChatCompletions -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIChatCompletions --target ChatCompletionsProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIChatCompletions -R Provider.ChatCompletions --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/AnthropicMessages -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/AnthropicMessages -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogAnthropicMessagesProviderContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/AnthropicMessages --target AnthropicMessagesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/AnthropicMessages -R Provider.AnthropicMessages --output-on-failure --no-tests=error"
+        - "powershell -NoProfile -Command \"$ErrorActionPreference='Stop'; $Build='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network'; $Reports='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Reports'; New-Item -ItemType Directory -Force -Path $Reports | Out-Null; $PortNotes=@(Get-ChildItem -LiteralPath $Build -Recurse -Filter 'HttpTransportPortTests.cpp.gcno'); $WinNotes=@(Get-ChildItem -LiteralPath $Build -Recurse -Filter 'WinHttpTransport.cpp.gcno'); if($PortNotes.Count -ne 1){throw 'Expected one HttpTransportPortTests.cpp.gcno'}; if($WinNotes.Count -ne 1){throw 'Expected one WinHttpTransport.cpp.gcno'}; Push-Location $Reports; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $PortNotes[0].FullName 'H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network/HttpTransportPortTests.cpp'; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}; & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $WinNotes[0].FullName 'H:/Qbot/EmulativeDialog.ED-0146/Source/Platform/Network/WinHttpTransport.cpp'; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE} } finally { Pop-Location }\""
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
-        - "Changed paths exactly equal the frozen 12-path WriteSet."
-        - "No provider production source, Core source, root CMake, dependency pin, or live network call is changed."
-        - "HttpTransportPort.hpp has no default/null resolver route; no derived class overrides the public Stream entry."
+        - "Changed paths exactly equal the frozen 10-path WriteSet."
+        - "No provider production source, Core source, root CMake, dependency module, or live network call is changed."
+        - "HttpTransportPort.hpp requires a resolver reference and no derived class overrides the public non-virtual Stream entry."
         - "Every non-Valid endpoint grant is denied before DoStream, callbacks, DNS, or connect."
+        - "Each independent build registers exactly its named CTest test; all five RequiredCTestTests are present across the four build directories."
         - "Coverage data comes only from the fresh ED-0146 build; no libgcov checksum/overwrite warnings."
       LiveSideEffects: Forbidden
       NotRunReason: "The task uses scripted resolver and offline transport/provider fixtures only."
@@ -3257,4 +3288,4 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
-    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0121, ED-0104, ED-0105, ED-0106]}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0147, ED-0121, ED-0104, ED-0105, ED-0106]}

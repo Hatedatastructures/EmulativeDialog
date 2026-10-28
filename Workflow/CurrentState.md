@@ -64,3 +64,12 @@
 - 当前协调分支 `Task/ED-0146-GrantBoundaryTaskSpec` 仅含 Workflow/Plan/Event/状态候选；尚未提交、推送或创建 PR。下一步先完成 gate/contract 账本审查并提交一个固定头治理 PR；远端分支额度只剩 1 个。
 - Agent 槽按可并行且 Ready 的独立任务使用，不为“占满”分派无关工作。当前子代理均继承主会话模型和推理强度；宿主未返回可核实的具体显示模型标签。
 - 聊天 Codex Agent 重写仍未完成：当前 main 的 AgentRuntime 纵向切片是同步实现。异步回合循环、取消与恢复的完整统一生命周期、三协议 adapter 的最终合同兼容复验、Core 授权工具往返、Keep/Redesign 能力映射全量验收及授权后的真实 QQ Adapter 仍待继续；微信保持 Deferred。
+
+## 2026-10-28 当前协调快照（15:42 UTC）
+
+- `main` 与 `origin/main` 基线为 `461735e50657bdc8ace070b46db3682cfb03460f`。治理候选位于 `Task/ED-0146-GrantBoundaryTaskSpec`；远端仍只有 `main`、PR #20 `Task/ED-0114-R2-UsageLimits`、PR #25 `Task/ED-0144-MemorySqliteAdapter`，合计 3/4。当前候选尚未推送或建立 PR。
+- ED-0146/R1 的 Owner、独立 Reviewer 和治理复核均为 RequestChanges，已记录到 P2 事件分片。ED-0146/R2 将 Port fail-closed guard 与 Core grant authority 拆成两个任务，移除无关写集，按四个独立 CMake 项目冻结五个实际测试目标，并为 public Port header 与 WinHTTP production source 分别指定 gcov JSON v2 覆盖率命令。R2 仍 Proposed，等待对固定提交的 Owner/Reviewer 审查。
+- 新增候选 ED-0147/R1（Core 注册 profile 后签发并校验 grant）和 ED-0148/R1（Memory 中 ProposalId optional 精确匹配）。ED-0147 是 P3 EntryGate 前置；ED-0148 仅阻塞 durable Memory 激活，不属于 HTTP EntryGate。相关 P3 proposal 事件已归入 P3 分片，事件 ID 无重复且 PhaseId 与分片一致。
+- P3 EntryGate 保持 Pending，必须等 ED-0146 与 ED-0147 的合同和实现均通过验证。ED-0114/R4 TaskSpec 的 Worker02 Owner 与 Worker04 独立 Reviewer 已对 Base `461735e`、Head `204cfe4` Approve；但其实现仍受 P3 gate 阻塞。PR #20 的 R2 固定 Head `a23f252` 被 Worker03 RequestChanges，发现 usage 缺失 fail-open、自授权续跑、turn ledger 无生产清理、拒绝 Handoff 后 pending 未清理、WriteSet/coverage 清单不匹配；R4 源码未完成新鲜验证和固定头审查。
+- PR #25 仍 Open。ED-0144/R3 继续被 P3 gate、未合入的 TaskSpec 与 ED-0148 consent 修复阻塞；其原 PR worktree/分支保持原样。
+- 本次只验证任务查询、YAML 任务解析、JSONL 结构和 `git diff --check`，没有运行 C++ 构建或测试。代码重写仍未完成；main 上已有同步 AgentRuntime 纵向切片，异步 C++20 AgentRuntime 生命周期及三种 Provider 的最终 wire adapter 等能力仍待实现与验收。下一步是固定候选提交，完成三组独立 TaskSpec 审查，然后建立正式 PR 并尽快进入 C++ 实现任务。

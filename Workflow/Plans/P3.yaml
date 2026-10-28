@@ -9,14 +9,15 @@ EntryGate:
   RequiredP2GateId: FirstCppAgentRuntimeVerticalSliceVerified
   RequiredP2State: Passed
   RequiredAdditionalContracts:
-    - HttpTransportContract V1 (ED-0120, hardened by ED-0146)
-  RequiredAdditionalTaskIds: [ED-0146]
+    - HttpTransportContract V1 Port enforcement (ED-0120, hardened by ED-0146)
+    - CoreEndpointGrantContract V1 (ED-0147)
+  RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed; corrective task ED-0146 must be approved, implemented, independently reviewed, and verified before this contract can be frozen.
+  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R2 must enforce the shared Port entry and ED-0147/R1 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
 
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
-  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148]
   AllTaskSpecsFrozenBeforeAssignment: true
   ValidationCommandChangeRequestId: CR-ED-0126-001
 
@@ -169,18 +170,74 @@ ChangeRequests:
     PreserveFourPathWriteSet: true
     AcceptedAt: 2026-10-28
 
+  - ChangeRequestId: CR-ED-0120-004
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0147
+    ProposedTaskRevision: 1
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker04_ed0114_review
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    FindingId: ED-0120-R2-F001
+    Scope: >-
+      Add a Core-owned EndpointGrantAuthority that registers trusted ProviderProfileId to HTTPS destination
+      bindings, issues only registry-backed grants by profile ID, and validates grant status plus exact host,
+      port, path, expiry, and revocation state. Add Core's NetworkPlatform dependency and a standalone offline
+      Core contract target. Keep provider wire behavior and application composition out of this task; real
+      Provider/WinHTTP runtime activation must remain unclaimed until a separately frozen composition task.
+    Reason: >-
+      Worker02's fixed-main audit found no Core grant issuer/resolver and no production CreateSystemWinHttpTransport
+      call site. ED-0146/R2 can close the mandatory Port validation bypass, but cannot establish Core ownership,
+      profile binding, or grant lifetime. The authority contract is therefore a separate P3 prerequisite; P3
+      remains pending until both tasks pass.
+    PreserveExistingHttpTransportV1WireSemantics: true
+    RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0146&TaskRevision=2
+      - Workflow/Events/CodexRewrite/P2.jsonl#TaskId=ED-0120
+
+  - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+    TargetTaskId: ED-0144
+    TargetTaskRevision: 3
+    ProposedTaskId: ED-0148
+    ProposedTaskRevision: 1
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker05_ed0144_memory
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    FindingId: ED-0144-R3-CONSENT-F001
+    Scope: >-
+      Correct Memory::ConversationMemory::ConsentMatches so a grant's optional ProposalId exactly equals the
+      request or record ProposalId. Preserve null/null and exact bound matches; reject unbound-to-bound,
+      bound-to-unbound, and different-ID matches for Write, Recall, Group shared-reader recall, and RestoreBackup.
+      Keep the change to ConversationMemory.cpp and its existing contract tests; do not modify Core, the Memory
+      contract, SQLite schema, adapter, Provider, or Channel behavior.
+    Reason: >-
+      Worker06's fixed-head governance review recovered a previously recorded Core consent gap, and Worker05
+      confirmed that an unbound grant currently matches a proposal-bound request/record across Write, Recall,
+      group shared reads, and backup restore. ED-0144/R3 correctly excludes authorization policy, so this fix
+      is a separate Memory task and a prerequisite for durable Memory activation, not for unrelated Provider work.
+    PreserveED0144R3FourPathAdapterWriteSet: true
+    RequiresDurableMemoryActivationToRemainBlockedUntilTaskVerified: true
+    EvidenceRefs:
+      - H:/Qbot/EmulativeDialog/Source/Memory/ConversationMemory.cpp#ConsentMatches
+      - H:/Qbot/EmulativeDialog/Architecture/Contracts/MemoryContract.md
+
 ParallelGroups:
   - GroupId: DurableMemory
-    TaskIds: [ED-0122, ED-0123, ED-0113]
-    OrderedDependencies: [ED-0122, ED-0123, ED-0113]
+    TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
+    OrderedDependencies: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
   - GroupId: WindowsTransportAndProviderAdapters
     TaskIds: [ED-0121, ED-0104, ED-0105, ED-0106]
-    DependsOn: [ED-0120, ED-0015]
+    DependsOn: [ED-0120, ED-0015, ED-0146, ED-0147]
     WriteSetsDisjoint: true
     SharedLocksDisjoint: true
   - GroupId: CrossProviderOutputLimits
     TaskIds: [ED-0114]
-    DependsOn: [ED-0101, ED-0104, ED-0105, ED-0106, ED-0107]
+    DependsOn: [ED-0101, ED-0103, ED-0104, ED-0105, ED-0106, ED-0107]
 
 Tasks:
   - TaskId: ED-0104
@@ -850,7 +907,7 @@ Tasks:
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
     State: Blocked
-    BlockedBy: "ED-0114/R4 TaskSpec is in the Coordinator governance candidate only; implementation may resume after fixed-head owner/reviewer review and merge to main."
+    BlockedBy: "P3 EntryGate is still Pending on ED-0146/ED-0147, and ED-0114/R4 TaskSpec is only in the Coordinator governance candidate; implementation may resume only after the P3 gate passes, the fixed-head TaskSpec receives owner/reviewer approval and merges to main, and its main baseline is rebound."
     PreviousRevision3:
       TaskRevision: 3
       Disposition: SupersededBeforeFinalValidation
@@ -1494,7 +1551,7 @@ Tasks:
     Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
     State: Blocked
-    BlockedBy: "P3 EntryGate remains pending ED-0146; the R3 TaskSpec is not yet merged to main."
+    BlockedBy: "P3 EntryGate remains pending ED-0146/ED-0147; ED-0148 Core/Memory consent matching must also pass before durable Memory implementation/activation, and the R3 TaskSpec is not yet merged to main."
     AssignmentNote: "Dependencies ED-0113 and ED-0123 are merged; root CMake ownership is reserved to ED-0145 to avoid WriteSet conflict."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0144-002
@@ -1713,3 +1770,223 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0147
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现 Core-owned endpoint grant authority
+    TaskKind: IntegrationTask
+    State: Proposed
+    Phase: P3
+    ChangeRequestId: CR-ED-0120-004
+    CorrectiveToTaskId: ED-0120
+    CorrectiveFindingId: ED-0120-R2-F001
+    OwnerRole: CoreOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: /root/worker02_ed0114_owner
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/worker04_ed0114_review
+    ReviewerIndependence: Required
+    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
+    TaskSpecOwnerDecision: Pending
+    TaskSpecReviewerDecision: Pending
+    TaskSpecCoordinatorDecision: Pending
+    BaselineCommit: ""
+    Branch: ""
+    Worktree: ""
+    AssignedToSlot: ""
+    AssignmentNote: "Not assignable until ED-0146/R2 and this exact TaskSpec are approved and merged; bind the then-current main BaseCommit and isolated worktree at assignment."
+    Goal: "实现 Core-owned EndpointGrantAuthority：仅根据 Core 登记的 ProviderProfileId 与可信 HTTPS endpoint 配置签发 registry-backed grant，并且只对尚有效且 host/port/path 精确匹配的请求返回 Valid。授权 authority 本身不代表产品 Provider/WinHTTP composition 已接线。"
+    OutOfScope:
+      - "修改三种 Provider 的生产 wire protocol 或构造 API"
+      - "创建 AppHost/产品 Provider composition 或真实 WinHTTP 调用点"
+      - "真实外网请求、真实凭据、QQ 或微信接入"
+      - "修改 SQLite schema、Memory consent policy 或任意 Channel 行为"
+      - "根 CMakeLists.txt、Provider 生产源和 Channel 生产源修改"
+    DependsOn: [ED-0007, ED-0015, ED-0120, ED-0146]
+    ContractVersion:
+      - Architecture/Contracts/CoreEndpointGrantContract.md V1 (proposed)
+      - Architecture/Contracts/HttpTransportContract.md V1 (candidate, hardened by ED-0146)
+      - Architecture/Contracts/ModelProviderContract.md V1.2
+    ModuleIds: [Core, NetworkPlatform]
+    Context:
+      ModuleId: Core
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Modules/Platform.yaml
+        - Architecture/Modules/Providers.yaml
+        - Architecture/Contracts/CoreAgentContract.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - Source/Platform/Network/HttpTransportPort.hpp
+        - Source/Core/CoreChatService.h
+        - Source/Core/CoreChatService.cpp
+        - Source/Providers/OpenAIResponses/OpenAIResponsesProvider.hpp
+        - Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.hpp
+        - Source/Providers/AnthropicMessages/AnthropicMessagesProvider.hpp
+      OnDemandSet:
+        - Workflow/Plans/P2.yaml#TaskId=ED-0146
+        - Workflow/Plans/P3.yaml#ChangeRequestId=CR-ED-0120-004
+      ForbiddenSet:
+        - Source/Providers/
+        - Source/Channels/
+        - Source/Agent/
+        - CMakeLists.txt
+        - CMakePresets.json
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 22
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Source/Core/EndpointGrantAuthority.hpp
+      - Source/Core/EndpointGrantAuthority.cpp
+      - Tests/Contract/Core/CMakeLists.txt
+      - Tests/Contract/Core/EndpointGrantAuthorityTests.cpp
+    SharedLocks: [CoreEndpointGrantContractV1, HttpTransportContractV1, CoreNetworkDependency]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Authority is initialized only from Core-registered ModelProviderProfile entries and IssueForProfile accepts only a profile ID; it does not accept caller/model-supplied endpoint strings.", Evidence: "Offline tests reject unknown/empty profile IDs, changed endpoint values, non-HTTPS, userinfo, fragment, invalid port, empty host/path, and malformed profile endpoints."}
+      - {AcceptanceId: AC-2, Description: "Each issued grant resolves only to its registered HTTPS destination; host, port, and path are bound and normalized according to CoreEndpointGrantContract V1.", Evidence: "A valid profile grant passes only for the exact bound destination; separate host, port, and path mutations each fail closed."}
+      - {AcceptanceId: AC-3, Description: "Unknown grants are Missing; expired or revoked grants are non-Valid; all invalid statuses are rejected by the ED-0146 guarded Stream before callbacks or DoStream.", Evidence: "Injected-clock expiry/revocation tests plus fake guarded-port counters prove zero DoStream and sink calls for each rejected grant."}
+      - {AcceptanceId: AC-4, Description: "Core is the only production component that owns this registry and issues grants; this authority library does not claim that existing Provider/WinHTTP composition uses it.", Evidence: "ModuleMap dependency review and fixed-head source review; composition remains an explicit open integration gap."}
+      - {AcceptanceId: AC-5, Description: "Changed Core authority source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 for EndpointGrantAuthority.cpp records unique executable-line numerator/denominator, compiler and gcov version, with no stale data warnings."}
+    Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Core/EndpointGrantAuthority.cpp]
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core/Reports
+        ReportFormat: gcov JSON v2
+        FreshDirectoryRequired: true
+      RequiredBuildTargets: [EndpointGrantAuthorityTests]
+      RequiredCTestTests: [Core.EndpointGrantAuthority]
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core --target EndpointGrantAuthorityTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core --output-on-failure --no-tests=error -R Core.EndpointGrantAuthority"
+        - "powershell -NoProfile -Command \"$ErrorActionPreference='Stop'; $Build='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core'; $Reports='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core/Reports'; New-Item -ItemType Directory -Force -Path $Reports | Out-Null; $Notes=@(Get-ChildItem -LiteralPath $Build -Recurse -Filter 'EndpointGrantAuthority.cpp.gcno'); if($Notes.Count -ne 1){throw 'Expected one EndpointGrantAuthority.cpp.gcno'}; Push-Location $Reports; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $Notes[0].FullName 'H:/Qbot/EmulativeDialog.ED-0147/Source/Core/EndpointGrantAuthority.cpp'; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE} } finally { Pop-Location }\""
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen 6-path WriteSet."
+        - "Core ModuleMap DependsOn includes NetworkPlatform and references CoreEndpointGrantContract V1 and HttpTransportContract V1."
+        - "IssueForProfile has no overload taking arbitrary HttpsDestination or URL from model/provider input."
+        - "No real network call, credential, Source/AppHost, provider source, root CMake, or Channel source is changed."
+        - "Coverage data comes only from the fresh ED-0147 build and has no libgcov checksum/overwrite warnings."
+      ContractFixtures: ["registered provider profiles, invalid endpoints, unknown grants, exact destination, expiry, revocation, and guarded Stream ordering"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "All endpoint and guarded Stream behavior uses in-memory Core registry and offline fake transport."
+    RiskLevel: High
+    RiskOwnerRole: CoreOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+    OpenIntegrationGap: "No production Provider/WinHTTP composition call site exists on main. ED-0147 does not close this gap; do not claim real Provider requests use Core grants until a separately reviewed composition task passes."
+
+  - TaskId: ED-0148
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 按 ProposalId 精确匹配 Memory consent grant
+    TaskKind: CapabilitySlice
+    State: Proposed
+    Phase: P3
+    ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+    OwnerRole: MemoryOwner
+    OwnerSlotId: Worker05
+    OwnerAgentId: /root/worker05_ed0144_memory
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
+    TaskSpecOwnerDecision: Pending
+    TaskSpecReviewerDecision: Pending
+    TaskSpecCoordinatorDecision: Pending
+    BaselineCommit: ""
+    Branch: ""
+    Worktree: ""
+    AssignedToSlot: ""
+    AssignmentNote: "Implementation may start after this exact TaskSpec is approved and merged to main; ED-0148 is independent of the HTTP P3 EntryGate and blocks ED-0144 durable Memory activation until it passes."
+    Goal: "让 grant、request 和 record 的 optional ProposalId 必须完全相等，避免未绑定具体提议的 consent 写入、召回或恢复提议绑定记忆。"
+    OutOfScope: ["修改 Core consent 签发策略", "修改 MemoryContract V1 或 public API", "修改 SQLite schema/adapter", "Provider、Channel、真实网络或微信行为"]
+    DependsOn: [ED-0113]
+    ContractVersion: Architecture/Contracts/MemoryContract.md V1
+    ModuleIds: [Memory]
+    Context:
+      ModuleId: Memory
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/MemoryStorage.yaml
+        - Architecture/Contracts/MemoryContract.md
+        - Source/Memory/ConversationMemory.hpp
+        - Source/Memory/ConversationMemory.cpp
+        - Tests/Contract/Memory/ConversationMemoryTests.cpp
+        - Tests/Contract/Memory/CMakeLists.txt
+      OnDemandSet:
+        - Workflow/Plans/P3.yaml#TaskId=ED-0144
+        - Workflow/Plans/P3.yaml#ChangeRequestId=CR-ED-0144-R3-CONSENT-001
+      ForbiddenSet:
+        - Source/Core/
+        - Source/Memory/SqliteMemoryStorageAdapter.hpp
+        - Source/Memory/SqliteMemoryStorageAdapter.cpp
+        - Source/Storage/
+        - Source/Providers/
+        - Source/Channels/
+        - CMakeLists.txt
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Source/Memory/ConversationMemory.cpp
+      - Tests/Contract/Memory/ConversationMemoryTests.cpp
+    SharedLocks: [MemoryConsentMatchingV1]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "ConsentMatches treats optional ProposalId as an exact binding: null matches only null, and a value matches only the identical value.", Evidence: "Offline unit cases cover null/null, equal IDs, null-to-bound, bound-to-null, and mismatched IDs."}
+      - {AcceptanceId: AC-2, Description: "An unbound consent cannot Write a proposal-bound request, and rejection happens before storage mutation.", Evidence: "Fake storage verifies ConsentMismatch and zero writes for the rejected request; existing exact-bound positive cases remain green."}
+      - {AcceptanceId: AC-3, Description: "The same mismatch is rejected for Recall, Group shared-reader recall, and RestoreBackup.", Evidence: "Tests preseed unbound-consent records carrying ProposalId and prove no recall, no Group exposure, and no backup resurrection; exact matching cases remain recallable/restorable."}
+      - {AcceptanceId: AC-4, Description: "Changed production Memory source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 for ConversationMemory.cpp records unique executable-line numerator/denominator, compiler and gcov version."}
+    Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Memory/ConversationMemory.cpp]
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory/Reports
+        ReportFormat: gcov JSON v2
+        FreshDirectoryRequired: true
+      RequiredBuildTargets: [ConversationMemoryTests]
+      RequiredCTestTests: [ConversationMemoryTests]
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0148/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory --target ConversationMemoryTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory --output-on-failure --no-tests=error -R ConversationMemoryTests"
+        - "powershell -NoProfile -Command \"$ErrorActionPreference='Stop'; $Build='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory'; $Reports='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory/Reports'; New-Item -ItemType Directory -Force -Path $Reports | Out-Null; $Notes=@(Get-ChildItem -LiteralPath $Build -Recurse -Filter 'ConversationMemory.cpp.gcno'); if($Notes.Count -ne 1){throw 'Expected one ConversationMemory.cpp.gcno'}; Push-Location $Reports; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $Notes[0].FullName 'H:/Qbot/EmulativeDialog.ED-0148/Source/Memory/ConversationMemory.cpp'; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE} } finally { Pop-Location }\""
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen 2-path WriteSet."
+        - "Every Write, Recall, Group shared-reader recall, and RestoreBackup path uses exact ProposalId matching."
+        - "No Core policy, SQLite schema/adapter, root CMake, Provider, Channel, or live external side effect is changed."
+      ContractFixtures: ["unbound grant vs bound request/record, exact bound match, mismatched ID, group shared reader, and backup restore"]
+      LiveSideEffects: Forbidden
+      NotRunReason: "Tests use the existing in-memory fake storage and deterministic consent fixtures."
+    RiskLevel: High
+    RiskOwnerRole: MemoryOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, CTX-001, CTX-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0144]}
