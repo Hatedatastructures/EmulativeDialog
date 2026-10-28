@@ -39,7 +39,18 @@ Coordinator 保持六个稳定槽有独立、有产出的工作：实现槽只�
 
 ### 远端分支上限
 
-仓库远端最多保留 4 个分支，包含默认集成分支 `codex/integration`；因此最多同时存在 3 个任务/PR 分支。Coordinator 创建任务分支前必须用 GitHub 插件核对当前分支数，并把分支预算加入 Ready 独立任务的并行度计算。任务完成独立审查并合入目标分支后，将任务分支快进到集成头作为合并结果确认，再删除远端任务分支引用；本地 ReviewBundle、TaskSpec、提交和已有 worktree 保留作审计，不因分支清理而删除或重置。若 PR 插件拒绝创建 PR，记录精确错误并按 TaskLifecycle 使用独立 LocalReviewBundle；本地 Bundle 不能冒充 PR。
+仓库远端最多保留 4 个分支，包含默认集成分支 `codex/integration`；因此最多同时存在 3 个任务/PR 分支。Coordinator 创建任务分支前必须用 GitHub 插件核对当前分支数，并把分支预算加入 Ready 独立任务的并行度计算。任务完成独立审查并合入目标分支后，按下一小节的判定删除远端任务分支引用；本地 ReviewBundle、TaskSpec、提交和已有 worktree 保留作审计，不因分支清理而删除或重置。若 PR 插件拒绝创建 PR，记录精确错误并按 TaskLifecycle 使用独立 LocalReviewBundle；本地 Bundle 不能冒充 PR。
+
+### 合并方式与分支清理判定
+
+目标分支的合并方式是 squash。squash 之后任务分支的 Head 不再是目标分支的祖先，`git merge-base --is-ancestor <branch> origin/main` 对已合并分支返回非零，因此分支清理不得只用祖先测试，必须两级判定：
+
+1. 祖先测试返回 0：判定已合并，删除本地分支。
+2. 祖先测试返回非零：取 `git merge-base <branch> origin/main`，逐个比较该分支相对 merge-base 的变更路径 blob 与 `origin/main` 同路径 blob。全部一致即内容已并入，可删除。存在不一致路径时还要判定差异方向：若差异只是被 `origin/main` 后续提交取代的旧治理账本写法（AgentPool、Plans、CurrentState、Events 中已过期的行），同样视为已并入；只要任一产品代码、CMake 或合同路径的 blob 与 `origin/main` 不一致且不属于被取代的旧写法，判定为未合并，保留分支并记录原因。
+
+删除前必须先核对 worktree 占用（`git worktree list`）。分支被保留的 worktree 签出时 `git branch -D` 会拒绝，而本规范禁止删除 worktree 目录本身。此时不得为了删分支移除 worktree 或强推，只能二选一：在该 worktree 内 `git checkout --detach` 释放分支引用后再删本地分支（提交与文件保留），或保留分支并在集成队列记录 `BLOCKED-BRANCH-PINNED`、占用路径与解锁条件。远端分支预算按已推送的远端引用计数；本地被 worktree 固定而未推送的分支不占远端预算。
+
+每次清理必须逐分支记录：分支名、祖先测试退出码、一致与不一致路径数、实际执行的删除命令及其输出、以及保留原因。未实际执行的删除不得报告为已清理。
 
 ## 评审、PR 与集成
 
