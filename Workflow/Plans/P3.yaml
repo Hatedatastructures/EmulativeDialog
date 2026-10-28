@@ -1,7 +1,7 @@
 SchemaVersion: 1
 PhaseId: P3
 PhaseName: Provider Protocols and Durable Memory
-State: PendingHttpTransportContractFreeze
+State: PendingEntryGateWithScopedPreGateTaskReview
 
 EntryGate:
   RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
@@ -13,7 +13,15 @@ EntryGate:
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R2 must enforce the shared Port entry and ED-0147/R1 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
+  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R3 must enforce the shared Port entry and ED-0147/R2 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
+  PreGateTaskExceptions:
+    - TaskId: ED-0148
+      TaskRevision: 2
+      ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+      State: ProposedAwaitingOwnerAndIndependentReviewer
+      Scope: "Only exact ProposalId consent matching in Memory may proceed after its own TaskSpec/CR approval and merge; this exception does not pass the P3 EntryGate."
+      DoesNotSatisfyEntryGate: true
+      DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
@@ -197,12 +205,46 @@ ChangeRequests:
     EvidenceRefs:
       - Workflow/Plans/P2.yaml#TaskId=ED-0146&TaskRevision=2
       - Workflow/Events/CodexRewrite/P2.jsonl#TaskId=ED-0120
+    SupersededByChangeRequestId: CR-ED-0120-005
+
+  - ChangeRequestId: CR-ED-0120-005
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0147
+    ProposedTaskRevision: 2
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker04_ed0114_review
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    FindingId: ED-0120-R2-F001
+    Scope: >-
+      Preserve ED-0147's Core endpoint authority goal, six-path WriteSet, dependency ordering, and explicit
+      no-composition boundary. Define HttpTransportContract V1's endpoint-grant reference as a 256-bit
+      Windows CNG-backed registry bearer capability; specify trusted immutable Core profile snapshots,
+      URL normalization, duplicate/update behavior, five-minute expiry, revocation, entropy failure and
+      collision behavior, and deterministic test seams. Reduce the ReadSet to 12 exact paths, remove its
+      ReadSet/ForbiddenSet conflict, correct the editable ModuleMap path, and add a coverage command that
+      parses gcov JSON v2, counts unique executable lines, records tool versions, and fails below 80%.
+      Do not change provider wire behavior or claim production composition exists.
+    Reason: >-
+      Worker02's fixed-head Owner review found that R1 did not implement the existing contract's
+      unforgeable-reference claim or define profile trust/lifecycle, and its ReadSet conflicted with
+      ForbiddenSet and exceeded the 12-file default without a reason. Worker01 and Worker05 also found
+      that R1's gcov steps generated reports without enforcing the required 80% threshold. The Windows
+      MinGW toolchain has BCrypt headers/import library; this revision freezes the secure-token semantics
+      and test boundary before implementation.
+    PreserveExistingHttpTransportV1WireSemantics: true
+    RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
+    EvidenceRefs:
+      - Workflow/Plans/P3.yaml#TaskId=ED-0147&TaskRevision=1
+      - Workflow/Plans/P3.yaml#ChangeRequestId=CR-ED-0120-004
 
   - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
     TargetTaskId: ED-0144
     TargetTaskRevision: 3
     ProposedTaskId: ED-0148
-    ProposedTaskRevision: 1
+    ProposedTaskRevision: 2
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker05_ed0144_memory
@@ -213,15 +255,25 @@ ChangeRequests:
       Correct Memory::ConversationMemory::ConsentMatches so a grant's optional ProposalId exactly equals the
       request or record ProposalId. Preserve null/null and exact bound matches; reject unbound-to-bound,
       bound-to-unbound, and different-ID matches for Write, Recall, Group shared-reader recall, and RestoreBackup.
-      Keep the change to ConversationMemory.cpp and its existing contract tests; do not modify Core, the Memory
-      contract, SQLite schema, adapter, Provider, or Channel behavior.
+      Keep the implementation WriteSet to ConversationMemory.cpp and its existing contract tests; do not modify
+      Core, the Memory contract, SQLite schema, adapter, Provider, or Channel behavior. Add a scoped pre-gate route
+      exception for ED-0148 only: it may be assigned after this R2 TaskSpec and CR are approved and merged while
+      P3 EntryGate stays Pending. It must not unblock ED-0114, ED-0144, or ED-0145.
     Reason: >-
       Worker06's fixed-head governance review recovered a previously recorded Core consent gap, and Worker05
       confirmed that an unbound grant currently matches a proposal-bound request/record across Write, Recall,
-      group shared reads, and backup restore. ED-0144/R3 correctly excludes authorization policy, so this fix
-      is a separate Memory task and a prerequisite for durable Memory activation, not for unrelated Provider work.
+      group shared reads, and backup restore. Fixed-head reviews also found that R1's coverage command did not
+      enforce the 80% threshold and that TaskIndex's phase-level P3 LoadWhen blocked this independent Memory fix.
+      ED-0144/R3 correctly excludes authorization policy, so this is a separate Memory task and prerequisite for
+      durable Memory activation, not for unrelated Provider work. Its route exception leaves P3 EntryGate Pending.
     PreserveED0144R3FourPathAdapterWriteSet: true
     RequiresDurableMemoryActivationToRemainBlockedUntilTaskVerified: true
+    Revision1OwnerReviewDecision: RequestChanges
+    Revision1OwnerReviewFindingIds: [ED0148-R1-O1]
+    Revision1ReviewerDecision: RequestChanges
+    Revision1ReviewerFindingIds: [ED0148-R1-I1, ED0148-R1-I2]
+    Revision1ReviewHeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
+    PreGateExceptionRequiresOwnerReviewerApproval: true
     EvidenceRefs:
       - H:/Qbot/EmulativeDialog/Source/Memory/ConversationMemory.cpp#ConsentMatches
       - H:/Qbot/EmulativeDialog/Architecture/Contracts/MemoryContract.md
@@ -1728,6 +1780,7 @@ Tasks:
     Title: 将三 Provider、Memory、Network 合同测试接入根 CMake/CTest
     TaskKind: Build
     State: Blocked
+    BlockedBy: "P3 EntryGate remains Pending until ED-0146 and ED-0147 pass; relaxing TaskIndex.LoadWhen only makes the phase plan discoverable and does not authorize this root-build task."
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -1772,13 +1825,13 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0147
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
     State: Proposed
     Phase: P3
-    ChangeRequestId: CR-ED-0120-004
+    ChangeRequestId: CR-ED-0120-005
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
     OwnerRole: CoreOwner
@@ -1792,17 +1845,26 @@ Tasks:
     TaskSpecOwnerDecision: Pending
     TaskSpecReviewerDecision: Pending
     TaskSpecCoordinatorDecision: Pending
+    PreviousRevision1:
+      TaskRevision: 1
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0147-R1-O1, ED0147-R1-O2, ED0147-R1-O3, ED0147-R1-O4]
+      IndependentReviewerDecision: Approve
+      IndependentReviewerNote: "Registry-backed semantics were nonblocking, but R2 now freezes the stronger CSPRNG bearer-token guarantee."
     BaselineCommit: ""
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until ED-0146/R2 and this exact TaskSpec are approved and merged; bind the then-current main BaseCommit and isolated worktree at assignment."
-    Goal: "实现 Core-owned EndpointGrantAuthority：仅根据 Core 登记的 ProviderProfileId 与可信 HTTPS endpoint 配置签发 registry-backed grant，并且只对尚有效且 host/port/path 精确匹配的请求返回 Valid。授权 authority 本身不代表产品 Provider/WinHTTP composition 已接线。"
+    AssignmentNote: "Not assignable until ED-0146/R3 and this exact R2 TaskSpec are approved and merged; bind the then-current main BaseCommit and isolated worktree at assignment."
+    Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
       - "创建 AppHost/产品 Provider composition 或真实 WinHTTP 调用点"
       - "真实外网请求、真实凭据、QQ 或微信接入"
       - "修改 SQLite schema、Memory consent policy 或任意 Channel 行为"
+      - "实现产品 Provider/WinHTTP composition、创建 profile 配置来源或签发真实模型请求凭据"
       - "根 CMakeLists.txt、Provider 生产源和 Channel 生产源修改"
     DependsOn: [ED-0007, ED-0015, ED-0120, ED-0146]
     ContractVersion:
@@ -1821,30 +1883,25 @@ Tasks:
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/HostCoreAgent.yaml
         - Architecture/Modules/Platform.yaml
-        - Architecture/Modules/Providers.yaml
-        - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/ModelProviderContract.md
         - Architecture/Contracts/HttpTransportContract.md
-        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
         - Source/Providers/Contracts/ModelProviderPort.h
         - Source/Platform/Network/HttpTransportPort.hpp
-        - Source/Core/CoreChatService.h
-        - Source/Core/CoreChatService.cpp
-        - Source/Providers/OpenAIResponses/OpenAIResponsesProvider.hpp
-        - Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.hpp
-        - Source/Providers/AnthropicMessages/AnthropicMessagesProvider.hpp
       OnDemandSet:
         - Workflow/Plans/P2.yaml#TaskId=ED-0146
-        - Workflow/Plans/P3.yaml#ChangeRequestId=CR-ED-0120-004
+        - Workflow/Plans/P3.yaml#ChangeRequestId=CR-ED-0120-005
       ForbiddenSet:
-        - Source/Providers/
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
         - Source/Channels/
         - Source/Agent/
+        - Source/AppHost/
         - CMakeLists.txt
         - CMakePresets.json
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-      MaxReferenceFiles: 22
-      ExpansionReasonRequired: true
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: false
     WriteSet:
       - Architecture/Contracts/CoreEndpointGrantContract.md
       - Architecture/Modules/HostCoreAgent.yaml
@@ -1854,11 +1911,13 @@ Tasks:
       - Tests/Contract/Core/EndpointGrantAuthorityTests.cpp
     SharedLocks: [CoreEndpointGrantContractV1, HttpTransportContractV1, CoreNetworkDependency]
     Acceptance:
-      - {AcceptanceId: AC-1, Description: "Authority is initialized only from Core-registered ModelProviderProfile entries and IssueForProfile accepts only a profile ID; it does not accept caller/model-supplied endpoint strings.", Evidence: "Offline tests reject unknown/empty profile IDs, changed endpoint values, non-HTTPS, userinfo, fragment, invalid port, empty host/path, and malformed profile endpoints."}
-      - {AcceptanceId: AC-2, Description: "Each issued grant resolves only to its registered HTTPS destination; host, port, and path are bound and normalized according to CoreEndpointGrantContract V1.", Evidence: "A valid profile grant passes only for the exact bound destination; separate host, port, and path mutations each fail closed."}
-      - {AcceptanceId: AC-3, Description: "Unknown grants are Missing; expired or revoked grants are non-Valid; all invalid statuses are rejected by the ED-0146 guarded Stream before callbacks or DoStream.", Evidence: "Injected-clock expiry/revocation tests plus fake guarded-port counters prove zero DoStream and sink calls for each rejected grant."}
-      - {AcceptanceId: AC-4, Description: "Core is the only production component that owns this registry and issues grants; this authority library does not claim that existing Provider/WinHTTP composition uses it.", Evidence: "ModuleMap dependency review and fixed-head source review; composition remains an explicit open integration gap."}
-      - {AcceptanceId: AC-5, Description: "Changed Core authority source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 for EndpointGrantAuthority.cpp records unique executable-line numerator/denominator, compiler and gcov version, with no stale data warnings."}
+      - {AcceptanceId: AC-1, Description: "Authority copies one immutable snapshot supplied by trusted Core profile configuration; duplicate ProviderProfileId or any invalid profile endpoint rejects the whole snapshot. This task does not claim that a production configuration source already exists.", Evidence: "Offline fixtures cover empty/duplicate IDs and profile set, endpoint syntax, host normalization, default port/path, malformed percent encoding, IP literal handling, userinfo, fragments, non-HTTPS, control characters, and non-ASCII host rejection."}
+      - {AcceptanceId: AC-2, Description: "IssueForProfile accepts only ProviderProfileId and returns the snapshot's single canonical HTTPS destination; there is no overload accepting caller/model/provider URL or destination.", Evidence: "Registered profile IDs issue a binding; unknown/empty IDs and mutated profile inputs fail. Separate host, port, and path mutations for an issued grant each resolve as DestinationMismatch."}
+      - {AcceptanceId: AC-3, Description: "Windows production issuance uses BCryptGenRandom with BCRYPT_USE_SYSTEM_PREFERRED_RNG to generate exactly 256 bits, encoded as 64 lowercase hex characters; there is no fallback. The reference is registry-backed computationally unguessable bearer capability, not a type-level unconstructible value or digital signature.", Evidence: "Tests prove real CNG issuance shape, deterministic test-only entropy, entropy failure with no registry insertion, collision rejection without overwrite, and manually constructed short/well-formed unknown IDs returning Missing."}
+      - {AcceptanceId: AC-4, Description: "A grant binds ProviderProfileId, canonical HTTPS host/port/path, issuance and expiry; lifetime is exactly five minutes on steady_clock. RevokeProfile invalidates all grants for that profile and prevents reissuance in that authority; profile updates require revoking the old authority and constructing a new immutable snapshot; old IDs never rebind.", Evidence: "Injected-clock tests cover before/at/after expiry, revoke and post-revoke issuance rejection, authority replacement, and old-token non-rebinding. In-flight requests already past the guarded Stream validation are not retroactively cancelled."}
+      - {AcceptanceId: AC-5, Description: "Every unknown, expired, revoked, or destination-mismatched grant fails before ED-0146 guarded Stream invokes DoStream or either response sink.", Evidence: "The offline guarded-port fixture asserts Validate ordering/count and zero DoStream/head/chunk callback counters for each denied status; a valid grant validates once before DoStream."}
+      - {AcceptanceId: AC-6, Description: "The registry is safe for concurrent Core requests; grant IDs are never written to logs, events, diagnostics, or persistence.", Evidence: "Deterministic multi-threaded issue/validate/revoke tests produce unique IDs and preserve fail-closed lookup; static review finds no token logging or persistence."}
+      - {AcceptanceId: AC-7, Description: "EndpointGrantAuthority.cpp has at least 80 percent unique executable-line coverage.", Evidence: "CoverageCommand checks fresh gcov JSON v2 source/data_file records, tool versions, unique line-number numerator/denominator, stale-data warnings, and exits nonzero below 80 percent."}
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core
       Coverage:
@@ -1873,15 +1932,97 @@ Tasks:
       TargetedBuild:
         - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
         - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core --target EndpointGrantAuthorityTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core --output-on-failure --no-tests=error -R Core.EndpointGrantAuthority"
-        - "powershell -NoProfile -Command \"$ErrorActionPreference='Stop'; $Build='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core'; $Reports='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core/Reports'; New-Item -ItemType Directory -Force -Path $Reports | Out-Null; $Notes=@(Get-ChildItem -LiteralPath $Build -Recurse -Filter 'EndpointGrantAuthority.cpp.gcno'); if($Notes.Count -ne 1){throw 'Expected one EndpointGrantAuthority.cpp.gcno'}; Push-Location $Reports; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $Notes[0].FullName 'H:/Qbot/EmulativeDialog.ED-0147/Source/Core/EndpointGrantAuthority.cpp'; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE} } finally { Pop-Location }\""
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0147'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147/Core'
+        $ReportRoot = Join-Path $Build 'Reports'
+        $Source = Join-Path $Worktree 'Source/Core/EndpointGrantAuthority.cpp'
+        $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
+        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+        $ExpectedVersion = '16.1.0'
+        $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
+
+        function Normalize-Path([string]$Path, [string]$BaseDirectory) {
+          $Value = $Path.Replace('/', '\')
+          if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
+          return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
+        }
+        function Read-GcovJson([string]$Path) {
+          $InputStream = [System.IO.File]::OpenRead($Path)
+          try {
+            $ZipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+              $Reader = [System.IO.StreamReader]::new($ZipStream)
+              try { $JsonText = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+            } finally { $ZipStream.Dispose() }
+          } finally { $InputStream.Dispose() }
+          return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
+        }
+
+        try {
+          $CompilerText = (& $Gxx --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $CompilerText -notmatch [regex]::Escape($ExpectedVersion)) { throw "Expected GCC $ExpectedVersion; $CompilerText" }
+          $GcovText = (& $Gcov --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $GcovText -notmatch [regex]::Escape($ExpectedVersion) -or $GcovText -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2; $GcovText" }
+
+          $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter 'EndpointGrantAuthority.cpp.gcno')
+          if ($Notes.Count -ne 1) { throw "Expected one EndpointGrantAuthority.cpp.gcno; found $($Notes.Count)" }
+          $Object = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.obj')
+          $Data = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
+          foreach ($Path in @($Object, $Data)) { if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw "Missing coverage input: $Path" } }
+          if ((Get-Item -LiteralPath $Data).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) { throw 'gcda predates gcno; rebuild and rerun CTest' }
+
+          New-Item -ItemType Directory -Force -Path $ReportRoot | Out-Null
+          $RunRoot = Join-Path $ReportRoot ('Run-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $RunRoot | Out-Null
+          Push-Location -LiteralPath $RunRoot
+          try { $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Object $Source 2>&1); $ExitCode = $LASTEXITCODE }
+          finally { Pop-Location }
+          $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
+          if ($ExitCode -ne 0) { throw "gcov failed with exit ${ExitCode}: $OutputText" }
+          if ($OutputText -match $WarningPattern) { throw "gcov reported stale/conflicting coverage data: $OutputText" }
+
+          $JsonFiles = @(Get-ChildItem -LiteralPath $RunRoot -File -Filter '*.gcov.json.gz')
+          if ($JsonFiles.Count -ne 1) { throw "Expected one gcov JSON report; found $($JsonFiles.Count)" }
+          $Json = Read-GcovJson $JsonFiles[0].FullName
+          if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw 'Wrong gcov JSON format/GCC version' }
+          $ExpectedSource = Normalize-Path $Source $Worktree
+          $ExpectedData = Normalize-Path $Source $Worktree
+          if ((Normalize-Path ([string]$Json.data_file) ([string]$Json.current_working_directory)) -ne $ExpectedData) { throw 'gcov data_file does not match EndpointGrantAuthority.cpp' }
+          $Records = @($Json.files | Where-Object { (Normalize-Path ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSource })
+          if ($Records.Count -ne 1) { throw "Expected one EndpointGrantAuthority.cpp files[] record; found $($Records.Count)" }
+
+          $LineCoverage = @{}
+          foreach ($Line in @($Records[0].lines)) {
+            if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw 'Missing line_number/count in gcov JSON' }
+            $Number = [int]$Line.line_number; $Count = [long]$Line.count
+            if ($Number -le 0 -or $Count -lt 0) { throw 'Invalid executable line record' }
+            if (-not $LineCoverage.ContainsKey($Number)) { $LineCoverage[$Number] = $false }
+            if ($Count -gt 0) { $LineCoverage[$Number] = $true }
+          }
+          $Total = $LineCoverage.Count
+          if ($Total -eq 0) { throw 'Executable-line denominator is empty' }
+          $Covered = 0
+          foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
+          $Percent = 100.0 * $Covered / $Total
+          $PercentText = $Percent.ToString('F2', [System.Globalization.CultureInfo]::InvariantCulture)
+          Write-Output "EndpointGrantAuthority.cpp COVERED=$Covered EXECUTABLE=$Total PERCENT=$PercentText GCC=$($Json.gcc_version) GCOV=$ExpectedVersion JSON=2 REPORT=$($JsonFiles[0].FullName)"
+          if (($Covered * 100) -lt ($Total * 80)) { throw "EndpointGrantAuthority.cpp coverage $PercentText% is below 80%" }
+        } catch {
+          [Console]::Error.WriteLine($_.Exception.Message)
+          exit 1
+        }
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen 6-path WriteSet."
-        - "Core ModuleMap DependsOn includes NetworkPlatform and references CoreEndpointGrantContract V1 and HttpTransportContract V1."
-        - "IssueForProfile has no overload taking arbitrary HttpsDestination or URL from model/provider input."
+        - "Architecture/Modules/HostCoreAgent.yaml Core DependsOn includes NetworkPlatform; the Root ModuleMap and contracts agree."
+        - "IssueForProfile has no overload taking arbitrary HttpsDestination or URL from model/provider input; CSPRNG failure/collision cannot insert or replace grants."
         - "No real network call, credential, Source/AppHost, provider source, root CMake, or Channel source is changed."
-        - "Coverage data comes only from the fresh ED-0147 build and has no libgcov checksum/overwrite warnings."
+        - "CoverageCommand must pass the ED-0147 unique-source >=80% gate; data comes only from fresh build and has no libgcov checksum/overwrite warnings."
       ContractFixtures: ["registered provider profiles, invalid endpoints, unknown grants, exact destination, expiry, revocation, and guarded Stream ordering"]
       LiveSideEffects: Forbidden
       NotRunReason: "All endpoint and guarded Stream behavior uses in-memory Core registry and offline fake transport."
@@ -1894,7 +2035,7 @@ Tasks:
     OpenIntegrationGap: "No production Provider/WinHTTP composition call site exists on main. ED-0147 does not close this gap; do not claim real Provider requests use Core grants until a separately reviewed composition task passes."
 
   - TaskId: ED-0148
-    TaskRevision: 1
+    TaskRevision: 2
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
@@ -1916,7 +2057,15 @@ Tasks:
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Implementation may start after this exact TaskSpec is approved and merged to main; ED-0148 is independent of the HTTP P3 EntryGate and blocks ED-0144 durable Memory activation until it passes."
+    AssignmentNote: "Implementation may start before the HTTP EntryGate only after this exact R2 TaskSpec and CR-ED-0144-R3-CONSENT-001 receive Owner/Reviewer approval and merge to main. The scoped exception never passes P3 EntryGate and does not unblock ED-0114, ED-0144, or ED-0145; durable Memory remains blocked until ED-0148 passes."
+    PreviousRevision1:
+      TaskRevision: 1
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0148-R1-O1]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0148-R1-I1, ED0148-R1-I2]
     Goal: "让 grant、request 和 record 的 optional ProposalId 必须完全相等，避免未绑定具体提议的 consent 写入、召回或恢复提议绑定记忆。"
     OutOfScope: ["修改 Core consent 签发策略", "修改 MemoryContract V1 或 public API", "修改 SQLite schema/adapter", "Provider、Channel、真实网络或微信行为"]
     DependsOn: [ED-0113]
@@ -1975,11 +2124,112 @@ Tasks:
         - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0148/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
         - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory --target ConversationMemoryTests --parallel 4"
         - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory --output-on-failure --no-tests=error -R ConversationMemoryTests"
-        - "powershell -NoProfile -Command \"$ErrorActionPreference='Stop'; $Build='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory'; $Reports='H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory/Reports'; New-Item -ItemType Directory -Force -Path $Reports | Out-Null; $Notes=@(Get-ChildItem -LiteralPath $Build -Recurse -Filter 'ConversationMemory.cpp.gcno'); if($Notes.Count -ne 1){throw 'Expected one ConversationMemory.cpp.gcno'}; Push-Location $Reports; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $Notes[0].FullName 'H:/Qbot/EmulativeDialog.ED-0148/Source/Memory/ConversationMemory.cpp'; if($LASTEXITCODE -ne 0){exit $LASTEXITCODE} } finally { Pop-Location }\""
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0148'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148/Memory'
+        $Reports = Join-Path $Build 'Reports'
+        $Source = Join-Path $Worktree 'Source/Memory/ConversationMemory.cpp'
+        $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
+        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+        $ExpectedVersion = '16.1.0'
+        $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
+
+        function Normalize-Path([string]$Path, [string]$BaseDirectory) {
+          $Value = $Path.Replace('/', '\')
+          if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
+          return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
+        }
+        function Read-GcovJson([string]$Path) {
+          $InputStream = [System.IO.File]::OpenRead($Path)
+          try {
+            $ZipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+              $Reader = [System.IO.StreamReader]::new($ZipStream)
+              try { $JsonText = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+            } finally { $ZipStream.Dispose() }
+          } finally { $InputStream.Dispose() }
+          return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
+        }
+
+        try {
+          if (-not (Test-Path -LiteralPath $Build -PathType Container)) { throw "Missing task build directory: $Build" }
+          $Cache = Join-Path $Build 'CMakeCache.txt'
+          if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
+          $CacheText = [System.IO.File]::ReadAllText($Cache)
+          if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogConversationMemoryContract$') { throw 'Wrong CMake project in task build directory' }
+          if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0148/Tests/Contract/Memory$') { throw 'CMake source directory does not match ED-0148' }
+          if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:FILEPATH=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
+          if ($CacheText -notmatch '(?m)^CMAKE_CXX_FLAGS:STRING=.*--coverage') { throw 'CMAKE_CXX_FLAGS is missing --coverage' }
+          if ($CacheText -notmatch '(?m)^CMAKE_EXE_LINKER_FLAGS:STRING=.*--coverage') { throw 'CMAKE_EXE_LINKER_FLAGS is missing --coverage' }
+
+          $CompilerText = (& $Gxx --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $CompilerText -notmatch [regex]::Escape($ExpectedVersion)) { throw "Expected GCC $ExpectedVersion; $CompilerText" }
+          $GcovText = (& $Gcov --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $GcovText -notmatch [regex]::Escape($ExpectedVersion) -or $GcovText -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2; $GcovText" }
+
+          $OldJson = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter '*.gcov.json.gz')
+          if ($OldJson.Count -ne 0) { throw 'Task build must be fresh; gcov JSON already exists' }
+          $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter 'ConversationMemory.cpp.gcno')
+          if ($Notes.Count -ne 1) { throw "Expected one ConversationMemory.cpp.gcno; found $($Notes.Count)" }
+          $Object = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.obj')
+          $Data = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
+          foreach ($Path in @($Object, $Data)) { if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw "Missing coverage input: $Path" } }
+          if ((Get-Item -LiteralPath $Data).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) { throw 'gcda predates gcno; rebuild and rerun CTest' }
+          $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+          if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw 'Missing CTest LastTest.log' }
+          $TestLogText = [System.IO.File]::ReadAllText($TestLog)
+          if ($TestLogText -notmatch 'ConversationMemoryTests' -or $TestLogText -notmatch '(?im)Test Passed\.') { throw 'LastTest.log does not prove ConversationMemoryTests passed' }
+          if ($TestLogText -match $WarningPattern) { throw 'CTest log contains a libgcov checksum/overwrite warning' }
+          if ((Get-Item -LiteralPath $TestLog).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Data).LastWriteTimeUtc) { throw 'CTest log predates gcda execution data' }
+
+          New-Item -ItemType Directory -Force -Path $Reports | Out-Null
+          $RunRoot = Join-Path $Reports ('Run-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $RunRoot | Out-Null
+          Push-Location -LiteralPath $RunRoot
+          try { $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Object $Source 2>&1); $ExitCode = $LASTEXITCODE }
+          finally { Pop-Location }
+          $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
+          if ($ExitCode -ne 0) { throw "gcov failed with exit ${ExitCode}: $OutputText" }
+          if ($OutputText -match $WarningPattern) { throw "gcov reported stale/conflicting data: $OutputText" }
+
+          $JsonFiles = @(Get-ChildItem -LiteralPath $RunRoot -File -Filter '*.gcov.json.gz')
+          if ($JsonFiles.Count -ne 1) { throw "Expected one gcov JSON report; found $($JsonFiles.Count)" }
+          $Json = Read-GcovJson $JsonFiles[0].FullName
+          if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw 'Wrong gcov JSON format/GCC version' }
+          $ExpectedSource = Normalize-Path $Source $Worktree
+          $ActualDataFile = Normalize-Path ([string]$Json.data_file) ([string]$Json.current_working_directory)
+          if ($ActualDataFile -ne $ExpectedSource) { throw 'gcov data_file does not match ConversationMemory.cpp' }
+          $SourceRecords = @($Json.files | Where-Object { (Normalize-Path ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSource })
+          if ($SourceRecords.Count -ne 1) { throw "Expected one ConversationMemory.cpp files[] record; found $($SourceRecords.Count)" }
+
+          $LineCoverage = @{}
+          foreach ($Line in @($SourceRecords[0].lines)) {
+            if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw 'Missing line_number/count in gcov JSON' }
+            $Number = [int]$Line.line_number; $Count = [long]$Line.count
+            if ($Number -le 0 -or $Count -lt 0) { throw 'Invalid executable line record' }
+            if (-not $LineCoverage.ContainsKey($Number)) { $LineCoverage[$Number] = $false }
+            if ($Count -gt 0) { $LineCoverage[$Number] = $true }
+          }
+          $Total = $LineCoverage.Count
+          if ($Total -eq 0) { throw 'Executable-line denominator is empty' }
+          $Covered = 0
+          foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
+          $Percent = 100.0 * $Covered / $Total
+          $PercentText = $Percent.ToString('F2', [System.Globalization.CultureInfo]::InvariantCulture)
+          Write-Output "ConversationMemory.cpp COVERED=$Covered EXECUTABLE=$Total PERCENT=$PercentText GCC=$($Json.gcc_version) GCOV=$ExpectedVersion JSON=2 REPORT=$($JsonFiles[0].FullName)"
+          if (($Covered * 100) -lt ($Total * 80)) { throw "ConversationMemory.cpp coverage $PercentText% is below 80%" }
+        } catch {
+          [Console]::Error.WriteLine($_.Exception.Message)
+          exit 1
+        }
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen 2-path WriteSet."
         - "Every Write, Recall, Group shared-reader recall, and RestoreBackup path uses exact ProposalId matching."
+        - "CoverageCommand is executed after CTest, reports exact gcov JSON v2 data_file/source matches and unique-line numerator/denominator, and exits nonzero below 80 percent."
         - "No Core policy, SQLite schema/adapter, root CMake, Provider, Channel, or live external side effect is changed."
       ContractFixtures: ["unbound grant vs bound request/record, exact bound match, mismatched ID, group shared reader, and backup restore"]
       LiveSideEffects: Forbidden

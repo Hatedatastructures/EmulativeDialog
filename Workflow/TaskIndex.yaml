@@ -153,8 +153,8 @@ PhasePlans:
     LoadWhen: AgentWorkflowControllerAndCoreContractsVerified
   - PhaseId: P3
     Path: Workflow/Plans/P3.yaml
-    State: RegisteredPendingHttpTransportAndCoreEndpointGrantContractFreeze
-    LoadWhen: AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerifiedAndHttpTransportAndCoreEndpointGrantContractsFrozen
+    State: RegisteredEntryGatePendingWithScopedPreGateTaskReview
+    LoadWhen: AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerified
   - PhaseId: P4
     Path: ""
     State: NotExpanded
