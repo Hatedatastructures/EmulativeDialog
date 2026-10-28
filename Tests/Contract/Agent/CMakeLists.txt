@@ -100,6 +100,17 @@ target_compile_options(AgentEventProjectorTests PRIVATE
 
 add_test(NAME Agent.EventProjector COMMAND AgentEventProjectorTests)
 
+add_executable(ToolCallRoundTripTests
+    "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
+    "${PROJECT_ROOT}/Source/Agent/ToolCallCoordinator.cpp"
+    "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/ToolCallRoundTripTests.cpp")
+target_include_directories(ToolCallRoundTripTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(ToolCallRoundTripTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_test(NAME Agent.ToolCallRoundTrip COMMAND ToolCallRoundTripTests)
+
 add_custom_target(AgentRuntimeCoverageReport
     COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
             -o "$<TARGET_OBJECTS:AgentRuntimeObject>" "${AGENT_RUNTIME_SOURCE}"
