@@ -34,7 +34,7 @@ ChangeRequests:
     TargetTaskId: ED-0120
     TargetTaskRevision: 2
     ProposedTaskId: ED-0146
-    ProposedTaskRevision: 3
+    ProposedTaskRevision: 4
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker01_ed0105_owner
@@ -43,13 +43,16 @@ ChangeRequests:
     FindingId: ED-0120-R2-F001
     Scope: >-
       Keep the existing HttpTransportContract V1 proxy, TLS, timeout, redirect, compression,
-      cancellation, and unknown-outcome semantics. ED-0146/R2 makes endpoint-grant validation
+      cancellation, and unknown-outcome semantics. ED-0146/R4 makes endpoint-grant validation
       mandatory at the public HttpTransportPort boundary and adapts WinHTTP plus offline provider
       fakes to that non-bypassable entry. It does not claim that grant IDs are opaque or that Core
       owns their issuer; those requirements move to ED-0147. Correct the prior .h WriteSet reference
       to the actual .hpp file and freeze separate validation commands for each standalone
-      Network/Provider CMake project. R3 only adds a justified ReadSet exception and an executable
-      gcov JSON v2 coverage gate with tool-version evidence; Goal, dependencies, and WriteSet stay fixed.
+      Network/Provider CMake project. R3 adds the justified ReadSet exception and executable gcov JSON v2
+      coverage gate. R4 adds a non-destructive fresh-build preflight, passes the exact `.gcno` path and
+      absolute translation-unit paths, and verifies the pinned GCC 16.1.0 `data_file` behavior against
+      the translation unit while checking the paired `.gcda` freshness separately. Goal, dependencies,
+      and WriteSet stay fixed.
     Reason: >-
       Worker03 post-merge fixed-head review found that ScriptedTransport can be constructed with a
       null resolver, skip Validate, and still return CompletedTransport. Worker01 and Worker03
@@ -70,6 +73,12 @@ ChangeRequests:
     Revision2IndependentReviewDecision: RequestChanges
     Revision2IndependentReviewHeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
     Revision2IndependentReviewFindingIds: [ED0146-R2-I1, ED0146-R2-I2]
+    Revision3OwnerReviewDecision: RequestChanges
+    Revision3OwnerReviewHeadCommit: a8d6f64ab22c243542496080e27ff1859058add6
+    Revision3OwnerReviewFindingIds: [ED0146-R3-O1]
+    Revision3IndependentReviewDecision: RequestChanges
+    Revision3IndependentReviewHeadCommit: a8d6f64ab22c243542496080e27ff1859058add6
+    Revision3IndependentReviewFindingIds: [ED0146-R3-I1, ED0146-R3-I2]
     SplitFindingFollowUpTaskId: ED-0147
     PreserveExistingContractSemantics: true
     RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
@@ -820,7 +829,7 @@ ExitGate:
   ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
   EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
   P3EntryGateState: Pending
-  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R2 Port enforcement, and ED-0147/R1 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
+  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R4 Port enforcement, and ED-0147/R3 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
 
 Tasks:
   - TaskId: ED-0109
@@ -3149,7 +3158,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0146
-    TaskRevision: 3
+    TaskRevision: 4
     EpicId: EP-06
     Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
     TaskKind: IntegrationTask
@@ -3173,12 +3182,21 @@ Tasks:
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until CR-ED-0120-003 and this exact R3 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
+    AssignmentNote: "Not assignable until CR-ED-0120-003 and this exact R4 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
     PreviousRevision2:
       TaskRevision: 2
       Disposition: SupersededBeforeImplementation
       HeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
       Reason: "Fixed-head reviews found the 33-file ReadSet exception was not justified and the gcov commands did not calculate or enforce the unique-line 80% threshold or capture the gcov executable version."
+    PreviousRevision3:
+      TaskRevision: 3
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: a8d6f64ab22c243542496080e27ff1859058add6
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0146-R3-O1]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0146-R3-I1, ED0146-R3-I2]
+      Reason: "Owner flagged data_file semantics; the independent reviewer required non-destructive fresh-directory proof and absolute source paths for gcov. R4 records the GCC 16.1.0 output semantics and closes the reproducibility findings."
     Goal: "让所有 HTTPS TransportPort 实现都必须经过同一 resolver 验证入口；无效 grant 在 DoStream、回调、DNS/connect 或底层 transport 操作前 fail closed，并适配三种已合并 Provider 的离线测试消费者。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 行为"
@@ -3280,38 +3298,53 @@ Tasks:
       - {AcceptanceId: AC-4, Description: "Existing system/direct proxy, Proxy-Authorization rejection, Host/Content-Length framing, redirect denial, no-compression, timeout, cancellation, terminal, and unknown-outcome semantics remain unchanged.", Evidence: "Existing fixed fixtures remain green; added identity/non-identity compression cases stay in the platform offline suite."}
       - {AcceptanceId: AC-5, Description: "HttpTransportPort.hpp and WinHttpTransport.cpp each retain at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 reports for the header (from HttpTransportPortTests.cpp) and WinHttpTransport.cpp record GCC/gcov versions and exact unique executable-line numerator/denominator; no stale gcda or checksum warnings."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4
       Coverage:
         Required: true
         ProductionSources: [Source/Platform/Network/HttpTransportPort.hpp, Source/Platform/Network/WinHttpTransport.cpp]
         HeaderCoverageTranslationUnit: Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
+      CoverageDataFileExpectation: "For pinned GCC/gcov 16.1.0, the root data_file field is the canonical translation-unit path emitted for this invocation; the local JSON v2 diagnostics below confirm this for both exact-.gcno and object-directory inputs. Physical GCDA pairing and freshness are checked independently against the exact .gcno and CTest log."
+      CoverageToolchainEvidenceRefs:
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByGcno/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
       RequiredBuildTargets: [HttpTransportPortTests, WinHttpTransportTests, OpenAIResponsesProviderTests, ChatCompletionsProviderTests, AnthropicMessagesProviderTests]
       RequiredCTestTests: [Platform.Network.HttpTransportPort, Platform.Network.WinHttpTransport, Provider.OpenAIResponses, Provider.ChatCompletions, Provider.AnthropicMessages]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $BuildDirectories = @(
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Network',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIResponses',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIChatCompletions',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/AnthropicMessages'
+        )
+        foreach ($Build in $BuildDirectories) {
+          if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        }
+        Write-Output 'FRESH_BUILD_PREFLIGHT_OK=4'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network --target HttpTransportPortTests WinHttpTransportTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network -R Platform.Network.HttpTransportPort --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network -R Platform.Network.WinHttpTransport --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIResponses -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIResponses -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogOpenAIResponsesContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIResponses --target OpenAIResponsesProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIResponses -R Provider.OpenAIResponses --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIChatCompletions -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIChatCompletions --target ChatCompletionsProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/OpenAIChatCompletions -R Provider.ChatCompletions --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/AnthropicMessages -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/AnthropicMessages -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogAnthropicMessagesProviderContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/AnthropicMessages --target AnthropicMessagesProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/AnthropicMessages -R Provider.AnthropicMessages --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Network -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Network --target HttpTransportPortTests WinHttpTransportTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Network -R '^Platform\\.Network\\.(HttpTransportPort|WinHttpTransport)$' --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIResponses -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIResponses -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogOpenAIResponsesContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIResponses --target OpenAIResponsesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIResponses -R Provider.OpenAIResponses --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIChatCompletions -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIChatCompletions --target ChatCompletionsProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/OpenAIChatCompletions -R Provider.ChatCompletions --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/AnthropicMessages -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/AnthropicMessages -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogAnthropicMessagesProviderContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/AnthropicMessages --target AnthropicMessagesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/AnthropicMessages -R Provider.AnthropicMessages --output-on-failure --no-tests=error"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0146'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Network'
-        $ReportRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146/Reports'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Network'
+        $ReportRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R4/Reports'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
         $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
         $ExpectedVersion = '16.1.0'
@@ -3335,19 +3368,34 @@ Tasks:
           return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
         }
 
-        function Measure-Coverage([string]$Label, [string]$GcnoName, [string]$ExpectedDataFile, [string]$GcovInputPath, [string]$CoverageSourcePath, [string]$RunDirectory) {
+        function Measure-Coverage([string]$Label, [string]$GcnoName, [string]$ExpectedTranslationUnit, [string]$CoverageSourcePath, [string]$TestName, [string]$RunDirectory) {
           $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter $GcnoName)
           if ($Notes.Count -ne 1) { throw "Expected one $GcnoName; found $($Notes.Count)" }
-          $ObjectPath = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.obj')
           $DataPath = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
-          foreach ($RequiredPath in @($ObjectPath, $DataPath)) {
+          foreach ($RequiredPath in @($DataPath)) {
             if (-not (Test-Path -LiteralPath $RequiredPath -PathType Leaf)) { throw "Missing gcov input: $RequiredPath" }
           }
+          if ((Get-Item -LiteralPath $DataPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) {
+            throw "gcda predates its paired gcno for $Label"
+          }
+
+          $TestLogPath = Join-Path $Build 'Testing/Temporary/LastTest.log'
+          if (-not (Test-Path -LiteralPath $TestLogPath -PathType Leaf)) { throw "Missing CTest log for $Label" }
+          $TestLogInfo = Get-Item -LiteralPath $TestLogPath
+          $TestLogText = [System.IO.File]::ReadAllText($TestLogPath)
+          if ($TestLogText -notmatch [regex]::Escape($TestName) -or $TestLogText -notmatch '(?im)Test Passed\.') {
+            throw "CTest log does not prove $TestName passed"
+          }
+          if ($TestLogInfo.LastWriteTimeUtc -lt (Get-Item -LiteralPath $DataPath).LastWriteTimeUtc) {
+            throw "CTest log predates the coverage data for $Label"
+          }
+          if ($TestLogText -match $WarningPattern) { throw "CTest log has stale/conflicting gcov data for $Label" }
 
           New-Item -ItemType Directory -Path $RunDirectory | Out-Null
           Push-Location -LiteralPath $RunDirectory
           try {
-            $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $ObjectPath $GcovInputPath 2>&1)
+            $TranslationUnitPath = Join-Path $Worktree $ExpectedTranslationUnit
+            $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Notes[0].FullName $TranslationUnitPath 2>&1)
             $ExitCode = $LASTEXITCODE
           } finally { Pop-Location }
           $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
@@ -3359,9 +3407,11 @@ Tasks:
           $Json = Read-CoverageJson $JsonFiles[0].FullName
           if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw "Wrong gcov JSON version for $Label" }
 
-          $ExpectedDataPath = Normalize-CoveragePath $ExpectedDataFile $Worktree
-          $ActualDataPath = Normalize-CoveragePath ([string]$Json.data_file) $Build
-          if ($ExpectedDataPath -ne $ActualDataPath) { throw "gcov data_file mismatch for ${Label}: $ActualDataPath" }
+          # GCC/gcov 16.1.0 emits this root field as the canonical translation-unit path for this invocation.
+          # Physical GCDA pairing/freshness is verified independently from the exact .gcno and its paired .gcda.
+          $ExpectedTranslationUnitPath = Normalize-CoveragePath (Join-Path $Worktree $ExpectedTranslationUnit) $Worktree
+          $ActualDataPath = Normalize-CoveragePath ([string]$Json.data_file) ([string]$Json.current_working_directory)
+          if ($ExpectedTranslationUnitPath -ne $ActualDataPath) { throw "gcov data_file translation-unit mismatch for ${Label}: $ActualDataPath" }
           $ExpectedSourcePath = Normalize-CoveragePath $CoverageSourcePath $Worktree
           $Records = @($Json.files | Where-Object { (Normalize-CoveragePath ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSourcePath })
           if ($Records.Count -ne 1) { throw "Expected one source record for $Label; found $($Records.Count)" }
@@ -3387,15 +3437,16 @@ Tasks:
 
         try {
           $CompilerVersion = (& $Gxx --version 2>&1 | Out-String)
-          if ($LASTEXITCODE -ne 0 -or $CompilerVersion -notmatch [regex]::Escape($ExpectedVersion)) { throw "Expected GCC ${ExpectedVersion}: $CompilerVersion" }
+          $CompilerVersionPattern = "(?<![0-9.])$([regex]::Escape($ExpectedVersion))(?![0-9.])"
+          if ($LASTEXITCODE -ne 0 -or $CompilerVersion -notmatch $CompilerVersionPattern) { throw "Expected GCC ${ExpectedVersion}: $CompilerVersion" }
           $GcovVersion = (& $Gcov --version 2>&1 | Out-String)
-          if ($LASTEXITCODE -ne 0 -or $GcovVersion -notmatch [regex]::Escape($ExpectedVersion) -or $GcovVersion -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2: $GcovVersion" }
+          if ($LASTEXITCODE -ne 0 -or $GcovVersion -notmatch $CompilerVersionPattern -or $GcovVersion -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2: $GcovVersion" }
 
           New-Item -ItemType Directory -Force -Path $ReportRoot | Out-Null
           $RunRoot = Join-Path $ReportRoot ('Run-' + [guid]::NewGuid().ToString('N'))
           New-Item -ItemType Directory -Path $RunRoot | Out-Null
-          Measure-Coverage 'HttpTransportPort.hpp' 'HttpTransportPortTests.cpp.gcno' 'Tests/Contract/Platform/Network/HttpTransportPortTests.cpp' 'Tests/Contract/Platform/Network/HttpTransportPortTests.cpp' 'Source/Platform/Network/HttpTransportPort.hpp' (Join-Path $RunRoot 'Port')
-          Measure-Coverage 'WinHttpTransport.cpp' 'WinHttpTransport.cpp.gcno' 'Source/Platform/Network/WinHttpTransport.cpp' 'Source/Platform/Network/WinHttpTransport.cpp' 'Source/Platform/Network/WinHttpTransport.cpp' (Join-Path $RunRoot 'WinHttp')
+          Measure-Coverage 'HttpTransportPort.hpp' 'HttpTransportPortTests.cpp.gcno' 'Tests/Contract/Platform/Network/HttpTransportPortTests.cpp' 'Source/Platform/Network/HttpTransportPort.hpp' 'Platform.Network.HttpTransportPort' (Join-Path $RunRoot 'Port')
+          Measure-Coverage 'WinHttpTransport.cpp' 'WinHttpTransport.cpp.gcno' 'Source/Platform/Network/WinHttpTransport.cpp' 'Source/Platform/Network/WinHttpTransport.cpp' 'Platform.Network.WinHttpTransport' (Join-Path $RunRoot 'WinHttp')
           Write-Output "GXX_VERSION=$ExpectedVersion GCOV_VERSION=$ExpectedVersion GCOV_JSON_FORMAT=2 REPORT_ROOT=$RunRoot"
         } catch {
           [Console]::Error.WriteLine($_.Exception.Message)
@@ -3408,8 +3459,9 @@ Tasks:
         - "HttpTransportPort.hpp requires a resolver reference and no derived class overrides the public non-virtual Stream entry."
         - "Every non-Valid endpoint grant is denied before DoStream, callbacks, DNS, or connect."
         - "Each independent build registers exactly its named CTest test; all five RequiredCTestTests are present across the four build directories."
-        - "CoverageCommand records g++/gcov versions, checks gcov JSON format_version/gcc_version/data_file, counts unique executable source lines, and exits nonzero if either source is below 80 percent."
-        - "Coverage data comes only from the fresh ED-0146 build; no libgcov checksum/overwrite warnings."
+        - "FreshBuildPreflight fails on any existing per-target build directory; no existing build or profile file is deleted."
+        - "CoverageCommand passes the exact .gcno path and absolute translation-unit path, requires the matching CTest log newer than paired .gcda, checks GCC 16.1.0 gcov JSON data_file against its emitted translation unit and files[].file against the production source, and counts unique executable lines."
+        - "CoverageCommand exits nonzero if either source is below 80 percent; no libgcov checksum/overwrite warnings are accepted."
       LiveSideEffects: Forbidden
       NotRunReason: "The task uses scripted resolver and offline transport/provider fixtures only."
     RiskLevel: High
