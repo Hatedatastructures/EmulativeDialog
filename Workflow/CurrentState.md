@@ -131,3 +131,9 @@
 - Worker01 的固定头范围核对指出，`Workflow/TaskIndex.yaml` 虽由 Coordinator 单一 owner 维护，仍需获批 ChangeRequest 才能纳入 PR。已在 P3 计划中新增 `CR-P3-PREGATE-ROUTE-001`：仅授权该文件 P3 `State` 与 `LoadWhen` 两字段，明确不扩展 ED-0146/R6 的十路径实现 WriteSet，也不授权产品实现。
 - Coordinator 已接受该路由 CR；独立 Reviewer 为 Worker01，需在最终固定 Head 上复核。路由只允许在 P1 与首片 P2 门通过后读取并审查 P3 计划；P3 EntryGate 仍为 Pending，后续任务仍须满足自己的 CR、TaskSpec、依赖和合入条件。
 - 当前 PR 候选仍无产品 C++ 源码。原有未跟踪 `$deps/` 保持不动；正式 PR 前会在最终固定 Head 重做 TaskSpec/路由范围审查及账本验证。
+
+## 2026-10-29 PR #26 固定头审查与协调签署
+
+- GitHub Draft PR #26：Base `461735e50657bdc8ace070b46db3682cfb03460f`，TaskSpec/路由审查 Head `0f1fc9ffa78dda61b36c28e66fadad43aebc8997`。六个稳定槽对这一固定头完成对应 Owner/Independent Reviewer 审查；ED-0112/R5、ED-0146/R6、ED-0147/R6、ED-0148/R4 与 CR-P3-PREGATE-ROUTE-001 均无阻断 finding。协调者已接受四个 TaskSpec CR 与单路径 TaskIndex 路由 CR，并在 P2/P3 计划及事件分片登记结果。
+- 任务在 PR 合入前仍保持 `Proposed`，TaskSpec review status 为 `ApprovedAwaitingMainMerge`；ED-0148 的 pre-gate exception 也已同步为 `ApprovedAwaitingMainMerge`。没有创建产品实现分支或写入 C++。PR 合入后再由 Coordinator 记录 TaskState/assignment，ED-0146 作为 P3 修复首个实际实现任务。P3 EntryGate 仍 Pending，ED-0147 继续依赖 ED-0146。
+- 本次是治理状态更新；需在 PR #26 最终 Head 上只读确认新增审批元数据与已审结论一致。GitHub 当前远端分支仍为 4/4；无在线 status/check runs 配置。

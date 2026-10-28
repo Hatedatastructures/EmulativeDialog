@@ -18,7 +18,7 @@ EntryGate:
     - TaskId: ED-0148
       TaskRevision: 4
       ChangeRequestId: CR-ED-0144-R3-CONSENT-001
-      State: ProposedAwaitingOwnerAndIndependentReviewer
+      State: ApprovedAwaitingMainMerge
       Scope: "Only exact ProposalId consent matching in Memory may proceed after its own TaskSpec/CR approval and merge; this exception does not pass the P3 EntryGate."
       DoesNotSatisfyEntryGate: true
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
@@ -216,7 +216,7 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker04_ed0114_review
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     FindingId: ED-0120-R2-F001
     Scope: >-
       Preserve ED-0147's Core endpoint authority goal, six-path WriteSet, dependency ordering, and explicit
@@ -269,12 +269,15 @@ ChangeRequests:
     Revision5IndependentReviewDecision: RequestChanges
     Revision5IndependentReviewHeadCommit: e36deb172e683d175e5d7c984d4a4da77971a25f
     Revision5IndependentReviewFindingIds: [ED0147-R5-F001]
-    Revision6OwnerReviewDecision: RequestChanges
-    Revision6OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
-    Revision6OwnerReviewFindingIds: [ED0147-R6-O001]
-    Revision6IndependentReviewDecision: RequestChanges
-    Revision6IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
-    Revision6IndependentReviewFindingIds: [ED0147-R6-F001]
+    Revision6OwnerReviewDecision: Approve
+    Revision6OwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    Revision6OwnerReviewFindingIds: []
+    Revision6IndependentReviewDecision: Approve
+    Revision6IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    Revision6IndependentReviewFindingIds: []
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
 
   - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
     TargetTaskId: ED-0144
@@ -285,7 +288,7 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker05_ed0144_memory
     IndependentReviewerAgentId: /root/worker06_ed0105_review
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     FindingId: ED-0144-R3-CONSENT-F001
     Scope: >-
       Correct Memory::ConversationMemory::ConsentMatches so a grant's optional ProposalId exactly equals the
@@ -326,9 +329,12 @@ ChangeRequests:
     Revision3IndependentReviewHeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
     Revision3IndependentReviewFindingIds: [ED0148-R3-I1]
     Revision4OwnerReviewDecision: Approve
-    Revision4OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    Revision4OwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     Revision4IndependentReviewDecision: Approve
-    Revision4IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    Revision4IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     PreGateExceptionRequiresOwnerReviewerApproval: true
     EvidenceRefs:
       - H:/Qbot/EmulativeDialog/Source/Memory/ConversationMemory.cpp#ConsentMatches
@@ -365,7 +371,9 @@ ChangeRequests:
       is changed by this routing metadata.
     IndependentReviewRequired: true
     IndependentReviewerAgentId: /root/worker01_ed0105_owner
-    IndependentReviewDecision: Pending
+    IndependentReviewDecision: Approve
+    IndependentReviewBaseCommit: 461735e50657bdc8ace070b46db3682cfb03460f
+    IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     RequiresP3EntryGateToRemainPending: true
     DoesNotAuthorizeImplementationByItself: true
 
@@ -1932,10 +1940,13 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/worker04_ed0114_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
@@ -2216,10 +2227,13 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     BaselineCommit: ""
     Branch: ""
     Worktree: ""

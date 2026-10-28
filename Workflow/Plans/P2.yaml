@@ -113,7 +113,7 @@ ChangeRequests:
     OwnerAgentId: /root/worker03_ed0114_validation
     IndependentReviewerAgentId: /root/worker01_ed0105_owner
     ReviewerIndependence: Required
-    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    Decision: Accepted
     FindingsAddressed: [ED0146-R5-AUTH-01, ED0146-R5-READSET-01]
     Scope: >-
       Preserve ED-0146's goal, dependencies, contract boundary, acceptance criteria, and exact ten-path WriteSet.
@@ -128,13 +128,15 @@ ChangeRequests:
       public-header paths that the directory-level ForbiddenSet forbids, so the required context cannot be loaded.
       R6 corrects slot authorization and path-level context policy without changing product behavior or WriteSet.
     PreserveGoalDependenciesContractsAcceptanceWriteSet: true
-    OwnerReviewDecision: RequestChanges
-    OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
-    OwnerReviewFindingIds: [ED0146-R6-AUTH-01, ED0146-R6-AUTH-02]
-    IndependentReviewDecision: RequestChanges
-    IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
-    IndependentReviewFindingIds: [ED0146-R6-AUTH-01]
-    CoordinatorDecision: Pending
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    OwnerReviewFindingIds: []
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    IndependentReviewFindingIds: []
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
   - ChangeRequestId: CR-ED-0018-002
     TargetTaskId: ED-0018
     TargetTaskRevision: 2
@@ -978,7 +980,7 @@ ChangeRequests:
     ProposedTaskRevision: 5
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    Decision: Accepted
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
@@ -1014,10 +1016,12 @@ ChangeRequests:
     PreserveNoReplaySemantics: true
     NoProductSourceWriteAuthorizedBeforeApprovalAndMainMerge: true
     OwnerReviewDecision: Approve
-    OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    OwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     IndependentReviewDecision: Approve
-    IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
-    CoordinatorDecision: Pending
+    IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     EvidenceRefs:
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
@@ -2309,6 +2313,15 @@ Tasks:
     TaskKind: IntegrationTask
     State: Proposed
     TaskSpecChangeRequestId: CR-ED-0112-006
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
+    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerAgentId: /root/worker06_ed0105_review
+    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
@@ -3545,10 +3558,13 @@ Tasks:
     ReviewerSlotId: Worker01
     ReviewerAgentId: /root/worker01_ed0105_owner
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     BaselineCommit: ""
     Branch: ""
     Worktree: ""
