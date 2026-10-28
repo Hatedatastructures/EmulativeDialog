@@ -67,6 +67,39 @@ if(BUILD_TESTING)
     NAME BuildProbe.BoostJsonCxx20
     COMMAND $<TARGET_FILE:BoostJsonProbe>
   )
+  set(EmulativeDialogBoostJsonMissingSubmoduleSource
+      "${CMAKE_CURRENT_BINARY_DIR}/BoostJsonMissingSubmoduleFixture")
+  foreach(Submodule IN LISTS EmulativeDialogBoostJsonRequiredSubmodules)
+    if(Submodule STREQUAL "libs/json")
+      file(MAKE_DIRECTORY
+           "${EmulativeDialogBoostJsonMissingSubmoduleSource}/libs/json")
+    else()
+      file(MAKE_DIRECTORY
+           "${EmulativeDialogBoostJsonMissingSubmoduleSource}/${Submodule}/include")
+    endif()
+  endforeach()
+  set(EmulativeDialogBoostJsonMissingSubmoduleTestScript
+      "${CMAKE_CURRENT_BINARY_DIR}/VerifyMissingBoostJsonSubmodule.cmake")
+  file(WRITE "${EmulativeDialogBoostJsonMissingSubmoduleTestScript}" "
+execute_process(
+  COMMAND \"${CMAKE_COMMAND}\"
+          \"-DEmulativeDialogBoostJsonVerifySourceDir=${EmulativeDialogBoostJsonMissingSubmoduleSource}\"
+          -P \"${EmulativeDialogBoostJsonVerifyScript}\"
+  RESULT_VARIABLE VerifyResult
+  OUTPUT_VARIABLE VerifyOutput
+  ERROR_VARIABLE VerifyError)
+if(VerifyResult EQUAL 0)
+  message(FATAL_ERROR \"Boost.JSON verification accepted an empty JSON gitlink\")
+endif()
+if(NOT VerifyError MATCHES \"Pinned Boost submodule is incomplete: libs/json\")
+  message(FATAL_ERROR \"Unexpected missing-gitlink failure: \${VerifyError}\")
+endif()
+message(STATUS \"Missing pinned Boost.JSON gitlink fails closed without network access\")
+")
+  add_test(
+    NAME Dependency.BoostJsonMissingSubmoduleFails
+    COMMAND "${CMAKE_COMMAND}" -P
+            "${EmulativeDialogBoostJsonMissingSubmoduleTestScript}")
   if(WIN32 AND MINGW)
     set(EmulativeDialogBoostJsonConsumerLinkScript
         "${CMAKE_CURRENT_BINARY_DIR}/VerifyBoostJsonConsumerLink.cmake")

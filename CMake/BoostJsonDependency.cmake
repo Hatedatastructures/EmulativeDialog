@@ -7,16 +7,14 @@ if(NOT DEFINED EmulativeDialogBoostSourceDir OR
     "CMake/BoostJsonDependency.cmake")
 endif()
 
-include(ExternalProject)
-
 option(
   EMULATIVE_DIALOG_OFFLINE
   "Require pinned dependency sources to be present without fetching"
   OFF)
 
-# Boost.JSON is consumed from the same pinned Boost 1.92.0 superproject
-# checkout as Boost.Asio. The shared submodules already required by Asio are
-# listed again so this target is self-verifying when used on its own.
+# These direct gitlinks are populated by ExternalProject in
+# CMake/BoostAsioDependency.cmake. This module only verifies the checkout and
+# never mutates it or starts a network operation.
 set(EmulativeDialogBoostJsonRequiredSubmodules
     libs/json
     libs/container
@@ -32,86 +30,39 @@ set(EmulativeDialogBoostJsonRequiredSubmodules
     libs/throw_exception
     libs/type_traits)
 
-# Population is a separate buildstage operation. The verify target below is
-# deliberately read-only so validation never changes a pinned checkout.
-set(EmulativeDialogBoostJsonPopulateScript
-    "${CMAKE_BINARY_DIR}/EmulativeDialogBoostJsonPopulate.cmake")
-file(WRITE "${EmulativeDialogBoostJsonPopulateScript}" "
-set(SourceDir \"${EmulativeDialogBoostSourceDir}\")
-set(RequiredSubmodules \"${EmulativeDialogBoostJsonRequiredSubmodules}\")
-set(MissingSubmodules \"\")
-foreach(Submodule IN LISTS RequiredSubmodules)
-  if(NOT IS_DIRECTORY \"\${SourceDir}/\${Submodule}/include\")
-    list(APPEND MissingSubmodules \"\${Submodule}\")
-  endif()
-endforeach()
-if(NOT MissingSubmodules)
-  message(STATUS \"Boost.JSON submodules are already populated\")
-  return()
-endif()
-if(\"${EMULATIVE_DIALOG_OFFLINE}\")
-  string(REPLACE \";\" \", \" MissingText \"\${MissingSubmodules}\")
-  message(FATAL_ERROR
-    \"EMULATIVE_DIALOG_OFFLINE requires a complete Boost.JSON source tree; missing submodules: \${MissingText}\")
-endif()
-execute_process(
-  COMMAND git -C \"\${SourceDir}\" submodule update --init --
-          \${MissingSubmodules}
-  RESULT_VARIABLE UpdateResult
-  ERROR_VARIABLE UpdateError)
-if(NOT UpdateResult EQUAL 0)
-  message(FATAL_ERROR
-    \"Failed to populate pinned Boost.JSON submodules: \${UpdateError}\")
-endif()
-foreach(Submodule IN LISTS MissingSubmodules)
-  if(NOT IS_DIRECTORY \"\${SourceDir}/\${Submodule}/include\")
+if(EMULATIVE_DIALOG_OFFLINE)
+  if(NOT EXISTS "${EmulativeDialogBoostSourceDir}/.git")
     message(FATAL_ERROR
-      \"Boost.JSON submodule remains incomplete after population: \${Submodule}\")
+      "EMULATIVE_DIALOG_OFFLINE requires a pre-populated pinned Boost checkout at "
+      "${EmulativeDialogBoostSourceDir}.")
   endif()
-endforeach()
-message(STATUS \"Populated pinned Boost.JSON submodules\")
-")
-
-# A cold cache registers EmulativeDialogBoostAsioSource through ED-0131. Add
-# the JSON-specific population to that ExternalProject before configure runs.
-if(TARGET EmulativeDialogBoostAsioSource)
-  ExternalProject_Add_Step(
-    EmulativeDialogBoostAsioSource
-    emulative_dialog_boost_json_populate
-    COMMAND "${CMAKE_COMMAND}" -P
-            "${EmulativeDialogBoostJsonPopulateScript}"
-    COMMENT "Populating pinned Boost.JSON submodules"
-    DEPENDEES download
-    DEPENDERS configure
-    VERBATIM)
-  set(EmulativeDialogBoostJsonPrerequisiteTarget
-      EmulativeDialogBoostAsioSource)
-else()
-  # A cache prepared by ED-0131 has no ExternalProject target because its
-  # checkout already exists. Populate it lazily before any JSON compilation.
-  add_custom_target(
-    EmulativeDialogBoostJsonPopulate
-    COMMAND "${CMAKE_COMMAND}" -P
-            "${EmulativeDialogBoostJsonPopulateScript}"
-    COMMENT "Checking and populating pinned Boost.JSON submodules"
-    VERBATIM)
-  set(EmulativeDialogBoostJsonPrerequisiteTarget
-      EmulativeDialogBoostJsonPopulate)
-endif()
-
-if(EMULATIVE_DIALOG_OFFLINE AND
-   NOT EXISTS "${EmulativeDialogBoostSourceDir}/.git")
-  message(FATAL_ERROR
-    "EMULATIVE_DIALOG_OFFLINE requires an existing pinned Boost checkout at "
-    "${EmulativeDialogBoostSourceDir}; pre-populate "
-    "FETCHCONTENT_BASE_DIR/EmulativeDialogBoostAsioSource before configuring.")
+  foreach(Submodule IN LISTS EmulativeDialogBoostJsonRequiredSubmodules)
+    if(NOT IS_DIRECTORY
+       "${EmulativeDialogBoostSourceDir}/${Submodule}/include")
+      message(FATAL_ERROR
+        "EMULATIVE_DIALOG_OFFLINE requires pinned gitlink ${Submodule} "
+        "to be populated before configure.")
+    endif()
+  endforeach()
 endif()
 
 set(EmulativeDialogBoostJsonVerifyScript
     "${CMAKE_BINARY_DIR}/EmulativeDialogBoostJsonVerify.cmake")
 file(WRITE "${EmulativeDialogBoostJsonVerifyScript}" "
+if(DEFINED EmulativeDialogBoostJsonVerifySourceDir)
+  set(VerifySourceDir \"\${EmulativeDialogBoostJsonVerifySourceDir}\")
+else()
+  set(VerifySourceDir \"${EmulativeDialogBoostSourceDir}\")
+endif()
+set(RequiredSubmodules \"${EmulativeDialogBoostJsonRequiredSubmodules}\")
+foreach(Submodule IN LISTS RequiredSubmodules)
+  if(NOT IS_DIRECTORY \"\${VerifySourceDir}/\${Submodule}/include\")
+    message(FATAL_ERROR
+      \"Pinned Boost submodule is incomplete: \${Submodule}\")
+  endif()
+endforeach()
 execute_process(
-  COMMAND git -C \"${EmulativeDialogBoostSourceDir}\" rev-parse HEAD
+  COMMAND git -C \"\${VerifySourceDir}\" rev-parse HEAD
   OUTPUT_VARIABLE ActualCommit
   OUTPUT_STRIP_TRAILING_WHITESPACE
   RESULT_VARIABLE CommitResult
@@ -121,18 +72,11 @@ if(NOT CommitResult EQUAL 0 OR
   message(FATAL_ERROR
     \"Boost checkout resolved to '\${ActualCommit}', expected '${EmulativeDialogBoostCommit}': \${CommitError}\")
 endif()
-set(RequiredSubmodules \"${EmulativeDialogBoostJsonRequiredSubmodules}\")
-foreach(Submodule IN LISTS RequiredSubmodules)
-  if(NOT IS_DIRECTORY \"${EmulativeDialogBoostSourceDir}/\${Submodule}/include\")
-    message(FATAL_ERROR
-      \"Pinned Boost submodule is incomplete: \${Submodule}; run the Boost.JSON populate target\")
-  endif()
-endforeach()
-if(NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/json/include/boost/json.hpp\" OR
-   NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/config/include/boost/version.hpp\" OR
-   NOT EXISTS \"${EmulativeDialogBoostSourceDir}/LICENSE_1_0.txt\")
+if(NOT EXISTS \"\${VerifySourceDir}/libs/json/include/boost/json.hpp\" OR
+   NOT EXISTS \"\${VerifySourceDir}/libs/config/include/boost/version.hpp\" OR
+   NOT EXISTS \"\${VerifySourceDir}/LICENSE_1_0.txt\")
   message(FATAL_ERROR
-    \"Pinned Boost.JSON source tree is incomplete: ${EmulativeDialogBoostSourceDir}\")
+    \"Pinned Boost.JSON source tree is incomplete: \${VerifySourceDir}\")
 endif()
 message(STATUS \"Verified pinned Boost.JSON checkout ${EmulativeDialogBoostCommit}\")
 ")
@@ -140,12 +84,15 @@ message(STATUS \"Verified pinned Boost.JSON checkout ${EmulativeDialogBoostCommi
 add_custom_target(
   EmulativeDialogBoostJsonVerify
   COMMAND "${CMAKE_COMMAND}" -P "${EmulativeDialogBoostJsonVerifyScript}"
-  COMMENT "Verifying pinned Boost.JSON checkout and submodules"
+  COMMENT "Read-only verification of pinned Boost.JSON checkout and gitlinks"
   VERBATIM)
-add_dependencies(EmulativeDialogBoostJsonVerify
-                 ${EmulativeDialogBoostJsonPrerequisiteTarget})
+if(TARGET EmulativeDialogBoostAsioSource)
+  add_dependencies(EmulativeDialogBoostJsonVerify
+                   EmulativeDialogBoostAsioSource)
+endif()
 
-# Surface superproject drift during configure when the cache already exists.
+# Surface superproject drift during configure only when the checkout exists.
+# A missing tree is expected on a cold cache and is populated by ExternalProject.
 if(EXISTS "${EmulativeDialogBoostSourceDir}/.git")
   execute_process(
     COMMAND git -C "${EmulativeDialogBoostSourceDir}" rev-parse HEAD
@@ -175,26 +122,21 @@ add_library(
 target_include_directories(
   EmulativeDialogBoostJson
   PUBLIC
-    ${EmulativeDialogBoostJsonIncludeDirectories}
-)
+    ${EmulativeDialogBoostJsonIncludeDirectories})
 target_compile_features(EmulativeDialogBoostJson PUBLIC cxx_std_20)
-add_dependencies(EmulativeDialogBoostJson
-                 ${EmulativeDialogBoostJsonPrerequisiteTarget})
+add_dependencies(EmulativeDialogBoostJson EmulativeDialogBoostJsonVerify)
 set_target_properties(
   EmulativeDialogBoostJson
   PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-)
+    CXX_EXTENSIONS OFF)
 
-# A STATIC library cannot carry a private library dependency: CMake exposes it
-# to consumers as $<LINK_ONLY:...>. Keep the static archive neutral and expose
-# one balanced final-link option for executable/test consumers instead.
+# Keep the static archive free of platform linker state and pthread dependencies.
+# Final executable consumers opt into the balanced WinHTTP/MinGW link options.
 set(EmulativeDialogBoostJsonWinPthreadLinkOption "")
 set(EmulativeDialogBoostJsonNoPthreadLinkOption "")
 if(WIN32 AND MINGW)
-  # GCC otherwise appends its own dynamic -lpthread after the balanced option.
   set(EmulativeDialogBoostJsonNoPthreadLinkOption "-no-pthread")
   set(EmulativeDialogBoostJsonWinPthreadLinkOption
       "-Wl,--push-state,-Bstatic,-lwinpthread,-Bdynamic,--pop-state")
