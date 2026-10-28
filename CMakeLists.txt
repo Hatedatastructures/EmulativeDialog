@@ -4,6 +4,7 @@ project(EmulativeDialog LANGUAGES CXX)
 
 include(CTest)
 include(CMake/DependencyPins.cmake)
+include(CMake/BoostAsioDependency.cmake)
 
 set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -21,8 +22,24 @@ set_target_properties(
     CXX_EXTENSIONS OFF
 )
 
+add_executable(BoostAsioCoroutineProbe CMake/BoostAsioCoroutineProbe.cpp)
+target_link_libraries(BoostAsioCoroutineProbe PRIVATE EmulativeDialogBoostAsio)
+target_compile_features(BoostAsioCoroutineProbe PRIVATE cxx_std_20)
+add_dependencies(BoostAsioCoroutineProbe EmulativeDialogBoostAsioVerify)
+set_target_properties(
+  BoostAsioCoroutineProbe
+  PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+
 if(BUILD_TESTING)
   add_test(NAME BuildProbe.Cxx20 COMMAND $<TARGET_FILE:BuildProbe>)
+  add_test(
+    NAME BuildProbe.BoostAsioCxx20
+    COMMAND $<TARGET_FILE:BoostAsioCoroutineProbe>
+  )
   add_subdirectory(Tests/Contract/Agent)
 endif()
 
