@@ -1,5 +1,10 @@
 #include "Source/Agent/AgentRuntime.h"
 
+#include "Source/Agent/OutputBudgetController.hpp"
+#include "Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.hpp"
+#include "Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.hpp"
+#include "Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.hpp"
+
 #include <chrono>
 #include <limits>
 #include <optional>
@@ -116,6 +121,10 @@ public:
                                    EventType,
                                    Providers::ToolCallReadyEvent>) {
             HasToolCall = true;
+          } else if constexpr (std::is_same_v<
+                                   EventType,
+                                   Providers::UsageUpdatedEvent>) {
+            LastUsage = Value.Usage;
           }
           return true;
         },
@@ -137,6 +146,7 @@ public:
   bool HasToolCall{false};
   std::string Text;
   std::string RefusalText;
+  std::optional<Providers::UsageSnapshot> LastUsage;
 
 private:
   bool AcceptMetadata(const Providers::ProviderEventMetadata& Metadata,
@@ -162,6 +172,122 @@ const Providers::ProviderEventMetadata& GetTerminalMetadata(
         return Value.Metadata;
       },
       Event);
+}
+
+std::optional<Providers::UsageSnapshot> GetTerminalUsage(
+    const Providers::CanonicalTerminalEvent& Event) {
+  if (const auto* Completed =
+          std::get_if<Providers::ResponseCompletedEvent>(&Event)) {
+    return Completed->FinalUsage;
+  }
+  if (const auto* Limited =
+          std::get_if<Providers::ResponseOutputLimitedEvent>(&Event)) {
+    return Limited->Usage;
+  }
+  return std::nullopt;
+}
+
+struct NormalizedRuntimeUsage final {
+  bool Valid{true};
+  std::optional<Providers::UsageSnapshot> Value;
+};
+
+std::optional<std::int64_t> ToWireUsageValue(
+    const std::optional<std::uint64_t>& Value, bool& Valid) {
+  if (!Value.has_value()) {
+    return std::nullopt;
+  }
+  if (*Value >
+      static_cast<std::uint64_t>(
+          std::numeric_limits<std::int64_t>::max())) {
+    Valid = false;
+    return std::nullopt;
+  }
+  return static_cast<std::int64_t>(*Value);
+}
+
+NormalizedRuntimeUsage NormalizeRuntimeUsage(
+    Providers::ProviderProtocol Protocol,
+    const Providers::UsageSnapshot& Usage) {
+  NormalizedRuntimeUsage Normalized;
+  const auto Input =
+      ToWireUsageValue(Usage.InputTokens, Normalized.Valid);
+  const auto Output =
+      ToWireUsageValue(Usage.OutputTokens, Normalized.Valid);
+  const auto Total =
+      ToWireUsageValue(Usage.TotalTokens, Normalized.Valid);
+  const auto CachedRead =
+      ToWireUsageValue(Usage.CachedInputReadTokens, Normalized.Valid);
+  const auto CachedWrite =
+      ToWireUsageValue(Usage.CachedInputWriteTokens, Normalized.Valid);
+  const auto Reasoning =
+      ToWireUsageValue(Usage.ReasoningOutputTokens, Normalized.Valid);
+  if (!Normalized.Valid) {
+    return Normalized;
+  }
+
+  if (Protocol ==
+      Providers::ProviderProtocol::OpenAIResponses) {
+    const auto Result =
+        Providers::OpenAIResponses::ResponsesUsageNormalizer::Normalize(
+            Providers::OpenAIResponses::ResponsesWireUsage{
+                .InputTokens = Input,
+                .OutputTokens = Output,
+                .TotalTokens = Total,
+                .CachedInputTokens = CachedRead,
+                .ReasoningOutputTokens = Reasoning,
+                .Completeness = Usage.Completeness,
+            });
+    if (const auto* Value =
+            std::get_if<Providers::UsageSnapshot>(&Result)) {
+      Normalized.Value = *Value;
+    } else {
+      Normalized.Valid = false;
+    }
+    return Normalized;
+  }
+
+  if (Protocol == Providers::ProviderProtocol::
+                      OpenAICompatibleChatCompletions) {
+    const auto Result =
+        Providers::OpenAIChatCompletions::ChatUsageNormalizer::Normalize(
+            Providers::OpenAIChatCompletions::ChatWireUsage{
+                .PromptTokens = Input,
+                .CompletionTokens = Output,
+                .TotalTokens = Total,
+                .CachedInputTokens = CachedRead,
+                .ReasoningOutputTokens = Reasoning,
+                .Completeness = Usage.Completeness,
+            });
+    if (const auto* Value =
+            std::get_if<Providers::UsageSnapshot>(&Result)) {
+      Normalized.Value = *Value;
+    } else {
+      Normalized.Valid = false;
+    }
+    return Normalized;
+  }
+
+  if (Total.has_value() || Reasoning.has_value()) {
+    Normalized.Valid = false;
+    return Normalized;
+  }
+  const auto Result =
+      Providers::AnthropicMessages::AnthropicUsageNormalizer::Normalize(
+          Providers::AnthropicMessages::AnthropicWireUsage{
+              .InputTokens = Input,
+              .OutputTokens = Output,
+              .CacheCreationInputTokens = CachedWrite,
+              .CacheReadInputTokens = CachedRead,
+              .Completeness = Usage.Completeness,
+          });
+  if (const auto* Value =
+          std::get_if<Providers::UsageSnapshot>(&Result)) {
+    Normalized.Value = *Value;
+  } else {
+    Normalized.Valid = false;
+  }
+  return Normalized;
 }
 
 } // namespace
@@ -223,6 +349,30 @@ Core::AgentRunResult AgentRuntime::RunTurn(
         std::to_string(RequestSequence);
     const Providers::RequestId RequestId{RequestValue};
 
+    TurnBudgetLedger& Budget = SharedTurnBudgetLedger();
+    Budget.ConfigureTurn(
+        Context.AgentTurn,
+        OutputBudgetLimits{
+            .MaximumOutputTokens =
+                Profile.Limit.MaximumOutputTokens.has_value()
+                    ? std::optional<std::uint64_t>{
+                          *Profile.Limit.MaximumOutputTokens}
+                    : std::nullopt,
+            .ContextWindowTokens = std::nullopt,
+        });
+    if (const auto Error = Budget.BeginRequest(Context.AgentTurn, RequestId);
+        Error.has_value()) {
+      return AgentRunResult::Failed(
+          Error->Code ==
+                  TurnBudgetErrorCode::ContinuationNotApproved
+              ? AgentRunFailureCode::OutputLimitReached
+              : AgentRunFailureCode::InvalidRequest);
+    }
+    if (!Budget.CanDispatchSampling(Context.AgentTurn)) {
+      return AgentRunResult::Failed(
+          AgentRunFailureCode::OutputLimitReached);
+    }
+
     Providers::CanonicalModelRequest Request;
     Request.Id = RequestId;
     Request.TurnId = Context.AgentTurn;
@@ -254,6 +404,32 @@ Core::AgentRunResult AgentRuntime::RunTurn(
                                                  Context.AgentTurn));
     if (Accumulator.Invalid) {
       return AgentRunResult::Failed(AgentRunFailureCode::InvalidStream);
+    }
+
+    const std::optional<Providers::UsageSnapshot> TerminalUsage =
+        GetTerminalUsage(Terminal);
+    const std::optional<Providers::UsageSnapshot> Usage =
+        TerminalUsage.has_value() ? TerminalUsage : Accumulator.LastUsage;
+    if (Usage.has_value()) {
+      const NormalizedRuntimeUsage Normalized =
+          NormalizeRuntimeUsage(Profile.Protocol, *Usage);
+      if (!Normalized.Valid || !Normalized.Value.has_value() ||
+          Budget.Accumulate(Context.AgentTurn, RequestId,
+                            *Normalized.Value)
+              .has_value()) {
+        return AgentRunResult::Failed(AgentRunFailureCode::InvalidStream);
+      }
+    }
+    if (std::holds_alternative<Providers::ResponseOutputLimitedEvent>(
+            Terminal)) {
+      const auto& Limited =
+          std::get<Providers::ResponseOutputLimitedEvent>(Terminal);
+      if (Budget.RecordProviderOutputLimited(
+              Context.AgentTurn, RequestId, Limited.Kind)
+              .has_value()) {
+        return AgentRunResult::Failed(
+            AgentRunFailureCode::InvalidStream);
+      }
     }
 
     return std::visit(

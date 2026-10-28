@@ -3,7 +3,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <mutex>
 #include <optional>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "Source/Providers/Contracts/ModelProviderPort.h"
 
@@ -92,6 +96,83 @@ private:
   std::size_t Events{0};
   std::size_t Samples{0};
   bool HasUsage{false};
+  bool TotalUsageExact{true};
+  bool OutputUsageExact{true};
+  bool ProviderOutputLimitTerminal{false};
+  bool ProviderContextLimitTerminal{false};
 };
+
+enum class TurnBudgetErrorCode : std::uint8_t {
+  TurnNotConfigured,
+  InvalidRequestId,
+  RequestIdReused,
+  RequestNotCurrent,
+  ContinuationNotApproved,
+  ContinuationNotRequired,
+  InconsistentUsage,
+};
+
+struct TurnBudgetError final {
+  TurnBudgetErrorCode Code{TurnBudgetErrorCode::TurnNotConfigured};
+
+  friend bool operator==(const TurnBudgetError&,
+                         const TurnBudgetError&) = default;
+};
+
+// Core-owned per-turn sampling ledger shared by AgentRuntime and the tool
+// dispatch gate. A request keeps a fresh budget window. Once exhausted, the
+// next request is admitted only after explicit Core approval of the previous
+// request as a bounded continuation; RequestId reuse is always rejected.
+class TurnBudgetLedger final {
+public:
+  void ConfigureTurn(Providers::AgentTurnId Turn,
+                     OutputBudgetLimits Limits);
+
+  [[nodiscard]] std::optional<TurnBudgetError> BeginRequest(
+      const Providers::AgentTurnId& Turn,
+      const Providers::RequestId& Request);
+
+  [[nodiscard]] std::optional<TurnBudgetError> ApproveContinuation(
+      const Providers::AgentTurnId& Turn,
+      const Providers::RequestId& PreviousRequest);
+
+  [[nodiscard]] std::optional<TurnBudgetError> Accumulate(
+      const Providers::AgentTurnId& Turn,
+      const Providers::RequestId& Request,
+      const Providers::UsageSnapshot& Usage);
+
+  [[nodiscard]] std::optional<TurnBudgetError> RecordProviderOutputLimited(
+      const Providers::AgentTurnId& Turn,
+      const Providers::RequestId& Request,
+      Providers::LimitKind Kind);
+
+  // Absence of a configured turn leaves standalone consumers unconstrained.
+  [[nodiscard]] bool CanDispatchSampling(
+      const Providers::AgentTurnId& Turn) const;
+  [[nodiscard]] bool CanDispatchTool(
+      const Providers::AgentTurnId& Turn,
+      const Providers::RequestId& Request) const;
+  [[nodiscard]] std::optional<Providers::RequestId> CurrentRequest(
+      const Providers::AgentTurnId& Turn) const;
+  [[nodiscard]] std::optional<OutputBudgetState> GetState(
+      const Providers::AgentTurnId& Turn) const;
+
+  void EraseTurn(const Providers::AgentTurnId& Turn) noexcept;
+  void Reset() noexcept;
+
+private:
+  struct TurnState final {
+    OutputBudgetLimits Limits;
+    std::optional<OutputBudgetController> Budget;
+    std::optional<std::string> CurrentRequest;
+    std::optional<std::string> ApprovedContinuationFrom;
+    std::unordered_set<std::string> SeenRequests;
+  };
+
+  mutable std::mutex Mutex;
+  std::unordered_map<std::string, TurnState> Turns;
+};
+
+[[nodiscard]] TurnBudgetLedger& SharedTurnBudgetLedger();
 
 } // namespace EmulativeDialog::Agent

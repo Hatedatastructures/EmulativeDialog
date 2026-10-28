@@ -1,5 +1,7 @@
 #include "Source/Agent/ToolCallCoordinator.hpp"
 
+#include "Source/Agent/OutputBudgetController.hpp"
+
 #include <algorithm>
 #include <string>
 #include <string_view>
@@ -45,6 +47,11 @@ std::optional<ToolCoordinatorError> ToolCallCoordinator::Accept(
       Emit(*Ready, ToolCallReceiptStatus::Rejected, "RequestMismatch");
       return std::nullopt;
     }
+    if (!SharedTurnBudgetLedger().CanDispatchTool(
+            Ready->Metadata.Turn, Ready->Metadata.Request)) {
+      Emit(*Ready, ToolCallReceiptStatus::Rejected, "BudgetExhausted");
+      return std::nullopt;
+    }
     Pending.push_back(*Ready);
     return std::nullopt;
   }
@@ -61,12 +68,26 @@ std::optional<ToolCoordinatorError> ToolCallCoordinator::Accept(
       return ToolCoordinatorError{
           .Code = ToolCoordinatorErrorCode::RequestMismatch};
     }
+    if (!SharedTurnBudgetLedger().CanDispatchTool(
+            Handoff->Metadata.Turn, Handoff->Metadata.Request)) {
+      // Keep the correlated handoff pending until Core either approves a
+      // continuation or drains the turn. An exhausted budget is never a
+      // dispatch authorization.
+      return std::nullopt;
+    }
     TerminalSeen = true;
     ProcessPending();
     return std::nullopt;
   }
 
   if (IsTerminalLifecycleEvent(Event)) {
+    if (const auto* Limited =
+            std::get_if<AgentOutputLimitedEvent>(&Event)) {
+      static_cast<void>(
+          SharedTurnBudgetLedger().RecordProviderOutputLimited(
+              Limited->Metadata.Turn, Limited->Metadata.Request,
+              Limited->Kind));
+    }
     TerminalSeen = true;
     DiscardPending();
   }

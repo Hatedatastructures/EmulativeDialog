@@ -171,6 +171,8 @@ void ProviderOutputLimitedLinksToBudget() {
   Check(Controller.GetState().OutputLimitReached &&
             !Controller.CanDispatchSampling(),
         "provider output limit must block sampling");
+  Check(Controller.GetState().RemainingOutputTokens == 0U,
+        "provider output limit must exhaust known output budget");
   Check(Collected.Events.size() == 1U &&
             Collected.Events.back().Code ==
                 Agent::OutputBudgetEventCode::ProviderOutputLimited,
@@ -186,8 +188,28 @@ void ProviderOutputLimitedLinksToBudget() {
              .has_value(),
         "provider context limit must be accepted");
   Check(Controller.GetState().ContextWindowLimitReached &&
+            Controller.GetState().RemainingContextTokens == 0U &&
             Collected.Events.size() == 2U,
-        "provider context limit must emit once");
+        "provider context limit must emit once and exhaust context budget");
+}
+
+void TotalOnlyUsageDrivesContextBudgetWithoutFalsePrecision() {
+  EventCollector Collected;
+  Agent::OutputBudgetController Controller(
+      Limits(100, 100), Collected.Sink());
+  Check(!Controller.Accumulate(Usage(std::nullopt, std::nullopt, 150))
+             .has_value(),
+        "total-only usage must accumulate");
+  const auto& State = Controller.GetState();
+  Check(State.InputTokensUsed == 0U && State.OutputTokensUsed == 0U &&
+            State.TotalTokensUsed == 150U,
+        "total-only usage must retain the provider total");
+  Check(!State.RemainingOutputTokens.has_value(),
+        "unknown output components must keep output remaining unknown");
+  Check(State.RemainingContextTokens == 0U &&
+            State.ContextWindowLimitReached &&
+            !Controller.CanDispatchSampling(),
+        "total-only usage must exhaust a lower context window");
 }
 
 void MultiRoundUsageAccumulatesAndMergesCompleteness() {
@@ -220,6 +242,59 @@ void MultiRoundUsageAccumulatesAndMergesCompleteness() {
         "each round must emit a usage event");
 }
 
+void TurnBudgetLedgerRequiresApprovedFreshRequest() {
+  auto& Ledger = Agent::SharedTurnBudgetLedger();
+  Ledger.Reset();
+  const Providers::AgentTurnId Turn{"budget-turn"};
+  const Providers::RequestId OriginalRequest{"request-original"};
+  const Providers::RequestId ContinuationRequest{"request-continuation"};
+  Ledger.ConfigureTurn(Turn, Limits(100, 100));
+
+  Check(!Ledger.BeginRequest(Turn, OriginalRequest).has_value(),
+        "original request must begin");
+  Check(!Ledger.Accumulate(Turn, OriginalRequest, Usage(50, 100, 150))
+             .has_value(),
+        "usage must reach the request budget");
+  Check(!Ledger.CanDispatchSampling(Turn) &&
+            !Ledger.CanDispatchTool(Turn, OriginalRequest),
+        "exhausted request must block sampling and tool dispatch");
+  Check(Ledger.GetState(Turn)->RemainingOutputTokens == 0U,
+        "exhausted request must report zero remaining output");
+
+  const auto Unapproved = Ledger.BeginRequest(Turn, ContinuationRequest);
+  Check(Unapproved.has_value() &&
+            Unapproved->Code ==
+                Agent::TurnBudgetErrorCode::ContinuationNotApproved,
+        "continuation without Core approval must fail closed");
+  Check(!Ledger.ApproveContinuation(Turn, OriginalRequest).has_value(),
+        "Core may approve the blocked original request");
+  const auto Reused = Ledger.BeginRequest(Turn, OriginalRequest);
+  Check(Reused.has_value() &&
+            Reused->Code == Agent::TurnBudgetErrorCode::RequestIdReused,
+        "an approved continuation must still reject RequestId reuse");
+  Check(!Ledger.BeginRequest(Turn, ContinuationRequest).has_value(),
+        "approved continuation with a fresh RequestId must begin");
+  Check(!Ledger.CanDispatchTool(Turn, OriginalRequest) &&
+            Ledger.CanDispatchTool(Turn, ContinuationRequest) &&
+            Ledger.CanDispatchSampling(Turn),
+        "only the current approved request may dispatch tools");
+
+  Ledger.EraseTurn(Turn);
+  const Providers::AgentTurnId LimitTurn{"provider-limit-turn"};
+  const Providers::RequestId LimitRequest{"provider-limit-request"};
+  Ledger.ConfigureTurn(LimitTurn, Limits(10));
+  Check(!Ledger.BeginRequest(LimitTurn, LimitRequest).has_value(),
+        "provider-limit request must begin");
+  Check(!Ledger.RecordProviderOutputLimited(
+                LimitTurn, LimitRequest, Providers::LimitKind::OutputTokens)
+             .has_value(),
+        "provider output limit must be recorded");
+  Check(Ledger.GetState(LimitTurn)->RemainingOutputTokens == 0U &&
+            !Ledger.CanDispatchTool(LimitTurn, LimitRequest),
+        "provider output limit must block its tool dispatch window");
+  Ledger.Reset();
+}
+
 void MissingFieldsKeepBudgetsNullable() {
   Agent::OutputBudgetController Controller(Limits(100));
   Check(!Controller.Accumulate(
@@ -228,19 +303,19 @@ void MissingFieldsKeepBudgetsNullable() {
              .has_value(),
         "input-only usage must accumulate");
   Check(Controller.GetState().OutputTokensUsed == 0U &&
-            Controller.GetState().RemainingOutputTokens == 100U &&
+            !Controller.GetState().RemainingOutputTokens.has_value() &&
             Controller.GetState().Completeness ==
                 Providers::UsageCompleteness::Partial,
-        "missing output must not be treated as a known zero total");
+        "missing output must keep the remaining output unknown");
   Check(!Controller.Accumulate(
                 Usage(std::nullopt, 20, std::nullopt,
                       Providers::UsageCompleteness::Final))
              .has_value(),
         "output-only usage must accumulate");
-  Check(Controller.GetState().RemainingOutputTokens == 80U &&
+  Check(!Controller.GetState().RemainingOutputTokens.has_value() &&
             Controller.GetState().Completeness ==
                 Providers::UsageCompleteness::Partial,
-        "remaining output must update from known samples");
+        "a missing output sample must prevent exact remaining output");
 }
 
 void SinklessControllerStillTracksEvents() {
@@ -261,7 +336,9 @@ int main() {
   SaturatesInsteadOfOverflowing();
   RejectsInconsistentTotalsWithoutMutation();
   ProviderOutputLimitedLinksToBudget();
+  TotalOnlyUsageDrivesContextBudgetWithoutFalsePrecision();
   MultiRoundUsageAccumulatesAndMergesCompleteness();
+  TurnBudgetLedgerRequiresApprovedFreshRequest();
   MissingFieldsKeepBudgetsNullable();
   SinklessControllerStillTracksEvents();
   std::cout << "OutputBudgetController contract tests passed\n";

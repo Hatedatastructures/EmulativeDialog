@@ -1,13 +1,18 @@
+#include "Source/Agent/AgentRuntime.h"
 #include "Source/Agent/AgentEventProjector.hpp"
+#include "Source/Agent/OutputBudgetController.hpp"
 #include "Source/Agent/ToolCallCoordinator.hpp"
 #include "Source/Core/BusinessActionRegistry.hpp"
+#include "Tests/Contract/Providers/Contracts/FakeProvider.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -20,6 +25,20 @@ void Check(bool Condition, const char* Message) {
     std::cerr << Message << '\n';
     std::exit(1);
   }
+}
+
+class TestProviderCredential final : public Providers::CredentialLease {
+public:
+  std::string_view GetAuthenticationSecret() const noexcept override {
+    return {};
+  }
+};
+
+Providers::RequestId RuntimeRequestId(
+    const Providers::AgentTurnId& Turn, std::uint64_t Sequence) {
+  return Providers::RequestId{
+      "agent-runtime:" + std::to_string(Turn.Value.size()) + ":" +
+      Turn.Value + ":" + std::to_string(Sequence)};
 }
 
 Core::ConversationScope MakeScope(
@@ -39,12 +58,14 @@ Core::ConversationScope MakeScope(
 }
 
 Agent::ToolCallAuthorizationContext MakeAuthorization(
-    std::vector<std::string> Capabilities = {"Chat.Lookup"}) {
+    std::vector<std::string> Capabilities = {"Chat.Lookup"},
+    std::string Turn = "turn-1",
+    std::string Request = "request-1") {
   return Agent::ToolCallAuthorizationContext{
       .Principal = Core::PrincipalId{"principal-authorized"},
       .Scope = MakeScope(),
-      .ActiveTurn = Providers::AgentTurnId{"turn-1"},
-      .AuthorizedRequest = Providers::RequestId{"request-1"},
+      .ActiveTurn = Providers::AgentTurnId{std::move(Turn)},
+      .AuthorizedRequest = Providers::RequestId{std::move(Request)},
       .GrantedCapabilities = std::move(Capabilities),
   };
 }
@@ -80,11 +101,12 @@ Agent::AgentToolCallReadyEvent ReadyCall(
     std::string ActionName,
     std::string Arguments,
     std::uint64_t Sequence = 1,
-    std::string Turn = "turn-1") {
+    std::string Turn = "turn-1",
+    std::string Request = "request-1") {
   return Agent::AgentToolCallReadyEvent{
       .Metadata =
           Agent::AgentEventMetadata{
-              .Request = Providers::RequestId{"request-1"},
+              .Request = Providers::RequestId{std::move(Request)},
               .Turn = Providers::AgentTurnId{std::move(Turn)},
               .SequenceNumber = Sequence,
           },
@@ -762,6 +784,271 @@ void TurnMismatchAndEmptySinkAreHandled() {
         "sinkless coordinator must still execute and count receipts");
 }
 
+void UsageBudgetGatesTruncatedAndContinuedToolDispatch() {
+  auto& Ledger = Agent::SharedTurnBudgetLedger();
+  Ledger.Reset();
+  const Providers::AgentTurnId Turn{"budget-vertical-turn"};
+  Ledger.ConfigureTurn(Turn, Agent::OutputBudgetLimits{
+                                .MaximumOutputTokens = 10,
+                                .ContextWindowTokens = 10,
+                            });
+
+  int HandlerCalls = 0;
+  Core::BusinessActionRegistry Registry;
+  Check(!Registry.Register(MakeLookupAction(
+                [&HandlerCalls](const Core::BusinessActionInvocation&) {
+                  ++HandlerCalls;
+                  return Succeeded();
+                }))
+             .has_value(),
+        "budget integration action must register");
+
+  const Providers::RequestId FirstRequest =
+      RuntimeRequestId(Turn, 1);
+  const Providers::RequestId ContinuationRequest =
+      RuntimeRequestId(Turn, 3);
+  Providers::Testing::FakeProvider Provider;
+  const auto MetadataAt = [&Turn](const Providers::RequestId& Request,
+                                  std::uint64_t Sequence) {
+    return Providers::ProviderEventMetadata{
+        .Request = Request,
+        .TurnId = Turn,
+        .SequenceNumber = Sequence,
+    };
+  };
+
+  Provider.EnqueueScript(Providers::Testing::FakeProvider::Script{
+      .NonTerminalEvents =
+          {
+              Providers::CanonicalNonTerminalEvent{
+                  Providers::UsageUpdatedEvent{
+                      .Metadata = MetadataAt(FirstRequest, 1),
+                      .Usage =
+                          Providers::UsageSnapshot{
+                              .InputTokens = std::nullopt,
+                              .OutputTokens = std::nullopt,
+                              .TotalTokens = 20,
+                              .CachedInputReadTokens = std::nullopt,
+                              .CachedInputWriteTokens = std::nullopt,
+                              .ReasoningOutputTokens = std::nullopt,
+                              .Completeness = Providers::UsageCompleteness::Partial,
+                          }}},
+              Providers::CanonicalNonTerminalEvent{
+                  Providers::ToolCallStartedEvent{
+                      .Metadata = MetadataAt(FirstRequest, 2),
+                      .Item = Providers::ItemId{"item-budget"},
+                      .Call = Providers::ToolCallId{"call-budget"},
+                      .ToolName = "LookupProfile",
+                  }},
+              Providers::CanonicalNonTerminalEvent{
+                  Providers::ToolArgumentDeltaEvent{
+                      .Metadata = MetadataAt(FirstRequest, 3),
+                      .Item = Providers::ItemId{"item-budget"},
+                      .Call = Providers::ToolCallId{"call-budget"},
+                      .JsonTextDelta = "{\"query\":",
+                  }},
+          },
+      .Terminal =
+          Providers::ResponseOutputLimitedEvent{
+              .Metadata = MetadataAt(FirstRequest, 4),
+              .Kind = Providers::LimitKind::OutputTokens,
+              .Usage =
+                  Providers::UsageSnapshot{
+                      .InputTokens = std::nullopt,
+                      .OutputTokens = std::nullopt,
+                      .TotalTokens = 20,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness = Providers::UsageCompleteness::Partial,
+                  },
+              .SafeGeneratedText = std::nullopt,
+          },
+  });
+
+  Providers::ModelProviderProfile Profile;
+  Profile.Id = Providers::ProviderProfileId{"budget-profile"};
+  Profile.Protocol = Providers::ProviderProtocol::OpenAIResponses;
+  Profile.Endpoint = "https://provider.invalid";
+  Profile.ModelName = "budget-model";
+  Profile.Credential = Providers::CredentialRef{"budget-credential"};
+  Profile.Authentication = Providers::AuthenticationScheme::Bearer;
+  Profile.Limit.MaximumOutputTokens = 10;
+
+  const Core::PrincipalId Principal{"principal-authorized"};
+  const Core::AuthorizedTurnContext Context{
+      .Principal = Principal,
+      .Scope = MakeScope(),
+      .AgentTurn = Turn,
+      .Message = Channels::CanonicalMessage{
+          .MessageParts = {Channels::TextPart{"synthetic tool request"}},
+          .ReplyToId = std::nullopt,
+          .MentionedIds = {},
+          .PlatformMetadata = {},
+      },
+  };
+  Agent::AgentRuntime Runtime;
+  TestProviderCredential Credential;
+  const auto Limited =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Limited.GetStatus() == Core::AgentRunStatus::Failed &&
+            Limited.GetFailureCode() ==
+                Core::AgentRunFailureCode::OutputLimitReached &&
+            Provider.GetCapturedRequests().size() == 1U,
+        "output-limited request must stop before tool dispatch");
+  Check(!Ledger.CanDispatchTool(Turn, FirstRequest) &&
+            Ledger.GetState(Turn)->RemainingOutputTokens == 0U,
+        "output limit must close the tool dispatch gate");
+
+  ReceiptCollector LimitedReceipts;
+  Agent::ToolCallCoordinator LimitedCoordinator(
+      Registry, MakeAuthorization({"Chat.Lookup"}, Turn.Value,
+                                  FirstRequest.Value),
+      LimitedReceipts.Sink());
+  Agent::AgentEventProjector LimitedProjector(
+      FirstRequest, Turn,
+      [&LimitedCoordinator](const Agent::AgentLifecycleEvent& Event) {
+        static_cast<void>(LimitedCoordinator.Accept(Event));
+      });
+  Check(!LimitedProjector.Accept(Providers::CanonicalNonTerminalEvent{
+                Providers::ToolCallReadyEvent{
+                    .Metadata = MetadataAt(FirstRequest, 1),
+                    .Item = Providers::ItemId{"item-budget"},
+                    .Call = Providers::ToolCallId{"call-budget"},
+                    .ToolName = "LookupProfile",
+                    .Arguments = Providers::JsonValue{"{\"query\":"},
+                }})
+             .has_value(),
+        "truncated tool fixture must project ready only");
+  Check(LimitedCoordinator.PendingCount() == 0U && HandlerCalls == 0 &&
+            LimitedReceipts.Receipts.size() == 1U &&
+            LimitedReceipts.Receipts[0].Status ==
+                Agent::ToolCallReceiptStatus::Rejected &&
+            LimitedReceipts.Receipts[0].ResultCode ==
+                "BudgetExhausted",
+        "exhausted budget must reject tool buffering before dispatch");
+  Check(!LimitedProjector.Accept(Providers::CanonicalTerminalEvent{
+                Providers::ResponseCompletedEvent{
+                    .Metadata = MetadataAt(FirstRequest, 2),
+                    .Kind = Providers::CompletionKind::ToolHandoff,
+                    .StopSequenceCode = std::nullopt,
+                    .FinalUsage = std::nullopt,
+                    .StopDetails = std::nullopt,
+                }})
+             .has_value() &&
+            !LimitedCoordinator.HasTerminal() && HandlerCalls == 0,
+        "exhausted handoff must not authorize an incomplete tool call");
+
+  const auto Unapproved =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Unapproved.GetStatus() == Core::AgentRunStatus::Failed &&
+            Unapproved.GetFailureCode() ==
+                Core::AgentRunFailureCode::OutputLimitReached &&
+            Provider.GetCapturedRequests().size() == 1U,
+        "unapproved continuation must not reach Provider");
+  Check(!Ledger.ApproveContinuation(Turn, FirstRequest).has_value(),
+        "Core must approve the exact exhausted request");
+
+  Provider.EnqueueScript(Providers::Testing::FakeProvider::Script{
+      .NonTerminalEvents =
+          {
+              Providers::CanonicalNonTerminalEvent{
+                  Providers::UsageUpdatedEvent{
+                      .Metadata = MetadataAt(ContinuationRequest, 1),
+                      .Usage =
+                          Providers::UsageSnapshot{
+                              .InputTokens = 2,
+                              .OutputTokens = 3,
+                              .TotalTokens = 5,
+                              .CachedInputReadTokens = std::nullopt,
+                              .CachedInputWriteTokens = std::nullopt,
+                              .ReasoningOutputTokens = std::nullopt,
+                              .Completeness = Providers::UsageCompleteness::Final,
+                          }}},
+              Providers::CanonicalNonTerminalEvent{
+                  Providers::ToolCallStartedEvent{
+                      .Metadata = MetadataAt(ContinuationRequest, 2),
+                      .Item = Providers::ItemId{"item-continuation"},
+                      .Call = Providers::ToolCallId{"call-continuation"},
+                      .ToolName = "LookupProfile",
+                  }},
+              Providers::CanonicalNonTerminalEvent{
+                  Providers::ToolCallReadyEvent{
+                      .Metadata = MetadataAt(ContinuationRequest, 3),
+                      .Item = Providers::ItemId{"item-continuation"},
+                      .Call = Providers::ToolCallId{"call-continuation"},
+                      .ToolName = "LookupProfile",
+                      .Arguments = Providers::JsonValue{"{\"query\":\"x\"}"},
+                  }},
+          },
+      .Terminal =
+          Providers::ResponseCompletedEvent{
+              .Metadata = MetadataAt(ContinuationRequest, 4),
+              .Kind = Providers::CompletionKind::ToolHandoff,
+              .StopSequenceCode = std::nullopt,
+              .FinalUsage =
+                  Providers::UsageSnapshot{
+                      .InputTokens = 2,
+                      .OutputTokens = 3,
+                      .TotalTokens = 5,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness = Providers::UsageCompleteness::Final,
+                  },
+              .StopDetails = std::nullopt,
+          },
+  });
+  const auto Continued =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Continued.GetStatus() == Core::AgentRunStatus::Unsupported &&
+            Provider.GetCapturedRequests().size() == 2U &&
+            Provider.GetCapturedRequests()[1].Id.Value ==
+                ContinuationRequest.Value,
+        "approved continuation must issue a fresh Provider request");
+  Check(Ledger.CanDispatchTool(Turn, ContinuationRequest) &&
+            !Ledger.CanDispatchTool(Turn, FirstRequest),
+        "only the approved continuation RequestId may open the tool gate");
+
+  ReceiptCollector ContinuedReceipts;
+  Agent::ToolCallCoordinator ContinuedCoordinator(
+      Registry, MakeAuthorization({"Chat.Lookup"}, Turn.Value,
+                                  ContinuationRequest.Value),
+      ContinuedReceipts.Sink());
+  Agent::AgentEventProjector ContinuedProjector(
+      ContinuationRequest, Turn,
+      [&ContinuedCoordinator](const Agent::AgentLifecycleEvent& Event) {
+        static_cast<void>(ContinuedCoordinator.Accept(Event));
+      });
+  Check(!ContinuedProjector.Accept(Providers::CanonicalNonTerminalEvent{
+                Providers::ToolCallReadyEvent{
+                    .Metadata = MetadataAt(ContinuationRequest, 1),
+                    .Item = Providers::ItemId{"item-continuation"},
+                    .Call = Providers::ToolCallId{"call-continuation"},
+                    .ToolName = "LookupProfile",
+                    .Arguments = Providers::JsonValue{"{\"query\":\"x\"}"},
+                }})
+             .has_value() &&
+            ContinuedCoordinator.PendingCount() == 1U,
+        "approved request must buffer the complete tool call");
+  Check(!ContinuedProjector.Accept(Providers::CanonicalTerminalEvent{
+                Providers::ResponseCompletedEvent{
+                    .Metadata = MetadataAt(ContinuationRequest, 2),
+                    .Kind = Providers::CompletionKind::ToolHandoff,
+                    .StopSequenceCode = std::nullopt,
+                    .FinalUsage = std::nullopt,
+                    .StopDetails = std::nullopt,
+                }})
+             .has_value(),
+        "approved handoff must reach the coordinator");
+  Check(HandlerCalls == 1 && ContinuedCoordinator.HasTerminal() &&
+            ContinuedReceipts.Receipts.size() == 1U &&
+            ContinuedReceipts.Receipts[0].Status ==
+                Agent::ToolCallReceiptStatus::Succeeded,
+        "approved fresh request must dispatch the tool exactly once");
+  Ledger.Reset();
+}
+
 void DuplicateTerminalsFailClosed() {
   Core::BusinessActionRegistry Registry;
   ReceiptCollector Collected;
@@ -790,6 +1077,7 @@ int main() {
   ModelArgumentsCannotSpoofIdentity();
   HandlerOutcomesProduceCorrelatedReceipts();
   TurnMismatchAndEmptySinkAreHandled();
+  UsageBudgetGatesTruncatedAndContinuedToolDispatch();
   DuplicateTerminalsFailClosed();
   std::cout << "ToolCallRoundTrip contract tests passed\n";
   return 0;

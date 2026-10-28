@@ -17,6 +17,14 @@ get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUT
 set(AGENT_RUNTIME_SOURCE "${PROJECT_ROOT}/Source/Agent/AgentRuntime.cpp")
 set(AGENT_RUNTIME_CONTRACT_TEST "${CMAKE_CURRENT_LIST_DIR}/AgentRuntimeContractTests.cpp")
 set(AGENT_RUNTIME_VERTICAL_TEST "${CMAKE_CURRENT_LIST_DIR}/AgentRuntimeVerticalSliceTests.cpp")
+set(OUTPUT_BUDGET_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp")
+set(RESPONSES_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp")
+set(CHAT_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp")
+set(ANTHROPIC_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp")
 set(CORE_SOURCES
     "${PROJECT_ROOT}/Source/Core/IdentityPolicy.cpp"
     "${PROJECT_ROOT}/Source/Core/OperationRecord.cpp"
@@ -32,13 +40,30 @@ target_include_directories(AgentRuntimeObject PUBLIC "${PROJECT_ROOT}")
 target_compile_options(AgentRuntimeObject PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 
+add_library(OutputBudgetObject OBJECT "${OUTPUT_BUDGET_SOURCE}")
+target_include_directories(OutputBudgetObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(OutputBudgetObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_library(ProviderUsageNormalizerObject OBJECT
+    "${RESPONSES_USAGE_SOURCE}"
+    "${CHAT_USAGE_SOURCE}"
+    "${ANTHROPIC_USAGE_SOURCE}")
+target_include_directories(ProviderUsageNormalizerObject
+                           PUBLIC "${PROJECT_ROOT}")
+target_compile_options(ProviderUsageNormalizerObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
 add_executable(AgentRuntimeContractTests
     ${CORE_SOURCES}
     "${AGENT_RUNTIME_CONTRACT_TEST}")
 target_include_directories(AgentRuntimeContractTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(AgentRuntimeContractTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
-target_link_libraries(AgentRuntimeContractTests PRIVATE AgentRuntimeObject)
+target_link_libraries(AgentRuntimeContractTests PRIVATE
+    AgentRuntimeObject
+    OutputBudgetObject
+    ProviderUsageNormalizerObject)
 
 add_executable(AgentRuntimeVerticalSliceTests
     ${CORE_SOURCES}
@@ -47,7 +72,10 @@ add_executable(AgentRuntimeVerticalSliceTests
 target_include_directories(AgentRuntimeVerticalSliceTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(AgentRuntimeVerticalSliceTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
-target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE AgentRuntimeObject)
+target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE
+    AgentRuntimeObject
+    OutputBudgetObject
+    ProviderUsageNormalizerObject)
 
 add_test(NAME AgentRuntime.Contract COMMAND AgentRuntimeContractTests)
 add_test(NAME AgentRuntime.VerticalSlice COMMAND AgentRuntimeVerticalSliceTests)
@@ -101,6 +129,7 @@ target_compile_options(AgentEventProjectorTests PRIVATE
 add_test(NAME Agent.EventProjector COMMAND AgentEventProjectorTests)
 
 add_executable(ToolCallRoundTripTests
+    ${CORE_SOURCES}
     "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
     "${PROJECT_ROOT}/Source/Agent/ToolCallCoordinator.cpp"
     "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp"
@@ -108,6 +137,10 @@ add_executable(ToolCallRoundTripTests
 target_include_directories(ToolCallRoundTripTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(ToolCallRoundTripTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(ToolCallRoundTripTests PRIVATE
+    AgentRuntimeObject
+    OutputBudgetObject
+    ProviderUsageNormalizerObject)
 
 add_test(NAME Agent.ToolCallRoundTrip COMMAND ToolCallRoundTripTests)
 
@@ -189,31 +222,21 @@ add_custom_target(ProviderOutcomePolicyCoverageReport
 add_dependencies(ProviderOutcomePolicyCoverageReport
                  ProviderOutcomePolicyTests)
 
-set(OUTPUT_BUDGET_SOURCE
-    "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp")
-set(RESPONSES_USAGE_SOURCE
-    "${PROJECT_ROOT}/Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp")
-set(CHAT_USAGE_SOURCE
-    "${PROJECT_ROOT}/Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp")
-set(ANTHROPIC_USAGE_SOURCE
-    "${PROJECT_ROOT}/Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp")
-
 add_executable(OutputBudgetControllerTests
-    "${OUTPUT_BUDGET_SOURCE}"
     "${CMAKE_CURRENT_LIST_DIR}/OutputBudgetControllerTests.cpp")
 target_include_directories(OutputBudgetControllerTests PRIVATE
     "${PROJECT_ROOT}")
 target_compile_options(OutputBudgetControllerTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(OutputBudgetControllerTests PRIVATE OutputBudgetObject)
 add_test(NAME Agent.OutputBudgetController
          COMMAND OutputBudgetControllerTests)
 
 add_executable(UsageNormalizationTests
-    "${RESPONSES_USAGE_SOURCE}"
-    "${CHAT_USAGE_SOURCE}"
-    "${ANTHROPIC_USAGE_SOURCE}"
     "${PROJECT_ROOT}/Tests/Contract/Providers/UsageNormalizationTests.cpp")
 target_include_directories(UsageNormalizationTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(UsageNormalizationTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(UsageNormalizationTests PRIVATE
+    ProviderUsageNormalizerObject)
 add_test(NAME Providers.UsageNormalization COMMAND UsageNormalizationTests)

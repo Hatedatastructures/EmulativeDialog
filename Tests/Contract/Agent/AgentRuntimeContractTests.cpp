@@ -1,4 +1,5 @@
 #include "Source/Agent/AgentRuntime.h"
+#include "Source/Agent/OutputBudgetController.hpp"
 #include "Source/Core/AgentRuntimePort.h"
 #include "Tests/Contract/Providers/Contracts/FakeProvider.h"
 
@@ -41,10 +42,11 @@ Providers::ProviderEventMetadata Metadata(const Providers::RequestId& Request,
   };
 }
 
-Providers::RequestId ExpectedRequestId(const Providers::AgentTurnId& Turn) {
+Providers::RequestId ExpectedRequestId(const Providers::AgentTurnId& Turn,
+                                       std::uint64_t Sequence = 1) {
   return Providers::RequestId{
       "agent-runtime:" + std::to_string(Turn.Value.size()) + ":" +
-      Turn.Value + ":1"};
+      Turn.Value + ":" + std::to_string(Sequence)};
 }
 
 Providers::ModelProviderProfile MakeProfile(
@@ -147,6 +149,17 @@ Providers::CanonicalNonTerminalEvent RefusalEvent(
   };
 }
 
+Providers::CanonicalNonTerminalEvent UsageEvent(
+    const Providers::RequestId& Request,
+    const Providers::AgentTurnId& Turn,
+    std::uint64_t Sequence,
+    Providers::UsageSnapshot Usage) {
+  return Providers::UsageUpdatedEvent{
+      .Metadata = Metadata(Request, Turn, Sequence),
+      .Usage = std::move(Usage),
+  };
+}
+
 Providers::ResponseCompletedEvent Completed(
     const Providers::RequestId& Request,
     const Providers::AgentTurnId& Turn,
@@ -212,6 +225,7 @@ Core::AgentRunResult RunScript(
     const Core::AuthorizedTurnContext& Context,
     const Providers::ModelProviderProfile& Profile,
     Providers::ModelProviderPort& Provider) {
+  Agent::SharedTurnBudgetLedger().Reset();
   Agent::AgentRuntime Runtime;
   TestProviderCredential Credential;
   return Runtime.RunTurn(Context, Provider, Profile, Credential, {});
@@ -333,6 +347,100 @@ void TestOutputLimitNeverReturnsPartialTextOrRetries() {
   Check(Provider.GetCapturedRequests().size() == 1 &&
             Provider.GetRemainingScriptCount() == 1,
         "AgentRuntime must not retry or compact autonomously");
+}
+
+void TestCoreApprovalAllowsOnlyFreshRequestContinuation() {
+  Agent::SharedTurnBudgetLedger().Reset();
+  const Core::AuthorizedTurnContext Context =
+      MakeContext("contract-budget-continuation");
+  const Providers::RequestId FirstRequest =
+      ExpectedRequestId(Context.AgentTurn, 1);
+  const Providers::RequestId ContinuationRequest =
+      ExpectedRequestId(Context.AgentTurn, 3);
+  Providers::ModelProviderProfile Profile = MakeProfile();
+  Profile.Limit.MaximumOutputTokens = 64;
+
+  FakeProvider Provider;
+  Provider.EnqueueScript(MakeScript(
+      {UsageEvent(FirstRequest, Context.AgentTurn, 1,
+                  Providers::UsageSnapshot{
+                      .InputTokens = std::nullopt,
+                      .OutputTokens = std::nullopt,
+                      .TotalTokens = 80,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness =
+                          Providers::UsageCompleteness::Partial,
+                  })},
+      Providers::ResponseOutputLimitedEvent{
+          .Metadata = Metadata(FirstRequest, Context.AgentTurn, 2),
+          .Kind = Providers::LimitKind::OutputTokens,
+          .Usage = Providers::UsageSnapshot{
+              .InputTokens = std::nullopt,
+              .OutputTokens = std::nullopt,
+              .TotalTokens = 80,
+              .CachedInputReadTokens = std::nullopt,
+              .CachedInputWriteTokens = std::nullopt,
+              .ReasoningOutputTokens = std::nullopt,
+              .Completeness =
+                  Providers::UsageCompleteness::Partial,
+          },
+          .SafeGeneratedText = std::nullopt,
+      }));
+
+  Agent::AgentRuntime Runtime;
+  TestProviderCredential Credential;
+  const auto Limited =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Limited.GetStatus() == Core::AgentRunStatus::Failed &&
+            Limited.GetFailureCode() ==
+                Core::AgentRunFailureCode::OutputLimitReached,
+        "first request must stop at the output limit");
+  Check(Provider.GetCapturedRequests().size() == 1U &&
+            Agent::SharedTurnBudgetLedger()
+                    .GetState(Context.AgentTurn)
+                    ->RemainingOutputTokens == 0U,
+        "output-limited request must be recorded as exhausted");
+  const auto Denied =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Denied.GetStatus() == Core::AgentRunStatus::Failed &&
+            Denied.GetFailureCode() ==
+                Core::AgentRunFailureCode::OutputLimitReached &&
+            Provider.GetCapturedRequests().size() == 1U,
+        "continuation without Core approval must not reach Provider");
+
+  Check(!Agent::SharedTurnBudgetLedger()
+             .ApproveContinuation(Context.AgentTurn, FirstRequest)
+             .has_value(),
+        "Core approval must bind to the exhausted request");
+  Provider.EnqueueScript(MakeScript(
+      {UsageEvent(ContinuationRequest, Context.AgentTurn, 1,
+                  Providers::UsageSnapshot{
+                      .InputTokens = 20,
+                      .OutputTokens = 10,
+                      .TotalTokens = 30,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness =
+                          Providers::UsageCompleteness::Final,
+                  }),
+       TextEvent(ContinuationRequest, Context.AgentTurn, 2, "continued")},
+      Completed(ContinuationRequest, Context.AgentTurn, 3,
+                Providers::CompletionKind::FinalAnswer)));
+  const auto Continued =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Continued.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+            Continued.GetFinalText() == "continued",
+        "approved continuation must complete with the final answer");
+  Check(Provider.GetCapturedRequests().size() == 2U &&
+            Provider.GetCapturedRequests()[0].Id.Value !=
+                Provider.GetCapturedRequests()[1].Id.Value &&
+            Provider.GetCapturedRequests()[1].Id.Value ==
+                ContinuationRequest.Value,
+        "approved continuation must use a fresh RequestId");
+  Agent::SharedTurnBudgetLedger().Reset();
 }
 
 void TestProviderFailureCancelAndUnknownStayDistinct() {
@@ -1029,6 +1137,7 @@ int main() {
   TestRefusalNeedsNonEmptyRefusalText();
   TestToolHandoffAndEmptyFinalFailClosed();
   TestOutputLimitNeverReturnsPartialTextOrRetries();
+  TestCoreApprovalAllowsOnlyFreshRequestContinuation();
   TestProviderFailureCancelAndUnknownStayDistinct();
   TestRequestTurnAndSequenceMismatchFailClosed();
   TestProviderCapabilitiesGateUnsupportedInputs();

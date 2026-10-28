@@ -1,4 +1,5 @@
 #include "Source/Agent/AgentRuntime.h"
+#include "Source/Agent/OutputBudgetController.hpp"
 #include "Source/Core/CoreChatService.h"
 #include "Source/Core/IdentityPolicy.h"
 #include "Tests/Contract/Channels/Contracts/MockChannelAdapter.h"
@@ -492,6 +493,7 @@ public:
   }
 
   CoreChatResult Process() {
+    EmulativeDialog::Agent::SharedTurnBudgetLedger().Reset();
     return Service.Process(Sink.Events.at(0));
   }
 

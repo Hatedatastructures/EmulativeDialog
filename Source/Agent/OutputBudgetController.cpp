@@ -65,6 +65,17 @@ std::optional<OutputBudgetError> OutputBudgetController::Accumulate(
 
   const bool PreviousOutputReached = State.OutputLimitReached;
   const bool PreviousContextReached = State.ContextWindowLimitReached;
+  const bool SampleHasExactTotal =
+      Usage.TotalTokens.has_value() ||
+      (Usage.InputTokens.has_value() && Usage.OutputTokens.has_value());
+  std::optional<std::uint64_t> SampleTotal;
+  if (Usage.TotalTokens.has_value()) {
+    SampleTotal = *Usage.TotalTokens;
+  } else if (Usage.InputTokens.has_value() &&
+             Usage.OutputTokens.has_value()) {
+    SampleTotal =
+        SaturatingAdd(*Usage.InputTokens, *Usage.OutputTokens);
+  }
 
   if (Usage.InputTokens.has_value()) {
     State.InputTokensUsed =
@@ -74,6 +85,13 @@ std::optional<OutputBudgetError> OutputBudgetController::Accumulate(
     State.OutputTokensUsed =
         SaturatingAdd(State.OutputTokensUsed, *Usage.OutputTokens);
   }
+  if (SampleTotal.has_value()) {
+    State.TotalTokensUsed =
+        SaturatingAdd(State.TotalTokensUsed, *SampleTotal);
+  }
+  TotalUsageExact = TotalUsageExact && SampleHasExactTotal;
+  OutputUsageExact =
+      OutputUsageExact && Usage.OutputTokens.has_value();
   State.Completeness =
       HasUsage ? MergeCompleteness(State.Completeness, Usage.Completeness)
                : Usage.Completeness;
@@ -98,8 +116,10 @@ std::optional<OutputBudgetError> OutputBudgetController::RecordProviderOutputLim
           ? State.OutputLimitReached
           : State.ContextWindowLimitReached;
   if (Kind == Providers::LimitKind::OutputTokens) {
+    ProviderOutputLimitTerminal = true;
     State.OutputLimitReached = true;
   } else {
+    ProviderContextLimitTerminal = true;
     State.ContextWindowLimitReached = true;
   }
   UpdateDerivedState();
@@ -110,18 +130,30 @@ std::optional<OutputBudgetError> OutputBudgetController::RecordProviderOutputLim
 }
 
 void OutputBudgetController::UpdateDerivedState() {
-  State.TotalTokensUsed =
-      SaturatingAdd(State.InputTokensUsed, State.OutputTokensUsed);
-  State.RemainingOutputTokens =
-      Limits.MaximumOutputTokens.has_value()
-          ? std::optional<std::uint64_t>{SaturatingRemaining(
-                *Limits.MaximumOutputTokens, State.OutputTokensUsed)}
-          : std::nullopt;
-  State.RemainingContextTokens =
-      Limits.ContextWindowTokens.has_value()
-          ? std::optional<std::uint64_t>{SaturatingRemaining(
-                *Limits.ContextWindowTokens, State.TotalTokensUsed)}
-          : std::nullopt;
+  if (!Limits.MaximumOutputTokens.has_value()) {
+    State.RemainingOutputTokens = std::nullopt;
+  } else if (ProviderOutputLimitTerminal) {
+    State.RemainingOutputTokens = 0;
+  } else if (!HasUsage) {
+    State.RemainingOutputTokens = *Limits.MaximumOutputTokens;
+  } else if (OutputUsageExact) {
+    State.RemainingOutputTokens = SaturatingRemaining(
+        *Limits.MaximumOutputTokens, State.OutputTokensUsed);
+  } else {
+    State.RemainingOutputTokens = std::nullopt;
+  }
+  if (!Limits.ContextWindowTokens.has_value()) {
+    State.RemainingContextTokens = std::nullopt;
+  } else if (ProviderContextLimitTerminal) {
+    State.RemainingContextTokens = 0;
+  } else if (!HasUsage) {
+    State.RemainingContextTokens = *Limits.ContextWindowTokens;
+  } else if (TotalUsageExact) {
+    State.RemainingContextTokens = SaturatingRemaining(
+        *Limits.ContextWindowTokens, State.TotalTokensUsed);
+  } else {
+    State.RemainingContextTokens = std::nullopt;
+  }
   if (Limits.MaximumOutputTokens.has_value() &&
       State.OutputTokensUsed >= *Limits.MaximumOutputTokens) {
     State.OutputLimitReached = true;
@@ -139,6 +171,190 @@ void OutputBudgetController::Emit(OutputBudgetEventCode Code) {
   if (Sink) {
     Sink(OutputBudgetEvent{.Code = Code, .State = State});
   }
+}
+
+void TurnBudgetLedger::ConfigureTurn(Providers::AgentTurnId Turn,
+                                    OutputBudgetLimits LimitsValue) {
+  std::scoped_lock Lock(Mutex);
+  const auto [Iterator, Inserted] =
+      Turns.try_emplace(Turn.Value);
+  if (Inserted) {
+    Iterator->second.Limits = std::move(LimitsValue);
+  }
+}
+
+std::optional<TurnBudgetError> TurnBudgetLedger::BeginRequest(
+    const Providers::AgentTurnId& Turn,
+    const Providers::RequestId& Request) {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::TurnNotConfigured};
+  }
+  if (Request.Value.empty()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::InvalidRequestId};
+  }
+
+  TurnState& Current = Iterator->second;
+  if (Current.SeenRequests.contains(Request.Value)) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::RequestIdReused};
+  }
+  if (Current.CurrentRequest.has_value() && Current.Budget.has_value() &&
+      !Current.Budget->CanDispatchSampling()) {
+    if (!Current.ApprovedContinuationFrom.has_value() ||
+        *Current.ApprovedContinuationFrom != *Current.CurrentRequest) {
+      return TurnBudgetError{
+          .Code = TurnBudgetErrorCode::ContinuationNotApproved};
+    }
+    Current.ApprovedContinuationFrom.reset();
+  }
+
+  Current.SeenRequests.insert(Request.Value);
+  Current.CurrentRequest = Request.Value;
+  Current.Budget.emplace(Current.Limits);
+  return std::nullopt;
+}
+
+std::optional<TurnBudgetError> TurnBudgetLedger::ApproveContinuation(
+    const Providers::AgentTurnId& Turn,
+    const Providers::RequestId& PreviousRequest) {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::TurnNotConfigured};
+  }
+  TurnState& Current = Iterator->second;
+  if (!Current.CurrentRequest.has_value() ||
+      *Current.CurrentRequest != PreviousRequest.Value) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::RequestNotCurrent};
+  }
+  if (!Current.Budget.has_value() ||
+      Current.Budget->CanDispatchSampling()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::ContinuationNotRequired};
+  }
+  Current.ApprovedContinuationFrom = PreviousRequest.Value;
+  return std::nullopt;
+}
+
+std::optional<TurnBudgetError> TurnBudgetLedger::Accumulate(
+    const Providers::AgentTurnId& Turn,
+    const Providers::RequestId& Request,
+    const Providers::UsageSnapshot& Usage) {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::TurnNotConfigured};
+  }
+  TurnState& Current = Iterator->second;
+  if (!Current.CurrentRequest.has_value() ||
+      *Current.CurrentRequest != Request.Value ||
+      !Current.Budget.has_value()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::RequestNotCurrent};
+  }
+  if (Current.Budget->Accumulate(Usage).has_value()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::InconsistentUsage};
+  }
+  return std::nullopt;
+}
+
+std::optional<TurnBudgetError>
+TurnBudgetLedger::RecordProviderOutputLimited(
+    const Providers::AgentTurnId& Turn,
+    const Providers::RequestId& Request,
+    Providers::LimitKind Kind) {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::TurnNotConfigured};
+  }
+  TurnState& Current = Iterator->second;
+  if (!Current.CurrentRequest.has_value() ||
+      *Current.CurrentRequest != Request.Value ||
+      !Current.Budget.has_value()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::RequestNotCurrent};
+  }
+  if (Current.Budget->RecordProviderOutputLimited(Kind).has_value()) {
+    return TurnBudgetError{
+        .Code = TurnBudgetErrorCode::InconsistentUsage};
+  }
+  return std::nullopt;
+}
+
+bool TurnBudgetLedger::CanDispatchSampling(
+    const Providers::AgentTurnId& Turn) const {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end()) {
+    return true;
+  }
+  const TurnState& Current = Iterator->second;
+  return !Current.Budget.has_value() ||
+         Current.Budget->CanDispatchSampling();
+}
+
+bool TurnBudgetLedger::CanDispatchTool(
+    const Providers::AgentTurnId& Turn,
+    const Providers::RequestId& Request) const {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end()) {
+    return true;
+  }
+  const TurnState& Current = Iterator->second;
+  return Current.CurrentRequest.has_value() &&
+         *Current.CurrentRequest == Request.Value &&
+         Current.Budget.has_value() &&
+         Current.Budget->CanDispatchSampling();
+}
+
+std::optional<Providers::RequestId> TurnBudgetLedger::CurrentRequest(
+    const Providers::AgentTurnId& Turn) const {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end() ||
+      !Iterator->second.CurrentRequest.has_value()) {
+    return std::nullopt;
+  }
+  return Providers::RequestId{
+      *Iterator->second.CurrentRequest};
+}
+
+std::optional<OutputBudgetState> TurnBudgetLedger::GetState(
+    const Providers::AgentTurnId& Turn) const {
+  std::scoped_lock Lock(Mutex);
+  const auto Iterator = Turns.find(Turn.Value);
+  if (Iterator == Turns.end() ||
+      !Iterator->second.Budget.has_value()) {
+    return std::nullopt;
+  }
+  return Iterator->second.Budget->GetState();
+}
+
+void TurnBudgetLedger::EraseTurn(
+    const Providers::AgentTurnId& Turn) noexcept {
+  std::scoped_lock Lock(Mutex);
+  Turns.erase(Turn.Value);
+}
+
+void TurnBudgetLedger::Reset() noexcept {
+  std::scoped_lock Lock(Mutex);
+  Turns.clear();
+}
+
+TurnBudgetLedger& SharedTurnBudgetLedger() {
+  static TurnBudgetLedger Ledger;
+  return Ledger;
 }
 
 } // namespace EmulativeDialog::Agent
