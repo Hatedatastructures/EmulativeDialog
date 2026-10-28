@@ -91,7 +91,7 @@ Slots:
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0105
+    CurrentTaskId: ED-0144
     Status: Active
 
 AssignmentRules:
