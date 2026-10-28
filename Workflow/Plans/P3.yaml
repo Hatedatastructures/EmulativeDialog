@@ -1104,16 +1104,25 @@ Tasks:
       ApprovedByRole: Coordinator
       Scope: "Add CMake/BoostJsonImplementation.cpp so Boost.JSON can be compiled exactly once into the static EmulativeDialogBoostJson library, preventing multi-TU ODR conflicts across the three provider adapters."
       AcceptedAt: 2026-10-28
+    WriteSetChangeRequestPopulate:
+      ChangeRequestId: CR-ED-0143-003
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow CMake/BoostAsioDependency.cmake to add the fixed Boost.JSON gitlinks to the same pinned ExternalProject populate step; verification remains read-only and no unpinned source is introduced."
+      Reason: "Independent review found build-time submodule mutation/network access in the verifier. The pinned gitlinks must populate with the pinned superproject before verification."
+      AcceptedAt: 2026-10-28
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0143
     AssignedBranch: Task/ED-0143-BoostJsonDependency
-    LocalCompletionHead: 548e926
-    LocalValidation: "configure/build/probe/ctest exit 0; single src.hpp TU; no Boost DLL or libwinpthread DLL"
+    AssignedRebasedWorktree: H:/Qbot/EmulativeDialog.ED-0143-rebase
+    AssignedRebasedBranch: Task/ED-0143-BoostJsonDependency-rebase
+    LocalCompletionHead: 8de7a3651b1aac89e081ec6fe9e512aef33d10bc
+    LocalValidation: "hot-cache root configure/build; Boost.JSON 3/3 CTest; probe=42; offline-missing checkout fails closed; no Boost or libwinpthread DLL"
     PullRequestCreated: true
     PullRequestNumber: 14
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/14
-    ReviewBaseCommit: ee7c9b4299a2e9a500a8dc49ec72279f5536df1b
-    ReviewHeadCommit: 3baa40d4f5161e10b2a7d613690ef99e988cdacc
-    ReviewStatus: ChangesRequested
+    ReviewBaseCommit: 5ac8966
+    ReviewHeadCommit: 8de7a3651b1aac89e081ec6fe9e512aef33d10bc
+    ReviewStatus: AwaitingIndependentReview
     ReviewFindings:
       - "Boost.JSON submodule population must not perform implicit network access in the verify build step."
       - "winpthread link mode must not propagate through the static library interface."
@@ -1141,7 +1150,7 @@ Tasks:
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 10
       ExpansionReasonRequired: true
-    WriteSet: [CMake/BoostJsonDependency.cmake, CMake/BoostJsonImplementation.cpp, CMake/BoostJsonProbe.cpp, CMakeLists.txt, Standards/DependencyPolicy.md]
+    WriteSet: [CMake/BoostAsioDependency.cmake, CMake/BoostJsonDependency.cmake, CMake/BoostJsonImplementation.cpp, CMake/BoostJsonProbe.cpp, CMakeLists.txt, Standards/DependencyPolicy.md]
     SharedLocks: [DependencyLock, RootBuild]
     Acceptance:
       - {AcceptanceId: AC-1, Description: "固定 Boost 1.92.0 checkout 内所需 JSON 子模块（json/container/describe/align/throw_exception 等）齐备，并有构建阶段校验。", Evidence: "校验脚本输出 commit 与子模块清单。"}
