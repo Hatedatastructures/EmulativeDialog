@@ -43,6 +43,10 @@ target_link_libraries(ChatCompletionsProviderTests
 target_compile_features(ChatCompletionsProviderTests PRIVATE cxx_std_20)
 target_compile_options(ChatCompletionsProviderTests PRIVATE
                        -Wall -Wextra -Wpedantic -Werror)
+target_compile_definitions(
+  ChatCompletionsProviderTests
+  PRIVATE
+    "ED_CHAT_COMPLETIONS_FIXTURE_ROOT=\"${CMAKE_CURRENT_LIST_DIR}/Fixtures\"")
 if(WIN32 AND MINGW)
   target_link_options(
     ChatCompletionsProviderTests

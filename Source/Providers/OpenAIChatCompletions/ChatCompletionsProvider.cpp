@@ -10,8 +10,10 @@
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -175,6 +177,33 @@ std::optional<std::uint64_t> UnsignedField(const json::object& Object,
     return std::nullopt;
 }
 
+bool HasOnlyFields(const json::object& Object,
+                   std::initializer_list<std::string_view> Allowed) {
+    for (const auto& Member : Object) {
+        const std::string_view Name(Member.key().data(), Member.key().size());
+        if (std::find(Allowed.begin(), Allowed.end(), Name) == Allowed.end()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::optional<std::uint64_t> StrictUnsignedField(
+    const json::object& Object, std::string_view Name, bool& Invalid) {
+    const json::value* Value = Object.if_contains(Name);
+    if (Value == nullptr) {
+        return std::nullopt;
+    }
+    if (Value->is_uint64()) {
+        return Value->as_uint64();
+    }
+    if (Value->is_int64() && Value->as_int64() >= 0) {
+        return static_cast<std::uint64_t>(Value->as_int64());
+    }
+    Invalid = true;
+    return std::nullopt;
+}
+
 std::string TextOf(const json::object& Object, std::string_view Name,
                    std::string Default = {}) {
     std::string_view Text;
@@ -277,37 +306,62 @@ std::optional<ProviderError> ReadRequestOptions(
 
 std::optional<UsageSnapshot> ParseUsage(const json::value& Value,
                                         bool CompatibilityAllowed,
-                                        bool& Invalid) {
+                                        bool& Invalid,
+                                        bool& Unsupported) {
     Invalid = false;
+    Unsupported = false;
     const json::object* Object = Value.if_object();
     if (Object == nullptr) {
         Invalid = true;
         return std::nullopt;
     }
+    if (!HasOnlyFields(*Object,
+                       {"prompt_tokens", "completion_tokens", "total_tokens",
+                        "prompt_tokens_details",
+                        "completion_tokens_details"})) {
+        Unsupported = true;
+        return std::nullopt;
+    }
     UsageSnapshot Snapshot;
     Snapshot.Completeness = UsageCompleteness::Final;
-    Snapshot.InputTokens = UnsignedField(*Object, "prompt_tokens");
-    Snapshot.OutputTokens = UnsignedField(*Object, "completion_tokens");
-    Snapshot.TotalTokens = UnsignedField(*Object, "total_tokens");
-    if (CompatibilityAllowed) {
-        if (const json::value* Details =
-                Object->if_contains("prompt_tokens_details");
-            Details != nullptr) {
-            if (const json::object* DetailObject = Details->if_object();
-                DetailObject != nullptr) {
-                Snapshot.CachedInputReadTokens =
-                    UnsignedField(*DetailObject, "cached_tokens");
-            }
+    Snapshot.InputTokens =
+        StrictUnsignedField(*Object, "prompt_tokens", Invalid);
+    Snapshot.OutputTokens =
+        StrictUnsignedField(*Object, "completion_tokens", Invalid);
+    Snapshot.TotalTokens =
+        StrictUnsignedField(*Object, "total_tokens", Invalid);
+    if (Invalid) {
+        return std::nullopt;
+    }
+
+    const auto ParseDetails = [&](std::string_view Name,
+                                  std::string_view CountField,
+                                  std::optional<std::uint64_t>& Destination) {
+        const json::value* Details = Object->if_contains(Name);
+        if (Details == nullptr || Details->is_null()) {
+            return;
         }
-        if (const json::value* Details =
-                Object->if_contains("completion_tokens_details");
-            Details != nullptr) {
-            if (const json::object* DetailObject = Details->if_object();
-                DetailObject != nullptr) {
-                Snapshot.ReasoningOutputTokens =
-                    UnsignedField(*DetailObject, "reasoning_tokens");
-            }
+        if (!CompatibilityAllowed) {
+            Unsupported = true;
+            return;
         }
+        const json::object* DetailObject = Details->if_object();
+        if (DetailObject == nullptr) {
+            Invalid = true;
+            return;
+        }
+        if (!HasOnlyFields(*DetailObject, {CountField})) {
+            Unsupported = true;
+            return;
+        }
+        Destination = StrictUnsignedField(*DetailObject, CountField, Invalid);
+    };
+    ParseDetails("prompt_tokens_details", "cached_tokens",
+                 Snapshot.CachedInputReadTokens);
+    ParseDetails("completion_tokens_details", "reasoning_tokens",
+                 Snapshot.ReasoningOutputTokens);
+    if (Invalid || Unsupported) {
+        return std::nullopt;
     }
     return Snapshot;
 }
@@ -389,7 +443,9 @@ public:
         }
         if (const auto* TimedOut = std::get_if<TimedOutTransport>(&Transport);
             TimedOut != nullptr) {
-            if (!Started && !ChunkSeen) {
+            if (TimedOut->Phase ==
+                    Platform::Network::TransportTimeoutPhase::Connect &&
+                StatusCode == 0 && !Started && !ChunkSeen) {
                 return MakeFailed(MakeError(
                     FailureCode::TransportFailure, true,
                     "Provider request timed out before a response arrived."));
@@ -457,6 +513,11 @@ private:
     std::string TextItemId() const {
         std::string Source = ResponseId.empty() ? "response" : ResponseId;
         return "item_" + Source + "_0";
+    }
+
+    std::string RefusalItemId() const {
+        std::string Source = ResponseId.empty() ? "response" : ResponseId;
+        return "item_" + Source + "_refusal_0";
     }
 
     std::string ToolItemId(std::size_t Index) const {
@@ -561,11 +622,15 @@ private:
         if (const json::value* Usage = Frame.if_contains("usage");
             Usage != nullptr && !Usage->is_null()) {
             bool Invalid = false;
+            bool Unsupported = false;
             const auto Parsed =
                 ParseUsage(*Usage, ProfileValue.CompatibilityProfile.has_value(),
-                           Invalid);
+                           Invalid, Unsupported);
             if (Invalid || !Parsed.has_value()) {
-                SetFatal(MakeError(FailureCode::InvalidStream, false,
+                SetFatal(MakeError(Unsupported
+                                       ? FailureCode::UnsupportedCapability
+                                       : FailureCode::InvalidStream,
+                                   false,
                                    "Malformed Chat Completions usage payload."));
                 return;
             }
@@ -597,8 +662,14 @@ private:
                                "Chat Completions choice is not a JSON object."));
             return;
         }
+        if (!HasOnlyFields(*Choice,
+                           {"index", "delta", "message", "finish_reason"})) {
+            SetFatal(MakeError(FailureCode::UnsupportedCapability, false,
+                               "Choice contains an unregistered field."));
+            return;
+        }
         const auto Index = UnsignedField(*Choice, "index");
-        if (Index.has_value() && *Index != 0) {
+        if (!Index.has_value() || *Index != 0) {
             SetFatal(MakeError(FailureCode::InvalidStream, false,
                                "Chat Completions V1 only maps choice index 0."));
             return;
@@ -610,22 +681,49 @@ private:
             return;
         }
 
-        if (const json::value* DeltaValue = Choice->if_contains("delta");
-            DeltaValue != nullptr && DeltaValue->is_object()) {
+        const json::value* DeltaValue = Choice->if_contains("delta");
+        const json::value* MessageValue = Choice->if_contains("message");
+        if (DeltaValue != nullptr && MessageValue != nullptr) {
+            SetFatal(MakeError(FailureCode::InvalidStream, false,
+                               "Choice cannot contain both delta and message."));
+            return;
+        }
+        if (DeltaValue != nullptr) {
+            if (!DeltaValue->is_object()) {
+                SetFatal(MakeError(FailureCode::InvalidStream, false,
+                                   "Chat Completions delta is not an object."));
+                return;
+            }
             ProcessDelta(DeltaValue->as_object());
-        } else if (const json::value* MessageValue =
-                       Choice->if_contains("message");
-                   MessageValue != nullptr && MessageValue->is_object()) {
+        } else if (MessageValue != nullptr) {
+            if (!MessageValue->is_object()) {
+                SetFatal(MakeError(FailureCode::InvalidStream, false,
+                                   "Chat Completions message is not an object."));
+                return;
+            }
             ProcessDelta(MessageValue->as_object());
+        } else {
+            SetFatal(MakeError(FailureCode::InvalidStream, false,
+                               "Choice has no delta or message object."));
+            return;
+        }
+        if (Fatal.has_value()) {
+            return;
         }
 
         std::string_view FinishReason;
-        if (KindOf(*Choice, "finish_reason", &FinishReason) ==
-            FieldKind::String) {
+        const FieldKind FinishReasonKind =
+            KindOf(*Choice, "finish_reason", &FinishReason);
+        if (FinishReasonKind == FieldKind::String) {
             FinishReasonValue = std::string(FinishReason);
             if (*FinishReasonValue == "tool_calls") {
                 FinalizeToolCalls();
             }
+        } else if (FinishReasonKind != FieldKind::Absent &&
+                   FinishReasonKind != FieldKind::Null) {
+            SetFatal(MakeError(FailureCode::InvalidStream, false,
+                               "finish_reason must be a string or null."));
+            return;
         }
         EmitUsageIfPresent(FrameUsage);
     }
@@ -642,6 +740,13 @@ private:
     }
 
     void ProcessDelta(const json::object& Delta) {
+        if (!HasOnlyFields(Delta,
+                           {"role", "content", "refusal", "tool_calls",
+                            "function_call"})) {
+            SetFatal(MakeError(FailureCode::UnsupportedCapability, false,
+                               "Delta contains an unregistered field."));
+            return;
+        }
         std::string_view Role;
         const FieldKind RoleKind = KindOf(Delta, "role", &Role);
         if (RoleKind == FieldKind::String && Role != "assistant") {
@@ -665,21 +770,27 @@ private:
         std::string_view Refusal;
         const FieldKind RefusalKind = KindOf(Delta, "refusal", &Refusal);
         if (RefusalKind == FieldKind::String) {
-            if (Refusal.empty()) {
-                RefusalMarker = true;
-            } else {
-                if (SawContent) {
-                    SetFatal(MakeError(
-                        FailureCode::InvalidStream, false,
-                        "Chat Completions refusal conflicts with text content."));
-                    return;
-                }
-                RefusalMarker = true;
+            const bool ConflictsWithPriorContent = SawContent;
+            const bool ConflictsWithPriorToolCalls = !Tools.empty();
+            RefusalMarker = true;
+            if (!Refusal.empty()) {
                 RefusalDeltaEvent Event;
                 Event.Metadata = Metadata();
-                Event.Item = ItemId{TextItemId()};
+                Event.Item = ItemId{RefusalItemId()};
                 Event.Utf8Delta = std::string(Refusal);
                 EventSinkValue(CanonicalNonTerminalEvent{std::move(Event)});
+            }
+            if (ConflictsWithPriorContent) {
+                SetFatal(MakeError(
+                    FailureCode::InvalidStream, false,
+                    "Chat Completions refusal conflicts with text content."));
+                return;
+            }
+            if (ConflictsWithPriorToolCalls) {
+                SetFatal(MakeError(
+                    FailureCode::InvalidStream, false,
+                    "Chat Completions refusal conflicts with tool calls."));
+                return;
             }
         } else if (RefusalKind == FieldKind::Other) {
             SetFatal(MakeError(FailureCode::InvalidStream, false,
@@ -738,13 +849,17 @@ private:
                 return;
             }
         }
+        if (RefusalMarker && !Calls->empty()) {
+            SetFatal(MakeError(
+                FailureCode::InvalidStream, false,
+                "Chat Completions refusal conflicts with tool calls."));
+        }
     }
 
     void ProcessToolCall(std::size_t Index, const json::object& Call) {
-        if (RefusalMarker) {
-            SetFatal(MakeError(
-                FailureCode::InvalidStream, false,
-                "Chat Completions tool call conflicts with refusal."));
+        if (!HasOnlyFields(Call, {"index", "id", "type", "function"})) {
+            SetFatal(MakeError(FailureCode::UnsupportedCapability, false,
+                               "Tool call contains an unregistered field."));
             return;
         }
         ToolState& State = Tools[Index];
@@ -757,7 +872,7 @@ private:
                 return;
             }
             State.TypeValidated = true;
-        } else if (TypeKind == FieldKind::Other) {
+        } else if (TypeKind != FieldKind::Absent) {
             SetFatal(MakeError(FailureCode::InvalidStream, false,
                                "Chat Completions tool type is not a string."));
             return;
@@ -781,6 +896,11 @@ private:
             return;
         }
         const json::object& Function = FunctionValue->as_object();
+        if (!HasOnlyFields(Function, {"name", "arguments"})) {
+            SetFatal(MakeError(FailureCode::UnsupportedCapability, false,
+                               "Function contains an unregistered field."));
+            return;
+        }
         std::string_view Name;
         if (KindOf(Function, "name", &Name) == FieldKind::String &&
             !Name.empty()) {
@@ -803,10 +923,8 @@ private:
             return;
         }
 
-        if (!State.Started && !State.Id.empty() && !State.Name.empty()) {
-            if (TypeKind == FieldKind::String && !State.TypeValidated) {
-                return;
-            }
+        if (!State.Started && State.TypeValidated && !State.Id.empty() &&
+            !State.Name.empty()) {
             StartTool(Index, State);
         } else if (State.Started) {
             EmitPendingToolArguments(Index, State);
@@ -844,7 +962,8 @@ private:
         }
         for (const auto& Entry : Tools) {
             const ToolState& State = Entry.second;
-            if (!State.Started || !IsCompleteJson(State.Arguments)) {
+            if (!State.TypeValidated || !State.Started ||
+                !IsCompleteJson(State.Arguments)) {
                 SetFatal(MakeError(
                     FailureCode::InvalidStream, false,
                     "Tool arguments are incomplete JSON at tool_calls terminal."));
@@ -1020,9 +1139,42 @@ private:
     bool DataAfterDone{false};
 };
 
-std::string SerializeRequest(const ModelProviderProfile& Profile,
-                             const CanonicalModelRequest& Request,
-                             const RequestOptions& Options) {
+ProviderResult<std::string> SerializeRequest(
+    const ModelProviderProfile& Profile, const CanonicalModelRequest& Request,
+    const RequestOptions& Options) {
+    std::vector<CanonicalMessage> OrderedMessages = Request.Messages;
+    if (!Request.ContentParts.empty()) {
+        CanonicalMessage CurrentUserMessage;
+        CurrentUserMessage.Role = MessageRole::User;
+        CurrentUserMessage.ContentParts = Request.ContentParts;
+        OrderedMessages.push_back(std::move(CurrentUserMessage));
+    }
+
+    std::set<std::string, std::less<>> SeenToolCallIds;
+    std::set<std::string, std::less<>> UnconsumedToolCallIds;
+    for (const CanonicalMessage& Message : OrderedMessages) {
+        if (Message.Role == MessageRole::Assistant) {
+            for (const FunctionCall& Call : Message.FunctionCalls) {
+                if (Call.Id.Value.empty() || Call.Name.empty() ||
+                    !SeenToolCallIds.insert(Call.Id.Value).second) {
+                    return MakeError(
+                        FailureCode::InvalidRequest, false,
+                        "Assistant tool calls require unique non-empty ids and names.");
+                }
+                UnconsumedToolCallIds.insert(Call.Id.Value);
+            }
+        } else if (Message.Role == MessageRole::Tool) {
+            if (!Message.ToolCallResultId.has_value() ||
+                Message.ToolCallResultId->Value.empty() ||
+                UnconsumedToolCallIds.erase(
+                    Message.ToolCallResultId->Value) != 1U) {
+                return MakeError(
+                    FailureCode::InvalidRequest, false,
+                    "Tool result must match a unique preceding assistant tool call.");
+            }
+        }
+    }
+
     json::object Body;
     Body.emplace("model", Request.ModelName.empty() ? Profile.ModelName
                                                     : Request.ModelName);
@@ -1041,7 +1193,7 @@ std::string SerializeRequest(const ModelProviderProfile& Profile,
     if (!Request.DeveloperInstructions.empty()) {
         AppendTextMessage("developer", Request.DeveloperInstructions);
     }
-    for (const CanonicalMessage& Message : Request.Messages) {
+    for (const CanonicalMessage& Message : OrderedMessages) {
         json::object Wire;
         switch (Message.Role) {
         case MessageRole::System:
@@ -1063,7 +1215,8 @@ std::string SerializeRequest(const ModelProviderProfile& Profile,
         if (Message.Role == MessageRole::Tool) {
             if (!Message.ToolCallResultId.has_value() ||
                 Message.ToolCallResultId->Value.empty()) {
-                return {};
+                return MakeError(FailureCode::InvalidRequest, false,
+                                 "Tool result id is required.");
             }
             Wire.emplace("tool_call_id", Message.ToolCallResultId->Value);
         }
@@ -1074,7 +1227,8 @@ std::string SerializeRequest(const ModelProviderProfile& Profile,
             }
         }
         if (HasImage && !Profile.Capabilities.Vision) {
-            return {};
+            return MakeError(FailureCode::UnsupportedCapability, false,
+                             "Chat Completions profile does not support image input.");
         }
         if (HasImage) {
             json::array Content;
@@ -1103,7 +1257,8 @@ std::string SerializeRequest(const ModelProviderProfile& Profile,
                 for (const FunctionCall& Call : Message.FunctionCalls) {
                     json::value Arguments;
                     if (!ParseJsonText(Call.Arguments.JsonText, Arguments)) {
-                        return {};
+                        return MakeError(FailureCode::InvalidRequest, false,
+                                         "Assistant tool arguments are invalid JSON.");
                     }
                     json::object Function;
                     Function.emplace("name", Call.Name);
@@ -1135,7 +1290,8 @@ std::string SerializeRequest(const ModelProviderProfile& Profile,
         for (const ToolDefinition& Definition : Request.ToolDefinitions) {
             json::value Schema;
             if (!ParseJsonText(Definition.Parameters.JsonText, Schema)) {
-                return {};
+                return MakeError(FailureCode::InvalidRequest, false,
+                                 "Tool definition schema is invalid JSON.");
             }
             json::object Function;
             Function.emplace("name", Definition.Name);
@@ -1276,13 +1432,13 @@ CanonicalTerminalEvent ChatCompletionsProvider::StreamTurn(
             *OptionError};
     }
 
-    const std::string Body = SerializeRequest(Profile, Request, Options);
-    if (Body.empty()) {
-        return Failed(FailureCode::InvalidRequest, false,
-                      "Canonical request cannot be mapped to Chat "
-                      "Completions.",
-                      1);
+    ProviderResult<std::string> Serialized =
+        SerializeRequest(Profile, Request, Options);
+    if (const ProviderError* Error = std::get_if<ProviderError>(&Serialized)) {
+        return ResponseFailedEvent{
+            ProviderEventMetadata{Request.Id, Request.TurnId, 1}, *Error};
     }
+    std::string Body = std::get<std::string>(std::move(Serialized));
 
     TransportRequest WireRequest;
     WireRequest.Id =
