@@ -2004,7 +2004,13 @@ Tasks:
     EpicId: EP-06
     Title: 实现指令组装与策略优先级
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 9
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/9
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewHeadCommit: 8d65ad845f1def216af94a7430fc2235d75a49d2
+    ReviewStartedAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0101/ED-0103/ED-0109 are Merged; unblocked by Coordinator on 2026-10-28."
     AssignedToSlot: Worker02
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0115-R2
@@ -2114,7 +2120,12 @@ Tasks:
       - "Missing proxy policy field despite ADR/contract promising explicit direct mode."
       - "Endpoint grant validation has no dependency boundary in the Port."
     ReviewRound2HeadCommit: 360a79ac1602647ba7c2ea49cbbf0801cc1bc19d
-    ReviewRound2Status: AwaitingIndependentReview
+    ReviewRound2Decision: ChangesRequested
+    ReviewRound2Findings:
+      - "Proxy-Authorization is injectable via generic Headers while contract promises proxy credentials cannot be expressed."
+      - "Host/Content-Length ownership between Adapter and Transport needs to be explicit."
+      - "Compression clause contained an unimplementable Adapter-decodes sentence."
+    ReviewRound3Status: AwaitingFixAndReview
     Phase: P2
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01

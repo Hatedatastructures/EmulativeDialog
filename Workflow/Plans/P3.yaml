@@ -726,7 +726,13 @@ Tasks:
     EpicId: EP-06
     Title: 固定 SQLite Windows 依赖、链接与 Schema 基线
     TaskKind: Build
-    State: Assigned
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 10
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/10
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewHeadCommit: 840742559d28de22daa82645b56f15090be9a678
+    ReviewStartedAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0006/ED-0007 are Merged; unblocked by Coordinator on 2026-10-28 and assigned to Worker05 for build-slot balance."
     AssignedToSlot: Worker05
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0122-R3
