@@ -147,3 +147,10 @@
 - Controller 的简化 `context` 命令当前无法装配 33 路径 ReadSet：其 12 路径以上流程要求另一套绑定的预算例外/重工事件，且与 ED-0146/R6 已审批的 `MaxReferenceFiles: 33` 记录不兼容。Worker03 只按 R6 冻结的 33 个 ReadSet 路径手动装配，不扩展路径；Controller 预算流程需单独修复，不能作为本任务的实现验收替代物。
 - Worker01 是 ED-0146 实现 PR 的独立 Reviewer；当前只在实现 Head 固定后分配审查。Worker03 使用已注册稳定槽，模型与推理强度继承主会话；宿主未提供可核实的具体模型显示标签。
 - P3 EntryGate 仍 Pending，ED-0147 与其他 P3 能力仍按原依赖门等待。ED-0146 是 HTTPS Port 授权入口修复，不代表异步 AgentRuntime 重写或 Codex Agent 核心重写完成。
+
+## 2026-10-29 ED-0112/R5 并行派工
+
+- ED-0112/R5 的 TaskSpec/CR 固定审批与 PR #26 合并已核实；ED-0101、ED-0102、ED-0108、ED-0109、ED-0110、ED-0111 六项依赖均已合并。ED-0108 的 PR #19 已于 2026-10-28 合入 main（`981aebb`）；本 PR 同步修正了 P2 计划中仍留在 Review 的合并状态。模块写集与 ED-0146/R6 不重叠，可按独立任务并行推进。
+- 派工基线固定为 `0b666e655e75f7fdc7074a405cb2b2a35975a6fc`，owner Worker02；WorkflowController `create-worktree` 与 `validate-assignment` 均 exit 0，实际建立分支 `Task/ED-0112-R5TurnRecovery` 和隔离 worktree `H:/Qbot/EmulativeDialog.ED-0112-R5`。assignment PR 合并前不开始产品写入。
+- R5 必须只按八路径 WriteSet 重放已完成的恢复实现；不得合并 stacked 祖先或复用旧 R2 worktree。旧 dirty/stacked worktree保持保护。
+- 远端分支名额在新 PR 创建前为 3/4；ED-0146/R6 继续在其独立 worktree 实现。ED-0112/R5 不会覆盖或合并 ED-0146 写集。
