@@ -616,6 +616,178 @@ void TestAdditionalReviewScenarios() {
         "tiny token budget yields no candidates");
 }
 
+void TestSensitiveMarkersAreRejectedAcrossPersistedFields() {
+  const auto BaseContext = Context();
+  auto CheckContextField = [&](std::string_view Name,
+                               AuthorizedMemoryContext Candidate) {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    const auto Result = Memory.Write(
+        Candidate,
+        Request("memory-safe", MemoryCategory::IdentityPreference), Now());
+    Check(AsError(Result) != nullptr &&
+              AsError(Result)->Code == MemoryErrorCode::SensitiveContent,
+          Name);
+    Check(Storage.Rows.empty(), "sensitive scope does not touch storage");
+  };
+
+  auto SensitiveContext = BaseContext;
+  SensitiveContext.ChannelId = "qq ACCOUNT_TOKEN = synthetic";
+  CheckContextField("case-insensitive scope marker rejected", SensitiveContext);
+  SensitiveContext = BaseContext;
+  SensitiveContext.AccountId = "account CLIENT_SECRET=synthetic";
+  CheckContextField("account secret marker rejected", SensitiveContext);
+  SensitiveContext = BaseContext;
+  SensitiveContext.ConversationId = "conversation PRIVATE KEY=synthetic";
+  CheckContextField("conversation secret marker rejected", SensitiveContext);
+  SensitiveContext = BaseContext;
+  SensitiveContext.PrincipalId = "principal AUTHORIZATION=Bearer synthetic";
+  CheckContextField("principal credential marker rejected", SensitiveContext);
+
+  auto CheckConsentField = [&](std::string_view Name, ConsentGrant Candidate) {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    const auto Result = Memory.RegisterConsent(Candidate);
+    Check(AsError(Result) != nullptr &&
+              AsError(Result)->Code == MemoryErrorCode::SensitiveContent,
+          Name);
+    Check(Memory.IsConsentActive("consent-01") == false,
+          "sensitive consent is not registered");
+  };
+
+  auto SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.ConsentId = "consent API_KEY = synthetic";
+  CheckConsentField("consent identifier credential marker rejected",
+                    SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.GrantorPrincipalId = "principal PASSWORD=synthetic";
+  CheckConsentField("consent grantor credential marker rejected",
+                    SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.ChannelId = "channel AWS_SECRET_ACCESS_KEY=synthetic";
+  CheckConsentField("consent channel credential marker rejected",
+                    SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.AccountId = "account payment token = synthetic";
+  CheckConsentField("consent account payment marker rejected", SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.ConversationId = "conversation card_number=synthetic";
+  CheckConsentField("consent conversation payment marker rejected",
+                    SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.SourceMessageId = "message Bearer synthetic";
+  CheckConsentField("consent source credential marker rejected",
+                    SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::IdentityPreference, BaseContext);
+  SensitiveGrant.ProposalId = "proposal CVV = synthetic";
+  CheckConsentField("consent proposal payment marker rejected",
+                    SensitiveGrant);
+  SensitiveGrant = Grant(MemoryCategory::GroupMemory,
+                         Context(ConversationScopeKind::Group));
+  SensitiveGrant.AllowedGroupMembers = {"principal-01", "PAN=synthetic"};
+  CheckConsentField("consent member payment marker rejected", SensitiveGrant);
+
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  Check(std::holds_alternative<std::monostate>(Memory.RegisterConsent(
+            Grant(MemoryCategory::IdentityPreference, BaseContext))),
+        "safe consent registers before field checks");
+  auto CheckRequestField = [&](std::string_view Name,
+                               MemoryWriteRequest Candidate) {
+    const auto Result = Memory.Write(BaseContext, Candidate, Now());
+    Check(AsError(Result) != nullptr &&
+              AsError(Result)->Code == MemoryErrorCode::SensitiveContent,
+          Name);
+    Check(Storage.Rows.empty(), "sensitive record does not touch storage");
+  };
+
+  auto SensitiveRequest =
+      Request("memory-safe", MemoryCategory::IdentityPreference);
+  SensitiveRequest.MemoryId = "memory password = synthetic";
+  CheckRequestField("memory id credential marker rejected", SensitiveRequest);
+  SensitiveRequest =
+      Request("memory-safe", MemoryCategory::IdentityPreference);
+  SensitiveRequest.SubjectId = "subject client_secret=synthetic";
+  CheckRequestField("subject credential marker rejected", SensitiveRequest);
+  SensitiveRequest =
+      Request("memory-safe", MemoryCategory::IdentityPreference);
+  SensitiveRequest.Content = "PRIVATE KEY = synthetic";
+  CheckRequestField("content marker is case-insensitive and whitespace-safe",
+                    SensitiveRequest);
+  SensitiveRequest =
+      Request("memory-safe", MemoryCategory::IdentityPreference);
+  SensitiveRequest.SourceReference = "message credit_card=synthetic";
+  CheckRequestField("source reference payment marker rejected",
+                    SensitiveRequest);
+  SensitiveRequest =
+      Request("memory-safe", MemoryCategory::IdentityPreference);
+  SensitiveRequest.ConsentId = "consent access_token=synthetic";
+  CheckRequestField("request consent credential marker rejected",
+                    SensitiveRequest);
+  SensitiveRequest =
+      Request("memory-safe", MemoryCategory::IdentityPreference);
+  SensitiveRequest.ProposalId = "proposal SSN=synthetic";
+  CheckRequestField("request proposal personal-data marker rejected",
+                    SensitiveRequest);
+
+  auto CheckBackupField = [&](std::string_view Name,
+                              StoredMemory Candidate) {
+    FakeMemoryStorage BackupStorage;
+    ConversationMemory BackupMemory(BackupStorage);
+    Check(std::holds_alternative<std::monostate>(BackupMemory.RegisterConsent(
+              Grant(MemoryCategory::IdentityPreference, BaseContext))),
+          "safe consent registers before backup field check");
+    BackupStorage.BackupRecords = {std::move(Candidate)};
+    const auto Result = BackupMemory.RestoreBackup(BaseContext, Now());
+    Check(std::holds_alternative<std::size_t>(Result) &&
+              std::get<std::size_t>(Result) == 0U,
+          Name);
+    Check(BackupStorage.Rows.empty(), "sensitive backup does not persist");
+  };
+
+  StoredMemory Backup = ScopeOf(BaseContext);
+  Backup.MemoryId = "memory-safe";
+  Backup.Category = MemoryCategory::IdentityPreference;
+  Backup.SubjectId = "principal-01";
+  Backup.Content = "Synthetic memory";
+  Backup.SourceReference = "fixture-message-01";
+  Backup.ConsentId = "consent-01";
+  Backup.CreatedAt = Now();
+  Backup.Version = 1;
+  auto SensitiveBackup = Backup;
+  SensitiveBackup.MemoryId = "memory API_KEY = synthetic";
+  CheckBackupField("backup memory identifier marker rejected",
+                   SensitiveBackup);
+  SensitiveBackup = Backup;
+  SensitiveBackup.SubjectId = "subject CLIENT_SECRET=synthetic";
+  CheckBackupField("backup subject marker rejected", SensitiveBackup);
+  SensitiveBackup = Backup;
+  SensitiveBackup.Content = "PASSWORD = synthetic";
+  CheckBackupField("backup content marker rejected", SensitiveBackup);
+  SensitiveBackup = Backup;
+  SensitiveBackup.SourceReference = "source Bearer synthetic";
+  CheckBackupField("backup source marker rejected", SensitiveBackup);
+  SensitiveBackup = Backup;
+  SensitiveBackup.ConsentId = "consent AWS_SECRET_ACCESS_KEY=synthetic";
+  CheckBackupField("backup consent marker rejected", SensitiveBackup);
+  SensitiveBackup = Backup;
+  SensitiveBackup.ProposalId = "proposal PAYMENT TOKEN = synthetic";
+  CheckBackupField("backup proposal marker rejected", SensitiveBackup);
+
+  FakeMemoryStorage SensitiveScopeStorage;
+  ConversationMemory SensitiveScopeMemory(SensitiveScopeStorage);
+  auto SensitiveScope = BaseContext;
+  SensitiveScope.ConversationId = "conversation CARD_NUMBER=synthetic";
+  const auto SensitiveScopeResult =
+      SensitiveScopeMemory.RestoreBackup(SensitiveScope, Now());
+  Check(AsError(SensitiveScopeResult) != nullptr &&
+            AsError(SensitiveScopeResult)->Code ==
+                MemoryErrorCode::SensitiveContent,
+        "restore rejects sensitive scope identifiers");
+  Check(SensitiveScopeStorage.Rows.empty(),
+        "sensitive restore scope does not touch storage");
+}
+
 } // namespace
 
 int main() {
@@ -629,6 +801,7 @@ int main() {
   TestRestoreBackupBoundaries();
   TestRestartBoundaryAndStorageFailures();
   TestAdditionalReviewScenarios();
+  TestSensitiveMarkersAreRejectedAcrossPersistedFields();
   if (Failures != 0) {
     std::cerr << Failures << " checks failed\n";
     return 1;

@@ -17,12 +17,6 @@ using Context::ContextTrustClass;
 using Context::ConversationKind;
 using Context::ConversationScopeKey;
 
-constexpr std::string_view SensitiveMarkers[] = {
-    "BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY", "password=",
-    "access_token=", "client_secret=", "api_key=", "apikey=",
-    "aws_secret_access_key=", "payment_token=", "credit_card=", "card_number=",
-    "cvv=", "pan=", "Bearer "};
-
 ContextItemKind ToContextKind(MemoryCategory Category) {
   switch (Category) {
   case MemoryCategory::ConversationSummary:
@@ -95,8 +89,27 @@ MemoryError ConversationMemory::Error(MemoryErrorCode Code,
 }
 
 bool ConversationMemory::ContainsSensitiveContent(std::string_view Text) {
-  for (const auto Marker : SensitiveMarkers) {
-    if (Text.find(Marker) != std::string_view::npos) {
+  std::string Normalized;
+  Normalized.reserve(Text.size());
+  for (const unsigned char Character : Text) {
+    if (Character == ' ' || Character == '\t' || Character == '\r' ||
+        Character == '\n' || Character == '_') {
+      continue;
+    }
+    Normalized.push_back(
+        Character >= 'A' && Character <= 'Z'
+            ? static_cast<char>(Character - 'A' + 'a')
+            : static_cast<char>(Character));
+  }
+
+  constexpr std::string_view NormalizedSensitiveMarkers[] = {
+      "beginprivatekey", "beginrsaprivatekey", "beginopensshprivatekey",
+      "password=", "passwd=", "accesstoken=", "clientsecret=", "apikey=",
+      "accounttoken=", "awssecretaccesskey=", "paymenttoken=", "creditcard=", "cardnumber=",
+      "cvv=", "pan=", "bearer", "authorization=", "secretkey=",
+      "privatekey=", "ssn="};
+  for (const auto Marker : NormalizedSensitiveMarkers) {
+    if (Normalized.find(Marker) != std::string::npos) {
       return true;
     }
   }
@@ -109,6 +122,29 @@ std::optional<MemoryError> ConversationMemory::Authorize(
   if (!Context.IsComplete()) {
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal, scope, and policy version are required");
+  }
+  const std::string_view ContextStrings[] = {
+      Context.ChannelId, Context.AccountId, Context.ConversationId,
+      Context.PrincipalId};
+  for (const std::string_view Value : ContextStrings) {
+    if (ContainsSensitiveContent(Value)) {
+      return Error(MemoryErrorCode::SensitiveContent,
+                   "verified scope contains a forbidden sensitive marker");
+    }
+  }
+  const std::string_view RequestStrings[] = {
+      Request.MemoryId, Request.SubjectId, Request.Content,
+      Request.SourceReference, Request.ConsentId};
+  for (const std::string_view Value : RequestStrings) {
+    if (ContainsSensitiveContent(Value)) {
+      return Error(MemoryErrorCode::SensitiveContent,
+                   "memory fields contain a forbidden sensitive marker");
+    }
+  }
+  if (Request.ProposalId.has_value() &&
+      ContainsSensitiveContent(*Request.ProposalId)) {
+    return Error(MemoryErrorCode::SensitiveContent,
+                 "proposal identifier contains a forbidden sensitive marker");
   }
   if (Context.ScopeKind == ConversationScopeKind::Session) {
     return Error(MemoryErrorCode::SessionScopeVolatile,
@@ -130,10 +166,6 @@ std::optional<MemoryError> ConversationMemory::Authorize(
       !Request.UserConfirmed) {
     return Error(MemoryErrorCode::InvalidArgument,
                  "user-confirmed provenance requires explicit confirmation");
-  }
-  if (ContainsSensitiveContent(Request.Content)) {
-    return Error(MemoryErrorCode::SensitiveContent,
-                 "memory content contains a forbidden sensitive marker");
   }
   return std::nullopt;
 }
@@ -215,6 +247,26 @@ MemoryResult<std::monostate> ConversationMemory::RegisterConsent(
                  "consent requires id, verified grantor, exact scope, source "
                  "message, and policy version");
   }
+  const std::string_view GrantStrings[] = {
+      Grant.ConsentId, Grant.GrantorPrincipalId, Grant.ChannelId,
+      Grant.AccountId, Grant.ConversationId, Grant.SourceMessageId};
+  for (const std::string_view Value : GrantStrings) {
+    if (ContainsSensitiveContent(Value)) {
+      return Error(MemoryErrorCode::SensitiveContent,
+                   "consent fields contain a forbidden sensitive marker");
+    }
+  }
+  if (Grant.ProposalId.has_value() &&
+      ContainsSensitiveContent(*Grant.ProposalId)) {
+    return Error(MemoryErrorCode::SensitiveContent,
+                 "proposal identifier contains a forbidden sensitive marker");
+  }
+  for (const std::string& Member : Grant.AllowedGroupMembers) {
+    if (ContainsSensitiveContent(Member)) {
+      return Error(MemoryErrorCode::SensitiveContent,
+                   "group member identifier contains a forbidden sensitive marker");
+    }
+  }
   if (FindConsent(Grant.ConsentId) != nullptr) {
     return Error(MemoryErrorCode::InvalidArgument,
                  "consent id is already registered");
@@ -234,6 +286,15 @@ MemoryResult<std::monostate> ConversationMemory::RevokeConsent(
   if (!Context.IsComplete()) {
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal and scope are required");
+  }
+  const std::string_view ScopeStrings[] = {
+      Context.ChannelId, Context.AccountId, Context.ConversationId,
+      Context.PrincipalId};
+  for (const std::string_view Value : ScopeStrings) {
+    if (ContainsSensitiveContent(Value)) {
+      return Error(MemoryErrorCode::SensitiveContent,
+                   "verified scope contains a forbidden sensitive marker");
+    }
   }
   const auto* Consent = FindExactConsent(Context, ConsentId);
   if (Consent == nullptr) {
@@ -368,6 +429,19 @@ MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
             if (Record.ScopeKind != Context.ScopeKind) {
               return true;
             }
+            const std::string_view RecordStrings[] = {
+                Record.MemoryId, Record.ChannelId, Record.AccountId,
+                Record.ConversationId, Record.PrincipalId, Record.SubjectId,
+                Record.Content, Record.SourceReference, Record.ConsentId};
+            for (const std::string_view Value : RecordStrings) {
+              if (ContainsSensitiveContent(Value)) {
+                return true;
+              }
+            }
+            if (Record.ProposalId.has_value() &&
+                ContainsSensitiveContent(*Record.ProposalId)) {
+              return true;
+            }
             const auto* Consent = FindConsent(Record.ConsentId);
             return Consent == nullptr ||
                    !ConsentMatches(*Consent, Context, Record.Category,
@@ -475,6 +549,15 @@ MemoryResult<std::size_t> ConversationMemory::RestoreBackup(
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal and scope are required");
   }
+  const std::string_view ScopeStrings[] = {
+      Context.ChannelId, Context.AccountId, Context.ConversationId,
+      Context.PrincipalId};
+  for (const std::string_view Value : ScopeStrings) {
+    if (ContainsSensitiveContent(Value)) {
+      return Error(MemoryErrorCode::SensitiveContent,
+                   "verified scope contains a forbidden sensitive marker");
+    }
+  }
   if (Context.ScopeKind == ConversationScopeKind::Session) {
     return Error(MemoryErrorCode::SessionScopeVolatile,
                  "SessionScope is volatile and cannot be restored");
@@ -492,12 +575,25 @@ MemoryResult<std::size_t> ConversationMemory::RestoreBackup(
   std::size_t Restored = 0;
   for (const StoredMemory& Record :
        std::get<std::vector<StoredMemory>>(Backup)) {
+    const std::string_view RecordStrings[] = {
+        Record.MemoryId, Record.ChannelId, Record.AccountId,
+        Record.ConversationId, Record.PrincipalId, Record.SubjectId,
+        Record.Content, Record.SourceReference, Record.ConsentId};
+    bool ContainsSensitiveField = false;
+    for (const std::string_view Value : RecordStrings) {
+      ContainsSensitiveField = ContainsSensitiveField ||
+                               ContainsSensitiveContent(Value);
+    }
+    if (Record.ProposalId.has_value()) {
+      ContainsSensitiveField = ContainsSensitiveField ||
+                               ContainsSensitiveContent(*Record.ProposalId);
+    }
     if (Record.Tombstoned || Record.ScopeKind != Context.ScopeKind ||
         Record.ChannelId != Context.ChannelId ||
         Record.AccountId != Context.AccountId ||
         Record.ConversationId != Context.ConversationId ||
         Record.PrincipalId != Context.PrincipalId ||
-        ContainsSensitiveContent(Record.Content) ||
+        ContainsSensitiveField ||
         ActiveCount >= PerScopeCapacity_) {
       continue;
     }
