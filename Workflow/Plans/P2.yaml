@@ -2011,6 +2011,16 @@ Tasks:
     ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
     ReviewHeadCommit: 8d65ad845f1def216af94a7430fc2235d75a49d2
     ReviewStartedAt: 2026-10-28
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0115-004
+      RequestedByRole: AgentRuntimeOwner
+      RequestedByAgentId: /root/worker02_instruction_assembly
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Allow Source/Core/InstructionPolicy.hpp and Source/Agent/InstructionAssembler.hpp in place of the planned .h paths under the user file-naming rule, and add Tests/Contract/Agent/CMakeLists.txt so the new contract tests are registered in CTest. Preserve Goal, Acceptance, Owner, Reviewer, dependencies, and all other WriteSet paths."
+      Reason: "User instruction requires .hpp for new C++ files; CTest registration is required for the tests to execute in regression."
+      AcceptedAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0101/ED-0103/ED-0109 are Merged; unblocked by Coordinator on 2026-10-28."
     AssignedToSlot: Worker02
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0115-R2

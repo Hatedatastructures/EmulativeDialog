@@ -982,7 +982,7 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0143-BoostJsonDependency
     Worktree: H:/Qbot/EmulativeDialog.ED-0143
-    BaselineCommit: c87716fe4c0b9f3f3d2b1e0e9b0e8a1a2b3c4d5e
+    BaselineCommit: c87716fb677351b0c452312a1af976b12ea30fbe
     Goal: "为三种 Provider adapter 提供固定的 C++ JSON 解析/序列化能力：在 Boost 1.92.0 pinned checkout 上补充 libs/json 所需子模块，提供 header-only interface target 与编译运行探针，并登记依赖策略；不引入非 C++ 运行时。"
     OutOfScope: ["Provider wire adapter 实现", "HTTP 传输实现", "替换既有 yaml-cpp/SQLite 固定策略"]
     DependsOn: [ED-0131, ED-0122]
