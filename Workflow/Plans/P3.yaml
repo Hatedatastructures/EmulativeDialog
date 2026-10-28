@@ -1105,3 +1105,102 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, DEP-001, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
+
+  - TaskId: ED-0144
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配并注册根 CTest
+    TaskKind: IntegrationTask
+    State: Blocked
+    Phase: P3
+    OwnerRole: MemoryOwner
+    OwnerSlotId: Worker05
+    OwnerAgentId: /root/worker05_sqlite_pin
+    ReviewerRole: BuildAndWorkflowOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: /root/worker06_coverage_gate
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0144-MemorySqliteAdapter
+    Worktree: H:/Qbot/EmulativeDialog.ED-0144
+    Goal: "实现 MemoryStoragePort 到 SqliteStore 的生产适配器（事务化写、tombstone、scope kind 入 schema、consent tombstone、重启恢复），并把 Memory 合同测试接入根 CMake/CTest。"
+    OutOfScope: ["授权策略本身", "原始私聊正文持久化", "平台副本删除声明"]
+    DependsOn: [ED-0113, ED-0123]
+    Context:
+      ModuleId: Memory
+      ReadSet: [AGENTS.md, Architecture/Contracts/MemoryContract.md, Source/Memory/ConversationMemory.hpp, Source/Storage/SqliteStore.hpp, Tests/Contract/Memory/Fixtures/FixtureIndex.json]
+      OnDemandSet: [Workflow/Plans/P3.yaml]
+      ForbiddenSet: ["Source/Providers/", "Source/Agent/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 10
+      ExpansionReasonRequired: true
+    WriteSet: [Source/Memory/SqliteMemoryStorageAdapter.hpp, Source/Memory/SqliteMemoryStorageAdapter.cpp, Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp, CMakeLists.txt]
+    SharedLocks: [RootBuild]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "ConversationMemory 通过真实 SqliteStore 持久化；事务失败不改变旧数据，tombstone 与 consent 撤销可恢复。", Evidence: "真实文件 DB 集成测试 + 重启恢复。"}
+      - {AcceptanceId: AC-2, Description: "Direct/Group scope kind 入 schema，私聊与群记忆不可互读。", Evidence: "同 ID 不同 kind 隔离测试。"}
+      - {AcceptanceId: AC-3, Description: "根 CMake 注册 Memory 合同测试并保持现有测试全绿。", Evidence: "根 ctest 全量通过。"}
+    Validation:
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Memory/SqliteMemoryStorageAdapter.cpp]
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0144.build/Reports
+      RequiredTargets: [SqliteMemoryStorageAdapterTests]
+      LiveSideEffects: Forbidden
+      NotRunReason: "使用任务构建目录内的隔离 SQLite 文件。"
+    RiskLevel: High
+    RiskOwnerRole: MemoryOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0145
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 将三 Provider、Memory、Network 合同测试接入根 CMake/CTest
+    TaskKind: Build
+    State: Blocked
+    Phase: P3
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: /root/worker01_http_contract
+    ReviewerRole: AgentRuntimeOwner
+    ReviewerSlotId: Worker02
+    ReviewerAgentId: /root/worker02_instruction_assembly
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0145-RootProviderTestIntegration
+    Worktree: H:/Qbot/EmulativeDialog.ED-0145
+    Goal: "把三个 Provider adapter、Memory、Network 的合同测试目录挂到根 CMake/CTest，并确保 windows-agent-slice 全量 ctest 可重复通过（含数据目录环境）。"
+    OutOfScope: ["修改 Provider 行为", "新增网络访问", "CI 平台配置"]
+    DependsOn: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0121, ED-0143]
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet: [AGENTS.md, CMakeLists.txt, CMakePresets.json, Tests/Contract/Providers, Tests/Contract/Memory, Tests/Contract/Platform/Network]
+      OnDemandSet: []
+      ForbiddenSet: ["Source/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 10
+      ExpansionReasonRequired: true
+    WriteSet: [CMakeLists.txt, Tests/Contract/Providers/CMakeLists.txt, Tests/Contract/Memory/CMakeLists.txt, Tests/Contract/Platform/Network/CMakeLists.txt]
+    SharedLocks: [RootBuild]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "根 configure/build 构建所有合同测试目标。", Evidence: "全目标构建退出 0。"}
+      - {AcceptanceId: AC-2, Description: "根 ctest 全量通过（含 SQLite 数据目录环境与 Provider fixtures）。", Evidence: "ctest --test-dir 全量输出。"}
+      - {AcceptanceId: AC-3, Description: "不修改任何 Source/ 生产代码。", Evidence: "diff 仅构建/测试路径。"}
+    Validation:
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "仅根构建与测试注册，不新增生产逻辑。"
+      RequiredTargets: [ALL]
+      LiveSideEffects: Forbidden
+      NotRunReason: "测试使用离线 fixtures 与临时数据库。"
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
