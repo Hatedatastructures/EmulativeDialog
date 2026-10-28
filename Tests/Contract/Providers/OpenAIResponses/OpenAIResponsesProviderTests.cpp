@@ -648,6 +648,7 @@ void TestStreamCases() {
 void TestErrorCases() {
     const Json::value Fixture = LoadFixture("ErrorCases.json");
     const Json::object& Root = Fixture.as_object();
+    int DeferredCases = 0;
     for (const Json::value& CaseValue : Root.at("Cases").as_array()) {
         const Json::object& Case = CaseValue.as_object();
         const std::string CaseId =
@@ -661,8 +662,16 @@ void TestErrorCases() {
         Request.Messages.push_back(UserMessage("fixture input"));
 
         if (CaseId == "background_cancel_confirmed") {
-            // Deferred: background response cancellation requires a second
-            // provider endpoint that ModelProviderContract V1 does not expose.
+            // Explicitly contract-deferred, never silently skipped:
+            // ModelProviderContract V1 exposes no background cancellation
+            // endpoint, so the adapter cannot issue CancelHttpResponse.
+            Expect(Case.if_contains("CancelHttpResponse") != nullptr);
+            Expect(Case.if_contains("WireEvents") == nullptr);
+            std::printf(
+                "CONTRACT-DEFERRED: background_cancel_confirmed "
+                "(ModelProviderContract V1 has no background cancellation "
+                "endpoint)\n");
+            ++DeferredCases;
             continue;
         }
         if (CaseId == "cancel_before_send") {
@@ -748,6 +757,125 @@ void TestErrorCases() {
             Expect(Payload.at("ErrorCode") == "InvalidStream");
         }
     }
+    Expect(DeferredCases == 1);
+}
+
+void TestTransportTerminalMappings() {
+    const auto RunTerminal =
+        [](const Net::TransportTerminal& Terminal, int Status = 200,
+           std::string Body = {}) {
+            FakeHttpTransport Transport(FakeResponse{
+                .StatusCode = Status,
+                .Chunks = {std::move(Body)},
+                .Terminal = Terminal});
+            CanonicalModelRequest Request;
+            Request.Id = RequestId{std::string{"terminal-request"}};
+            Request.TurnId = AgentTurnId{std::string{"terminal-turn"}};
+            Request.ModelName = "synthetic-model";
+            Request.Messages.push_back(UserMessage("terminal input"));
+            return RunStream(Transport, MakeProfile(), Request).Events.back();
+        };
+
+    const Json::object Tls = RunTerminal(Net::FailedTransport{
+        .Code = Net::TransportFailureCode::TlsHandshakeFailure});
+    Expect(Tls.at("EventType") == "ResponseFailed");
+    Expect(Tls.at("Payload").as_object().at("ErrorCode") ==
+           "TransportFailure");
+
+    const Json::object ConnectTimeout = RunTerminal(Net::TimedOutTransport{
+        .Phase = Net::TransportTimeoutPhase::Connect});
+    Expect(ConnectTimeout.at("EventType") == "ResponseFailed");
+    Expect(ConnectTimeout.at("Payload").as_object().at("ErrorCode") ==
+           "TransportFailure");
+
+    const Json::object ResponseTimeout = RunTerminal(Net::TimedOutTransport{
+        .Phase = Net::TransportTimeoutPhase::Response});
+    Expect(ResponseTimeout.at("EventType") == "ResponseOutcomeUnknown");
+
+    const Json::object Redirect = RunTerminal(Net::RedirectDeniedTransport{
+        .StatusCode = 307, .RedactedLocationHost = "other.example"});
+    Expect(Redirect.at("EventType") == "ResponseFailed");
+    Expect(Redirect.at("Payload").as_object().at("ErrorCode") ==
+           "ProviderRejected");
+
+    const Json::object Unknown = RunTerminal(Net::UnknownOutcomeTransport{
+        .Reason = Net::UnknownOutcomeReason::StreamInterruptedAfterRequestSent,
+        .RequestMayHaveReachedEndpoint = true});
+    Expect(Unknown.at("EventType") == "ResponseOutcomeUnknown");
+
+    const Json::object NotGranted = RunTerminal(Net::FailedTransport{
+        .Code = Net::TransportFailureCode::EndpointNotGranted});
+    Expect(NotGranted.at("EventType") == "ResponseFailed");
+    Expect(NotGranted.at("Payload").as_object().at("ErrorCode") ==
+           "InvalidProfile");
+
+    const Json::object TransportCancelled =
+        RunTerminal(Net::CancelledTransport{
+            .RequestMayHaveReachedEndpoint = false});
+    Expect(TransportCancelled.at("EventType") == "ResponseCancelled");
+    Expect(TransportCancelled.at("Payload")
+               .as_object()
+               .at("ReasonCode") == "CancelledBeforeSend");
+
+    const Json::object TransportCancelUnconfirmed =
+        RunTerminal(Net::CancelledTransport{
+            .RequestMayHaveReachedEndpoint = true});
+    Expect(TransportCancelUnconfirmed.at("EventType") ==
+           "ResponseOutcomeUnknown");
+
+    const std::string ServerErrorBody =
+        R"({"error":{"message":"Temporary upstream failure.","code":"server_error"}})";
+    const Json::object ServerError =
+        RunTerminal(Net::CompletedTransport{.StatusCode = 503,
+                                            .ReceivedBodyBytes =
+                                                ServerErrorBody.size()},
+                    503, ServerErrorBody);
+    Expect(ServerError.at("EventType") == "ResponseFailed");
+    const Json::object& ServerPayload = ServerError.at("Payload").as_object();
+    Expect(ServerPayload.at("ErrorCode") == "ProviderRejected");
+    Expect(ServerPayload.at("Retryable").as_bool());
+
+    const std::string ClientErrorBody =
+        R"({"error":{"message":"Bad request.","code":"invalid_request_error"}})";
+    const Json::object ClientError =
+        RunTerminal(Net::CompletedTransport{.StatusCode = 400,
+                                            .ReceivedBodyBytes =
+                                                ClientErrorBody.size()},
+                    400, ClientErrorBody);
+    Expect(ClientError.at("Payload").as_object().at("Retryable") == false);
+}
+
+void TestSseOverflowCannotBeMasked() {
+    const Json::value Fixture = LoadFixture("StreamCases.json");
+    const Json::object& Root = Fixture.as_object();
+    const Json::object& TextCase =
+        Root.at("Cases").as_array().front().as_object();
+    const std::string ValidSse =
+        BuildSse(TextCase.at("WireEvents").as_array());
+    std::string Oversized = "data: ";
+    Oversized.append(2U * 1024U * 1024U + 64U, 'x'); // no frame delimiter
+
+    FakeHttpTransport Transport(FakeResponse{
+        .StatusCode = 200,
+        .Chunks = {Oversized, ValidSse},
+        .Terminal = Net::CompletedTransport{
+            .StatusCode = 200,
+            .ReceivedBodyBytes = Oversized.size() + ValidSse.size()}});
+    CanonicalModelRequest Request;
+    Request.Id = RequestId{std::string{"overflow-request"}};
+    Request.TurnId = AgentTurnId{std::string{"overflow-turn"}};
+    Request.ModelName = "synthetic-model";
+    Request.Messages.push_back(UserMessage("overflow input"));
+    const ObservedEvents Observed =
+        RunStream(Transport, MakeProfile(), Request);
+    Expect(!Observed.Events.empty());
+    for (const Json::object& Event : Observed.Events) {
+        Expect(Event.at("EventType") != "ResponseCompleted");
+    }
+    const Json::object& Terminal = Observed.Events.back();
+    Expect(Terminal.at("EventType") == "ResponseFailed");
+    Expect(Terminal.at("Payload").as_object().at("ErrorCode") ==
+           "InvalidStream");
 }
 
 void TestRefusalV1Point2Cases() {
@@ -873,6 +1001,8 @@ int main() {
     TestCanonicalRequestWireMapping();
     TestStreamCases();
     TestErrorCases();
+    TestTransportTerminalMappings();
+    TestSseOverflowCannotBeMasked();
     TestRefusalV1Point2Cases();
     TestProfileCapabilitiesAndAuthSchemes();
     TestUnsupportedInputsAndOptions();

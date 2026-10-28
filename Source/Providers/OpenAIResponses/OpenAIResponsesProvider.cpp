@@ -1,8 +1,6 @@
 #include "Source/Providers/OpenAIResponses/OpenAIResponsesProvider.hpp"
 
-// Boost.JSON header-only mode: this translation unit is the single
-// implementation unit for the adapter library.
-#include <boost/json/src.hpp>
+#include <boost/json.hpp>
 #include <boost/system/error_code.hpp>
 
 #include <algorithm>
@@ -799,6 +797,9 @@ private:
 class SseDecoder final {
 public:
     void Append(std::string_view Bytes, StreamSession& Session) {
+        if (Overflow) {
+            return;
+        }
         Buffer.append(Bytes);
         while (!Session.Done()) {
             const std::size_t Delimiter = FindFrameDelimiter();
@@ -888,6 +889,19 @@ CanonicalTerminalEvent TerminalForTransportTerminal(
                                   FailureCode::RateLimited, true,
                                   ProviderErrorFromBody(Body)
                                       .SanitizedDescription);
+        }
+        if (Completed->StatusCode == 500 || Completed->StatusCode == 502 ||
+            Completed->StatusCode == 503 ||
+            Completed->StatusCode == 504) {
+            ProviderError Error = ProviderErrorFromBody(Body);
+            Error.Retryable = true;
+            if (Error.Code != FailureCode::AuthenticationFailure &&
+                Error.Code != FailureCode::RateLimited &&
+                Error.Code != FailureCode::ContentFiltered) {
+                Error.Code = FailureCode::ProviderRejected;
+            }
+            return ResponseFailedEvent{.Metadata = Emitter.NextMetadata(),
+                                       .Failure = std::move(Error)};
         }
         if (Completed->StatusCode >= 400) {
             const ProviderError Error = ProviderErrorFromBody(Body);
@@ -1077,13 +1091,13 @@ CanonicalTerminalEvent OpenAIResponsesProvider::StreamTurn(
         },
         CancellationToken);
 
-    if (Session.Terminal().has_value()) {
-        return *Session.Terminal();
-    }
     if (Decoder.Failed()) {
         return FailedTerminal(Emitter.NextMetadata(),
                               FailureCode::InvalidStream, false,
                               "Provider SSE frame exceeded its bound.");
+    }
+    if (Session.Terminal().has_value()) {
+        return *Session.Terminal();
     }
     if (HttpStatus >= 400) {
         return TerminalForTransportTerminal(Terminal, HttpStatus, ResponseBody,

@@ -22,23 +22,27 @@ set_target_properties(EmulativeDialogOpenAIResponses
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF)
 
-if(TARGET EmulativeDialogBoostJson)
-  target_link_libraries(EmulativeDialogOpenAIResponses
-    PUBLIC EmulativeDialogBoostJson)
-else()
-  if(NOT DEFINED EMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR)
+if(NOT TARGET EmulativeDialogBoostJson)
+  if(NOT DEFINED EMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR OR
+     NOT DEFINED EMULATIVE_DIALOG_BOOST_JSON_LIBRARY)
     message(FATAL_ERROR
-      "EmulativeDialogBoostJson (ED-0143) is not defined. For a diagnostic "
-      "standalone build only, pass "
-      "-DEMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR=<Boost 1.92 include dir>.")
+      "EmulativeDialogBoostJson (ED-0143) is not available. For diagnostic "
+      "standalone verification pass "
+      "-DEMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR and "
+      "-DEMULATIVE_DIALOG_BOOST_JSON_LIBRARY.")
   endif()
+  add_library(EmulativeDialogBoostJson STATIC IMPORTED GLOBAL)
+  set_target_properties(EmulativeDialogBoostJson
+    PROPERTIES
+      IMPORTED_LOCATION "${EMULATIVE_DIALOG_BOOST_JSON_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES
+        "${EMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR}")
   message(WARNING
-    "Using diagnostic Boost.JSON include directory "
-    "${EMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR}; the final build must link "
-    "EmulativeDialogBoostJson from ED-0143.")
-  target_include_directories(EmulativeDialogOpenAIResponses
-    PUBLIC "${EMULATIVE_DIALOG_BOOST_JSON_INCLUDE_DIR}")
+    "Using a diagnostic imported Boost.JSON for standalone verification; "
+    "the final root build links ED-0143 EmulativeDialogBoostJson.")
 endif()
+target_link_libraries(EmulativeDialogOpenAIResponses
+  PUBLIC EmulativeDialogBoostJson)
 
 add_executable(OpenAIResponsesProviderTests
   OpenAIResponsesProviderTests.cpp)
