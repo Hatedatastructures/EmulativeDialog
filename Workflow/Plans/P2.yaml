@@ -1501,7 +1501,15 @@ Tasks:
     EpicId: EP-06
     Title: 实现规范化流式 Agent 事件投影与终态门
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0107-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0107 against the frozen ModelProviderPort canonical event types before ED-0104/0105/0106 merge; provider adapters integrate into the projector after their PRs merge. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0107-R3
+    AssignedBranch: Task/ED-0107-R3-AgentEventProjector
+    AssignmentDate: 2026-10-28
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2004,7 +2012,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现指令组装与策略优先级
     TaskKind: IntegrationTask
-    State: Review
+    State: Merged
+    MergeCommit: 0366288195a483a712ba701dda976e0179474133
+    MergedByCoordinatorAt: 2026-10-28
     PullRequestCreated: true
     PullRequestNumber: 9
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/9
@@ -2890,7 +2900,12 @@ Tasks:
     EpicId: EP-06
     Title: 补齐 AgentRuntime 行为覆盖并注册现有合同测试
     TaskKind: TestSupport
-    State: Assigned
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 12
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/12
+    ReviewBaseCommit: f301f5d2979bb5099856aaeb036291837a22617a
+    ReviewHeadCommit: 35cbd323fd9b99d31c04fd30dd2902f90168137b
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
