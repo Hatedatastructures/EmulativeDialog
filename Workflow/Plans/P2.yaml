@@ -2008,6 +2008,14 @@ Tasks:
       ApprovedByRole: Coordinator
       Scope: "Allow .hpp file names in place of planned .h paths and register the new recovery tests in the appropriate Tests/Contract CMakeLists.txt."
       AcceptedAt: 2026-10-28
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0112-OWNER-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Continue ED-0112 review repairs under Worker04 after Worker01 reached its execution budget; preserve Goal, WriteSet and Reviewer."
+    ReviewBaseCommit: a5838bccc7de1b8589d15573ef6baea2ab2cc4be
+    ReviewHeadCommit: bbe294475daf221f3babca22db5162bc73839c63
+    ReviewStatus: ChangesRequested
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
     AssignedBranch: Task/ED-0112-R2-TurnRecovery-stacked
     LocalCompletionHead: bbe294475daf221f3babca22db5162bc73839c63
