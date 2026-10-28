@@ -2114,7 +2114,9 @@ Tasks:
     EpicId: EP-06
     Title: 冻结 Windows 原生 HTTPS Provider Transport 合同与 C++ Port
     TaskKind: ContractFreeze
-    State: Review
+    State: Merged
+    MergeCommit: 13fe929573de105e09af9b56f022ffbe62d07ba7
+    MergedByCoordinatorAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0006/ED-0007/ED-0008 are Merged; unblocked by Coordinator on 2026-10-28."
     AssignedToSlot: Worker01
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0120-R2

@@ -77,7 +77,13 @@ Tasks:
     EpicId: EP-06
     Title: 实现 OpenAI Responses C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0015/ED-0009/ED-0120 are Merged; temporarily reassigned to Worker01 while Worker03 owns ED-0143."
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0104-OWNER-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Assign ED-0104/R3 execution to Worker01 in worktree H:/Qbot/EmulativeDialog.ED-0104-R3; preserve Goal, WriteSet, Acceptance, Reviewer and dependencies."
     Phase: P3
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -183,7 +189,8 @@ Tasks:
     EpicId: EP-06
     Title: 实现 OpenAI-compatible Chat Completions C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0015/ED-0010/ED-0120 are Merged; assigned to Worker04; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
     Phase: P3
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -308,7 +315,8 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Anthropic Messages C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0015/ED-0011/ED-0120 are Merged; assigned to Worker05; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
     Phase: P3
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -638,7 +646,15 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Windows WinHTTP/Schannel Transport
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Review
+    AssignmentNote: "ED-0120 merged; implementation cherry-picked onto main and pushed."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0121-R2-rebase
+    AssignedBranch: Task/ED-0121-R2-WinHttpTransport-rebase
+    PullRequestCreated: true
+    PullRequestNumber: 11
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/11
+    ReviewBaseCommit: 13fe929573de105e09af9b56f022ffbe62d07ba7
+    ReviewHeadCommit: a03bc3e
     Phase: P3
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -862,7 +878,11 @@ Tasks:
     EpicId: EP-06
     Title: 实现隔离事务、作用域和 tombstone 的 SQLite Storage
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Implementation complete locally on stacked branch (head 070b0ad, coverage 81.92%); awaits ED-0122 merge then rebase/push."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0123-R3
+    AssignedBranch: Task/ED-0123-R3-SqliteStore
+    LocalCompletionHead: 070b0ad
     Phase: P3
     OwnerRole: StorageOwner
     OwnerSlotId: Worker06
@@ -970,7 +990,15 @@ Tasks:
     EpicId: EP-06
     Title: 固定 Boost.JSON 1.92 子模块并建立 Provider 解析构建探针
     TaskKind: Build
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0131 merged; stacked on ED-0122 branch to avoid shared-file conflicts. Temporarily reassigned to Worker03."
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0143-OWNER-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Assign ED-0143 execution to Worker03 in worktree H:/Qbot/EmulativeDialog.ED-0143; preserve Goal, WriteSet, Acceptance, Reviewer and dependencies."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0143
+    AssignedBranch: Task/ED-0143-BoostJsonDependency
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker06
