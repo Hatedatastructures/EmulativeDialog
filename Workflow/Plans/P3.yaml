@@ -1004,12 +1004,18 @@ Tasks:
       Decision: Accepted
       ApprovedByRole: Coordinator
       Scope: "Assign ED-0143 execution to Worker03 in worktree H:/Qbot/EmulativeDialog.ED-0143; preserve Goal, WriteSet, Acceptance, Reviewer and dependencies."
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0143-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Add CMake/BoostJsonImplementation.cpp so Boost.JSON can be compiled exactly once into the static EmulativeDialogBoostJson library, preventing multi-TU ODR conflicts across the three provider adapters."
+      AcceptedAt: 2026-10-28
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0143
     AssignedBranch: Task/ED-0143-BoostJsonDependency
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
-    OwnerSlotId: Worker06
-    OwnerAgentId: /root/worker06_coverage_gate
+    OwnerSlotId: Worker03
+    OwnerAgentId: /root/worker03_responses_review
     ReviewerRole: ResponsesProviderOwner
     ReviewerSlotId: Worker03
     ReviewerAgentId: /root/worker03_responses_review
@@ -1018,7 +1024,7 @@ Tasks:
     Branch: Task/ED-0143-BoostJsonDependency
     Worktree: H:/Qbot/EmulativeDialog.ED-0143
     BaselineCommit: c87716fb677351b0c452312a1af976b12ea30fbe
-    Goal: "为三种 Provider adapter 提供固定的 C++ JSON 解析/序列化能力：在 Boost 1.92.0 pinned checkout 上补充 libs/json 所需子模块，提供 header-only interface target 与编译运行探针，并登记依赖策略；不引入非 C++ 运行时。"
+    Goal: "为三种 Provider adapter 提供固定的 C++ JSON 解析/序列化能力：在 Boost 1.92.0 pinned checkout 上补充 libs/json 所需子模块，提供单一编译实现库 EmulativeDialogBoostJson 与编译运行探针，并登记依赖策略；不引入非 C++ 运行时。"
     OutOfScope: ["Provider wire adapter 实现", "HTTP 传输实现", "替换既有 yaml-cpp/SQLite 固定策略"]
     DependsOn: [ED-0131, ED-0122]
     Context:
@@ -1029,7 +1035,7 @@ Tasks:
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 10
       ExpansionReasonRequired: true
-    WriteSet: [CMake/BoostJsonDependency.cmake, CMake/BoostJsonProbe.cpp, CMakeLists.txt, Standards/DependencyPolicy.md]
+    WriteSet: [CMake/BoostJsonDependency.cmake, CMake/BoostJsonImplementation.cpp, CMake/BoostJsonProbe.cpp, CMakeLists.txt, Standards/DependencyPolicy.md]
     SharedLocks: [DependencyLock, RootBuild]
     Acceptance:
       - {AcceptanceId: AC-1, Description: "固定 Boost 1.92.0 checkout 内所需 JSON 子模块（json/container/describe/align/throw_exception 等）齐备，并有构建阶段校验。", Evidence: "校验脚本输出 commit 与子模块清单。"}
