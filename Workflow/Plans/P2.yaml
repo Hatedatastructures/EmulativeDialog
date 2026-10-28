@@ -1501,7 +1501,23 @@ Tasks:
     EpicId: EP-06
     Title: 实现规范化流式 Agent 事件投影与终态门
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0107-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0107 against the frozen ModelProviderPort canonical event types before ED-0104/0105/0106 merge; provider adapters integrate into the projector after their PRs merge. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0107-R3
+    AssignedBranch: Task/ED-0107-R3-AgentEventProjector
+    AssignmentDate: 2026-10-28
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0107-004
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Agent/AgentEventProjector.hpp in place of the planned .h path under the user file-naming rule, and add Tests/Contract/Agent/CMakeLists.txt so the event projector contract tests are registered in CTest."
+      AcceptedAt: 2026-10-28
+    LocalCompletionHead: f63f4c52e14d4cd2e8ad3d8145e95d7486cec0b2
+    LocalCoverage: "96.08% lines (441/459), 91.46% branches executed"
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1608,7 +1624,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现受 Core 授权的业务工具调用往返
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0108-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0108 on top of the completed ED-0107 AgentEventProjector branch; provider adapters integrate after merge. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0108-R2
+    AssignedBranch: Task/ED-0108-R2-ToolCallCoordinator
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1697,7 +1720,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现 turn 与三协议 Provider 统一取消生命周期
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0110-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0110 against the frozen canonical event and stop_token contracts while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0110-R4-main
+    AssignedBranch: Task/ED-0110-R4-TurnCancellation
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -1806,7 +1836,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider 失败分类与有界重试策略
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0111-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0111 against frozen ProviderError and canonical transport semantics while provider adapter PRs are pending. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0111-R3
+    AssignedBranch: Task/ED-0111-R3-ProviderOutcomePolicy
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2004,7 +2041,25 @@ Tasks:
     EpicId: EP-06
     Title: 实现指令组装与策略优先级
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
+    MergeCommit: 0366288195a483a712ba701dda976e0179474133
+    MergedByCoordinatorAt: 2026-10-28
+    PullRequestCreated: true
+    PullRequestNumber: 9
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/9
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewHeadCommit: 8d65ad845f1def216af94a7430fc2235d75a49d2
+    ReviewStartedAt: 2026-10-28
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0115-004
+      RequestedByRole: AgentRuntimeOwner
+      RequestedByAgentId: /root/worker02_instruction_assembly
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Allow Source/Core/InstructionPolicy.hpp and Source/Agent/InstructionAssembler.hpp in place of the planned .h paths under the user file-naming rule, and add Tests/Contract/Agent/CMakeLists.txt so the new contract tests are registered in CTest. Preserve Goal, Acceptance, Owner, Reviewer, dependencies, and all other WriteSet paths."
+      Reason: "User instruction requires .hpp for new C++ files; CTest registration is required for the tests to execute in regression."
+      AcceptedAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0101/ED-0103/ED-0109 are Merged; unblocked by Coordinator on 2026-10-28."
     AssignedToSlot: Worker02
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0115-R2
@@ -2098,7 +2153,9 @@ Tasks:
     EpicId: EP-06
     Title: 冻结 Windows 原生 HTTPS Provider Transport 合同与 C++ Port
     TaskKind: ContractFreeze
-    State: Review
+    State: Merged
+    MergeCommit: 13fe929573de105e09af9b56f022ffbe62d07ba7
+    MergedByCoordinatorAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0006/ED-0007/ED-0008 are Merged; unblocked by Coordinator on 2026-10-28."
     AssignedToSlot: Worker01
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0120-R2
@@ -2114,7 +2171,12 @@ Tasks:
       - "Missing proxy policy field despite ADR/contract promising explicit direct mode."
       - "Endpoint grant validation has no dependency boundary in the Port."
     ReviewRound2HeadCommit: 360a79ac1602647ba7c2ea49cbbf0801cc1bc19d
-    ReviewRound2Status: AwaitingIndependentReview
+    ReviewRound2Decision: ChangesRequested
+    ReviewRound2Findings:
+      - "Proxy-Authorization is injectable via generic Headers while contract promises proxy credentials cannot be expressed."
+      - "Host/Content-Length ownership between Adapter and Transport needs to be explicit."
+      - "Compression clause contained an unimplementable Adapter-decodes sentence."
+    ReviewRound3Status: AwaitingFixAndReview
     Phase: P2
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -2867,7 +2929,12 @@ Tasks:
     EpicId: EP-06
     Title: 补齐 AgentRuntime 行为覆盖并注册现有合同测试
     TaskKind: TestSupport
-    State: Assigned
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 12
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/12
+    ReviewBaseCommit: f301f5d2979bb5099856aaeb036291837a22617a
+    ReviewHeadCommit: 35cbd323fd9b99d31c04fd30dd2902f90168137b
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02

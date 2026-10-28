@@ -77,7 +77,15 @@ Tasks:
     EpicId: EP-06
     Title: 实现 OpenAI Responses C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0015/ED-0009/ED-0120 are Merged; temporarily reassigned to Worker01 while Worker03 owns ED-0143."
+    LocalCompletionHead: 96d61ec44ab0f757dff47e902f1e8bb4fa8922e8
+    LocalCoverage: "80.74% lines (570/706)"
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0104-OWNER-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Assign ED-0104/R3 execution to Worker01 in worktree H:/Qbot/EmulativeDialog.ED-0104-R3; preserve Goal, WriteSet, Acceptance, Reviewer and dependencies."
     Phase: P3
     OwnerRole: ResponsesProviderOwner
     OwnerSlotId: Worker03
@@ -183,7 +191,10 @@ Tasks:
     EpicId: EP-06
     Title: 实现 OpenAI-compatible Chat Completions C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0015/ED-0010/ED-0120 are Merged; assigned to Worker04; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
+    LocalCompletionHead: 4542d0e
+    LocalCoverage: "89.30% lines (835/935), diagnostic Boost 1.91 build"
     Phase: P3
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker04
@@ -308,7 +319,10 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Anthropic Messages C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0015/ED-0011/ED-0120 are Merged; assigned to Worker05; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
+    LocalCompletionHead: 6797cea
+    LocalCoverage: "95.30% lines (771/809), 124/124 fixture assertions"
     Phase: P3
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -414,7 +428,14 @@ Tasks:
     EpicId: EP-06
     Title: 实现授权、身份和会话隔离的聊天 Memory
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0113-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0113 on top of the completed ED-0123 SqliteStore branch while its PR is under review. Preserve Goal, WriteSet, Acceptance, Owner and Reviewer."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0113-R4
+    AssignedBranch: Task/ED-0113-R4-ChatMemory
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker06
@@ -638,7 +659,15 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Windows WinHTTP/Schannel Transport
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Review
+    AssignmentNote: "ED-0120 merged; implementation cherry-picked onto main and pushed."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0121-R2-rebase
+    AssignedBranch: Task/ED-0121-R2-WinHttpTransport-rebase
+    PullRequestCreated: true
+    PullRequestNumber: 11
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/11
+    ReviewBaseCommit: 13fe929573de105e09af9b56f022ffbe62d07ba7
+    ReviewHeadCommit: a03bc3e
     Phase: P3
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -726,7 +755,15 @@ Tasks:
     EpicId: EP-06
     Title: 固定 SQLite Windows 依赖、链接与 Schema 基线
     TaskKind: Build
-    State: Assigned
+    State: Merged
+    MergeCommit: f301f5d2979bb5099856aaeb036291837a22617a
+    MergedByCoordinatorAt: 2026-10-28
+    PullRequestCreated: true
+    PullRequestNumber: 10
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/10
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewHeadCommit: 840742559d28de22daa82645b56f15090be9a678
+    ReviewStartedAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0006/ED-0007 are Merged; unblocked by Coordinator on 2026-10-28 and assigned to Worker05 for build-slot balance."
     AssignedToSlot: Worker05
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0122-R3
@@ -856,7 +893,16 @@ Tasks:
     EpicId: EP-06
     Title: 实现隔离事务、作用域和 tombstone 的 SQLite Storage
     TaskKind: CapabilitySlice
-    State: Blocked
+    State: Review
+    PullRequestCreated: true
+    PullRequestNumber: 13
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/13
+    ReviewBaseCommit: f301f5d2979bb5099856aaeb036291837a22617a
+    ReviewHeadCommit: d3d03a2
+    AssignmentNote: "Implementation complete locally on stacked branch (head 070b0ad, coverage 81.92%); awaits ED-0122 merge then rebase/push."
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0123-R3
+    AssignedBranch: Task/ED-0123-R3-SqliteStore
+    LocalCompletionHead: 070b0ad
     Phase: P3
     OwnerRole: StorageOwner
     OwnerSlotId: Worker06
@@ -958,3 +1004,73 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, TRACE-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0112, ED-0113]}
+
+  - TaskId: ED-0143
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 固定 Boost.JSON 1.92 子模块并建立 Provider 解析构建探针
+    TaskKind: Build
+    State: Assigned
+    AssignmentNote: "Dependencies ED-0131 merged; stacked on ED-0122 branch to avoid shared-file conflicts. Temporarily reassigned to Worker03."
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0143-OWNER-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Assign ED-0143 execution to Worker03 in worktree H:/Qbot/EmulativeDialog.ED-0143; preserve Goal, WriteSet, Acceptance, Reviewer and dependencies."
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0143-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Add CMake/BoostJsonImplementation.cpp so Boost.JSON can be compiled exactly once into the static EmulativeDialogBoostJson library, preventing multi-TU ODR conflicts across the three provider adapters."
+      AcceptedAt: 2026-10-28
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0143
+    AssignedBranch: Task/ED-0143-BoostJsonDependency
+    LocalCompletionHead: 548e926
+    LocalValidation: "configure/build/probe/ctest exit 0; single src.hpp TU; no Boost DLL or libwinpthread DLL"
+    Phase: P3
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: /root/worker03_responses_review
+    ReviewerRole: ResponsesProviderOwner
+    ReviewerSlotId: Worker03
+    ReviewerAgentId: /root/worker03_responses_review
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0143-BoostJsonDependency
+    Worktree: H:/Qbot/EmulativeDialog.ED-0143
+    BaselineCommit: c87716fb677351b0c452312a1af976b12ea30fbe
+    Goal: "为三种 Provider adapter 提供固定的 C++ JSON 解析/序列化能力：在 Boost 1.92.0 pinned checkout 上补充 libs/json 所需子模块，提供单一编译实现库 EmulativeDialogBoostJson 与编译运行探针，并登记依赖策略；不引入非 C++ 运行时。"
+    OutOfScope: ["Provider wire adapter 实现", "HTTP 传输实现", "替换既有 yaml-cpp/SQLite 固定策略"]
+    DependsOn: [ED-0131, ED-0122]
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet: [AGENTS.md, Architecture/Contracts/ModelProviderContract.md, Standards/DependencyPolicy.md, CMake/BoostAsioDependency.cmake, CMake/DependencyPins.cmake, CMakeLists.txt]
+      OnDemandSet: [Tests/Contract/Providers/OpenAIResponses/Fixtures/FixtureIndex.json]
+      ForbiddenSet: ["Source/Providers/", "Source/Agent/", "Source/Core/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 10
+      ExpansionReasonRequired: true
+    WriteSet: [CMake/BoostJsonDependency.cmake, CMake/BoostJsonImplementation.cpp, CMake/BoostJsonProbe.cpp, CMakeLists.txt, Standards/DependencyPolicy.md]
+    SharedLocks: [DependencyLock, RootBuild]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "固定 Boost 1.92.0 checkout 内所需 JSON 子模块（json/container/describe/align/throw_exception 等）齐备，并有构建阶段校验。", Evidence: "校验脚本输出 commit 与子模块清单。"}
+      - {AcceptanceId: AC-2, Description: "C++20 探针真实解析与序列化 JSON（对象/数组/字符串/数字/错误输入），运行成功且错误输入 fail-closed。", Evidence: "BoostJsonProbe 编译运行与 CTest 结果。"}
+      - {AcceptanceId: AC-3, Description: "依赖策略记录版本、许可证、header-only 边界，不新增运行时 DLL。", Evidence: "DependencyPolicy 更新与 objdump 结果。"}
+    Validation:
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "构建依赖与探针任务，无产品生产 .cpp 逻辑。"
+      RequiredTargets: [BoostJsonProbe]
+      TargetedBuild:
+        - "$env:PATH='C:/msys64/ucrt64/bin;'+$env:PATH; I:/cmake/bin/cmake.exe --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --target BoostJsonProbe --parallel 6"
+        - "I:/cmake/bin/ctest.exe --preset windows-agent-slice --output-on-failure -R BoostJson --no-tests=error"
+      LiveSideEffects: Forbidden
+      NotRunReason: "探针仅在进程内解析字符串，无网络与文件系统副作用。"
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, DEP-001, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
