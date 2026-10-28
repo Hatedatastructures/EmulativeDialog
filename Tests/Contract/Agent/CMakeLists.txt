@@ -77,3 +77,41 @@ add_custom_target(AgentRuntimeCoverageReport
 add_dependencies(AgentRuntimeCoverageReport
     AgentRuntimeContractTests
     AgentRuntimeVerticalSliceTests)
+
+set(PROVIDER_OUTCOME_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/ProviderOutcomePolicy.cpp")
+
+add_library(ProviderOutcomePolicyObject OBJECT "${PROVIDER_OUTCOME_SOURCE}")
+target_include_directories(ProviderOutcomePolicyObject
+                           PUBLIC "${PROJECT_ROOT}")
+target_compile_options(ProviderOutcomePolicyObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_executable(ProviderOutcomePolicyTests
+    "${CMAKE_CURRENT_LIST_DIR}/ProviderOutcomePolicyTests.cpp")
+target_include_directories(ProviderOutcomePolicyTests
+                           PRIVATE "${PROJECT_ROOT}")
+target_compile_options(ProviderOutcomePolicyTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(ProviderOutcomePolicyTests
+                      PRIVATE ProviderOutcomePolicyObject)
+
+add_test(NAME ProviderOutcomePolicy.Contract
+         COMMAND ProviderOutcomePolicyTests)
+
+set(PROVIDER_OUTCOME_REPORT_DIR
+    "${AGENT_RUNTIME_REPORT_DIR}/ProviderOutcomePolicy")
+file(MAKE_DIRECTORY "${PROVIDER_OUTCOME_REPORT_DIR}")
+add_custom_target(ProviderOutcomePolicyCoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:ProviderOutcomePolicyObject>"
+            "${PROVIDER_OUTCOME_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --branch-probabilities --branch-counts
+            -o "$<TARGET_OBJECTS:ProviderOutcomePolicyObject>"
+            "${PROVIDER_OUTCOME_SOURCE}"
+    WORKING_DIRECTORY "${PROVIDER_OUTCOME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating ProviderOutcomePolicy.cpp gcov JSON v2 and text reports")
+add_dependencies(ProviderOutcomePolicyCoverageReport
+                 ProviderOutcomePolicyTests)
