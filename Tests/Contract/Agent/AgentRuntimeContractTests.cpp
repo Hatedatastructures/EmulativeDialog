@@ -3,8 +3,10 @@
 #include "Tests/Contract/Providers/Contracts/FakeProvider.h"
 
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -578,6 +580,448 @@ void TestAnthropicRefusalDiscardsPriorText() {
         "Anthropic refusal must never expose prior partial TextDelta as final text");
 }
 
+class ConfigurableProvider final : public Providers::ModelProviderPort {
+public:
+  std::optional<Providers::ProviderError> ValidateError;
+  std::optional<Providers::ProviderError> CapabilitiesError;
+  bool ThrowOnValidate{false};
+  bool ThrowOnStream{false};
+  std::vector<Providers::CanonicalNonTerminalEvent> Events;
+  std::function<Providers::CanonicalTerminalEvent(
+      const Providers::CanonicalModelRequest&)>
+      TerminalFactory;
+  Providers::ProviderCapabilities Capabilities{true, true, true, true, true,
+                                               true};
+  std::size_t StreamCalls{0};
+
+  Providers::ProviderResult<Providers::ProviderCapabilities> GetCapabilities(
+      const Providers::ProviderProfileId&) const override {
+    if (CapabilitiesError.has_value()) {
+      return *CapabilitiesError;
+    }
+    return Capabilities;
+  }
+
+  Providers::ProviderResult<std::monostate> ValidateProfile(
+      const Providers::ModelProviderProfile&) const override {
+    if (ThrowOnValidate) {
+      throw std::runtime_error("synthetic validation failure");
+    }
+    if (ValidateError.has_value()) {
+      return *ValidateError;
+    }
+    return std::monostate{};
+  }
+
+  Providers::CanonicalTerminalEvent StreamTurn(
+      const Providers::ModelProviderProfile&,
+      const Providers::CredentialLease&,
+      const Providers::CanonicalModelRequest& Request, std::stop_token,
+      const Providers::EventSink& Sink) override {
+    ++StreamCalls;
+    if (ThrowOnStream) {
+      throw std::runtime_error("synthetic stream failure");
+    }
+    for (const auto& Event : Events) {
+      Sink(Event);
+    }
+    return TerminalFactory(Request);
+  }
+
+  Providers::ProviderResult<Providers::ProviderHealthStatus> HealthCheck(
+      const Providers::ModelProviderProfile&) override {
+    return Providers::ProviderHealthStatus{
+        Providers::ProviderHealthState::Available};
+  }
+};
+
+Providers::CanonicalTerminalEvent FinalTerminalAfter(
+    const Providers::CanonicalModelRequest& Request,
+    std::uint64_t Sequence) {
+  return Providers::ResponseCompletedEvent{
+      .Metadata = Providers::ProviderEventMetadata{
+          .Request = Request.Id,
+          .TurnId = Request.TurnId,
+          .SequenceNumber = Sequence,
+      },
+      .Kind = Providers::CompletionKind::FinalAnswer,
+      .StopSequenceCode = std::nullopt,
+      .FinalUsage = std::nullopt,
+      .StopDetails = std::nullopt,
+  };
+}
+
+void TestProviderProfileAndCapabilityErrorsMap() {
+  const auto Context = MakeContext("contract-provider-errors");
+  {
+    ConfigurableProvider Provider;
+    Provider.ValidateError = Providers::ProviderError{
+        Providers::FailureCode::AuthenticationFailure, false,
+        "synthetic authentication failure"};
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::AuthenticationFailure,
+          "ValidateProfile errors must map to the matching Agent failure");
+    Check(Provider.StreamCalls == 0,
+          "profile validation failures must not reach StreamTurn");
+  }
+  {
+    ConfigurableProvider Provider;
+    Provider.CapabilitiesError = Providers::ProviderError{
+        Providers::FailureCode::RateLimited, true, "synthetic rate limit"};
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::RateLimited,
+          "GetCapabilities errors must map to the matching Agent failure");
+    Check(Provider.StreamCalls == 0,
+          "capability failures must not reach StreamTurn");
+  }
+}
+
+void TestProviderExceptionsMapToSafeOutcomes() {
+  const auto Context = MakeContext("contract-provider-exceptions");
+  {
+    ConfigurableProvider Provider;
+    Provider.ThrowOnValidate = true;
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::InternalError,
+          "unexpected validation exceptions must map to InternalError");
+  }
+  {
+    ConfigurableProvider Provider;
+    Provider.ThrowOnStream = true;
+    Provider.Events.clear();
+    Provider.TerminalFactory = [](const Providers::CanonicalModelRequest& R) {
+      return FinalTerminalAfter(R, 1);
+    };
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::UnknownOutcome,
+          "stream exceptions must map to UnknownOutcome");
+    Check(Provider.StreamCalls == 1,
+          "stream exceptions must be observed once without retry");
+  }
+}
+
+void TestInvalidStreamMetadataFailsClosed() {
+  const auto ExpectInvalidStream = [](
+      std::string Turn,
+      const std::vector<Providers::CanonicalNonTerminalEvent>& Events,
+      Providers::CanonicalTerminalEvent Terminal, const char* Message) {
+    const auto Context = MakeContext(std::move(Turn));
+    RawScriptProvider Provider(Events, std::move(Terminal));
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::InvalidStream,
+          Message);
+  };
+
+  {
+    const auto Context = MakeContext("contract-wrong-request");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    ExpectInvalidStream(
+        "contract-wrong-request",
+        {TextEvent(Providers::RequestId{"other-request"},
+                   Context.AgentTurn, 1, "delta")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer),
+        "a nonterminal event from another request must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-wrong-turn");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    ExpectInvalidStream(
+        "contract-wrong-turn",
+        {TextEvent(Request, Providers::AgentTurnId{"other-turn"}, 1, "delta")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer),
+        "a nonterminal event from another turn must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-duplicate-sequence");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    ExpectInvalidStream(
+        "contract-duplicate-sequence",
+        {TextEvent(Request, Context.AgentTurn, 1, "delta"),
+         TextEvent(Request, Context.AgentTurn, 1, "delta again")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer),
+        "duplicate nonterminal sequence numbers must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-sequence-gap");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    ExpectInvalidStream(
+        "contract-sequence-gap",
+        {TextEvent(Request, Context.AgentTurn, 2, "delta")},
+        Completed(Request, Context.AgentTurn, 3,
+                  Providers::CompletionKind::FinalAnswer),
+        "gapped nonterminal sequence numbers must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-terminal-request");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    ExpectInvalidStream(
+        "contract-terminal-request",
+        {TextEvent(Request, Context.AgentTurn, 1, "delta")},
+        Completed(Providers::RequestId{"other-request"}, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer),
+        "a terminal event from another request must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-terminal-sequence");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    ExpectInvalidStream(
+        "contract-terminal-sequence",
+        {TextEvent(Request, Context.AgentTurn, 1, "delta")},
+        Completed(Request, Context.AgentTurn, 1,
+                  Providers::CompletionKind::FinalAnswer),
+        "a duplicated terminal sequence must fail closed");
+  }
+}
+
+void TestNonStreamingProviderIsUnsupported() {
+  const auto Context = MakeContext("contract-non-streaming");
+  ConfigurableProvider Provider;
+  Provider.Capabilities = Providers::ProviderCapabilities{
+      .Streaming = false,
+      .ToolCalls = false,
+      .Vision = true,
+      .Usage = true,
+      .Cancellation = true,
+      .OutputLimit = true,
+  };
+  const auto Result = RunScript(Context, MakeProfile(), Provider);
+  Check(Result.GetStatus() == Core::AgentRunStatus::Unsupported,
+        "providers without streaming must be rejected before dispatch");
+  Check(Provider.StreamCalls == 0,
+        "non-streaming rejection must not reach StreamTurn");
+}
+
+void TestToolEventsNeverAuthorizeExecution() {
+  const auto RunToolEvent = [](std::string Turn,
+                               Providers::CanonicalNonTerminalEvent ToolEvent) {
+    const auto Context = MakeContext(std::move(Turn));
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {std::move(ToolEvent)},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer)));
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Unsupported,
+          "tool call events must never authorize business actions");
+  };
+
+  RunToolEvent(
+      "contract-tool-started",
+      Providers::ToolCallStartedEvent{
+          .Metadata = {},
+          .Item = Providers::ItemId{"item-tool"},
+          .Call = Providers::ToolCallId{"call-tool"},
+          .ToolName = "unsupported-tool",
+      });
+  RunToolEvent(
+      "contract-tool-arguments",
+      Providers::ToolArgumentDeltaEvent{
+          .Metadata = {},
+          .Item = Providers::ItemId{"item-tool"},
+          .Call = Providers::ToolCallId{"call-tool"},
+          .JsonTextDelta = "{}",
+      });
+  RunToolEvent(
+      "contract-tool-ready",
+      Providers::ToolCallReadyEvent{
+          .Metadata = {},
+          .Item = Providers::ItemId{"item-tool"},
+          .Call = Providers::ToolCallId{"call-tool"},
+          .ToolName = "unsupported-tool",
+          .Arguments = Providers::JsonValue{"{}"},
+      });
+}
+
+void TestCompletedTerminalMatrixFailsClosed() {
+  {
+    const auto Context = MakeContext("contract-stop-details-final");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {TextEvent(Request, Context.AgentTurn, 1, "text")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer,
+                  Providers::RefusalStopDetails{
+                      .Type = Providers::RefusalStopDetailsType::Refusal,
+                      .Category = Providers::RefusalCategory::GeneralHarms,
+                  })));
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::InvalidStream,
+          "FinalAnswer with refusal stop details must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-tool-handoff-no-events");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {}, Completed(Request, Context.AgentTurn, 1,
+                      Providers::CompletionKind::ToolHandoff)));
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Unsupported,
+          "ToolHandoff completion must remain unsupported");
+  }
+  {
+    const auto Context = MakeContext("contract-anthropic-refusal-missing-details");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {RefusalEvent(Request, Context.AgentTurn, 1, "refusal")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::Refusal)));
+    const auto Result = RunScript(
+        Context, MakeProfile(Providers::ProviderProtocol::AnthropicMessages),
+        Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::InvalidStream,
+          "Anthropic refusals without typed stop details must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-chat-refusal-mixed-text");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {TextEvent(Request, Context.AgentTurn, 1, "visible text"),
+         RefusalEvent(Request, Context.AgentTurn, 2, "refusal")},
+        Completed(Request, Context.AgentTurn, 3,
+                  Providers::CompletionKind::Refusal)));
+    const auto Result = RunScript(
+        Context,
+        MakeProfile(Providers::ProviderProtocol::
+                        OpenAICompatibleChatCompletions),
+        Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::InvalidStream,
+          "Chat Completions refusals mixed with visible text must fail closed");
+  }
+  {
+    const auto Context = MakeContext("contract-final-with-refusal-delta");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {RefusalEvent(Request, Context.AgentTurn, 1, "refusal")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::FinalAnswer)));
+    const auto Result = RunScript(Context, MakeProfile(), Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+              Result.GetFailureCode() ==
+                  Core::AgentRunFailureCode::InvalidStream,
+          "FinalAnswer after refusal deltas must fail closed");
+  }
+}
+
+void TestVisionRequestMapsApprovedImageReference() {
+  const auto Context = MakeContext(
+      "contract-vision-supported",
+      Channels::CanonicalMessage{
+          .MessageParts =
+              {Channels::TextPart{"describe"},
+               Channels::MediaReferencePart{
+                   .Reference =
+                       Channels::MediaReferenceId{"image-synthetic"},
+                   .Kind = Channels::MediaReferenceKind::Image,
+               }},
+          .ReplyToId = std::nullopt,
+          .MentionedIds = {},
+          .PlatformMetadata = {},
+      });
+  const auto Request = ExpectedRequestId(Context.AgentTurn);
+  FakeProvider Provider;
+  Provider.EnqueueScript(MakeScript(
+      {TextEvent(Request, Context.AgentTurn, 1, "description")},
+      Completed(Request, Context.AgentTurn, 2,
+                Providers::CompletionKind::FinalAnswer)));
+  const auto Result = RunScript(Context, MakeProfile(), Provider);
+  Check(Result.GetStatus() == Core::AgentRunStatus::ResponseReady,
+        "vision-capable providers should accept approved image references");
+  const auto& Requests = Provider.GetCapturedRequests();
+  Check(Requests.size() == 1 &&
+            Requests[0].Messages.size() == 1 &&
+            Requests[0].Messages[0].ContentParts.size() == 2,
+        "text plus image content must map into one canonical message");
+  Check(std::holds_alternative<Providers::ImageContentReference>(
+            Requests[0].Messages[0].ContentParts[1]),
+        "the approved image reference must stay typed");
+}
+
+void TestUnknownFailureCodesFailClosed() {
+  const auto Context = MakeContext("contract-unknown-failure");
+  const auto Request = ExpectedRequestId(Context.AgentTurn);
+  RawScriptProvider Provider(
+      {},
+      Providers::ResponseFailedEvent{
+          .Metadata = Metadata(Request, Context.AgentTurn, 1),
+          .Failure = Providers::ProviderError{
+              static_cast<Providers::FailureCode>(250), false,
+              "synthetic unrecognized failure"},
+      });
+  const auto Result = RunScript(Context, MakeProfile(), Provider);
+  Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+            Result.GetFailureCode() ==
+                Core::AgentRunFailureCode::InternalError,
+        "unrecognized provider failure codes must map to InternalError");
+}
+
+void TestTypedRefusalsCompleteForTheirProtocols() {
+  {
+    const auto Context =
+        MakeContext("contract-anthropic-typed-refusal");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {RefusalEvent(Request, Context.AgentTurn, 1, "cannot comply")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::Refusal,
+                  Providers::RefusalStopDetails{
+                      .Type = Providers::RefusalStopDetailsType::Refusal,
+                      .Category = Providers::RefusalCategory::GeneralHarms,
+                  })));
+    const auto Result = RunScript(
+        Context, MakeProfile(Providers::ProviderProtocol::AnthropicMessages),
+        Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+              Result.GetCompletionKind() ==
+                  Providers::CompletionKind::Refusal &&
+              Result.GetFinalText() == "cannot comply",
+          "typed Anthropic refusals must complete as refusals");
+  }
+  {
+    const auto Context =
+        MakeContext("contract-chat-typed-refusal");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {RefusalEvent(Request, Context.AgentTurn, 1, "cannot comply")},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::Refusal)));
+    const auto Result = RunScript(
+        Context,
+        MakeProfile(Providers::ProviderProtocol::
+                        OpenAICompatibleChatCompletions),
+        Provider);
+    Check(Result.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+              Result.GetCompletionKind() ==
+                  Providers::CompletionKind::Refusal &&
+              Result.GetFinalText() == "cannot comply",
+          "refusal-only Chat Completions responses must complete as refusals");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -590,5 +1034,14 @@ int main() {
   TestProviderCapabilitiesGateUnsupportedInputs();
   TestInvalidInputsAndPreCancelledTurnsDoNotCallProvider();
   TestAnthropicRefusalDiscardsPriorText();
+  TestProviderProfileAndCapabilityErrorsMap();
+  TestProviderExceptionsMapToSafeOutcomes();
+  TestInvalidStreamMetadataFailsClosed();
+  TestNonStreamingProviderIsUnsupported();
+  TestToolEventsNeverAuthorizeExecution();
+  TestCompletedTerminalMatrixFailsClosed();
+  TestVisionRequestMapsApprovedImageReference();
+  TestUnknownFailureCodesFailClosed();
+  TestTypedRefusalsCompleteForTheirProtocols();
   return 0;
 }
