@@ -91,6 +91,15 @@ target_compile_options(InstructionAssemblerTests PRIVATE
 
 add_test(NAME Agent.InstructionAssembler COMMAND InstructionAssemblerTests)
 
+add_executable(AgentEventProjectorTests
+    "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/AgentEventProjectorTests.cpp")
+target_include_directories(AgentEventProjectorTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(AgentEventProjectorTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_test(NAME Agent.EventProjector COMMAND AgentEventProjectorTests)
+
 add_custom_target(AgentRuntimeCoverageReport
     COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
             -o "$<TARGET_OBJECTS:AgentRuntimeObject>" "${AGENT_RUNTIME_SOURCE}"
