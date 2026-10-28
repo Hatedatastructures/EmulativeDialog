@@ -2098,12 +2098,23 @@ Tasks:
     EpicId: EP-06
     Title: 冻结 Windows 原生 HTTPS Provider Transport 合同与 C++ Port
     TaskKind: ContractFreeze
-    State: Assigned
+    State: Review
     AssignmentNote: "Dependencies ED-0006/ED-0007/ED-0008 are Merged; unblocked by Coordinator on 2026-10-28."
     AssignedToSlot: Worker01
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0120-R2
     AssignedBranch: Task/ED-0120-R2-HttpTransportContract
     AssignmentDate: 2026-10-28
+    PullRequestCreated: true
+    PullRequestNumber: 8
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/8
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewRound1HeadCommit: 406283e5233b88d06996fd9bef687f15787cd55b
+    ReviewRound1Decision: ChangesRequested
+    ReviewRound1Findings:
+      - "Missing proxy policy field despite ADR/contract promising explicit direct mode."
+      - "Endpoint grant validation has no dependency boundary in the Port."
+    ReviewRound2HeadCommit: 360a79ac1602647ba7c2ea49cbbf0801cc1bc19d
+    ReviewRound2Status: AwaitingIndependentReview
     Phase: P2
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -2653,7 +2664,9 @@ Tasks:
     EpicId: EP-06
     Title: 建立固定 Boost.Asio 1.92.0 的 C++20 协程构建基线
     TaskKind: Build
-    State: Review
+    State: Merged
+    MergeCommit: e139286e007a770266ed99485a833d9e0c7b2b40
+    MergedByCoordinatorAt: 2026-10-28
     PullRequestCreated: true
     PullRequestNumber: 6
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/6
@@ -2789,7 +2802,10 @@ Tasks:
     EpicId: EP-06
     Title: 固化多人协作的 PR、分支与固定 Head 审查纪律
     TaskKind: Governance
-    State: Review
+    State: Merged
+    MergeCommit: af9bc7e40afab54bcf24d9058b1f37e57e1cdfbb
+    MergedByCoordinatorAt: 2026-10-28
+    ReviewerDecision: Approved
     Phase: P2
     OwnerRole: BuildAndWorkflowOwner
     OwnerSlotId: Worker01
