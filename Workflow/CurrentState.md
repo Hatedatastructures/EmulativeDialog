@@ -140,9 +140,10 @@
 
 ## 2026-10-29 PR #26 合并与 ED-0146/R6 派工
 
-- GitHub 已确认 PR #26 合并；`main` 与 `origin/main` 为 `b43ebd954cffb358645cfe173e832aa3b6a3110e`。远端分支为 `main`、ED-0114 PR #20、ED-0144 PR #25，共 3/4。
+- GitHub 已确认 PR #26 合并；`main` 与 `origin/main` 为 `b43ebd954cffb358645cfe173e832aa3b6a3110e`。PR #27 创建后远端分支为 `main`、ED-0114 PR #20、ED-0144 PR #25、ED-0146 派工 PR #27，共 4/4。
 - ED-0146/R6 的 TaskSpec 与 CR-ED-0120-006 具有 Owner、独立 Reviewer、Coordinator 批准；PR #26 完成主分支合并。ED-0120/R2、ED-0121/R2、ED-0143/R1、ED-0006/R1、ED-0124/R9 均已合并，任务按冻结的十路径 WriteSet 派给 Worker03。
 - 实现基线冻结为 PR #26 合并后的 `b43ebd954cffb358645cfe173e832aa3b6a3110e`；分支 `Task/ED-0146-R6HttpTransportGrantGuard`，隔离 worktree `H:/Qbot/EmulativeDialog.ED-0146`。构建与覆盖率报告仅写入 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/`。
+- WorkflowController 已实际创建上述隔离分支/worktree；创建结果为 `Branch=Task/ED-0146-R6HttpTransportGrantGuard`、`Worktree=H:\\Qbot\\EmulativeDialog.ED-0146`、`BaseCommit=HeadCommit=b43ebd954cffb358645cfe173e832aa3b6a3110e`。该任务分配 PR #27 仍在固定头审查，Worker03 尚未开始产品源代码编辑。
 - Controller 的简化 `context` 命令当前无法装配 33 路径 ReadSet：其 12 路径以上流程要求另一套绑定的预算例外/重工事件，且与 ED-0146/R6 已审批的 `MaxReferenceFiles: 33` 记录不兼容。Worker03 只按 R6 冻结的 33 个 ReadSet 路径手动装配，不扩展路径；Controller 预算流程需单独修复，不能作为本任务的实现验收替代物。
 - Worker01 是 ED-0146 实现 PR 的独立 Reviewer；当前只在实现 Head 固定后分配审查。Worker03 使用已注册稳定槽，模型与推理强度继承主会话；宿主未提供可核实的具体模型显示标签。
 - P3 EntryGate 仍 Pending，ED-0147 与其他 P3 能力仍按原依赖门等待。ED-0146 是 HTTPS Port 授权入口修复，不代表异步 AgentRuntime 重写或 Codex Agent 核心重写完成。

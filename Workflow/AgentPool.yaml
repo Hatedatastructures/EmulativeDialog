@@ -41,8 +41,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0146/R6-AssignmentLedgerReview
+    Status: Assigned
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
