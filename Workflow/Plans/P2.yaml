@@ -3546,7 +3546,7 @@ Tasks:
     EpicId: EP-06
     Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P2
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
@@ -3558,18 +3558,19 @@ Tasks:
     ReviewerSlotId: Worker01
     ReviewerAgentId: /root/worker01_ed0105_owner
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    BaselineCommit: ""
-    Branch: ""
-    Worktree: ""
-    AssignedToSlot: ""
-    AssignmentNote: "Not assignable until CR-ED-0120-006 and this exact R6 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
+    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    BaselineCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    Branch: Task/ED-0146-R6HttpTransportGrantGuard
+    Worktree: H:\Qbot\EmulativeDialog.ED-0146
+    AssignedToSlot: Worker03
+    AssignmentNote: "PR #26 merged to main at b43ebd954cffb358645cfe173e832aa3b6a3110e; CR-ED-0120-006 and the exact R6 TaskSpec have Owner, independent Reviewer, and Coordinator approval; all five dependencies are Merged. Worker03 is assigned on the b43 product baseline in the isolated worktree. Keep P3 EntryGate Pending until ED-0146 and ED-0147 pass implementation, review, and Windows verification."
     PreviousRevision2:
       TaskRevision: 2
       Disposition: SupersededBeforeImplementation

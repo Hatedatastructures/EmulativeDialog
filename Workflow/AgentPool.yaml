@@ -41,7 +41,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0146/R6-TaskSpecIndependentReview
+    CurrentTaskId: ""
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -53,7 +53,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0147/R6-TaskSpecOwnerReview
+    CurrentTaskId: ""
     Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
@@ -63,8 +63,8 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0146/R6-TaskSpecOwnerReview
-    Status: Active
+    CurrentTaskId: ED-0146/R6-HttpTransportGrantGuard
+    Status: Assigned
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/p2_validation_luna"
@@ -73,7 +73,7 @@ Slots:
     HostSessionRef: "/root/worker04_ed0114_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0147/R6-TaskSpecIndependentReview
+    CurrentTaskId: ""
     Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderAndMemoryOwner
@@ -85,7 +85,7 @@ Slots:
       - ProviderAnthropicMessages
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0148/R4-TaskSpecOwnerReview
+    CurrentTaskId: ""
     Status: Active
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
@@ -94,7 +94,7 @@ Slots:
     ReasoningEffort: InheritCoordinator
     HostSessionRef: "/root/worker06_ed0105_review"
     ModuleIds: []
-    CurrentTaskId: ED-0148/R4-TaskSpecIndependentReview
+    CurrentTaskId: ""
     Status: Active
 
 AssignmentRules:
@@ -127,7 +127,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: NetworkPlatform
-    State: Proposed
+    State: Active
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Architecture/Contracts/HttpTransportContract.md
@@ -147,7 +147,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: ProviderOpenAIResponses
-    State: Proposed
+    State: Active
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
@@ -157,7 +157,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: ProviderOpenAIChatCompletions
-    State: Proposed
+    State: Active
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
@@ -167,7 +167,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: ProviderAnthropicMessages
-    State: Proposed
+    State: Active
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp

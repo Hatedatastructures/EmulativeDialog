@@ -22,7 +22,7 @@
 
 - 保持 ADR-0002 范围：Windows 原生 C++20；Responses、兼容 Chat Completions、Anthropic Messages；首渠道 QQ；微信 Deferred。CLI/IDE、开发工作流、Shell/主机状态、任意文件/网络/MCP 工具、TUI 不阻塞 Agent 核心。
 - P1 Gate 签署后，首条切片按依赖执行 ED-0109 Core 身份/策略 → ED-0125 MockChannel 授权接缝 → ED-0101 C++ AgentRuntime 回合 → ED-0124 根 CMake/CTest 集成。ED-0109/R4 与 ED-0125/R3 已集成；ED-0101/R5 五路径实现已于 e2f7246269a2debfed3a164e4f14b8347b5e3ef5 squash 集成并推送。Worker06 固定 Head Reviewer Approve；Windows CMake 构建通过、CTest 2/2 通过，unique-source gcov JSON v2 coverage 为 143/160 (89.38%)。验收仍要求 Mock 入站身份可信、拒绝/去重不调用 Runtime、FakeProvider 只在完整终态后交付答案、Core 只发送一次授权文本并核对相关 Mock 回执；Core 与 Agent 生产源逐模块覆盖率至少 80%。
-- ED-0120/R2 仍为 Blocked：当前仓库尚无冻结的 HttpTransportContract/Port，旧 TaskSpec 目标为 WinHTTP/Schannel。新建 ED-0131 先验证锁定 Boost 1.92.0 的 C++20 Asio；之后须通过 ChangeRequest 将 Transport 合同改为 awaitable/Asio，再启动网络和 Provider 实现。
+- ED-0120/R2 已合并，但其 Port grant 校验可绕过问题由 ED-0146/R6 修复；ED-0146/R6 已在 PR #26 合并后派工。完整 endpoint grant authority 与 HttpTransportContract 冻结继续等待 ED-0147/R6。ED-0131/R2 的 Boost.Asio C++20 构建基础已通过 PR #2 合入，不再阻塞该纠正任务。
 - 真实 QQ 登录/发送仍须等待官方授权路径和能力证据；本轮不接微信。
 
 ## 当前验证与下一步
@@ -32,7 +32,7 @@
 - ED-0101/R5 TaskSpec 已在 commit ad2a3f6bfe4c534f69b20edd095a72d0df22fae7 固定；CR-ED-0101-003 已由 Worker02 Owner 与 Worker01 independent reviewer 批准，六项依赖均 Merged。assignment baseline a28e02523b286f9957fb2d60012241b567494654；Controller 创建并验证 branch Task/ED-0101-R5AgentRuntimeSlice/worktree H:/Qbot/EmulativeDialog.ED-0101-R5。Worker02 完成五路径 AgentRuntime 实现并提交一个模块提交；Worker06 固定 Head review Approve。Controller 构建/CTest 2/2/coverage 命令全部 exit 0；TaskSpec unique-source coverage 143/160 (89.38%)。ReviewBundle SHA256 为 F1AA79FDDD1D21BBEC8D97A546CB3037662305EF1A22DF3500A197BB38DB71C；集成提交 e2f7246269a2debfed3a164e4f14b8347b5e3ef5 已推送，ED-0124 是下一门。
 - GitHub plugin repo metadata on 2026-10-27 confirms default branch `main` and `admin/push/pull` permissions. PR #1 (`ED-0124/R9`) was created through the plugin, independently approved, squash-merged to `main` as `38cbf4e3d55406a961c8adb7c947bd9fde04690e`, and its remote task branch was retired. The previous 403s for ED-0109/R4, ED-0125/R3, and ED-0101/R5 remain historical.
 - ED-0124/R9 fixed Base `8029d6f83dba91cad580753facc2e69fc4e00e35` → Head `5b45482fc9348e0285bbed139c16b1dc4de5b63d`; Worker06 independently approved. The four-path code diff integrated the AgentRuntime test target and focused Windows preset, added `WorkflowControllerTestWorkspace.hpp`, relocated fixtures to the build `T` root, and added marker/prefix/parent/read-only/reparse-safe cleanup. Configure, build, focused CTest, and coverage target exited 0; `WorkflowController.Contract` and `AgentRuntime.VerticalSlice` passed; gcov JSON v2 coverage was 144/177 (81.36%). Stale `.gcda` was retained under central Diagnostics; no generated source-tree files were added.
-- ED-0131/R1 was superseded before assignment under CR-ED-0131-002 after Owner review found that its frozen CTest command did not load the required CMake PATH. ED-0131/R2 is Proposed with the same Goal/WriteSet/Acceptance and corrected ReadSet/preset commands; no source branch/worktree exists yet. PR #1 completed build/test integration but does not complete the async AgentRuntime rewrite.
+- ED-0131/R1 was superseded before assignment under CR-ED-0131-002 after Owner review found that its frozen CTest command did not load the required CMake PATH. ED-0131/R2 Boost.Asio build foundation is merged on main by PR #2; it enables subsequent C++20 coroutine work but does not complete the async AgentRuntime rewrite.
 
 ## 2026-10-28 协调状态快照
 
@@ -137,3 +137,12 @@
 - GitHub Draft PR #26：Base `461735e50657bdc8ace070b46db3682cfb03460f`，TaskSpec/路由审查 Head `0f1fc9ffa78dda61b36c28e66fadad43aebc8997`。六个稳定槽对这一固定头完成对应 Owner/Independent Reviewer 审查；ED-0112/R5、ED-0146/R6、ED-0147/R6、ED-0148/R4 与 CR-P3-PREGATE-ROUTE-001 均无阻断 finding。协调者已接受四个 TaskSpec CR 与单路径 TaskIndex 路由 CR，并在 P2/P3 计划及事件分片登记结果。
 - 任务在 PR 合入前仍保持 `Proposed`，TaskSpec review status 为 `ApprovedAwaitingMainMerge`；ED-0148 的 pre-gate exception 也已同步为 `ApprovedAwaitingMainMerge`。没有创建产品实现分支或写入 C++。PR 合入后再由 Coordinator 记录 TaskState/assignment，ED-0146 作为 P3 修复首个实际实现任务。P3 EntryGate 仍 Pending，ED-0147 继续依赖 ED-0146。
 - 本次是治理状态更新；需在 PR #26 最终 Head 上只读确认新增审批元数据与已审结论一致。GitHub 当前远端分支仍为 4/4；无在线 status/check runs 配置。
+
+## 2026-10-29 PR #26 合并与 ED-0146/R6 派工
+
+- GitHub 已确认 PR #26 合并；`main` 与 `origin/main` 为 `b43ebd954cffb358645cfe173e832aa3b6a3110e`。远端分支为 `main`、ED-0114 PR #20、ED-0144 PR #25，共 3/4。
+- ED-0146/R6 的 TaskSpec 与 CR-ED-0120-006 具有 Owner、独立 Reviewer、Coordinator 批准；PR #26 完成主分支合并。ED-0120/R2、ED-0121/R2、ED-0143/R1、ED-0006/R1、ED-0124/R9 均已合并，任务按冻结的十路径 WriteSet 派给 Worker03。
+- 实现基线冻结为 PR #26 合并后的 `b43ebd954cffb358645cfe173e832aa3b6a3110e`；分支 `Task/ED-0146-R6HttpTransportGrantGuard`，隔离 worktree `H:/Qbot/EmulativeDialog.ED-0146`。构建与覆盖率报告仅写入 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/`。
+- Controller 的简化 `context` 命令当前无法装配 33 路径 ReadSet：其 12 路径以上流程要求另一套绑定的预算例外/重工事件，且与 ED-0146/R6 已审批的 `MaxReferenceFiles: 33` 记录不兼容。Worker03 只按 R6 冻结的 33 个 ReadSet 路径手动装配，不扩展路径；Controller 预算流程需单独修复，不能作为本任务的实现验收替代物。
+- Worker01 是 ED-0146 实现 PR 的独立 Reviewer；当前只在实现 Head 固定后分配审查。Worker03 使用已注册稳定槽，模型与推理强度继承主会话；宿主未提供可核实的具体模型显示标签。
+- P3 EntryGate 仍 Pending，ED-0147 与其他 P3 能力仍按原依赖门等待。ED-0146 是 HTTPS Port 授权入口修复，不代表异步 AgentRuntime 重写或 Codex Agent 核心重写完成。
