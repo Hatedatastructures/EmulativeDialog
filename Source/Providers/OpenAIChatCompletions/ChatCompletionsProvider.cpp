@@ -1,8 +1,8 @@
 #include "Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.hpp"
 
-// Boost.JSON is consumed in header-only mode: exactly one product TU includes
-// the compiled implementation so the pinned dependency adds no runtime DLL.
-#include <boost/json/src.hpp>
+// The pinned EmulativeDialogBoostJson target supplies the JSON implementation
+// library, so adapter translation units only include the public headers.
+#include <boost/json.hpp>
 #include <boost/system/error_code.hpp>
 
 #include <algorithm>
