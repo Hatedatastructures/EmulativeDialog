@@ -128,8 +128,12 @@ ChangeRequests:
       public-header paths that the directory-level ForbiddenSet forbids, so the required context cannot be loaded.
       R6 corrects slot authorization and path-level context policy without changing product behavior or WriteSet.
     PreserveGoalDependenciesContractsAcceptanceWriteSet: true
-    OwnerReviewDecision: Pending
-    IndependentReviewDecision: Pending
+    OwnerReviewDecision: RequestChanges
+    OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    OwnerReviewFindingIds: [ED0146-R6-AUTH-01, ED0146-R6-AUTH-02]
+    IndependentReviewDecision: RequestChanges
+    IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    IndependentReviewFindingIds: [ED0146-R6-AUTH-01]
     CoordinatorDecision: Pending
   - ChangeRequestId: CR-ED-0018-002
     TargetTaskId: ED-0018
@@ -1009,8 +1013,10 @@ ChangeRequests:
     PreserveGoalDependenciesAndAcceptance: true
     PreserveNoReplaySemantics: true
     NoProductSourceWriteAuthorizedBeforeApprovalAndMainMerge: true
-    OwnerReviewDecision: Pending
-    IndependentReviewDecision: Pending
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
     CoordinatorDecision: Pending
     EvidenceRefs:
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5

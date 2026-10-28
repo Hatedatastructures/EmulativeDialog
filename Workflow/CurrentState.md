@@ -119,3 +119,9 @@
 - 对固定头 `Base=461735e…`、`Head=a4b8c25…` 的复核已完成：ED-0112/R4 Owner Approve、Worker06 Independent RequestChanges（`ED0112-R4-REPLAY-01`：三条 checkpoint commit 差异路径被误写成重放清单，和八路径 WriteSet 冲突）；ED-0146/R5 Owner/Reviewer 均 RequestChanges（Worker01 属支持槽，且 ReadSet/ForbiddenSet 重叠）。ED-0147/R6 Worker04 Independent Approve；ED-0148/R4 Worker05 Owner Approve。尚未收到的其他角色结论仍为 Pending。
 - Coordinator 已提出 ED-0112/R5（`CR-ED-0112-006`），明确区分三条 `CheckpointCommitDeltaPaths` 与八条 `ReplayPaths`，禁止 cherry-pick/merge stacked ancestry；并提出 ED-0146/R6（`CR-ED-0120-006`），将实现 owner 改为 Worker03、独立 Reviewer 改为 Worker01、加精确任务模块授权，并把 ForbiddenSet 缩小到不与必需 ReadSet 重叠的生产 Provider 源文件。两项都仍为 Proposed，未授权产品代码修改；P3 EntryGate 保持 Pending。
 - 当前候选已通过 Windows WorkflowController 对 ED-0112/R5、ED-0146/R6、ED-0147/R6、ED-0148/R4 的查询（全部返回 Proposed），`git diff --check` 退出 0。此次只修改任务合同、槽位授权及审查事件，没有修改或验收产品 C++ 源码。下一步固定候选 Head，复用六个稳定槽完成修订复审；合同进入 main 后再按分支配额和依赖顺序开始实际产品 C++ 实现。AgentRuntime 重写仍未完成。
+
+## 2026-10-29 固定头复核与修订（02:45 +08:00）
+
+- 固定头 `Base=461735e50657bdc8ace070b46db3682cfb03460f`、`Head=fb33b663928436f73f4fd181585decab74bc744b` 已完成审查。ED-0112/R5 的 Worker02 Owner 与 Worker06 Reviewer 均 Approve；ED-0148/R4 的 Worker05 Owner 与 Worker06 Reviewer 均 Approve。ED-0146/R6 的 Worker03 Owner 与 Worker01 Reviewer 均 RequestChanges：Provider 模块授权额外包含三个不在十路径 WriteSet 中的 `CMakeLists.txt`，且 Storage 限制被插入 Anthropic 授权造成重复 YAML 键。ED-0147/R6 的 Worker02 Owner 与 Worker04 Reviewer 均 RequestChanges：AssignmentNote 仍等待过时 ED-0146/R5。
+- Worker06 发现 CodexCapabilityMap 将 ED-0112 当前任务指针留在 R4；协调候选将其改为 R5 Proposed，同时保留 `PartialUnmergedCheckpoint` 与能力未完成规则。Memory owner 的只读夹具准备定位了 ProposalId 同意范围的现有 `ConsentMatches` 入口和三组测试路径，但实现仍须等 R4 TaskSpec/CR 正式批准并合入。
+- 当前 PR 候选分支已推送，远端总数为 4/4；由于上述固定头 Finding 尚未修复，本快照未创建 PR。产品 C++ 源码没有修改。接下来在原分支修复授权范围、YAML 键归属和 ED-0147 先决版本，然后对新固定 Head 重做六槽审查。P3 EntryGate 继续 Pending，AgentRuntime 重写仍未完成。

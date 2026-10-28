@@ -269,6 +269,12 @@ ChangeRequests:
     Revision5IndependentReviewDecision: RequestChanges
     Revision5IndependentReviewHeadCommit: e36deb172e683d175e5d7c984d4a4da77971a25f
     Revision5IndependentReviewFindingIds: [ED0147-R5-F001]
+    Revision6OwnerReviewDecision: RequestChanges
+    Revision6OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    Revision6OwnerReviewFindingIds: [ED0147-R6-O001]
+    Revision6IndependentReviewDecision: RequestChanges
+    Revision6IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    Revision6IndependentReviewFindingIds: [ED0147-R6-F001]
 
   - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
     TargetTaskId: ED-0144
@@ -319,6 +325,10 @@ ChangeRequests:
     Revision3IndependentReviewDecision: RequestChanges
     Revision3IndependentReviewHeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
     Revision3IndependentReviewFindingIds: [ED0148-R3-I1]
+    Revision4OwnerReviewDecision: Approve
+    Revision4OwnerReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
+    Revision4IndependentReviewDecision: Approve
+    Revision4IndependentReviewHeadCommit: fb33b663928436f73f4fd181585decab74bc744b
     PreGateExceptionRequiresOwnerReviewerApproval: true
     EvidenceRefs:
       - H:/Qbot/EmulativeDialog/Source/Memory/ConversationMemory.cpp#ConsentMatches
@@ -1938,7 +1948,7 @@ Tasks:
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until ED-0146/R5 and this exact R6 TaskSpec are approved and merged; bind the then-current main BaseCommit and isolated worktree at assignment."
+    AssignmentNote: "Not assignable until ED-0146/R6 and this exact R6 TaskSpec are approved and merged; keep P3 EntryGate Pending until both required tasks pass and bind the then-current main BaseCommit and isolated worktree at assignment."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"

@@ -117,6 +117,10 @@ TaskScopedModuleAuthorizations:
       - Source/Storage/TurnCheckpointStore.hpp
       - Source/Storage/TurnCheckpointStore.cpp
       - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+    Restrictions:
+      - NoStorageModuleAuthorizationOutsideED0112R5
+      - PreserveStorageSchemaLock
+      - PreserveEightPathTaskWriteSet
   - ChangeRequestId: CR-ED-0120-006
     TaskId: ED-0146
     TaskRevision: 6
@@ -146,7 +150,6 @@ TaskScopedModuleAuthorizations:
     State: Proposed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
-      - Tests/Contract/Providers/OpenAIResponses/CMakeLists.txt
       - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
   - ChangeRequestId: CR-ED-0120-006
     TaskId: ED-0146
@@ -157,7 +160,6 @@ TaskScopedModuleAuthorizations:
     State: Proposed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
-      - Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt
       - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
   - ChangeRequestId: CR-ED-0120-006
     TaskId: ED-0146
@@ -168,12 +170,7 @@ TaskScopedModuleAuthorizations:
     State: Proposed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
-      - Tests/Contract/Providers/AnthropicMessages/CMakeLists.txt
       - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
     Restrictions:
       - TestConsumersOnly
       - NoProviderProductionWireBehaviorChanges
-    Restrictions:
-      - NoStorageModuleAuthorizationOutsideED0112R4
-      - PreserveStorageSchemaLock
-      - PreserveEightPathTaskWriteSet
