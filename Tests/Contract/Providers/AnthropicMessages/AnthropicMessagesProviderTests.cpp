@@ -1785,4 +1785,3 @@ int main() {
   std::cout << "All AnthropicMessagesProvider checks passed\n";
   return 0;
 }
-
