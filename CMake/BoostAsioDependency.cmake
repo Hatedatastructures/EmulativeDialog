@@ -12,6 +12,11 @@ endif()
 
 set(EmulativeDialogBoostRequiredSubmodules
     libs/asio
+    # Populate the provider JSON dependency in the same pinned superproject
+    # stage; later verification must remain read-only.
+    libs/json
+    libs/container
+    libs/describe
     libs/align
     libs/assert
     libs/config
