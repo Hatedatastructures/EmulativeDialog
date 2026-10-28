@@ -1012,6 +1012,8 @@ Tasks:
       AcceptedAt: 2026-10-28
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0143
     AssignedBranch: Task/ED-0143-BoostJsonDependency
+    LocalCompletionHead: 548e926
+    LocalValidation: "configure/build/probe/ctest exit 0; single src.hpp TU; no Boost DLL or libwinpthread DLL"
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker03

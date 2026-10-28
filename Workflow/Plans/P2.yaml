@@ -1510,6 +1510,14 @@ Tasks:
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0107-R3
     AssignedBranch: Task/ED-0107-R3-AgentEventProjector
     AssignmentDate: 2026-10-28
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0107-004
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow Source/Agent/AgentEventProjector.hpp in place of the planned .h path under the user file-naming rule, and add Tests/Contract/Agent/CMakeLists.txt so the event projector contract tests are registered in CTest."
+      AcceptedAt: 2026-10-28
+    LocalCompletionHead: f63f4c52e14d4cd2e8ad3d8145e95d7486cec0b2
+    LocalCoverage: "96.08% lines (441/459), 91.46% branches executed"
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
