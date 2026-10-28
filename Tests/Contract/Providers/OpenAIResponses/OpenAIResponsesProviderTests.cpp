@@ -825,15 +825,18 @@ void TestTransportTerminalMappings() {
 
     const std::string ServerErrorBody =
         R"({"error":{"message":"Temporary upstream failure.","code":"server_error"}})";
-    const Json::object ServerError =
-        RunTerminal(Net::CompletedTransport{.StatusCode = 503,
-                                            .ReceivedBodyBytes =
-                                                ServerErrorBody.size()},
-                    503, ServerErrorBody);
-    Expect(ServerError.at("EventType") == "ResponseFailed");
-    const Json::object& ServerPayload = ServerError.at("Payload").as_object();
-    Expect(ServerPayload.at("ErrorCode") == "ProviderRejected");
-    Expect(ServerPayload.at("Retryable").as_bool());
+    for (const int Status : {500, 502, 503, 504}) {
+        const Json::object ServerError =
+            RunTerminal(Net::CompletedTransport{
+                            .StatusCode = static_cast<std::uint16_t>(Status),
+                            .ReceivedBodyBytes = ServerErrorBody.size()},
+                        Status, ServerErrorBody);
+        Expect(ServerError.at("EventType") == "ResponseFailed");
+        const Json::object& ServerPayload =
+            ServerError.at("Payload").as_object();
+        Expect(ServerPayload.at("ErrorCode") == "ProviderRejected");
+        Expect(ServerPayload.at("Retryable").as_bool());
+    }
 
     const std::string ClientErrorBody =
         R"({"error":{"message":"Bad request.","code":"invalid_request_error"}})";
@@ -876,6 +879,30 @@ void TestSseOverflowCannotBeMasked() {
     Expect(Terminal.at("EventType") == "ResponseFailed");
     Expect(Terminal.at("Payload").as_object().at("ErrorCode") ==
            "InvalidStream");
+
+    // A single Append containing a complete delimiter-terminated oversized
+    // frame must also trip the bound; the following valid stream must not
+    // produce ResponseCompleted.
+    std::string CompleteOversized = "data: ";
+    CompleteOversized.append(2U * 1024U * 1024U + 64U, 'y');
+    CompleteOversized.append("\n\n");
+    FakeHttpTransport CompleteFrameTransport(FakeResponse{
+        .StatusCode = 200,
+        .Chunks = {CompleteOversized + ValidSse},
+        .Terminal = Net::CompletedTransport{
+            .StatusCode = 200,
+            .ReceivedBodyBytes = CompleteOversized.size() + ValidSse.size()}});
+    const ObservedEvents CompleteFrameObserved =
+        RunStream(CompleteFrameTransport, MakeProfile(), Request);
+    for (const Json::object& Event : CompleteFrameObserved.Events) {
+        Expect(Event.at("EventType") != "ResponseCompleted");
+    }
+    Expect(CompleteFrameObserved.Events.back().at("EventType") ==
+           "ResponseFailed");
+    Expect(CompleteFrameObserved.Events.back()
+               .at("Payload")
+               .as_object()
+               .at("ErrorCode") == "InvalidStream");
 }
 
 void TestRefusalV1Point2Cases() {

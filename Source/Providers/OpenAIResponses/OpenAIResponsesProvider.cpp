@@ -810,6 +810,14 @@ public:
                 }
                 return;
             }
+            if (Delimiter > MaximumSseFrameBytes) {
+                // A complete delimiter-terminated frame is still bounded; an
+                // oversized complete frame must permanently stop parsing so a
+                // later terminal cannot mask it.
+                Overflow = true;
+                Buffer.clear();
+                return;
+            }
             const std::string_view Frame(Buffer.data(), Delimiter);
             std::string Data = ExtractData(Frame);
             Buffer.erase(0, FrameEnd(Buffer, Delimiter));
