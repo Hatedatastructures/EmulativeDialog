@@ -13,7 +13,7 @@ EntryGate:
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R5 must enforce the shared Port entry and ED-0147/R6 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
+  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R6 must enforce the shared Port entry and ED-0147/R6 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4

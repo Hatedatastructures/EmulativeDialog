@@ -41,7 +41,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0146/R5-TaskSpecOwnerReview
+    CurrentTaskId: ED-0146/R6-TaskSpecIndependentReview
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -53,7 +53,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0112/R4-TaskSpecOwnerReview
+    CurrentTaskId: ED-0147/R6-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
@@ -63,7 +63,7 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0146/R5-TaskSpecIndependentReview
+    CurrentTaskId: ED-0146/R6-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
@@ -94,7 +94,7 @@ Slots:
     ReasoningEffort: InheritCoordinator
     HostSessionRef: "/root/worker06_ed0105_review"
     ModuleIds: []
-    CurrentTaskId: ED-0112/R4-TaskSpecIndependentReview
+    CurrentTaskId: ED-0148/R4-TaskSpecIndependentReview
     Status: Active
 
 AssignmentRules:
@@ -105,9 +105,9 @@ AssignmentRules:
   - 每次分派/回收/恢复都追加 AgentSlotAssigned、AgentSlotRecovered 或 AgentSlotRetired 事件。
 
 TaskScopedModuleAuthorizations:
-  - ChangeRequestId: CR-ED-0112-005
+  - ChangeRequestId: CR-ED-0112-006
     TaskId: ED-0112
-    TaskRevision: 4
+    TaskRevision: 5
     SlotId: Worker02
     AgentId: /root/worker02_ed0114_owner
     ModuleId: Storage
@@ -117,6 +117,62 @@ TaskScopedModuleAuthorizations:
       - Source/Storage/TurnCheckpointStore.hpp
       - Source/Storage/TurnCheckpointStore.cpp
       - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: NetworkPlatform
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Architecture/Contracts/HttpTransportContract.md
+      - Source/Platform/Network/HttpTransportPort.hpp
+      - Source/Platform/Network/WinHttpTransport.hpp
+      - Source/Platform/Network/WinHttpTransport.cpp
+      - Tests/Contract/Platform/Network/CMakeLists.txt
+      - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+      - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+    Restrictions:
+      - NoRootBuildOrDependencyPinChanges
+      - NoProviderProductionWireBehaviorChanges
+      - PreserveP3EntryGatePendingUntilED0146AndED0147Pass
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: ProviderOpenAIResponses
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Tests/Contract/Providers/OpenAIResponses/CMakeLists.txt
+      - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: ProviderOpenAIChatCompletions
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt
+      - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: ProviderAnthropicMessages
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Tests/Contract/Providers/AnthropicMessages/CMakeLists.txt
+      - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
+    Restrictions:
+      - TestConsumersOnly
+      - NoProviderProductionWireBehaviorChanges
     Restrictions:
       - NoStorageModuleAuthorizationOutsideED0112R4
       - PreserveStorageSchemaLock

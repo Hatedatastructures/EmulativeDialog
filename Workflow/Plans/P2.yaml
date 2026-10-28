@@ -89,6 +89,13 @@ ChangeRequests:
     Revision4IndependentReviewDecision: RequestChanges
     Revision4IndependentReviewHeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
     Revision4IndependentReviewFindingIds: [ED0146-R4-I1]
+    Revision5OwnerReviewDecision: RequestChanges
+    Revision5OwnerReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    Revision5OwnerReviewFindingIds: [ED0146-R5-AUTH-01]
+    Revision5IndependentReviewDecision: RequestChanges
+    Revision5IndependentReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    Revision5IndependentReviewFindingIds: [ED0146-R5-READSET-01]
+    SupersededForCurrentRevisionBy: CR-ED-0120-006
     SplitFindingFollowUpTaskId: ED-0147
     PreserveExistingContractSemantics: true
     RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
@@ -96,6 +103,34 @@ ChangeRequests:
       - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
       - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/Manifest.json
       - Workflow/Events/CodexRewrite/P2.jsonl#EventId=fca1ee83-0cfa-4bbd-800d-f5afcdfac81b
+  - ChangeRequestId: CR-ED-0120-006
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0146
+    ProposedTaskRevision: 6
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker03_ed0114_validation
+    IndependentReviewerAgentId: /root/worker01_ed0105_owner
+    ReviewerIndependence: Required
+    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    FindingsAddressed: [ED0146-R5-AUTH-01, ED0146-R5-READSET-01]
+    Scope: >-
+      Preserve ED-0146's goal, dependencies, contract boundary, acceptance criteria, and exact ten-path WriteSet.
+      Move implementation ownership to Worker03, an implementation slot, and add task-scoped authorization for
+      only the NetworkPlatform and three Provider contract-test modules and paths in that WriteSet. Assign
+      Worker01 as the independent reviewer. Remove directory-level ForbiddenSet entries that overlap required
+      CMake dependency files and public Provider headers; retain explicit ForbiddenSet entries for the three
+      production Provider .cpp files, channel code, root build files, and presets. Keep P3 Pending.
+    Reason: >-
+      The fixed-head R5 owner review found Worker01 is a support slot without NetworkPlatform/provider-test
+      implementation authorization. The independent reviewer found the ReadSet includes exact CMake and Provider
+      public-header paths that the directory-level ForbiddenSet forbids, so the required context cannot be loaded.
+      R6 corrects slot authorization and path-level context policy without changing product behavior or WriteSet.
+    PreserveGoalDependenciesContractsAcceptanceWriteSet: true
+    OwnerReviewDecision: Pending
+    IndependentReviewDecision: Pending
+    CoordinatorDecision: Pending
   - ChangeRequestId: CR-ED-0018-002
     TargetTaskId: ED-0018
     TargetTaskRevision: 2
@@ -889,11 +924,20 @@ ChangeRequests:
       ParentCommit: 9b312513161a441eb4b94325be176348b34f7e9d
       Branch: Task/ED-0112-R2-TurnRecovery-stacked
       Worktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
-      ChangedPaths:
+      CheckpointCommitDeltaPaths:
         - Source/Storage/TurnCheckpointStore.cpp
         - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
         - Architecture/Contracts/CoreAgentContract.md
-      Disposition: ReapplyOnlyThesePathsToFreshR4BranchAfterApproval
+      ReplayPaths:
+        - Source/Storage/TurnCheckpointStore.hpp
+        - Source/Storage/TurnCheckpointStore.cpp
+        - Source/Core/TurnRecoveryCoordinator.hpp
+        - Source/Core/TurnRecoveryCoordinator.cpp
+        - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+        - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+        - Tests/Contract/Agent/CMakeLists.txt
+        - Architecture/Contracts/CoreAgentContract.md
+      ReplayRule: "Reapply exactly ReplayPaths onto a fresh R5 branch from the approved BaseCommit. Never cherry-pick or merge the stacked checkpoint branch or its ancestry."
       Validation: DiagnosticOnly
       VerifiedEvidence:
         Configure: {ExitCode: 0, Note: "One initial command attempt used a literal $deps string and exited 1; the corrected absolute FETCHCONTENT_BASE_DIR command exited 0."}
@@ -918,6 +962,59 @@ ChangeRequests:
     EvidenceRefs:
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=3
+    OwnerReviewDecisionAtFixedHead: Approve
+    OwnerReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    IndependentReviewDecisionAtFixedHead: RequestChanges
+    IndependentReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    IndependentReviewFindingIds: [ED0112-R4-REPLAY-01]
+    SupersededForCurrentRevisionBy: CR-ED-0112-006
+  - ChangeRequestId: CR-ED-0112-006
+    TargetTaskId: ED-0112
+    TargetTaskRevision: 4
+    ProposedTaskRevision: 5
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    FindingsAddressed: [ED0112-R4-REPLAY-01]
+    Scope: >-
+      Preserve the eight-path WriteSet, dependencies, acceptance scope, no-replay behavior, and diagnostic-only
+      status of commit 423e3d5. Rename its three-file ChangedPaths list to CheckpointCommitDeltaPaths, add the
+      exact eight-path ReplayPaths list from the frozen WriteSet, and state that only those eight paths may be
+      replayed onto the fresh R5 branch after approval. Cherry-picking or merging the stacked checkpoint branch
+      ancestry is prohibited. No product-source change is authorized before this revision is approved, merged,
+      and separately assigned from main.
+    Reason: >-
+      The fixed-head R4 independent review found that the checkpoint's three-file commit delta was labeled as
+      paths to reapply, contradicting the eight-path WriteSet and permitting five required paths to be omitted.
+      This revision distinguishes commit provenance from the exact replay set and explicitly rejects importing
+      stacked branch ancestry.
+    ProposedOwnerSlotId: Worker02
+    ProposedOwnerAgentId: /root/worker02_ed0114_owner
+    ProposedReviewerSlotId: Worker06
+    ProposedIndependentReviewerAgentId: /root/worker06_ed0105_review
+    ProposedBranch: Task/ED-0112-R5TurnRecovery
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+    ProposedWriteSet:
+      - Source/Storage/TurnCheckpointStore.hpp
+      - Source/Storage/TurnCheckpointStore.cpp
+      - Source/Core/TurnRecoveryCoordinator.hpp
+      - Source/Core/TurnRecoveryCoordinator.cpp
+      - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+      - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+      - Tests/Contract/Agent/CMakeLists.txt
+      - Architecture/Contracts/CoreAgentContract.md
+    PreserveGoalDependenciesAndAcceptance: true
+    PreserveNoReplaySemantics: true
+    NoProductSourceWriteAuthorizedBeforeApprovalAndMainMerge: true
+    OwnerReviewDecision: Pending
+    IndependentReviewDecision: Pending
+    CoordinatorDecision: Pending
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
 
 ParallelGroups:
   - GroupId: FirstProductSlice
@@ -972,7 +1069,7 @@ ExitGate:
   ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
   EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
   P3EntryGateState: Pending
-  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R5 Port enforcement, and ED-0147/R6 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
+  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R6 Port enforcement, and ED-0147/R6 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
 
 Tasks:
   - TaskId: ED-0109
@@ -2200,12 +2297,12 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0112
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
     State: Proposed
-    TaskSpecChangeRequestId: CR-ED-0112-005
+    TaskSpecChangeRequestId: CR-ED-0112-006
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
@@ -2275,12 +2372,20 @@ Tasks:
         - {FindingId: ED0112-R3-AC-02, Summary: "AC-2 claimed an unchanged external operation count although no Provider/Channel dispatch counter exists in this module."}
       Disposition: SupersededBeforeImplementation
       Reason: "Fixed-head reviews found a missing AGENT_RUNTIME_REPORT_DIR, owner-slot authorization mismatch, and that the checkpoint implementation does not restore messages or connect to Core startup/AgentRuntime. R4 corrects the validation and permissions and narrows this task to checkpoint persistence plus deterministic recovery decisions; end-to-end restoration remains open."
+    PreviousRevision4Evidence:
+      TaskRevision: 4
+      TaskSpecHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+      OwnerDecision: Approve
+      IndependentReviewerDecision: RequestChanges
+      FindingIds: [ED0112-R4-REPLAY-01]
+      Disposition: SupersededBeforeImplementation
+      Reason: "The checkpoint metadata confused its three-file commit delta with the eight-path task replay set; no R4 implementation assignment or product source change was authorized."
     TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
     TaskSpecOwnerDecision: Pending
     TaskSpecIndependentReviewerDecision: Pending
     ProposedBaseCommit: 461735e50657bdc8ace070b46db3682cfb03460f
-    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R4
-    ProposedBranch: Task/ED-0112-R4TurnRecovery
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+    ProposedBranch: Task/ED-0112-R5TurnRecovery
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2290,8 +2395,8 @@ Tasks:
     ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0112-R4TurnRecovery
-    Worktree: H:/Qbot/EmulativeDialog.ED-0112-R4
+    Branch: Task/ED-0112-R5TurnRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0112-R5
     CapabilityIds: [InterruptedTurnRecoveryAndUnknownOutcome]
     ModuleIds: [Core, Storage]
     SupersededRevision1Evidence:
@@ -2334,10 +2439,10 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "Logs and checkpoints contain no secrets, raw private bodies, or prompt dumps.", Evidence: "Synthetic secret/body sentinel scan over persisted fixture and redacted event output."}
       - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh per-module gcov reports."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       Coverage:
@@ -2345,23 +2450,23 @@ Tasks:
         ProductionSources: [Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.cpp]
         MinimumLinePercent: 80
         ReportFormat: gcov JSON v2
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice/Reports
         FreshDirectoryRequired: true
       RequiredBuildTargets: [TurnCheckpointStoreTests, TurnRecoveryCoordinatorTests, TurnCheckpointStoreCoverageReport, TurnRecoveryCoordinatorCoverageReport]
       RequiredCTestTests: [Storage.TurnCheckpointStore, Core.TurnRecoveryCoordinator]
       TargetedBuild:
         - >-
-          I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0112-R4 -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice/Reports -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON
+          I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0112-R5 -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice/Reports -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON
         - >-
-          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice --target TurnCheckpointStoreTests TurnRecoveryCoordinatorTests --parallel 4
+          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --target TurnCheckpointStoreTests TurnRecoveryCoordinatorTests --parallel 4
         - >-
-          I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice --output-on-failure --no-tests=error -R '^(Storage\.TurnCheckpointStore|Core\.TurnRecoveryCoordinator)$'
+          I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --output-on-failure --no-tests=error -R '^(Storage\.TurnCheckpointStore|Core\.TurnRecoveryCoordinator)$'
         - >-
-          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice --target TurnCheckpointStoreCoverageReport TurnRecoveryCoordinatorCoverageReport --parallel 4
+          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --target TurnCheckpointStoreCoverageReport TurnRecoveryCoordinatorCoverageReport --parallel 4
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
-        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0112-R4'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R4/windows-agent-slice'
+        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0112-R5'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice'
         $ReportRoot = Join-Path $Build 'Reports'
         $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
         $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
@@ -2436,8 +2541,8 @@ Tasks:
         }
       ContractFixtures: ["Synthetic restart checkpoints, exact scoped ContextReference, revoked scope, deleted record, and unknown action outcome; no message rehydration or runtime dispatch is claimed."]
       StaticChecks:
-        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R4 diff --check 461735e50657bdc8ace070b46db3682cfb03460f HEAD"
-        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R4 diff --name-only 461735e50657bdc8ace070b46db3682cfb03460f HEAD; exact sorted set must equal WriteSet"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 461735e50657bdc8ace070b46db3682cfb03460f HEAD"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 461735e50657bdc8ace070b46db3682cfb03460f HEAD; exact sorted set must equal WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
         - "Run CoverageCommand and retain its per-source numerator, denominator, exclusions, percentage, GCC version, and JSON format output in the task evidence."
@@ -3418,7 +3523,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0146
-    TaskRevision: 5
+    TaskRevision: 6
     EpicId: EP-06
     Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
     TaskKind: IntegrationTask
@@ -3426,13 +3531,13 @@ Tasks:
     Phase: P2
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
-    ChangeRequestId: CR-ED-0120-003
+    ChangeRequestId: CR-ED-0120-006
     OwnerRole: NetworkOwner
-    OwnerSlotId: Worker01
-    OwnerAgentId: /root/worker01_ed0105_owner
-    ReviewerRole: ResponsesProviderOwner
-    ReviewerSlotId: Worker03
-    ReviewerAgentId: /root/worker03_ed0114_validation
+    OwnerSlotId: Worker03
+    OwnerAgentId: /root/worker03_ed0114_validation
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker01
+    ReviewerAgentId: /root/worker01_ed0105_owner
     ReviewerIndependence: Required
     TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewer
     TaskSpecOwnerDecision: Pending
@@ -3442,7 +3547,7 @@ Tasks:
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until CR-ED-0120-003 and this exact R5 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
+    AssignmentNote: "Not assignable until CR-ED-0120-006 and this exact R6 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
     PreviousRevision2:
       TaskRevision: 2
       Disposition: SupersededBeforeImplementation
@@ -3466,6 +3571,15 @@ Tasks:
       IndependentReviewerDecision: RequestChanges
       IndependentReviewerFindingIds: [ED0146-R4-I1]
       Reason: "The fixed-head reviews showed that local GCC 16.1.0 root data_file values do not match the corresponding files[].file worktree source, and that aggregate LastTest.log success could belong to a sibling test. R5 removes the root-field equality assertion, validates the exact test/source records, and binds Test Passed to the named test block."
+    PreviousRevision5:
+      TaskRevision: 5
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0146-R5-AUTH-01]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0146-R5-READSET-01]
+      Reason: "Worker01 is a support slot without implementation authorization for NetworkPlatform/Provider tests; the directory-level ForbiddenSet also overlapped required CMake and Provider public-header ReadSet paths. R6 reassigns the owner and makes ForbiddenSet path-specific."
     Goal: "让所有 HTTPS TransportPort 实现都必须经过同一 resolver 验证入口；无效 grant 在 DoStream、回调、DNS/connect 或底层 transport 操作前 fail closed，并适配三种已合并 Provider 的离线测试消费者。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 行为"
@@ -3518,12 +3632,11 @@ Tasks:
         - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
         - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewedDiff.patch
       ForbiddenSet:
-        - Source/Providers/OpenAIResponses/
-        - Source/Providers/OpenAIChatCompletions/
-        - Source/Providers/AnthropicMessages/
+        - Source/Providers/OpenAIResponses/OpenAIResponsesProvider.cpp
+        - Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp
+        - Source/Providers/AnthropicMessages/AnthropicMessagesProvider.cpp
         - Source/Channels/
         - CMakeLists.txt
-        - CMake/
         - CMakePresets.json
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 33
@@ -3567,13 +3680,13 @@ Tasks:
       - {AcceptanceId: AC-4, Description: "Existing system/direct proxy, Proxy-Authorization rejection, Host/Content-Length framing, redirect denial, no-compression, timeout, cancellation, terminal, and unknown-outcome semantics remain unchanged.", Evidence: "Existing fixed fixtures remain green; added identity/non-identity compression cases stay in the platform offline suite."}
       - {AcceptanceId: AC-5, Description: "HttpTransportPort.hpp and WinHttpTransport.cpp each retain at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 reports for the header (from HttpTransportPortTests.cpp) and WinHttpTransport.cpp record GCC/gcov versions and exact unique executable-line numerator/denominator; no stale gcda or checksum warnings."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6
       Coverage:
         Required: true
         ProductionSources: [Source/Platform/Network/HttpTransportPort.hpp, Source/Platform/Network/WinHttpTransport.cpp]
         HeaderCoverageTranslationUnit: Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
       CoverageDataFileObservation: "Local MSYS2 GCC/gcov 16.1.0 Rev5 JSON v2 samples are informational only: root data_file points under H:/Qbot/EmulativeDialog while the matching files[].file points under the ED-0124-R9 worktree. The JSON does not record gcov argv; do not use data_file as source identity or require it to equal the expected path."
@@ -3586,35 +3699,35 @@ Tasks:
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
         $BuildDirectories = @(
-          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Network',
-          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIResponses',
-          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIChatCompletions',
-          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/AnthropicMessages'
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages'
         )
         foreach ($Build in $BuildDirectories) {
           if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=4'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Network -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Network --target HttpTransportPortTests WinHttpTransportTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Network -R '^Platform\\.Network\\.(HttpTransportPort|WinHttpTransport)$' --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIResponses -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIResponses -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogOpenAIResponsesContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIResponses --target OpenAIResponsesProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIResponses -R Provider.OpenAIResponses --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIChatCompletions -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIChatCompletions --target ChatCompletionsProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/OpenAIChatCompletions -R Provider.ChatCompletions --output-on-failure --no-tests=error"
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/AnthropicMessages -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/AnthropicMessages -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogAnthropicMessagesProviderContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/AnthropicMessages --target AnthropicMessagesProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/AnthropicMessages -R Provider.AnthropicMessages --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network --target HttpTransportPortTests WinHttpTransportTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network -R '^Platform\\.Network\\.(HttpTransportPort|WinHttpTransport)$' --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIResponses -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogOpenAIResponsesContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses --target OpenAIResponsesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses -R Provider.OpenAIResponses --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions --target ChatCompletionsProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions -R Provider.ChatCompletions --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/AnthropicMessages -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogAnthropicMessagesProviderContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages --target AnthropicMessagesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages -R Provider.AnthropicMessages --output-on-failure --no-tests=error"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0146'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Network'
-        $ReportRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R5/Reports'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network'
+        $ReportRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Reports'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
         $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
         $ExpectedVersion = '16.1.0'

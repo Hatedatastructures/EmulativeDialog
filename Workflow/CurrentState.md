@@ -112,3 +112,10 @@
 - 事件账本现有 P2 234 条、P3 85 条，共 319 条；EventId 全唯一、所有 ProjectStateCorrection 引用有效。`git diff --check` 通过。本次 Coordinator 没有运行 C++ 产品构建。
 - 六个工作槽继续复用：Worker01/06 负责 ED-0112/R3 TaskSpec owner/reviewer；Worker02/04 负责 ED-0147/R6；Worker03 负责 ED-0146/R5；Worker05 负责 ED-0148/R4。复审固定在当前治理候选提交后；完成 R3 TaskSpec 门后，Worker01 回到实际 C++ recovery 实现与提交，Worker06 做固定 Head 源码审查。
 - 已合入 main 的产品 C++ 仍包括同步 AgentRuntime 纵向切片、ED-0108 Core 授权工具调用闭环及之前合并能力。ED-0112 未合入；异步 AgentRuntime 生命周期、三协议最终 wire adapters 和剩余聊天范围 Keep/Redesign 能力仍未完成，Codex Agent 核心重写保持未完成。
+
+## 2026-10-29 恢复继续执行（02:38 +08:00）
+
+- 权威代码基线仍为 `main=origin/main=461735e50657bdc8ace070b46db3682cfb03460f`；GitHub 插件实时确认默认分支为 `main`、当前身份 `Hatedatastructures` 有 push/admin 权限，远端分支 3/4（`main`、PR #20、PR #25）。本地协调分支为 `Task/ED-0146-GrantBoundaryTaskSpec`；原根目录未跟踪 `$deps/` 保持原样，不进入本次提交。
+- 对固定头 `Base=461735e…`、`Head=a4b8c25…` 的复核已完成：ED-0112/R4 Owner Approve、Worker06 Independent RequestChanges（`ED0112-R4-REPLAY-01`：三条 checkpoint commit 差异路径被误写成重放清单，和八路径 WriteSet 冲突）；ED-0146/R5 Owner/Reviewer 均 RequestChanges（Worker01 属支持槽，且 ReadSet/ForbiddenSet 重叠）。ED-0147/R6 Worker04 Independent Approve；ED-0148/R4 Worker05 Owner Approve。尚未收到的其他角色结论仍为 Pending。
+- Coordinator 已提出 ED-0112/R5（`CR-ED-0112-006`），明确区分三条 `CheckpointCommitDeltaPaths` 与八条 `ReplayPaths`，禁止 cherry-pick/merge stacked ancestry；并提出 ED-0146/R6（`CR-ED-0120-006`），将实现 owner 改为 Worker03、独立 Reviewer 改为 Worker01、加精确任务模块授权，并把 ForbiddenSet 缩小到不与必需 ReadSet 重叠的生产 Provider 源文件。两项都仍为 Proposed，未授权产品代码修改；P3 EntryGate 保持 Pending。
+- 当前候选已通过 Windows WorkflowController 对 ED-0112/R5、ED-0146/R6、ED-0147/R6、ED-0148/R4 的查询（全部返回 Proposed），`git diff --check` 退出 0。此次只修改任务合同、槽位授权及审查事件，没有修改或验收产品 C++ 源码。下一步固定候选 Head，复用六个稳定槽完成修订复审；合同进入 main 后再按分支配额和依赖顺序开始实际产品 C++ 实现。AgentRuntime 重写仍未完成。
