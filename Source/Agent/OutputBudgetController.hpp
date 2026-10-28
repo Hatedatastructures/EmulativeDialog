@@ -26,6 +26,8 @@ struct OutputBudgetState final {
   std::optional<std::uint64_t> RemainingContextTokens;
   bool OutputLimitReached{false};
   bool ContextWindowLimitReached{false};
+  // Unknown budget components remain unknown and block safe continuation.
+  bool BudgetConfidenceInsufficient{false};
   bool CanContinueSampling{true};
   Providers::UsageCompleteness Completeness{
       Providers::UsageCompleteness::Unavailable};

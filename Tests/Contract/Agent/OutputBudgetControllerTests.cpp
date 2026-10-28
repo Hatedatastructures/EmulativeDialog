@@ -212,6 +212,47 @@ void TotalOnlyUsageDrivesContextBudgetWithoutFalsePrecision() {
         "total-only usage must exhaust a lower context window");
 }
 
+void UnknownBudgetConfidenceBlocksSafeContinuation() {
+  Agent::OutputBudgetController TotalOnly(Limits(100, 200));
+  Check(!TotalOnly.Accumulate(
+                 Usage(std::nullopt, std::nullopt, 50,
+                       Providers::UsageCompleteness::Final))
+             .has_value(),
+        "total-only final usage must accumulate");
+  const auto& TotalState = TotalOnly.GetState();
+  Check(TotalState.TotalTokensUsed == 50U &&
+            TotalState.RemainingContextTokens == 150U,
+        "known total usage must reduce context budget");
+  Check(!TotalState.RemainingOutputTokens.has_value() &&
+            TotalState.BudgetConfidenceInsufficient &&
+            !TotalOnly.CanDispatchSampling(),
+        "unknown output components must block safe continuation");
+
+  Agent::OutputBudgetController Partial(Limits(100, 200));
+  Check(!Partial.Accumulate(
+                 Usage(10, std::nullopt, std::nullopt,
+                       Providers::UsageCompleteness::Partial))
+             .has_value(),
+        "partial usage lower bound must accumulate");
+  const auto& PartialState = Partial.GetState();
+  Check(PartialState.InputTokensUsed == 10U &&
+            !PartialState.RemainingOutputTokens.has_value() &&
+            !PartialState.RemainingContextTokens.has_value() &&
+            PartialState.BudgetConfidenceInsufficient &&
+            !Partial.CanDispatchSampling(),
+        "partial fields must not be interpreted as zero-valued usage");
+
+  Agent::OutputBudgetController Unavailable(Limits(100));
+  Check(!Unavailable.Accumulate(
+                 Usage(std::nullopt, std::nullopt, std::nullopt,
+                       Providers::UsageCompleteness::Unavailable))
+             .has_value(),
+        "unavailable usage snapshot must accumulate as unknown");
+  Check(Unavailable.GetState().BudgetConfidenceInsufficient &&
+            !Unavailable.CanDispatchSampling(),
+        "unavailable usage must not authorize a budgeted continuation");
+}
+
 void MultiRoundUsageAccumulatesAndMergesCompleteness() {
   EventCollector Collected;
   Agent::OutputBudgetController Controller({}, Collected.Sink());
@@ -304,9 +345,11 @@ void MissingFieldsKeepBudgetsNullable() {
         "input-only usage must accumulate");
   Check(Controller.GetState().OutputTokensUsed == 0U &&
             !Controller.GetState().RemainingOutputTokens.has_value() &&
+            Controller.GetState().BudgetConfidenceInsufficient &&
+            !Controller.CanDispatchSampling() &&
             Controller.GetState().Completeness ==
                 Providers::UsageCompleteness::Partial,
-        "missing output must keep the remaining output unknown");
+        "missing output must keep remaining unknown and block safe continuation");
   Check(!Controller.Accumulate(
                 Usage(std::nullopt, 20, std::nullopt,
                       Providers::UsageCompleteness::Final))
@@ -337,6 +380,7 @@ int main() {
   RejectsInconsistentTotalsWithoutMutation();
   ProviderOutputLimitedLinksToBudget();
   TotalOnlyUsageDrivesContextBudgetWithoutFalsePrecision();
+  UnknownBudgetConfidenceBlocksSafeContinuation();
   MultiRoundUsageAccumulatesAndMergesCompleteness();
   TurnBudgetLedgerRequiresApprovedFreshRequest();
   MissingFieldsKeepBudgetsNullable();

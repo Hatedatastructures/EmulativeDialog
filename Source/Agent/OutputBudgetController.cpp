@@ -65,9 +65,11 @@ std::optional<OutputBudgetError> OutputBudgetController::Accumulate(
 
   const bool PreviousOutputReached = State.OutputLimitReached;
   const bool PreviousContextReached = State.ContextWindowLimitReached;
-  const bool SampleHasExactTotal =
-      Usage.TotalTokens.has_value() ||
-      (Usage.InputTokens.has_value() && Usage.OutputTokens.has_value());
+  const bool IsFinalUsage =
+      Usage.Completeness == Providers::UsageCompleteness::Final;
+  const bool SampleHasExactTotal = IsFinalUsage &&
+      (Usage.TotalTokens.has_value() ||
+       (Usage.InputTokens.has_value() && Usage.OutputTokens.has_value()));
   std::optional<std::uint64_t> SampleTotal;
   if (Usage.TotalTokens.has_value()) {
     SampleTotal = *Usage.TotalTokens;
@@ -90,8 +92,8 @@ std::optional<OutputBudgetError> OutputBudgetController::Accumulate(
         SaturatingAdd(State.TotalTokensUsed, *SampleTotal);
   }
   TotalUsageExact = TotalUsageExact && SampleHasExactTotal;
-  OutputUsageExact =
-      OutputUsageExact && Usage.OutputTokens.has_value();
+  OutputUsageExact = OutputUsageExact && IsFinalUsage &&
+                     Usage.OutputTokens.has_value();
   State.Completeness =
       HasUsage ? MergeCompleteness(State.Completeness, Usage.Completeness)
                : Usage.Completeness;
@@ -162,8 +164,17 @@ void OutputBudgetController::UpdateDerivedState() {
       State.TotalTokensUsed >= *Limits.ContextWindowTokens) {
     State.ContextWindowLimitReached = true;
   }
+  const bool OutputBudgetUnknown =
+      Limits.MaximumOutputTokens.has_value() && HasUsage &&
+      !OutputUsageExact;
+  const bool ContextBudgetUnknown =
+      Limits.ContextWindowTokens.has_value() && HasUsage &&
+      !TotalUsageExact;
+  State.BudgetConfidenceInsufficient =
+      OutputBudgetUnknown || ContextBudgetUnknown;
   State.CanContinueSampling =
-      !State.OutputLimitReached && !State.ContextWindowLimitReached;
+      !State.OutputLimitReached && !State.ContextWindowLimitReached &&
+      !State.BudgetConfidenceInsufficient;
 }
 
 void OutputBudgetController::Emit(OutputBudgetEventCode Code) {

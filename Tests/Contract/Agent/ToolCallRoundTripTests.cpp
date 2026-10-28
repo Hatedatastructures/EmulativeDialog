@@ -1049,6 +1049,65 @@ void UsageBudgetGatesTruncatedAndContinuedToolDispatch() {
   Ledger.Reset();
 }
 
+void IncompleteUsageConfidenceBlocksToolDispatch() {
+  auto& Ledger = Agent::SharedTurnBudgetLedger();
+  Ledger.Reset();
+  const Providers::AgentTurnId Turn{"budget-unknown-tool-turn"};
+  const Providers::RequestId Request{"budget-unknown-tool-request"};
+  Ledger.ConfigureTurn(Turn, Agent::OutputBudgetLimits{
+                                .MaximumOutputTokens = 100,
+                                .ContextWindowTokens = 200,
+                            });
+  Check(!Ledger.BeginRequest(Turn, Request).has_value(),
+        "unknown-usage request must begin");
+  Check(!Ledger.Accumulate(
+                 Turn, Request,
+                 Providers::UsageSnapshot{
+                     .InputTokens = std::nullopt,
+                     .OutputTokens = std::nullopt,
+                     .TotalTokens = 40,
+                     .CachedInputReadTokens = std::nullopt,
+                     .CachedInputWriteTokens = std::nullopt,
+                     .ReasoningOutputTokens = std::nullopt,
+                     .Completeness = Providers::UsageCompleteness::Partial,
+                 })
+             .has_value(),
+        "partial total-only usage must be recorded as a lower bound");
+  const auto State = Ledger.GetState(Turn);
+  Check(State.has_value() && State->TotalTokensUsed == 40U &&
+            State->BudgetConfidenceInsufficient &&
+            !State->RemainingOutputTokens.has_value() &&
+            !Ledger.CanDispatchTool(Turn, Request),
+        "unknown output usage must close the tool dispatch gate");
+
+  int HandlerCalls = 0;
+  Core::BusinessActionRegistry Registry;
+  Check(!Registry.Register(MakeLookupAction(
+                [&HandlerCalls](const Core::BusinessActionInvocation&) {
+                  ++HandlerCalls;
+                  return Succeeded();
+                }))
+             .has_value(),
+        "unknown-usage test action must register");
+  ReceiptCollector Receipts;
+  Agent::ToolCallCoordinator Coordinator(
+      Registry, MakeAuthorization({"Chat.Lookup"}, Turn.Value, Request.Value),
+      Receipts.Sink());
+  Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{
+                ReadyCall("unknown-usage-call", "LookupProfile",
+                          R"({"query":"x"})", 1, Turn.Value,
+                          Request.Value)})
+             .has_value(),
+        "tool coordinator must receive the canonical call");
+  Check(Coordinator.PendingCount() == 0U && HandlerCalls == 0 &&
+            Receipts.Receipts.size() == 1U &&
+            Receipts.Receipts[0].Status ==
+                Agent::ToolCallReceiptStatus::Rejected &&
+            Receipts.Receipts[0].ResultCode == "BudgetExhausted",
+        "incomplete usage must prevent tool buffering and execution");
+  Ledger.Reset();
+}
+
 void DuplicateTerminalsFailClosed() {
   Core::BusinessActionRegistry Registry;
   ReceiptCollector Collected;
@@ -1078,6 +1137,7 @@ int main() {
   HandlerOutcomesProduceCorrelatedReceipts();
   TurnMismatchAndEmptySinkAreHandled();
   UsageBudgetGatesTruncatedAndContinuedToolDispatch();
+  IncompleteUsageConfidenceBlocksToolDispatch();
   DuplicateTerminalsFailClosed();
   std::cout << "ToolCallRoundTrip contract tests passed\n";
   return 0;

@@ -443,6 +443,92 @@ void TestCoreApprovalAllowsOnlyFreshRequestContinuation() {
   Agent::SharedTurnBudgetLedger().Reset();
 }
 
+void TestPartialTotalUsageBlocksContinuationUntilCoreApproval() {
+  Agent::SharedTurnBudgetLedger().Reset();
+  const Core::AuthorizedTurnContext Context =
+      MakeContext("contract-partial-total-budget");
+  const Providers::RequestId FirstRequest =
+      ExpectedRequestId(Context.AgentTurn, 1);
+  // The denied attempt consumes local sequence 2, but is never sent. The
+  // approved continuation therefore receives a distinct later request id.
+  const Providers::RequestId ContinuationRequest =
+      ExpectedRequestId(Context.AgentTurn, 3);
+  Providers::ModelProviderProfile Profile = MakeProfile();
+  Profile.Limit.MaximumOutputTokens = 64;
+
+  FakeProvider Provider;
+  Provider.EnqueueScript(MakeScript(
+      {UsageEvent(FirstRequest, Context.AgentTurn, 1,
+                  Providers::UsageSnapshot{
+                      .InputTokens = std::nullopt,
+                      .OutputTokens = std::nullopt,
+                      .TotalTokens = 20,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness = Providers::UsageCompleteness::Partial,
+                  }),
+       TextEvent(FirstRequest, Context.AgentTurn, 2, "completed answer")},
+      Completed(FirstRequest, Context.AgentTurn, 3,
+                Providers::CompletionKind::FinalAnswer)));
+
+  Agent::AgentRuntime Runtime;
+  TestProviderCredential Credential;
+  const auto First =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(First.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+            First.GetFinalText() == "completed answer",
+        "the completed response remains deliverable with partial usage");
+  const auto InitialBudget =
+      Agent::SharedTurnBudgetLedger().GetState(Context.AgentTurn);
+  Check(InitialBudget.has_value() &&
+            InitialBudget->TotalTokensUsed == 20U &&
+            !InitialBudget->RemainingOutputTokens.has_value() &&
+            InitialBudget->BudgetConfidenceInsufficient &&
+            !Agent::SharedTurnBudgetLedger().CanDispatchSampling(
+                Context.AgentTurn),
+        "partial total-only usage is a known lower bound with uncertain output budget");
+
+  const auto Denied =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Denied.GetStatus() == Core::AgentRunStatus::Failed &&
+            Denied.GetFailureCode() ==
+                Core::AgentRunFailureCode::OutputLimitReached &&
+            Provider.GetCapturedRequests().size() == 1U,
+        "unknown usage budget must block provider continuation");
+
+  Check(!Agent::SharedTurnBudgetLedger()
+             .ApproveContinuation(Context.AgentTurn, FirstRequest)
+             .has_value(),
+        "Core approval must bind to the request with unknown budget confidence");
+  Provider.EnqueueScript(MakeScript(
+      {UsageEvent(ContinuationRequest, Context.AgentTurn, 1,
+                  Providers::UsageSnapshot{
+                      .InputTokens = 10,
+                      .OutputTokens = 10,
+                      .TotalTokens = 20,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness = Providers::UsageCompleteness::Final,
+                  }),
+       TextEvent(ContinuationRequest, Context.AgentTurn, 2,
+                 "approved answer")},
+      Completed(ContinuationRequest, Context.AgentTurn, 3,
+                Providers::CompletionKind::FinalAnswer)));
+  const auto Continued =
+      Runtime.RunTurn(Context, Provider, Profile, Credential, {});
+  Check(Continued.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+            Continued.GetFinalText() == "approved answer" &&
+            Provider.GetCapturedRequests().size() == 2U &&
+            Provider.GetCapturedRequests()[0].Id.Value !=
+                Provider.GetCapturedRequests()[1].Id.Value &&
+            Provider.GetCapturedRequests()[1].Id.Value ==
+                ContinuationRequest.Value,
+        "approved continuation requires a new provider request id");
+  Agent::SharedTurnBudgetLedger().Reset();
+}
+
 void TestProviderFailureCancelAndUnknownStayDistinct() {
   {
     const auto Context = MakeContext("contract-provider-failed");
@@ -1138,6 +1224,7 @@ int main() {
   TestToolHandoffAndEmptyFinalFailClosed();
   TestOutputLimitNeverReturnsPartialTextOrRetries();
   TestCoreApprovalAllowsOnlyFreshRequestContinuation();
+  TestPartialTotalUsageBlocksContinuationUntilCoreApproval();
   TestProviderFailureCancelAndUnknownStayDistinct();
   TestRequestTurnAndSequenceMismatchFailClosed();
   TestProviderCapabilitiesGateUnsupportedInputs();
