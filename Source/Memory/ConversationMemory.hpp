@@ -116,7 +116,9 @@ template <typename Value>
 using MemoryStorageResult = std::variant<Value, MemoryStorageError>;
 
 // Atomic storage batch. Implementations apply every upsert and tombstone in a
-// single transaction; a failure leaves the previous state untouched.
+// single transaction; a failure leaves the previous state untouched. A
+// tombstoned MemoryId is irreversible: no upsert, regardless of version, may
+// reactivate it. Restoring content requires a fresh MemoryId and valid consent.
 struct MemoryMutationBatch final {
   StoredMemory Scope;
   std::vector<StoredMemory> Upserts;

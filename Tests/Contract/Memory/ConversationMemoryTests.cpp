@@ -1,8 +1,11 @@
 #include "Source/Memory/ConversationMemory.hpp"
 
 #include <algorithm>
+#include <charconv>
 #include <chrono>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <optional>
 #include <string>
@@ -64,6 +67,11 @@ public:
       for (StoredMemory& Existing : ScopeRows) {
         if (Existing.MemoryId != Upsert.MemoryId) {
           continue;
+        }
+        if (Existing.Tombstoned) {
+          return MemoryStorageError{
+              .Code = MemoryStorageErrorCode::VersionConflict,
+              .Detail = "tombstoned records cannot be resurrected"};
         }
         if (Upsert.Version <= Existing.Version) {
           return MemoryStorageError{
@@ -200,6 +208,188 @@ StoredMemory ScopeOf(const AuthorizedMemoryContext& Value) {
   return Scope;
 }
 
+std::string ReadFixture(std::string_view Path) {
+  std::ifstream Input(std::string(Path), std::ios::binary);
+  if (!Input) {
+    return {};
+  }
+  return std::string(std::istreambuf_iterator<char>(Input),
+                     std::istreambuf_iterator<char>());
+}
+
+std::optional<std::string> JsonStringField(std::string_view Object,
+                                           std::string_view Key) {
+  std::string Needle;
+  Needle.reserve(Key.size() + 2U);
+  Needle.push_back('"');
+  Needle.append(Key);
+  Needle.push_back('"');
+  const std::size_t KeyPosition = Object.find(Needle);
+  if (KeyPosition == std::string_view::npos) {
+    return std::nullopt;
+  }
+  std::size_t Position = Object.find(':', KeyPosition + Needle.size());
+  if (Position == std::string_view::npos) {
+    return std::nullopt;
+  }
+  ++Position;
+  while (Position < Object.size() &&
+         (Object[Position] == ' ' || Object[Position] == '\t' ||
+          Object[Position] == '\r' || Object[Position] == '\n')) {
+    ++Position;
+  }
+  if (Position >= Object.size() || Object[Position] != '"') {
+    return std::nullopt;
+  }
+  ++Position;
+  std::string Value;
+  bool Escaped = false;
+  for (; Position < Object.size(); ++Position) {
+    const char Character = Object[Position];
+    if (Escaped) {
+      Value.push_back(Character);
+      Escaped = false;
+    } else if (Character == '\\') {
+      Escaped = true;
+    } else if (Character == '"') {
+      return Value;
+    } else {
+      Value.push_back(Character);
+    }
+  }
+  return std::nullopt;
+}
+
+std::string_view FindJsonObjectWithStringField(std::string_view Json,
+                                               std::string_view Key,
+                                               std::string_view Expected) {
+  for (std::size_t Start = 0; Start < Json.size(); ++Start) {
+    if (Json[Start] != '{') {
+      continue;
+    }
+    std::size_t Depth = 0;
+    bool InString = false;
+    bool Escaped = false;
+    for (std::size_t Position = Start; Position < Json.size(); ++Position) {
+      const char Character = Json[Position];
+      if (InString) {
+        if (Escaped) {
+          Escaped = false;
+        } else if (Character == '\\') {
+          Escaped = true;
+        } else if (Character == '"') {
+          InString = false;
+        }
+        continue;
+      }
+      if (Character == '"') {
+        InString = true;
+      } else if (Character == '{') {
+        ++Depth;
+      } else if (Character == '}') {
+        if (Depth == 0U) {
+          break;
+        }
+        --Depth;
+        if (Depth == 0U) {
+          const auto Object = Json.substr(Start, Position - Start + 1U);
+          const auto Value = JsonStringField(Object, Key);
+          if (Value.has_value() && *Value == Expected) {
+            return Object;
+          }
+          break;
+        }
+      }
+    }
+  }
+  return {};
+}
+
+std::vector<std::string> JsonStringArrayField(std::string_view Object,
+                                              std::string_view Key) {
+  std::string Needle;
+  Needle.reserve(Key.size() + 2U);
+  Needle.push_back('"');
+  Needle.append(Key);
+  Needle.push_back('"');
+  const std::size_t KeyPosition = Object.find(Needle);
+  if (KeyPosition == std::string_view::npos) {
+    return {};
+  }
+  const std::size_t Colon = Object.find(':', KeyPosition + Needle.size());
+  const std::size_t ArrayStart =
+      Colon == std::string_view::npos ? Colon : Object.find('[', Colon + 1U);
+  if (ArrayStart == std::string_view::npos) {
+    return {};
+  }
+  std::vector<std::string> Values;
+  std::size_t Position = ArrayStart + 1U;
+  while (Position < Object.size()) {
+    while (Position < Object.size() &&
+           (Object[Position] == ' ' || Object[Position] == '\t' ||
+            Object[Position] == '\r' || Object[Position] == '\n' ||
+            Object[Position] == ',')) {
+      ++Position;
+    }
+    if (Position >= Object.size() || Object[Position] == ']') {
+      break;
+    }
+    if (Object[Position] != '"') {
+      return {};
+    }
+    ++Position;
+    std::string Value;
+    bool Escaped = false;
+    for (; Position < Object.size(); ++Position) {
+      const char Character = Object[Position];
+      if (Escaped) {
+        Value.push_back(Character);
+        Escaped = false;
+      } else if (Character == '\\') {
+        Escaped = true;
+      } else if (Character == '"') {
+        ++Position;
+        break;
+      } else {
+        Value.push_back(Character);
+      }
+    }
+    Values.push_back(std::move(Value));
+  }
+  return Values;
+}
+
+std::optional<std::uint64_t> JsonUnsignedField(std::string_view Object,
+                                               std::string_view Key) {
+  std::string Needle;
+  Needle.reserve(Key.size() + 2U);
+  Needle.push_back('"');
+  Needle.append(Key);
+  Needle.push_back('"');
+  const std::size_t KeyPosition = Object.find(Needle);
+  if (KeyPosition == std::string_view::npos) {
+    return std::nullopt;
+  }
+  std::size_t Position = Object.find(':', KeyPosition + Needle.size());
+  if (Position == std::string_view::npos) {
+    return std::nullopt;
+  }
+  ++Position;
+  while (Position < Object.size() &&
+         (Object[Position] == ' ' || Object[Position] == '\t' ||
+          Object[Position] == '\r' || Object[Position] == '\n')) {
+    ++Position;
+  }
+  std::uint64_t Value = 0;
+  const char* Begin = Object.data() + Position;
+  const char* End = Object.data() + Object.size();
+  const auto [ParsedEnd, Error] = std::from_chars(Begin, End, Value);
+  if (Error != std::errc{} || ParsedEnd == Begin) {
+    return std::nullopt;
+  }
+  return Value;
+}
+
 void TestIdentitySessionAndPolicy() {
   FakeMemoryStorage Storage;
   ConversationMemory Memory(Storage);
@@ -296,7 +486,7 @@ void TestScopeKindAndGroupMembership() {
                 EmulativeDialog::Context::ConversationKind::Group,
         "group recall keeps group scope kind");
   auto ExcludedMember =
-      Context(ConversationScopeKind::Group, "principal-02");
+      Context(ConversationScopeKind::Group, "principal-03");
   ExcludedMember.ConversationId = Group.ConversationId;
   auto ExcludedConsent = Grant(MemoryCategory::GroupMemory, Group,
                                "consent-group-excluded");
@@ -311,6 +501,141 @@ void TestScopeKindAndGroupMembership() {
             Now()))
             ->Code == MemoryErrorCode::ConsentMismatch,
         "group consent denies unlisted member");
+}
+
+void TestFixtureGroupConsentAllowsListedMemberRecall() {
+  const std::string Fixture =
+      ReadFixture("Tests/Contract/Memory/Fixtures/ScopeConsentCases.json");
+  const auto GroupCase =
+      FindJsonObjectWithStringField(Fixture, "CaseId", "SC-008");
+  Check(!GroupCase.empty(), "SC-008 group consent fixture loaded");
+  if (GroupCase.empty()) {
+    return;
+  }
+
+  const auto ConsentObject = FindJsonObjectWithStringField(
+      GroupCase, "ConsentId", "fixture-consent-group-01");
+  const auto ConsentId = JsonStringField(ConsentObject, "ConsentId");
+  const auto ChannelId = JsonStringField(ConsentObject, "ChannelId");
+  const auto AccountId = JsonStringField(ConsentObject, "AccountId");
+  const auto GroupId = JsonStringField(ConsentObject, "GroupConversationId");
+  const auto RecordKinds =
+      JsonStringArrayField(ConsentObject, "AllowedRecordKinds");
+  const auto AllowedPrincipalIds =
+      JsonStringArrayField(ConsentObject, "AllowedPrincipalIds");
+  Check(ConsentId.has_value() && ChannelId.has_value() &&
+            AccountId.has_value() && GroupId.has_value() &&
+            RecordKinds == std::vector<std::string>{"Preference"} &&
+            AllowedPrincipalIds.size() == 2U,
+        "SC-008 consent shape parsed");
+  if (!ConsentId.has_value() || !ChannelId.has_value() ||
+      !AccountId.has_value() || !GroupId.has_value() ||
+      RecordKinds != std::vector<std::string>{"Preference"} ||
+      AllowedPrincipalIds.size() != 2U) {
+    return;
+  }
+
+  const auto MemberAttempt = FindJsonObjectWithStringField(
+      GroupCase, "AttemptId", "fixture-group-read-authorized-principal");
+  Check(!MemberAttempt.empty(),
+        "SC-008 authorized read attempt parsed");
+
+  const std::string OwnerPrincipal = AllowedPrincipalIds.front();
+  AuthorizedMemoryContext Owner =
+      Context(ConversationScopeKind::Group, OwnerPrincipal, *GroupId);
+  Owner.ChannelId = *ChannelId;
+  Owner.AccountId = *AccountId;
+  const std::string MemberPrincipal =
+      JsonStringField(MemberAttempt, "PrincipalId").value_or("");
+  const auto ExpectedMemberRead = JsonStringField(MemberAttempt, "Expected");
+  Check(MemberPrincipal == AllowedPrincipalIds[1] &&
+            ExpectedMemberRead == std::optional<std::string>{"Allow"},
+        "SC-008 member read fields parsed from fixture");
+
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  ConsentGrant GroupConsent = Grant(MemoryCategory::IdentityPreference, Owner,
+                                    *ConsentId);
+  GroupConsent.AllowedGroupMembers = AllowedPrincipalIds;
+  GroupConsent.SourceMessageId = "fixture-group-consent-source";
+  Check(std::holds_alternative<std::monostate>(
+            Memory.RegisterConsent(GroupConsent)),
+        "SC-008 group consent registered");
+  auto SharedRequest = Request("fixture-memory-group-preference",
+                               MemoryCategory::IdentityPreference,
+                               *ConsentId);
+  SharedRequest.SubjectId = OwnerPrincipal;
+  SharedRequest.Content = "Fixture-authorized group preference";
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(Owner, SharedRequest, Now())),
+        "SC-008 grantor writes group-scoped preference");
+  StoredMemory UnlistedKind = ScopeOf(Owner);
+  UnlistedKind.MemoryId = "fixture-memory-unlisted-active-task";
+  UnlistedKind.Category = MemoryCategory::ActiveConversationContext;
+  UnlistedKind.SubjectId = OwnerPrincipal;
+  UnlistedKind.Content = "Not authorized by the preference grant";
+  UnlistedKind.SourceReference = "fixture-group-source-unlisted-kind";
+  UnlistedKind.ConsentId = *ConsentId;
+  UnlistedKind.CreatedAt = Now();
+  UnlistedKind.Version = 1;
+  Storage.Rows[ScopeKey(ScopeOf(Owner))].push_back(UnlistedKind);
+
+  // The fixture's "Preference" record kind maps to IdentityPreference, while
+  // Group scope and the explicit principal list provide the shared-read grant.
+  const std::string AttemptIds[] = {
+      "fixture-group-read-authorized-principal",
+      "fixture-group-read-unlisted-principal",
+      "fixture-group-read-other-account",
+      "fixture-group-read-other-group",
+      "fixture-group-read-unlisted-category"};
+  for (const std::string& AttemptId : AttemptIds) {
+    const auto Attempt =
+        FindJsonObjectWithStringField(GroupCase, "AttemptId", AttemptId);
+    Check(!Attempt.empty(), "SC-008 read attempt found in fixture");
+    if (Attempt.empty()) {
+      continue;
+    }
+    auto Reader = Context(ConversationScopeKind::Group,
+                          JsonStringField(Attempt, "PrincipalId").value_or(""),
+                          JsonStringField(Attempt, "GroupConversationId")
+                              .value_or(""));
+    Reader.ChannelId =
+        JsonStringField(Attempt, "ChannelId").value_or("");
+    Reader.AccountId =
+        JsonStringField(Attempt, "AccountId").value_or("");
+    const auto Expected = JsonStringField(Attempt, "Expected");
+    const auto RecordKind = JsonStringField(Attempt, "RecordKind");
+    const auto Recall = Memory.Recall(Reader, Now(), 1000);
+    const auto* Candidates =
+        std::get_if<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+            &Recall);
+    Check(Candidates != nullptr,
+          "SC-008 read returns a candidate collection");
+    if (Candidates == nullptr) {
+      continue;
+    }
+    if (Expected == std::optional<std::string>{"Allow"}) {
+      Check(Candidates->size() == 1U &&
+                Candidates->front().Id.Value ==
+                    "fixture-memory-group-preference" &&
+                Candidates->front().Scope.PrincipalId == Reader.PrincipalId &&
+                Candidates->front().Scope.Kind ==
+                    EmulativeDialog::Context::ConversationKind::Group,
+            "SC-008 allowed member reads owner record in request scope");
+    } else if (RecordKind ==
+               std::optional<std::string>{"ActiveChatTask"}) {
+      Check(Candidates->size() == 1U &&
+                std::none_of(Candidates->begin(), Candidates->end(),
+                             [](const auto& Candidate) {
+                               return Candidate.Kind ==
+                                      EmulativeDialog::Context::ContextItemKind::
+                                          ActiveChatTask;
+                             }),
+            "SC-008 unlisted record kind is not recalled");
+    } else {
+      Check(Candidates->empty(), "SC-008 denied scope/member reads nothing");
+    }
+  }
 }
 
 void TestRevocationAtomicityAndScope() {
@@ -504,6 +829,146 @@ void TestRestoreBackupBoundaries() {
   Check(std::holds_alternative<std::size_t>(Full) &&
             std::get<std::size_t>(Full) == 0,
         "backup restore respects capacity");
+}
+
+void TestFixtureBackupTombstoneCannotBeResurrected() {
+  const std::string Fixture =
+      ReadFixture("Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json");
+  const auto RecoveryCase =
+      FindJsonObjectWithStringField(Fixture, "CaseId", "FR-006");
+  const auto TombstonedBackup = FindJsonObjectWithStringField(
+      RecoveryCase, "MemoryId", "fixture-memory-tombstoned-01");
+  const auto CurrentBackup = FindJsonObjectWithStringField(
+      RecoveryCase, "MemoryId", "fixture-memory-current-01");
+  Check(!RecoveryCase.empty() && !TombstonedBackup.empty() &&
+            !CurrentBackup.empty(),
+        "FR-006 backup recovery fixture loaded");
+  if (RecoveryCase.empty() || TombstonedBackup.empty() ||
+      CurrentBackup.empty()) {
+    return;
+  }
+
+  const auto TombstonedId =
+      JsonStringField(TombstonedBackup, "MemoryId");
+  const auto BackupVersion =
+      JsonUnsignedField(TombstonedBackup, "BackupVersion");
+  const auto TombstoneVersion =
+      JsonUnsignedField(TombstonedBackup, "TombstoneVersion");
+  const auto ExpectedRestore =
+      JsonStringField(TombstonedBackup, "ExpectedRestore");
+  const auto CurrentId = JsonStringField(CurrentBackup, "MemoryId");
+  const auto CurrentBackupVersion =
+      JsonUnsignedField(CurrentBackup, "BackupVersion");
+  const auto CurrentVersion =
+      JsonUnsignedField(CurrentBackup, "CurrentVersion");
+  const auto ExpectedCurrentRestore =
+      JsonStringField(CurrentBackup, "ExpectedRestore");
+  Check(TombstonedId.has_value() && BackupVersion.has_value() &&
+            TombstoneVersion.has_value() && CurrentId.has_value() &&
+            CurrentBackupVersion.has_value() && CurrentVersion.has_value() &&
+            ExpectedRestore ==
+                std::optional<std::string>{"RejectAsTombstoned"} &&
+            ExpectedCurrentRestore == std::optional<std::string>{
+                                          "AllowIfConsentStillValid"} &&
+            *CurrentBackupVersion == *CurrentVersion,
+        "FR-006 expected restore outcomes parsed");
+  if (!TombstonedId.has_value() || !BackupVersion.has_value() ||
+      !TombstoneVersion.has_value() || !CurrentId.has_value() ||
+      !CurrentBackupVersion.has_value() || !CurrentVersion.has_value()) {
+    return;
+  }
+
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  const auto Scope = Context();
+  static_cast<void>(Memory.RegisterConsent(
+      Grant(MemoryCategory::IdentityPreference, Scope)));
+  auto Original = Request(*TombstonedId, MemoryCategory::IdentityPreference);
+  Original.Version = *BackupVersion;
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(Scope, Original, Now())),
+        "FR-006 active record written before tombstone");
+  ForgetRequest ForgetOne;
+  ForgetOne.MemoryId = *TombstonedId;
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Forget(Scope, ForgetOne, Now())),
+        "FR-006 record tombstoned before restore");
+  const auto TombstoneStillRecorded = [&]() {
+    const auto ScopeRows = Storage.Rows.find(ScopeKey(ScopeOf(Scope)));
+    if (ScopeRows == Storage.Rows.end()) {
+      return false;
+    }
+    const auto TombstoneRow =
+        std::find_if(ScopeRows->second.begin(), ScopeRows->second.end(),
+                     [&TombstonedId](const StoredMemory& Record) {
+                       return Record.MemoryId == *TombstonedId;
+                     });
+    return TombstoneRow != ScopeRows->second.end() &&
+           TombstoneRow->Tombstoned &&
+           TombstoneRow->Version == *TombstoneVersion;
+  };
+  Check(TombstoneStillRecorded(),
+        "FR-006 fixture tombstone version established");
+
+  StoredMemory Backup = ScopeOf(Scope);
+  Backup.MemoryId = *TombstonedId;
+  Backup.Category = MemoryCategory::IdentityPreference;
+  Backup.SubjectId = Original.SubjectId;
+  Backup.Content = Original.Content;
+  Backup.SourceReference = Original.SourceReference;
+  Backup.ConsentId = Original.ConsentId;
+  Backup.CreatedAt = Original.CreatedAt;
+  Backup.Version = *BackupVersion;
+  Storage.BackupRecords = {Backup};
+  const auto RestoredOld = Memory.RestoreBackup(Scope, Now());
+  Check(std::holds_alternative<std::size_t>(RestoredOld) &&
+            std::get<std::size_t>(RestoredOld) == 0U,
+        "FR-006 older tombstoned backup is rejected");
+
+  Backup.Version = *TombstoneVersion + 1U;
+  Storage.BackupRecords = {Backup};
+  const auto RestoredNewer = Memory.RestoreBackup(Scope, Now());
+  Check(std::holds_alternative<std::size_t>(RestoredNewer) &&
+            std::get<std::size_t>(RestoredNewer) == 0U,
+        "higher-version backup cannot resurrect tombstone");
+  Check(TombstoneStillRecorded(),
+        "tombstone remains irreversible after restore attempts");
+
+  auto Keeper = Request("fixture-memory-keeper", MemoryCategory::IdentityPreference);
+  Check(std::holds_alternative<std::monostate>(Memory.Write(Scope, Keeper, Now())),
+        "atomicity keeper record written");
+  MemoryMutationBatch Batch;
+  Batch.Scope = ScopeOf(Scope);
+  Batch.Tombstones.push_back(Keeper.MemoryId);
+  Backup.Version = *TombstoneVersion + 2U;
+  Batch.Upserts.push_back(Backup);
+  const auto FailedBatch = Storage.ApplyAtomically(Batch);
+  Check(std::holds_alternative<MemoryStorageError>(FailedBatch),
+        "batch with tombstone resurrection is rejected");
+  Check(ActiveCount(Storage, ScopeOf(Scope)) == 1U &&
+            TombstoneStillRecorded(),
+        "failed resurrection batch rolls back unrelated tombstones");
+
+  const auto CurrentExpected =
+      JsonStringField(CurrentBackup, "DeleteState");
+  Check(CurrentExpected == std::optional<std::string>{"Active"},
+        "FR-006 current backup is active");
+  auto Current = Request(*CurrentId, MemoryCategory::IdentityPreference);
+  Current.Version = *CurrentBackupVersion;
+  StoredMemory CurrentStored = ScopeOf(Scope);
+  CurrentStored.MemoryId = Current.MemoryId;
+  CurrentStored.Category = Current.Category;
+  CurrentStored.SubjectId = Current.SubjectId;
+  CurrentStored.Content = Current.Content;
+  CurrentStored.SourceReference = Current.SourceReference;
+  CurrentStored.ConsentId = Current.ConsentId;
+  CurrentStored.CreatedAt = Now();
+  CurrentStored.Version = Current.Version;
+  Storage.BackupRecords = {CurrentStored};
+  const auto RestoredCurrent = Memory.RestoreBackup(Scope, Now());
+  Check(std::holds_alternative<std::size_t>(RestoredCurrent) &&
+            std::get<std::size_t>(RestoredCurrent) == 1U,
+        "FR-006 active backup restores with valid consent");
 }
 
 void TestRestartBoundaryAndStorageFailures() {
@@ -794,11 +1259,13 @@ int main() {
   TestIdentitySessionAndPolicy();
   TestConsentValidationAndProposalBinding();
   TestScopeKindAndGroupMembership();
+  TestFixtureGroupConsentAllowsListedMemberRecall();
   TestRevocationAtomicityAndScope();
   TestForgetAndExpiry();
   TestCapacityAndWriteAtomicity();
   TestRecallPriorityAndSummaryMapping();
   TestRestoreBackupBoundaries();
+  TestFixtureBackupTombstoneCannotBeResurrected();
   TestRestartBoundaryAndStorageFailures();
   TestAdditionalReviewScenarios();
   TestSensitiveMarkersAreRejectedAcrossPersistedFields();

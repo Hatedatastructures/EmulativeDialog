@@ -17,6 +17,14 @@ using Context::ContextTrustClass;
 using Context::ConversationKind;
 using Context::ConversationScopeKey;
 
+bool SameScopeFields(const ConsentGrant& Grant,
+                     const AuthorizedMemoryContext& Context) {
+  return Grant.ChannelId == Context.ChannelId &&
+         Grant.AccountId == Context.AccountId &&
+         Grant.ConversationId == Context.ConversationId &&
+         Grant.ScopeKind == Context.ScopeKind;
+}
+
 ContextItemKind ToContextKind(MemoryCategory Category) {
   switch (Category) {
   case MemoryCategory::ConversationSummary:
@@ -172,10 +180,7 @@ std::optional<MemoryError> ConversationMemory::Authorize(
 
 bool ConversationMemory::SameScope(const ConsentGrant& Grant,
                                    const AuthorizedMemoryContext& Context) {
-  return Grant.ChannelId == Context.ChannelId &&
-         Grant.AccountId == Context.AccountId &&
-         Grant.ConversationId == Context.ConversationId &&
-         Grant.ScopeKind == Context.ScopeKind &&
+  return SameScopeFields(Grant, Context) &&
          Grant.GrantorPrincipalId == Context.PrincipalId;
 }
 
@@ -216,8 +221,16 @@ bool ConversationMemory::ConsentMatches(
     const ActiveConsent& Consent, const AuthorizedMemoryContext& Context,
     MemoryCategory Category,
     const std::optional<std::string>& ProposalId) const {
+  const bool ExactOwnerScope = SameScope(Consent.Grant, Context);
+  const bool AuthorizedGroupReader =
+      Consent.Grant.ScopeKind == ConversationScopeKind::Group &&
+      Context.ScopeKind == ConversationScopeKind::Group &&
+      SameScopeFields(Consent.Grant, Context) &&
+      std::find(Consent.Grant.AllowedGroupMembers.begin(),
+                Consent.Grant.AllowedGroupMembers.end(), Context.PrincipalId) !=
+          Consent.Grant.AllowedGroupMembers.end();
   if (!Consent.Active || !Consent.Grant.Granted ||
-      !SameScope(Consent.Grant, Context) ||
+      (!ExactOwnerScope && !AuthorizedGroupReader) ||
       Consent.Grant.Category != Category ||
       Consent.Grant.IdentityPolicyVersion != Context.IdentityPolicyVersion) {
     return false;
@@ -225,14 +238,6 @@ bool ConversationMemory::ConsentMatches(
   if (Consent.Grant.ProposalId.has_value() &&
       (!ProposalId.has_value() || *ProposalId != *Consent.Grant.ProposalId)) {
     return false;
-  }
-  if (Category == MemoryCategory::GroupMemory) {
-    const auto& Members = Consent.Grant.AllowedGroupMembers;
-    if (Members.empty() ||
-        std::find(Members.begin(), Members.end(), Context.PrincipalId) ==
-            Members.end()) {
-      return false;
-    }
   }
   return true;
 }
@@ -341,6 +346,11 @@ MemoryResult<std::monostate> ConversationMemory::Write(
     return Error(MemoryErrorCode::ConsentRequired,
                  "durable memory requires a registered Core consent");
   }
+  if (Consent->Grant.ScopeKind == ConversationScopeKind::Group &&
+      Consent->Grant.GrantorPrincipalId != Context.PrincipalId) {
+    return Error(MemoryErrorCode::ConsentMismatch,
+                 "only the group consent grantor may write shared memory");
+  }
   if (!ConsentMatches(*Consent, Context, Request.Category,
                       Request.ProposalId)) {
     return Error(MemoryErrorCode::ConsentMismatch,
@@ -422,6 +432,29 @@ MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
     return *ListedError;
   }
   auto Records = std::get<std::vector<StoredMemory>>(Listed);
+  for (const ActiveConsent& Consent : Consents_) {
+    if (Consent.Grant.ScopeKind != ConversationScopeKind::Group ||
+        Consent.Grant.GrantorPrincipalId == Context.PrincipalId ||
+        !ConsentMatches(Consent, Context, Consent.Grant.Category,
+                        Consent.Grant.ProposalId)) {
+      continue;
+    }
+    StoredMemory OwnerScope = ScopeTemplate(Context);
+    OwnerScope.PrincipalId = Consent.Grant.GrantorPrincipalId;
+    const auto Shared = Storage_.ListActive(OwnerScope, Now);
+    if (const auto* StorageError =
+            std::get_if<MemoryStorageError>(&Shared)) {
+      return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
+    }
+    for (const StoredMemory& Record :
+         std::get<std::vector<StoredMemory>>(Shared)) {
+      if (Record.ConsentId == Consent.Grant.ConsentId &&
+          ConsentMatches(Consent, Context, Record.Category,
+                         Record.ProposalId)) {
+        Records.push_back(Record);
+      }
+    }
+  }
   Records.erase(
       std::remove_if(
           Records.begin(), Records.end(),
@@ -475,7 +508,7 @@ MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
         .AccountId = Record.AccountId,
         .ConversationId = Record.ConversationId,
         .Kind = ToContextConversationKind(Context.ScopeKind),
-        .PrincipalId = Record.PrincipalId,
+        .PrincipalId = Context.PrincipalId,
     };
     Candidate.Source = ContextSource{
         .SourceMessageId = Record.SourceReference,
