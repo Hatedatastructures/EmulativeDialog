@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(EmulativeDialog LANGUAGES CXX)
+project(EmulativeDialog LANGUAGES C CXX)
 
 include(CTest)
 include(CMake/DependencyPins.cmake)
@@ -24,6 +24,7 @@ set_target_properties(
 if(BUILD_TESTING)
   add_test(NAME BuildProbe.Cxx20 COMMAND $<TARGET_FILE:BuildProbe>)
   add_subdirectory(Tests/Contract/Agent)
+  add_subdirectory(Tests/Contract/Storage)
 endif()
 
 add_library(WorkflowControllerCore STATIC
