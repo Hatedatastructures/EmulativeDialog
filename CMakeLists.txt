@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(EmulativeDialog LANGUAGES CXX)
+project(EmulativeDialog LANGUAGES C CXX)
 
 include(CTest)
 include(CMake/DependencyPins.cmake)
@@ -41,6 +41,7 @@ if(BUILD_TESTING)
     COMMAND $<TARGET_FILE:BoostAsioCoroutineProbe>
   )
   add_subdirectory(Tests/Contract/Agent)
+  add_subdirectory(Tests/Contract/Storage)
 endif()
 
 add_library(WorkflowControllerCore STATIC
