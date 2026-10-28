@@ -59,54 +59,11 @@ CanonicalTerminalEvent FailedTerminal(const RequestId& Request,
   };
 }
 
-std::optional<HttpsDestination> ParseEndpoint(std::string_view Endpoint) {
-  constexpr std::string_view Scheme = "https://";
-  if (Endpoint.substr(0, Scheme.size()) != Scheme) {
-    return std::nullopt;
-  }
-  std::string_view Rest = Endpoint.substr(Scheme.size());
-  if (Rest.empty() || Rest.find('@') != std::string_view::npos ||
-      Rest.find('#') != std::string_view::npos) {
-    return std::nullopt;
-  }
-  const auto PathStart = Rest.find('/');
-  std::string_view Authority = Rest;
-  std::string Path = "/";
-  if (PathStart != std::string_view::npos) {
-    Authority = Rest.substr(0, PathStart);
-    Path = std::string(Rest.substr(PathStart));
-  }
-  if (Authority.empty()) {
-    return std::nullopt;
-  }
-  HttpsDestination Destination;
-  Destination.Path = std::move(Path);
-  const auto Colon = Authority.rfind(':');
-  if (Colon != std::string_view::npos &&
-      Authority.find(']') == std::string_view::npos) {
-    Destination.Host = std::string(Authority.substr(0, Colon));
-    const std::string PortText(Authority.substr(Colon + 1));
-    if (PortText.empty()) {
-      return std::nullopt;
-    }
-    unsigned Port = 0;
-    for (const char Character : PortText) {
-      if (Character < '0' || Character > '9') {
-        return std::nullopt;
-      }
-      Port = Port * 10U + static_cast<unsigned>(Character - '0');
-    }
-    if (Port == 0 || Port > 65535U) {
-      return std::nullopt;
-    }
-    Destination.Port = static_cast<std::uint16_t>(Port);
-  } else {
-    Destination.Host = std::string(Authority);
-  }
-  if (Destination.Host.empty()) {
-    return std::nullopt;
-  }
-  return Destination;
+bool IsValidBinding(const AnthropicEndpointBinding& Binding) {
+  return !Binding.Grant.Value.empty() && !Binding.Destination.Host.empty() &&
+         Binding.Destination.Port != 0U &&
+         !Binding.Destination.Path.empty() &&
+         Binding.Destination.Path.front() == '/';
 }
 
 const json::object* AsObject(const json::value& Value) {
@@ -143,6 +100,33 @@ std::optional<json::value> ParseJsonText(std::string_view Text) {
   }
 }
 
+ProviderError ParseInBandError(std::string_view Data) {
+  std::string Sanitized =
+      "Anthropic returned an in-band stream error after partial output.";
+  FailureCode Code = FailureCode::ProviderRejected;
+  bool Retryable = false;
+  const auto Parsed = ParseJsonText(Data);
+  if (Parsed.has_value()) {
+    if (const auto* Root = AsObject(*Parsed)) {
+      if (const auto* Error = FindValue(*Root, "error");
+          Error != nullptr && Error->is_object()) {
+        const auto& ErrorObject = Error->get_object();
+        if (const auto* Type = FindValue(ErrorObject, "type");
+            Type != nullptr && Type->is_string() &&
+            Type->get_string().c_str() == std::string("overloaded_error")) {
+          Code = FailureCode::RateLimited;
+          Retryable = true;
+        }
+        if (const auto* Message = FindValue(ErrorObject, "message");
+            Message != nullptr && Message->is_string()) {
+          Sanitized = std::string(Message->get_string().c_str());
+        }
+      }
+    }
+  }
+  return MakeError(Code, Retryable, std::move(Sanitized));
+}
+
 json::object MakeTextBlock(std::string_view Text) {
   json::object Block;
   Block["type"] = "text";
@@ -152,14 +136,21 @@ json::object MakeTextBlock(std::string_view Text) {
 
 ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
                                           const ModelProviderProfile& Profile) {
+  if (!Request.ContentParts.empty()) {
+    return MakeError(FailureCode::InvalidRequest, false,
+                     "request-level content parts are not supported by the "
+                     "Anthropic V1 message mapping.");
+  }
   if (Request.Sampling.Temperature.has_value() ||
       Request.Sampling.TopP.has_value() ||
       Request.Sampling.TopK.has_value()) {
     return MakeError(FailureCode::UnsupportedCapability, false,
                      "Anthropic V1 rejects non-default sampling parameters.");
   }
-  if (!Request.Limit.MaximumOutputTokens.has_value() ||
-      *Request.Limit.MaximumOutputTokens == 0U) {
+  const auto MaximumOutputTokens = Request.Limit.MaximumOutputTokens.has_value()
+                                       ? Request.Limit.MaximumOutputTokens
+                                       : Profile.Limit.MaximumOutputTokens;
+  if (!MaximumOutputTokens.has_value() || *MaximumOutputTokens == 0U) {
     return MakeError(FailureCode::InvalidRequest, false,
                      "Anthropic requests require a positive max_tokens.");
   }
@@ -168,7 +159,7 @@ ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
   Body["model"] =
       Request.ModelName.empty() ? Profile.ModelName : Request.ModelName;
   Body["max_tokens"] =
-      static_cast<std::int64_t>(*Request.Limit.MaximumOutputTokens);
+      static_cast<std::int64_t>(*MaximumOutputTokens);
   Body["stream"] = true;
   std::string System = Request.SystemInstructions;
   if (!Request.DeveloperInstructions.empty()) {
@@ -323,8 +314,12 @@ ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
   }
 
   for (const RegisteredProviderOption& Option : Request.ProviderOptions) {
-    if (Option.Id.Value != "thinking" &&
-        Option.Id.Value != "cache_control") {
+    if (Option.Id.Value == "cache_control") {
+      return MakeError(FailureCode::UnsupportedCapability, false,
+                       "Anthropic cache_control requires block-level support "
+                       "that is not available in V1.");
+    }
+    if (Option.Id.Value != "thinking") {
       return MakeError(FailureCode::UnsupportedCapability, false,
                        "unrecognized provider option.");
     }
@@ -459,9 +454,7 @@ public:
       return OnMessageStop();
     }
     if (Name == "error") {
-      return Fail(FailureCode::ProviderRejected,
-                  "Anthropic returned an in-band stream error after partial "
-                  "output.");
+      return FailWith(ParseInBandError(Data));
     }
     return Fail(FailureCode::InvalidStream,
                 "Unrecognized Anthropic SSE event type.");
@@ -475,7 +468,21 @@ public:
     return Terminal_;
   }
 
+  std::optional<CanonicalTerminalEvent> ForceInvalidStream(
+      std::string Description) {
+    return Fail(FailureCode::InvalidStream, std::move(Description));
+  }
+
 private:
+  std::optional<CanonicalTerminalEvent> FailWith(ProviderError Error) {
+    Failed_ = true;
+    Terminal_ = ResponseFailedEvent{
+        .Metadata = MakeMetadata(Request_, Turn_, NextSequence_),
+        .Failure = std::move(Error),
+    };
+    return Terminal_;
+  }
+
   std::optional<CanonicalTerminalEvent> Fail(FailureCode Code,
                                              std::string Description) {
     Failed_ = true;
@@ -780,6 +787,13 @@ private:
       return Fail(FailureCode::InvalidStream,
                   "message_stop arrived without a stop_reason.");
     }
+    for (const auto& Entry : Blocks_) {
+      if (Entry.second.Type == BlockState::Kind::Tool &&
+          !Entry.second.Closed) {
+        return Fail(FailureCode::InvalidStream,
+                    "message_stop arrived before a tool_use block closed.");
+      }
+    }
     const UsageSnapshot Usage =
         FinalUsage_.value_or(LastUsage_.value_or(UsageSnapshot{}));
     const auto Metadata = MakeMetadata(Request_, Turn_, NextSequence_);
@@ -918,6 +932,13 @@ public:
   explicit SseParser(StreamState& State) : State_(State) {}
 
   void Push(std::span<const std::byte> Chunk) {
+    TotalBytes_ += Chunk.size();
+    if (TotalBytes_ > MaximumStreamBytes) {
+      Terminal_ = State_.ForceInvalidStream(
+          "Anthropic SSE stream exceeded the V1 stream limit.");
+      Buffer_.clear();
+      return;
+    }
     for (const std::byte Byte : Chunk) {
       Buffer_.push_back(static_cast<char>(Byte));
     }
@@ -934,6 +955,12 @@ public:
       if (Line.empty()) {
         Dispatch();
         continue;
+      }
+      if (Line.size() > MaximumLineBytes) {
+        Terminal_ = State_.ForceInvalidStream(
+            "Anthropic SSE line exceeded the V1 line limit.");
+        Buffer_.clear();
+        return;
       }
       if (Line.rfind("event:", 0) == 0) {
         EventName_ = Trim(Line.substr(6));
@@ -978,6 +1005,9 @@ private:
   std::string EventName_;
   std::string Data_;
   std::optional<CanonicalTerminalEvent> Terminal_;
+  std::size_t TotalBytes_{0};
+  static constexpr std::size_t MaximumLineBytes = 64U * 1024U;
+  static constexpr std::size_t MaximumStreamBytes = 8U * 1024U * 1024U;
 };
 
 ProviderError MapHttpFailure(std::uint16_t Status, std::string_view Body) {
@@ -1035,8 +1065,10 @@ ProviderError MapHttpFailure(std::uint16_t Status, std::string_view Body) {
 } // namespace
 
 AnthropicMessagesProvider::AnthropicMessagesProvider(
-    HttpTransportPort& Transport) noexcept
-    : Transport_(Transport) {}
+    HttpTransportPort& Transport, AnthropicEndpointBinding Binding) noexcept
+    : Transport_(Transport),
+      Binding_(std::move(Binding)),
+      BindingValid_(IsValidBinding(Binding_)) {}
 
 ProviderResult<ProviderCapabilities>
 AnthropicMessagesProvider::GetCapabilities(
@@ -1068,10 +1100,6 @@ ProviderResult<std::monostate> AnthropicMessagesProvider::ValidateProfile(
     return MakeError(FailureCode::InvalidProfile, false,
                      "Anthropic profiles require x-api-key authentication.");
   }
-  if (!ParseEndpoint(Profile.Endpoint).has_value()) {
-    return MakeError(FailureCode::InvalidProfile, false,
-                     "profile endpoint must be an HTTPS destination.");
-  }
   if (Profile.Sampling.Temperature.has_value() ||
       Profile.Sampling.TopP.has_value() ||
       Profile.Sampling.TopK.has_value()) {
@@ -1097,7 +1125,13 @@ CanonicalTerminalEvent AnthropicMessagesProvider::StreamTurn(
     return FailedTerminal(Request.Id, Request.TurnId, 1,
                           std::get<ProviderError>(Validation));
   }
-  const auto Destination = ParseEndpoint(Profile.Endpoint);
+  if (!BindingValid_) {
+    return FailedTerminal(
+        Request.Id, Request.TurnId, 1,
+        MakeError(FailureCode::TransportFailure, false,
+                  "EndpointNotGranted: Core endpoint binding is missing or "
+                  "invalid."));
+  }
   auto Body = BuildWireBody(Request, Profile);
   if (const auto* Error = std::get_if<ProviderError>(&Body)) {
     return FailedTerminal(Request.Id, Request.TurnId, 1, *Error);
@@ -1113,8 +1147,8 @@ CanonicalTerminalEvent AnthropicMessagesProvider::StreamTurn(
   };
   TransportRequest WireRequest{
       .Id = Platform::Network::TransportRequestId{.Value = Request.Id.Value},
-      .Grant = Platform::Network::EndpointGrantId{.Value = Profile.Id.Value},
-      .Destination = *Destination,
+      .Grant = Binding_.Grant,
+      .Destination = Binding_.Destination,
       .Headers = std::move(Headers),
       .BodyUtf8 = std::get<std::string>(std::move(Body)),
       .Limits = TransportRequestLimits{},
@@ -1135,6 +1169,9 @@ CanonicalTerminalEvent AnthropicMessagesProvider::StreamTurn(
   const auto TransportResult =
       Transport_.Stream(WireRequest, OnHead, OnChunk, CancellationToken);
 
+  if (const auto Terminal = Parser.Terminal(); Terminal.has_value()) {
+    return *Terminal;
+  }
   if (std::holds_alternative<CancelledTransport>(TransportResult)) {
     const auto& Cancelled = std::get<CancelledTransport>(TransportResult);
     if (!Cancelled.RequestMayHaveReachedEndpoint) {
@@ -1161,9 +1198,10 @@ CanonicalTerminalEvent AnthropicMessagesProvider::StreamTurn(
   }
   if (const auto* Failed =
           std::get_if<FailedTransport>(&TransportResult)) {
-    const bool Retryable = Failed->Code != TransportFailureCode::InvalidRequest &&
-                           Failed->Code !=
-                               TransportFailureCode::EndpointNotGranted;
+    const bool Retryable =
+        Failed->Code == TransportFailureCode::DnsFailure ||
+        Failed->Code == TransportFailureCode::ConnectFailure ||
+        Failed->Code == TransportFailureCode::ResponseReadFailure;
     return FailedTerminal(Request.Id, Request.TurnId, 1,
                           MakeError(FailureCode::TransportFailure, Retryable,
                                     "Anthropic transport failed."));

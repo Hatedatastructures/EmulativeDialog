@@ -1,6 +1,6 @@
 #include "Source/Providers/AnthropicMessages/AnthropicMessagesProvider.hpp"
 
-#include <boost/json/src.hpp>
+#include <boost/json.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -144,6 +144,21 @@ ModelProviderProfile MakeProfile() {
   };
 }
 
+AnthropicEndpointBinding MakeBinding() {
+  return AnthropicEndpointBinding{
+      .Grant = EmulativeDialog::Platform::Network::EndpointGrantId{
+          .Value = "grant-synthetic-anthropic"},
+      .Destination = EmulativeDialog::Platform::Network::HttpsDestination{
+          .Host = "api.anthropic.com",
+          .Port = 443,
+          .Path = "/v1/messages"},
+  };
+}
+
+AnthropicMessagesProvider MakeProvider(FakeHttpTransport& Transport) {
+  return AnthropicMessagesProvider(Transport, MakeBinding());
+}
+
 CanonicalModelRequest MakeRequest(std::string RequestId = "req_fixture_text",
                                   std::string TurnId = "turn_fixture_text") {
   CanonicalModelRequest Request;
@@ -196,7 +211,7 @@ const TextDeltaEvent* AsTextDelta(const CanonicalNonTerminalEvent& Event) {
 
 void TestCapabilitiesAndProfile() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   const auto Capabilities =
       Provider.GetCapabilities(ProviderProfileId{.Value = "profile"});
   Check(std::holds_alternative<ProviderCapabilities>(Capabilities),
@@ -222,11 +237,12 @@ void TestCapabilitiesAndProfile() {
             FailureCode::InvalidProfile,
         "wrong authentication rejected");
 
-  auto WrongEndpoint = MakeProfile();
-  WrongEndpoint.Endpoint = "http://api.anthropic.com/v1/messages";
-  Check(std::get<ProviderError>(Provider.ValidateProfile(WrongEndpoint)).Code ==
-            FailureCode::InvalidProfile,
-        "non-https endpoint rejected");
+  auto MissingVersion = MakeProfile();
+  MissingVersion.ProtocolVersion.clear();
+  Check(
+      std::get<ProviderError>(Provider.ValidateProfile(MissingVersion)).Code ==
+          FailureCode::InvalidProfile,
+      "missing Anthropic version rejected");
 
   auto Sampling = MakeProfile();
   Sampling.Sampling.Temperature = 0.5;
@@ -240,7 +256,7 @@ void TestWireRequestAndHeaders() {
   Transport.Frames = FixtureFrames("AnthropicMessages/Fixtures/"
                                    "StreamCases.json",
                                    "text_blocks_utf8_and_sse_fragmentation");
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   const auto Request = MakeRequest();
   static_cast<void>(RunFrames(Transport, Provider, Request, Terminal));
@@ -248,6 +264,8 @@ void TestWireRequestAndHeaders() {
   const auto& Wire = *Transport.LastRequest;
   Check(Wire.Destination.Host == "api.anthropic.com", "wire host");
   Check(Wire.Destination.Path == "/v1/messages", "wire path");
+  Check(Wire.Grant.Value == "grant-synthetic-anthropic",
+        "wire uses injected Core grant");
   bool SawVersionHeader = false;
   bool SawApiKeyHeader = false;
   for (const auto& Header : Wire.Headers) {
@@ -280,7 +298,7 @@ void TestWireRequestAndHeaders() {
 
 void TestSamplingRejectedBeforeSend() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   auto Request = MakeRequest();
   Request.Sampling.TopP = 0.9;
   CanonicalTerminalEvent Terminal;
@@ -298,7 +316,7 @@ void TestTextStreamFragmentation() {
   Transport.Frames = FixtureFrames("AnthropicMessages/Fixtures/"
                                    "StreamCases.json",
                                    "text_blocks_utf8_and_sse_fragmentation");
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   const auto Events = RunFrames(
       Transport, Provider, MakeRequest("req_fixture_text",
@@ -336,7 +354,7 @@ void TestToolStream() {
   Transport.Frames = FixtureFrames("AnthropicMessages/Fixtures/"
                                    "StreamCases.json",
                                    "tool_use_partial_json_and_stable_ids");
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   const auto Events = RunFrames(
       Transport, Provider,
@@ -370,7 +388,7 @@ void TestOutputLimits() {
     Transport.Frames = FixtureFrames(
         "AnthropicMessages/Fixtures/ErrorCases.json",
         "max_tokens_output_limit");
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     CanonicalTerminalEvent Terminal;
     static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
     const auto* Limited =
@@ -387,7 +405,7 @@ void TestOutputLimits() {
     Transport.Frames = FixtureFrames(
         "AnthropicMessages/Fixtures/ErrorCases.json",
         "context_window_output_limit");
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     CanonicalTerminalEvent Terminal;
     static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
     const auto* Limited =
@@ -400,7 +418,7 @@ void TestOutputLimits() {
     Transport.Frames = FixtureFrames(
         "AnthropicMessages/Fixtures/ErrorCases.json",
         "incomplete_tool_json_at_output_limit_never_becomes_ready");
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     CanonicalTerminalEvent Terminal;
     const auto Events =
         RunFrames(Transport, Provider, MakeRequest(), Terminal);
@@ -429,7 +447,7 @@ void TestStopSequence() {
   Transport.Frames = FixtureFrames(
       "AnthropicMessages/Fixtures/ErrorCases.json",
       "stop_sequence_completion");
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
   const auto* Completed = std::get_if<ResponseCompletedEvent>(&Terminal);
@@ -451,7 +469,7 @@ void TestEarlyFailures() {
     FakeHttpTransport Transport;
     Transport.Frames =
         FixtureFrames("AnthropicMessages/Fixtures/ErrorCases.json", CaseId);
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     CanonicalTerminalEvent Terminal;
     static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
     const auto Failure = TerminalFailure(Terminal);
@@ -461,9 +479,13 @@ void TestEarlyFailures() {
     if (CaseId == "mismatched_sse_event_and_data_type_is_invalid") {
       Expected = FailureCode::InvalidStream;
     } else if (CaseId == "in_band_error_after_partial_text") {
-      Expected = FailureCode::ProviderRejected;
+      Expected = FailureCode::RateLimited;
     }
     Check(Failure.has_value() && Failure->Code == Expected, Name);
+    if (CaseId == "in_band_error_after_partial_text") {
+      Check(Failure.has_value() && Failure->Retryable,
+            "in-band overloaded_error is retryable");
+    }
   }
 }
 
@@ -472,7 +494,7 @@ void TestUnexpectedEof() {
   Transport.Frames = FixtureFrames(
       "AnthropicMessages/Fixtures/ErrorCases.json",
       "unexpected_eof_before_message_stop_is_unknown");
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
   const auto* Unknown =
@@ -485,7 +507,7 @@ void TestUnexpectedEof() {
 void TestCancellation() {
   {
     FakeHttpTransport Transport;
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     std::stop_source Source;
     Source.request_stop();
     CanonicalTerminalEvent Terminal;
@@ -505,7 +527,7 @@ void TestCancellation() {
         "cancellation_after_send_without_confirmation_is_unknown");
     Transport.Result =
         CancelledTransport{.RequestMayHaveReachedEndpoint = true};
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     CanonicalTerminalEvent Terminal;
     static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
     const auto* Unknown =
@@ -538,7 +560,7 @@ void TestHttpErrorMapping() {
     Transport.Frames = {
         "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\","
         "\"message\":\"Synthetic failure.\"}}"};
-    AnthropicMessagesProvider Provider(Transport);
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
     CanonicalTerminalEvent Terminal;
     static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
     const auto Failure = TerminalFailure(Terminal);
@@ -553,7 +575,7 @@ void TestRefusalV12() {
   Transport.Frames = FixtureFrames(
       "AnthropicMessages/Fixtures/Version1Point2/RefusalCases.json",
       "refusal_empty_body_known_category_redacts_explanation");
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
   const auto* Completed = std::get_if<ResponseCompletedEvent>(&Terminal);
@@ -567,7 +589,7 @@ void TestRefusalV12() {
   Missing.Frames = FixtureFrames(
       "AnthropicMessages/Fixtures/Version1Point2/RefusalCases.json",
       "refusal_details_missing_fails_invalid_stream");
-  AnthropicMessagesProvider MissingProvider(Missing);
+  AnthropicMessagesProvider MissingProvider = MakeProvider(Missing);
   CanonicalTerminalEvent MissingTerminal;
   static_cast<void>(RunFrames(Missing, MissingProvider, MakeRequest(),
                               MissingTerminal));
@@ -588,7 +610,7 @@ void TestDuplicateTerminal() {
       "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n",
       "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n",
   };
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
   const auto Failure = TerminalFailure(Terminal);
@@ -618,7 +640,7 @@ void TestThinkingFiltered() {
       "\"output_tokens\":1}}\r\n\r\n",
       "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n",
   };
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   const auto Events = RunFrames(Transport, Provider, MakeRequest(), Terminal);
   bool SawText = false;
@@ -652,7 +674,7 @@ void ExpectTerminalCode(AnthropicMessagesProvider& Provider,
 
 void TestRequestValidationMatrix() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
 
   const auto RejectBeforeSend =
       [&Provider, &Transport](CanonicalModelRequest Request,
@@ -670,12 +692,56 @@ void TestRequestValidationMatrix() {
 
   auto MissingLimit = MakeRequest();
   MissingLimit.Limit = OutputLimit{};
-  RejectBeforeSend(MissingLimit, FailureCode::InvalidRequest,
-                   "missing max_tokens rejected");
+  Transport.Frames = {
+      "event: message_start\r\ndata: {\"type\":\"message_start\","
+      "\"message\":{\"id\":\"msg_fallback\",\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":0}}}\r\n\r\n",
+      "event: message_delta\r\ndata: {\"type\":\"message_delta\","
+      "\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":1}}\r\n\r\n",
+      "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n",
+  };
+  Transport.CallCount = 0;
+  {
+    CanonicalTerminalEvent Terminal;
+    static_cast<void>(
+        RunFrames(Transport, Provider, MissingLimit, Terminal));
+    const auto Body =
+        json::parse(Transport.LastRequest->BodyUtf8).as_object();
+    Check(Transport.CallCount == 1 &&
+              Body.at("max_tokens").as_int64() == 128,
+          "missing request max_tokens falls back to profile limit");
+  }
+  auto NoLimits = MakeRequest();
+  NoLimits.Limit = OutputLimit{};
+  auto ProfileWithoutLimit = MakeProfile();
+  ProfileWithoutLimit.Limit = OutputLimit{};
+  Transport.CallCount = 0;
+  {
+    CanonicalTerminalEvent Terminal;
+    static_cast<void>(RunFrames(Transport, Provider, NoLimits, Terminal,
+                                ProfileWithoutLimit));
+    Check(TerminalFailure(Terminal).has_value() &&
+              TerminalFailure(Terminal)->Code == FailureCode::InvalidRequest &&
+              Transport.CallCount == 0,
+          "missing request and profile max_tokens rejected");
+  }
   auto ZeroLimit = MakeRequest();
   ZeroLimit.Limit = OutputLimit{.MaximumOutputTokens = 0};
   RejectBeforeSend(ZeroLimit, FailureCode::InvalidRequest,
                    "zero max_tokens rejected");
+  auto RequestContent = MakeRequest();
+  RequestContent.ContentParts.push_back(
+      TextContentPart{.Text = "Synthetic request content."});
+  RejectBeforeSend(RequestContent, FailureCode::InvalidRequest,
+                   "request-level content parts rejected");
+  auto CacheControl = MakeRequest();
+  CacheControl.ProviderOptions.push_back(RegisteredProviderOption{
+      .Id = RegisteredOptionId{.Value = "cache_control"},
+      .Value = std::string("{\"type\":\"ephemeral\"}"),
+  });
+  RejectBeforeSend(CacheControl, FailureCode::UnsupportedCapability,
+                   "top-level cache_control rejected");
   auto SystemRole = MakeRequest();
   SystemRole.Messages[0].Role = MessageRole::System;
   RejectBeforeSend(SystemRole, FailureCode::InvalidRequest,
@@ -730,7 +796,7 @@ void TestRequestValidationMatrix() {
                    "non-string provider option rejected");
   auto BadOptionJson = MakeRequest();
   BadOptionJson.ProviderOptions.push_back(RegisteredProviderOption{
-      .Id = RegisteredOptionId{.Value = "cache_control"},
+      .Id = RegisteredOptionId{.Value = "thinking"},
       .Value = std::string("{bad"),
   });
   RejectBeforeSend(BadOptionJson, FailureCode::InvalidProfile,
@@ -748,16 +814,12 @@ void TestSuccessfulRequestVariants() {
       "{\"input_tokens\":1,\"output_tokens\":1}}\r\n\r\n",
       "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n",
   };
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   auto Request = MakeRequest();
   Request.DeveloperInstructions = "Synthetic developer instruction.";
   Request.ProviderOptions.push_back(RegisteredProviderOption{
       .Id = RegisteredOptionId{.Value = "thinking"},
       .Value = std::string("{\"type\":\"enabled\",\"budget_tokens\":1024}"),
-  });
-  Request.ProviderOptions.push_back(RegisteredProviderOption{
-      .Id = RegisteredOptionId{.Value = "cache_control"},
-      .Value = std::string("{\"type\":\"ephemeral\"}"),
   });
   CanonicalTerminalEvent Terminal;
   static_cast<void>(RunFrames(Transport, Provider, Request, Terminal));
@@ -769,12 +831,9 @@ void TestSuccessfulRequestVariants() {
   Check(Body.at("thinking").as_object().at("type").as_string() ==
             "enabled",
         "registered thinking option passes through");
-  Check(Body.at("cache_control").as_object().at("type").as_string() ==
-            "ephemeral",
-        "registered cache_control option passes through");
 
   FakeHttpTransport ToolTransport;
-  AnthropicMessagesProvider ToolProvider(ToolTransport);
+  AnthropicMessagesProvider ToolProvider = MakeProvider(ToolTransport);
   auto ToolRequest = MakeRequest("req_tools", "turn_tools");
   ToolRequest.Messages.clear();
   ToolRequest.Messages.push_back(CanonicalMessage{
@@ -845,7 +904,7 @@ void TestSuccessfulRequestVariants() {
 
 void TestSseMalformedMatrix() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   const std::string Start =
       "event: message_start\r\ndata: {\"type\":\"message_start\","
       "\"message\":{\"id\":\"msg_m\",\"usage\":{\"input_tokens\":1,"
@@ -955,11 +1014,27 @@ void TestSseMalformedMatrix() {
       "unknown_stop_reason_fails_closed");
   ExpectTerminalCode(Provider, Transport, UnknownStop,
                      FailureCode::InvalidStream, "unknown stop reason");
+  ExpectTerminalCode(
+      Provider, Transport,
+      {Start,
+       "event: content_block_start\r\ndata: {\"type\":"
+       "\"content_block_start\",\"index\":0,\"content_block\":"
+       "{\"type\":\"tool_use\",\"id\":\"toolu_open\",\"name\":\"T\"}}\r\n\r\n",
+       "event: message_delta\r\ndata: {\"type\":\"message_delta\","
+       "\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":"
+       "{\"input_tokens\":1,\"output_tokens\":1}}\r\n\r\n",
+       Stop},
+      FailureCode::InvalidStream, "unclosed tool block at message_stop");
+  const std::string Oversized =
+      "event: message_start\r\ndata: " + std::string(70'000, 'x') +
+      "\r\n\r\n";
+  ExpectTerminalCode(Provider, Transport, {Oversized},
+                     FailureCode::InvalidStream, "oversized SSE line rejected");
 }
 
 void TestTransportTerminalMatrix() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   CanonicalTerminalEvent Terminal;
   Transport.Result =
       FailedTransport{.Code = TransportFailureCode::DnsFailure};
@@ -1006,11 +1081,38 @@ void TestTransportTerminalMatrix() {
             TerminalFailure(Terminal)->Code == FailureCode::RateLimited &&
             TerminalFailure(Terminal)->Retryable,
         "overloaded body maps rate limited");
+  Transport.Result = FailedTransport{
+      .Code = TransportFailureCode::TlsHandshakeFailure};
+  Transport.Frames.clear();
+  static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
+  Check(TerminalFailure(Terminal).has_value() &&
+            !TerminalFailure(Terminal)->Retryable,
+        "tls failure is not retryable");
+  Transport.Result =
+      FailedTransport{.Code = TransportFailureCode::ResponseLimitExceeded};
+  static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
+  Check(TerminalFailure(Terminal).has_value() &&
+            !TerminalFailure(Terminal)->Retryable,
+        "response limit failure is not retryable");
+  Transport.Result =
+      FailedTransport{.Code = TransportFailureCode::DnsFailure};
+  Transport.Frames = {
+      "event: message_start\r\ndata: {\"type\":\"message_start\","
+      "\"message\":{\"id\":\"msg_precedence\",\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":0}}}\r\n\r\n",
+      "event: message_delta\r\ndata: {\"type\":\"message_delta\","
+      "\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":1}}\r\n\r\n",
+      "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n",
+  };
+  static_cast<void>(RunFrames(Transport, Provider, MakeRequest(), Terminal));
+  Check(std::holds_alternative<ResponseCompletedEvent>(Terminal),
+        "parsed terminal takes precedence over transport failure");
 }
 
 void TestRefusalVariantMatrix() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
   const auto RefusalFrame = [](std::string Details) {
     return std::string(
                "event: message_delta\r\ndata: {\"type\":\"message_delta\","
@@ -1086,24 +1188,37 @@ void TestRefusalVariantMatrix() {
 
 void TestEndpointAndHealthMatrix() {
   FakeHttpTransport Transport;
-  AnthropicMessagesProvider Provider(Transport);
-  const std::vector<std::pair<std::string, bool>> Endpoints{
-      {"https://api.anthropic.com", true},
-      {"https://api.anthropic.com:8443/v1/messages", true},
-      {"https://api.anthropic.com:abc/v1/messages", false},
-      {"https://api.anthropic.com:0/v1/messages", false},
-      {"https://api.anthropic.com:70000/v1/messages", false},
-      {"https://@host/v1/messages", false},
-      {"https://host/v1/messages#fragment", false},
-      {"https:///v1/messages", false},
-  };
-  for (const auto& [Endpoint, Valid] : Endpoints) {
-    auto Profile = MakeProfile();
-    Profile.Endpoint = Endpoint;
-    const bool Accepted = std::holds_alternative<std::monostate>(
-        Provider.ValidateProfile(Profile));
-    Check(Accepted == Valid, "endpoint validation");
-  }
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
+  auto AnyEndpointProfile = MakeProfile();
+  AnyEndpointProfile.Endpoint = "https://ignored.invalid/any-path";
+  Check(std::holds_alternative<std::monostate>(
+            Provider.ValidateProfile(AnyEndpointProfile)),
+        "profile endpoint is not parsed by the adapter");
+  auto MissingGrant = MakeBinding();
+  MissingGrant.Grant.Value.clear();
+  AnthropicMessagesProvider Unbound(Transport, MissingGrant);
+  CanonicalTerminalEvent UnboundTerminal;
+  Transport.CallCount = 0;
+  static_cast<void>(
+      RunFrames(Transport, Unbound, MakeRequest(), UnboundTerminal));
+  const auto UnboundFailure = TerminalFailure(UnboundTerminal);
+  Check(UnboundFailure.has_value() &&
+            UnboundFailure->Code == FailureCode::TransportFailure &&
+            !UnboundFailure->Retryable &&
+            UnboundFailure->SanitizedDescription.find("EndpointNotGranted") !=
+                std::string::npos &&
+            Transport.CallCount == 0,
+        "missing endpoint grant fails before network");
+  auto BadDestination = MakeBinding();
+  BadDestination.Destination.Path = "v1/messages";
+  AnthropicMessagesProvider BadBinding(Transport, BadDestination);
+  CanonicalTerminalEvent BadTerminal;
+  static_cast<void>(
+      RunFrames(Transport, BadBinding, MakeRequest(), BadTerminal));
+  Check(TerminalFailure(BadTerminal).has_value() &&
+            TerminalFailure(BadTerminal)->SanitizedDescription.find(
+                "EndpointNotGranted") != std::string::npos,
+        "invalid endpoint destination fails closed");
   auto MissingModel = MakeProfile();
   MissingModel.ModelName.clear();
   Check(std::get<ProviderError>(Provider.ValidateProfile(MissingModel)).Code ==
@@ -1165,3 +1280,4 @@ int main() {
   std::cout << "All AnthropicMessagesProvider checks passed\n";
   return 0;
 }
+

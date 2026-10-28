@@ -5,13 +5,21 @@
 
 namespace EmulativeDialog::Providers {
 
+// Core resolves profile endpoints to immutable grants. The adapter accepts the
+// already-validated binding and never parses profile URLs or mints grants.
+struct AnthropicEndpointBinding final {
+  Platform::Network::EndpointGrantId Grant;
+  Platform::Network::HttpsDestination Destination;
+};
+
 // Anthropic Messages adapter. Protocol details stay inside this module; the
 // transport is injected so the adapter never opens sockets directly and tests
 // can drive deterministic SSE fixtures.
 class AnthropicMessagesProvider final : public ModelProviderPort {
 public:
   explicit AnthropicMessagesProvider(
-      Platform::Network::HttpTransportPort& Transport) noexcept;
+      Platform::Network::HttpTransportPort& Transport,
+      AnthropicEndpointBinding Binding) noexcept;
 
   [[nodiscard]] ProviderResult<ProviderCapabilities> GetCapabilities(
       const ProviderProfileId& ProfileId) const override;
@@ -29,6 +37,8 @@ public:
 
 private:
   Platform::Network::HttpTransportPort& Transport_;
+  AnthropicEndpointBinding Binding_;
+  bool BindingValid_{false};
 };
 
 } // namespace EmulativeDialog::Providers
