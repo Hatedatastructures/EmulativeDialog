@@ -35,6 +35,14 @@ enum class TransportMethod : std::uint8_t {
     Post
 };
 
+// Profile-level proxy policy. System uses the WinHTTP/system configuration;
+// Direct explicitly bypasses any proxy. No per-request proxy URL, PAC source,
+// SOCKS endpoint, or proxy credential is representable.
+enum class TransportProxyMode : std::uint8_t {
+    System,
+    Direct
+};
+
 // A fully resolved HTTPS destination derived from a Core endpoint grant.
 // Host carries a DNS name or IP literal without scheme or userinfo; Path is an
 // absolute path with an optional query. Redirects never change either field.
@@ -78,7 +86,69 @@ struct TransportRequest final {
     std::string BodyUtf8;
     TransportRequestLimits Limits;
     TransportTimeouts Timeouts;
+    TransportProxyMode Proxy{TransportProxyMode::System};
 };
+
+// Result of Core-side grant validation. Every value other than Valid maps to
+// the single public transport failure EndpointNotGranted.
+enum class EndpointGrantStatus : std::uint8_t {
+    Valid,
+    Missing,
+    Expired,
+    DestinationMismatch
+};
+
+// Read-only dependency injected into an HttpTransport implementation at
+// construction. Core owns grants; the transport only asks whether a grant is
+// still valid for the exact requested destination. Validation must complete
+// before DNS resolution or connect is attempted.
+class EndpointGrantResolver {
+public:
+    virtual ~EndpointGrantResolver() = default;
+
+    EndpointGrantResolver(const EndpointGrantResolver&) = delete;
+    EndpointGrantResolver& operator=(const EndpointGrantResolver&) = delete;
+
+    [[nodiscard]] virtual EndpointGrantStatus Validate(
+        const EndpointGrantId& Grant,
+        const HttpsDestination& Requested) const noexcept = 0;
+
+protected:
+    EndpointGrantResolver() = default;
+};
+
+constexpr char LowerAscii(char Value) noexcept {
+    return (Value >= 'A' && Value <= 'Z')
+               ? static_cast<char>(Value - 'A' + 'a')
+               : Value;
+}
+
+constexpr bool EqualsAsciiNoCase(std::string_view Left,
+                                 std::string_view Right) noexcept {
+    if (Left.size() != Right.size()) {
+        return false;
+    }
+    for (std::size_t Index = 0; Index < Left.size(); ++Index) {
+        if (LowerAscii(Left[Index]) != LowerAscii(Right[Index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Adapter owns the protocol/profile header allowlist. The transport boundary
+// additionally rejects hop-by-hop headers that would let callers influence
+// connection management; CR/LF injection and size/count limits are separate
+// transport responsibilities.
+constexpr bool IsForbiddenHopByHopHeader(std::string_view Name) noexcept {
+    return EqualsAsciiNoCase(Name, "connection") ||
+           EqualsAsciiNoCase(Name, "keep-alive") ||
+           EqualsAsciiNoCase(Name, "proxy-connection") ||
+           EqualsAsciiNoCase(Name, "te") ||
+           EqualsAsciiNoCase(Name, "trailer") ||
+           EqualsAsciiNoCase(Name, "transfer-encoding") ||
+           EqualsAsciiNoCase(Name, "upgrade");
+}
 
 enum class TransportFailureCode : std::uint8_t {
     InvalidRequest,
@@ -161,9 +231,11 @@ enum class TransportHealthState : std::uint8_t {
     Unavailable
 };
 
-// Single public boundary used by provider adapters. Implementations must never
-// accept a full URL string, follow a redirect, load user certificates, or emit
-// secrets; see Architecture/Contracts/HttpTransportContract.md V1.
+// Single public boundary used by provider adapters. Implementations are
+// constructed with a Core-provided read-only EndpointGrantResolver and must
+// validate the grant before DNS/connect. Implementations must never accept a
+// full URL string, follow a redirect, load user certificates, or emit secrets;
+// see Architecture/Contracts/HttpTransportContract.md V1.
 class HttpTransportPort {
 public:
     virtual ~HttpTransportPort() = default;

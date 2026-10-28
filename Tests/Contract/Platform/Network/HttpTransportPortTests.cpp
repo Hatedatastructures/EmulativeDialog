@@ -1,6 +1,6 @@
 #include "Source/Platform/Network/HttpTransportPort.hpp"
 
-#include <cassert>
+#include <cstdlib>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -15,6 +15,14 @@
 namespace {
 
 using namespace EmulativeDialog::Platform::Network;
+
+// Always evaluates its argument so NDEBUG builds keep every check and no
+// variable is only referenced from a compiled-out assertion.
+void Expect(bool Condition) {
+    if (!Condition) {
+        std::abort();
+    }
+}
 
 template <typename Type>
 concept ExposesUrlField = requires(const Type& Value) {
@@ -59,6 +67,21 @@ TransportRequest MakeRequest(std::string Body = "{}") {
 }
 
 // Offline fake used to prove substitutability without any network access.
+class ScriptedGrantResolver final : public EndpointGrantResolver {
+public:
+    explicit ScriptedGrantResolver(EndpointGrantStatus Selected)
+        : Current(Selected) {}
+
+    [[nodiscard]] EndpointGrantStatus Validate(
+        const EndpointGrantId&,
+        const HttpsDestination&) const noexcept override {
+        return Current;
+    }
+
+private:
+    EndpointGrantStatus Current;
+};
+
 class ScriptedTransport final : public HttpTransportPort {
 public:
     enum class Script {
@@ -70,19 +93,38 @@ public:
         CancelledMidStream,
         StreamInterrupted,
         HeaderInjectionRejected,
-        OversizedResponse
+        OversizedResponse,
+        SinkException
     };
 
-    explicit ScriptedTransport(Script Selected) : Current(Selected) {}
+    explicit ScriptedTransport(Script Selected,
+                               const EndpointGrantResolver* GrantResolver =
+                                   nullptr)
+        : Current(Selected), Resolver(GrantResolver) {}
 
     [[nodiscard]] TransportTerminal Stream(
         const TransportRequest& Request,
         const ResponseHeadSink& OnHead,
         const ResponseChunkSink& OnChunk,
-        std::stop_token) override {
+        std::stop_token CancellationToken) override {
         ++CallCount;
         LastDestination = Request.Destination;
         LastBody = Request.BodyUtf8;
+        LastProxyMode = Request.Proxy;
+
+        // Pre-cancel before any request byte could be written.
+        if (CancellationToken.stop_requested()) {
+            return CancelledTransport{
+                .RequestMayHaveReachedEndpoint = false};
+        }
+
+        // Grant validation completes before DNS/connect is attempted.
+        if (Resolver != nullptr &&
+            Resolver->Validate(Request.Grant, Request.Destination) !=
+                EndpointGrantStatus::Valid) {
+            return FailedTransport{
+                .Code = TransportFailureCode::EndpointNotGranted};
+        }
 
         const ResponseHeadMetadata Head{
             .StatusCode = 200,
@@ -137,7 +179,8 @@ public:
                            Header.Name.find('\r') != std::string::npos ||
                            Header.Name.find('\n') != std::string::npos ||
                            Header.Value.find('\r') != std::string::npos ||
-                           Header.Value.find('\n') != std::string::npos;
+                           Header.Value.find('\n') != std::string::npos ||
+                           IsForbiddenHopByHopHeader(Header.Name);
             }
             if (Injected) {
                 return FailedTransport{
@@ -149,6 +192,18 @@ public:
         case Script::OversizedResponse:
             return FailedTransport{
                 .Code = TransportFailureCode::ResponseLimitExceeded};
+        case Script::SinkException:
+            if (OnHead) {
+                OnHead(Head);
+            }
+            try {
+                Emit(OnChunk, "data: {\"part\":1}\n\n");
+            } catch (...) {
+                return FailedTransport{
+                    .Code = TransportFailureCode::InternalError};
+            }
+            return CompletedTransport{.StatusCode = 200,
+                                      .ReceivedBodyBytes = 0};
         }
         return FailedTransport{.Code = TransportFailureCode::InternalError};
     }
@@ -161,6 +216,7 @@ public:
     HttpsDestination LastDestination;
     std::string LastBody;
     std::uint64_t ReceivedBodyBytes{0};
+    TransportProxyMode LastProxyMode{TransportProxyMode::System};
 
 private:
     static void Emit(const ResponseChunkSink& Sink, std::string_view Text) {
@@ -172,6 +228,7 @@ private:
     }
 
     Script Current;
+    const EndpointGrantResolver* Resolver;
 };
 
 struct CapturedBody final {
@@ -223,19 +280,19 @@ void TestOfflineFakeSubstitution() {
         },
         std::stop_token{});
 
-    assert(Transport.CallCount == 1);
-    assert(HeadCalls == 1);
-    assert(CapturedHead.StatusCode == 200);
-    assert(CapturedHead.ContentType == "text/event-stream");
-    assert(Chunks.size() == 2);
-    assert(std::holds_alternative<CompletedTransport>(Terminal));
+    Expect(Transport.CallCount == 1);
+    Expect(HeadCalls == 1);
+    Expect(CapturedHead.StatusCode == 200);
+    Expect(CapturedHead.ContentType == "text/event-stream");
+    Expect(Chunks.size() == 2);
+    Expect(std::holds_alternative<CompletedTransport>(Terminal));
     const auto& Completed = std::get<CompletedTransport>(Terminal);
-    assert(Completed.StatusCode == 200);
-    assert(Completed.ReceivedBodyBytes ==
+    Expect(Completed.StatusCode == 200);
+    Expect(Completed.ReceivedBodyBytes ==
            Chunks.front().size() + Chunks.back().size());
-    assert(Transport.LastDestination.Host == "provider.example");
-    assert(Transport.LastDestination.Path == "/v1/responses");
-    assert(Transport.Health(std::stop_token{}) ==
+    Expect(Transport.LastDestination.Host == "provider.example");
+    Expect(Transport.LastDestination.Path == "/v1/responses");
+    Expect(Transport.Health(std::stop_token{}) ==
            TransportHealthState::Ready);
 }
 
@@ -243,18 +300,18 @@ void TestRedirectDenied() {
     ScriptedTransport Transport(ScriptedTransport::Script::Redirect);
     const TransportTerminal Terminal =
         Transport.Stream(MakeRequest(), {}, {}, std::stop_token{});
-    assert(std::holds_alternative<RedirectDeniedTransport>(Terminal));
+    Expect(std::holds_alternative<RedirectDeniedTransport>(Terminal));
     const auto& Redirect = std::get<RedirectDeniedTransport>(Terminal);
-    assert(Redirect.StatusCode == 307);
-    assert(Redirect.RedactedLocationHost == "other.example");
+    Expect(Redirect.StatusCode == 307);
+    Expect(Redirect.RedactedLocationHost == "other.example");
 }
 
 void TestTlsFailureFailsClosed() {
     ScriptedTransport Transport(ScriptedTransport::Script::TlsFailure);
     const TransportTerminal Terminal =
         Transport.Stream(MakeRequest(), {}, {}, std::stop_token{});
-    assert(std::holds_alternative<FailedTransport>(Terminal));
-    assert(std::get<FailedTransport>(Terminal).Code ==
+    Expect(std::holds_alternative<FailedTransport>(Terminal));
+    Expect(std::get<FailedTransport>(Terminal).Code ==
            TransportFailureCode::TlsHandshakeFailure);
 }
 
@@ -262,16 +319,16 @@ void TestTimeoutIsDistinctFromUnknown() {
     ScriptedTransport Timeout(ScriptedTransport::Script::ResponseTimeout);
     const TransportTerminal Timed =
         Timeout.Stream(MakeRequest(), {}, {}, std::stop_token{});
-    assert(std::holds_alternative<TimedOutTransport>(Timed));
-    assert(std::get<TimedOutTransport>(Timed).Phase ==
+    Expect(std::holds_alternative<TimedOutTransport>(Timed));
+    Expect(std::get<TimedOutTransport>(Timed).Phase ==
            TransportTimeoutPhase::Response);
 
     ScriptedTransport Interrupted(
         ScriptedTransport::Script::StreamInterrupted);
     const TransportTerminal Unknown =
         Interrupted.Stream(MakeRequest(), {}, {}, std::stop_token{});
-    assert(std::holds_alternative<UnknownOutcomeTransport>(Unknown));
-    assert(std::get<UnknownOutcomeTransport>(Unknown)
+    Expect(std::holds_alternative<UnknownOutcomeTransport>(Unknown));
+    Expect(std::get<UnknownOutcomeTransport>(Unknown)
                .RequestMayHaveReachedEndpoint);
 }
 
@@ -280,8 +337,8 @@ void TestCancellationBeforeSendIsConfirmedUnsent() {
         ScriptedTransport::Script::CancelledBeforeSend);
     const TransportTerminal Terminal =
         Transport.Stream(MakeRequest(), {}, {}, std::stop_token{});
-    assert(std::holds_alternative<CancelledTransport>(Terminal));
-    assert(
+    Expect(std::holds_alternative<CancelledTransport>(Terminal));
+    Expect(
         !std::get<CancelledTransport>(Terminal)
              .RequestMayHaveReachedEndpoint);
 }
@@ -291,8 +348,8 @@ void TestCancellationMidStreamCannotClaimRemoteStop() {
         ScriptedTransport::Script::CancelledMidStream);
     const TransportTerminal Terminal =
         Transport.Stream(MakeRequest(), {}, {}, std::stop_token{});
-    assert(std::holds_alternative<CancelledTransport>(Terminal));
-    assert(std::get<CancelledTransport>(Terminal)
+    Expect(std::holds_alternative<CancelledTransport>(Terminal));
+    Expect(std::get<CancelledTransport>(Terminal)
                .RequestMayHaveReachedEndpoint);
 }
 
@@ -305,8 +362,8 @@ void TestHeaderInjectionRejected() {
                         .Value = "value\r\nX-Injected: true"});
     const TransportTerminal Terminal =
         Transport.Stream(Request, {}, {}, std::stop_token{});
-    assert(std::holds_alternative<FailedTransport>(Terminal));
-    assert(std::get<FailedTransport>(Terminal).Code ==
+    Expect(std::holds_alternative<FailedTransport>(Terminal));
+    Expect(std::get<FailedTransport>(Terminal).Code ==
            TransportFailureCode::InvalidRequest);
 }
 
@@ -317,16 +374,99 @@ void TestOversizedResponseMapsToLimitFailure() {
     Request.Limits.MaximumResponseBytes = 16;
     const TransportTerminal Terminal =
         Transport.Stream(Request, {}, {}, std::stop_token{});
-    assert(std::holds_alternative<FailedTransport>(Terminal));
-    assert(std::get<FailedTransport>(Terminal).Code ==
+    Expect(std::holds_alternative<FailedTransport>(Terminal));
+    Expect(std::get<FailedTransport>(Terminal).Code ==
            TransportFailureCode::ResponseLimitExceeded);
 }
 
 void TestChunkCaptureContract() {
     ScriptedTransport Transport(ScriptedTransport::Script::NormalTwoChunks);
     CapturedBody Captured = Capture(Transport, MakeRequest("{\"input\":1}"));
-    assert(Captured.Chunks.size() == 2);
-    assert(Captured.TotalBytes() > 0);
+    Expect(Captured.Chunks.size() == 2);
+    Expect(Captured.TotalBytes() > 0);
+}
+
+void TestProxyModeDefaultsToSystemAndCarriesDirect() {
+    ScriptedTransport SystemTransport(
+        ScriptedTransport::Script::NormalTwoChunks);
+    const TransportTerminal DefaultTerminal =
+        SystemTransport.Stream(MakeRequest(), {}, {}, std::stop_token{});
+    Expect(std::holds_alternative<CompletedTransport>(DefaultTerminal));
+    Expect(SystemTransport.LastProxyMode == TransportProxyMode::System);
+
+    ScriptedTransport DirectTransport(
+        ScriptedTransport::Script::NormalTwoChunks);
+    TransportRequest Direct = MakeRequest();
+    Direct.Proxy = TransportProxyMode::Direct;
+    const TransportTerminal DirectTerminal =
+        DirectTransport.Stream(Direct, {}, {}, std::stop_token{});
+    Expect(std::holds_alternative<CompletedTransport>(DirectTerminal));
+    Expect(DirectTransport.LastProxyMode == TransportProxyMode::Direct);
+}
+
+void TestGrantValidationFailsClosed() {
+    const EndpointGrantStatus Rejected[] = {
+        EndpointGrantStatus::Missing, EndpointGrantStatus::Expired,
+        EndpointGrantStatus::DestinationMismatch};
+    for (const EndpointGrantStatus Status : Rejected) {
+        ScriptedGrantResolver Resolver(Status);
+        ScriptedTransport Transport(
+            ScriptedTransport::Script::NormalTwoChunks, &Resolver);
+        const TransportTerminal Terminal =
+            Transport.Stream(MakeRequest(), {}, {}, std::stop_token{});
+        Expect(std::holds_alternative<FailedTransport>(Terminal));
+        Expect(std::get<FailedTransport>(Terminal).Code ==
+               TransportFailureCode::EndpointNotGranted);
+        Expect(Transport.ReceivedBodyBytes == 0);
+    }
+
+    ScriptedGrantResolver ValidResolver(EndpointGrantStatus::Valid);
+    ScriptedTransport ValidTransport(
+        ScriptedTransport::Script::NormalTwoChunks, &ValidResolver);
+    const TransportTerminal ValidTerminal =
+        ValidTransport.Stream(MakeRequest(), {}, {}, std::stop_token{});
+    Expect(std::holds_alternative<CompletedTransport>(ValidTerminal));
+}
+
+void TestHopByHopHeadersRejected() {
+    ScriptedTransport Transport(
+        ScriptedTransport::Script::HeaderInjectionRejected);
+    TransportRequest Request = MakeRequest();
+    Request.Headers.push_back(
+        TransportHeader{.Name = "Connection", .Value = "keep-alive"});
+    const TransportTerminal Terminal =
+        Transport.Stream(Request, {}, {}, std::stop_token{});
+    Expect(std::holds_alternative<FailedTransport>(Terminal));
+    Expect(std::get<FailedTransport>(Terminal).Code ==
+           TransportFailureCode::InvalidRequest);
+    Expect(IsForbiddenHopByHopHeader("Transfer-Encoding"));
+    Expect(IsForbiddenHopByHopHeader("PROXY-CONNECTION"));
+    Expect(!IsForbiddenHopByHopHeader("Content-Type"));
+}
+
+void TestPreCancelledRequestSendsNothing() {
+    ScriptedTransport Transport(
+        ScriptedTransport::Script::NormalTwoChunks);
+    std::stop_source Source;
+    Source.request_stop();
+    const TransportTerminal Terminal = Transport.Stream(
+        MakeRequest(), {}, {}, Source.get_token());
+    Expect(std::holds_alternative<CancelledTransport>(Terminal));
+    Expect(!std::get<CancelledTransport>(Terminal)
+                .RequestMayHaveReachedEndpoint);
+    Expect(Transport.ReceivedBodyBytes == 0);
+}
+
+void TestSinkExceptionCannotBecomeSuccess() {
+    ScriptedTransport Transport(ScriptedTransport::Script::SinkException);
+    const TransportTerminal Terminal = Transport.Stream(
+        MakeRequest(), {}, [](std::span<const std::byte>) {
+            throw 1;
+        },
+        std::stop_token{});
+    Expect(std::holds_alternative<FailedTransport>(Terminal));
+    Expect(std::get<FailedTransport>(Terminal).Code ==
+           TransportFailureCode::InternalError);
 }
 
 } // namespace
@@ -341,5 +481,10 @@ int main() {
     TestHeaderInjectionRejected();
     TestOversizedResponseMapsToLimitFailure();
     TestChunkCaptureContract();
+    TestProxyModeDefaultsToSystemAndCarriesDirect();
+    TestGrantValidationFailsClosed();
+    TestHopByHopHeadersRejected();
+    TestPreCancelledRequestSendsNothing();
+    TestSinkExceptionCannotBecomeSuccess();
     return 0;
 }

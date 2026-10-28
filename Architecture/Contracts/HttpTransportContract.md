@@ -20,13 +20,14 @@
 | 字段 | 语义 |
 |---|---|
 | `TransportRequestId` | Core/Adapter 生成的本地关联 ID；只用于诊断与事件关联，不发给远端。 |
-| `EndpointGrantId` | Core endpoint policy 签发的不可伪造引用。Transport 必须校验 grant 存在、未过期、协议为 HTTPS 且与 destination 一致。 |
+| `EndpointGrantId` | Core endpoint policy 签发的不可伪造引用。HttpTransport 在构造时注入 Core 提供的只读 `EndpointGrantResolver`；`Stream` 必须先调用 `Validate(Grant, Destination)`，在任何 DNS 解析或 connect 之前完成。`Missing`、`Expired`、`DestinationMismatch` 全部只映射为 `EndpointNotGranted`，不向调用方区分原因。 |
 | `TransportMethod` | V1 只有 `Post`；新增动词需要合同修订。 |
 | `HttpsDestination` | 由 grant 解析出的 host（DNS 名或 IP 字面量，不含 scheme/userinfo）、port 与绝对 path+query。redirect 不改变该字段。 |
-| `Headers` | 有界 header 列表。Adapter 只可设置该协议/profile allowlist 允许的 header；禁止 CR/LF 注入；敏感值不得进入终态、事件或日志。 |
+| `Headers` | 有界 header 列表。**协议/profile allowlist 由 Adapter 负责**：Transport 看不到 profile，无法也不得判断某个 provider 专属 header 是否被授权。Transport 只负责拒绝 CR/LF 注入、大小/条数超限与 hop-by-hop header；敏感值不得进入终态、事件或日志。 |
 | `BodyUtf8` | 已编码的 wire 请求体（如 JSON 或 SSE 请求）。受 `Limits.MaximumRequestBytes` 约束。 |
 | `Limits` | 请求/响应/单块/header 字节上限与 header 条数上限。缺省值见 Port 类型；调用方可收紧，不可放宽到未登记上限。 |
 | `Timeouts` | connect/send/response/idle 四类超时；均为绝对上限，不允许被重试预算放大。 |
+| `Proxy` | `TransportProxyMode::System`（默认，使用 WinHTTP/系统代理配置）或 `Direct`（显式直连）。Profile 的代理选项只映射到这两个值；不存在按请求传入代理 URL、PAC 来源、SOCKS 或代理凭据的形状。 |
 
 请求不得包含完整 URL、Authorization 明文以外的任意凭据引用、ChannelEnvelope、用户会话身份、开发任务/仓库信息或任意文件路径。
 
@@ -75,7 +76,9 @@
 - 代理：默认系统代理配置；profile 可显式选择直连。禁止按请求传入任意代理 URL、PAC 脚本来源、SOCKS 或认证凭据。
 - TLS：系统信任根与系统 Schannel 策略；不提供跳过校验、自定义根、弱协议降级。企业 MITM 由系统管理员正常安装的根证书支持。
 - DNS/SSRF：Core grant 绑定的 host 是唯一允许目标。实现必须在每次连接（含复用到新连接）时确保实际连接目标与 grant 一致；启动时 DNS 检查不能作为完整 SSRF 防护。
-- header：名称和值禁止 CR/LF；只允许 adapter/profile 登记项；超限返回 `HeaderLimitExceeded`/`InvalidRequest`。
+- header 责任划分：Adapter 负责只写入本协议/profile allowlist 允许的 header；Transport 看不到 profile，只负责拒绝名称或值中的 CR/LF、超过字节/条数上限，以及禁用 hop-by-hop header（`Connection`、`Keep-Alive`、`Proxy-Connection`、`TE`、`Trailer`、`Transfer-Encoding`、`Upgrade`，大小写不敏感）并返回 `InvalidRequest`/`HeaderLimitExceeded`。
+- 压缩：Transport 不设置 `Accept-Encoding`、不协商压缩、不自行解压，响应 body 字节原样交给 Adapter。若响应声明非 `identity` 的 `Content-Encoding`（例如被中间层强制 gzip），Transport 返回 `InvalidHttpResponse`，不得把压缩字节当 SSE 交付。Adapter 若确需压缩，必须在自己的 profile allowlist 中显式声明并由 Adapter 解码。
+- `Retry-After`：Transport 把 delta-seconds 与 HTTP-date 两种合法形式统一归一化为相对当前响应的秒数；值非法/不可解析时置空，超过实现登记的合理上限时截断到该上限。归一化结果只是 allowlisted 元数据，是否重试由 Core/ProviderOutcomePolicy 决定。
 - 脱敏：终态、事件、日志与任务报告不得包含 Authorization、API key、cookie、完整 URL、请求/响应正文或 Location 完整值。
 
 ## 健康检查
@@ -100,6 +103,10 @@
 6. 取消分两相：写出前 `Cancelled{false}`，mid-stream `Cancelled{true}`。
 7. header CR/LF 注入被拒为 `InvalidRequest`；响应超限为 `ResponseLimitExceeded`。
 8. 编译期断言公共类型不含 `Url`/`AuthorizationHeader`/`RawBody` 字段，证明 API 形状本身不开放任意 URL、原始凭据或原始响应体。
+9. 代理模式：缺省为 `System`；显式 `Direct` 原样传递到实现；Port 无法表达代理 URL、PAC 来源或代理凭据。
+10. grant 校验：`Missing`、`Expired`、`DestinationMismatch` 均终止为 `EndpointNotGranted` 且零 body 字节；`Valid` 才继续。
+11. hop-by-hop header（如 `Connection`、`Transfer-Encoding`）被拒为 `InvalidRequest`，普通 header 可通过；allowlist 本身由 Adapter 负责。
+12. 预取消（调用前已请求停止）返回 `Cancelled{false}` 且零字节；body sink 抛异常只会得到 `Failed{InternalError}`，不得变成成功或泄漏异常。
 
 ## 版本与兼容
 
