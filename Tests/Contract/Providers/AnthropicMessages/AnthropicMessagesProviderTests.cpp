@@ -2,6 +2,7 @@
 
 #include <boost/json.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -479,12 +480,12 @@ void TestEarlyFailures() {
     if (CaseId == "mismatched_sse_event_and_data_type_is_invalid") {
       Expected = FailureCode::InvalidStream;
     } else if (CaseId == "in_band_error_after_partial_text") {
-      Expected = FailureCode::RateLimited;
+      Expected = FailureCode::ProviderRejected;
     }
     Check(Failure.has_value() && Failure->Code == Expected, Name);
     if (CaseId == "in_band_error_after_partial_text") {
-      Check(Failure.has_value() && Failure->Retryable,
-            "in-band overloaded_error is retryable");
+      Check(Failure.has_value() && !Failure->Retryable,
+            "in-band error after partial output is not retryable");
     }
   }
 }
@@ -1168,8 +1169,38 @@ void TestRefusalVariantMatrix() {
       ",\"stop_details\":{\"type\":\"refusal\",\"explanation\":1}", false,
       "refusal explanation wrong type");
   CheckRefusal(
-      ",\"stop_details\":{\"type\":\"refusal\",\"extra\":true}", false,
-      "refusal unknown field rejected");
+      ",\"stop_details\":{\"type\":\"refusal\",\"explanation\":null}", true,
+      "refusal null explanation accepted");
+  CheckRefusal(
+      ",\"stop_details\":{\"type\":\"refusal\","
+      "\"recommended_model\":\"fixture-model-2\"}",
+      true, "recommended_model ignored");
+  {
+    const auto Terminal =
+        RunRaw(Provider, Transport,
+               {Start,
+                RefusalFrame(
+                    ",\"stop_details\":{\"type\":\"refusal\","
+                    "\"extra\":true}"),
+                Stop});
+    const auto Failure = TerminalFailure(Terminal);
+    Check(Failure.has_value() &&
+              Failure->Code == FailureCode::UnsupportedCapability,
+          "refusal unknown field is unsupported");
+  }
+  {
+    const std::string EndTurnWithDetails =
+        "event: message_delta\r\ndata: {\"type\":\"message_delta\","
+        "\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":"
+        "{\"input_tokens\":1,\"output_tokens\":1},"
+        "\"stop_details\":{\"type\":\"refusal\"}}\r\n\r\n";
+    const auto Terminal =
+        RunRaw(Provider, Transport, {Start, EndTurnWithDetails, Stop});
+    const auto Failure = TerminalFailure(Terminal);
+    Check(Failure.has_value() &&
+              Failure->Code == FailureCode::InvalidStream,
+          "non-refusal stop_reason with stop_details is invalid");
+  }
   CheckRefusal(
       ",\"stop_details\":{\"type\":\"refusal\",\"category\":\"cyber\"}",
       true, "refusal cyber category");
@@ -1245,6 +1276,478 @@ void TestEndpointAndHealthMatrix() {
         "health check invalid profile");
 }
 
+void TestSanitizationVersionAndSequences() {
+  FakeHttpTransport HttpTransport;
+  HttpTransport.Head.StatusCode = 401;
+  HttpTransport.Result =
+      CompletedTransport{.StatusCode = 401, .ReceivedBodyBytes = 0};
+  HttpTransport.Frames = {
+      "{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\","
+      "\"message\":\"SECRET-CANARY-http\"}}"};
+  AnthropicMessagesProvider HttpProvider = MakeProvider(HttpTransport);
+  CanonicalTerminalEvent HttpTerminal;
+  static_cast<void>(
+      RunFrames(HttpTransport, HttpProvider, MakeRequest(), HttpTerminal));
+  const auto HttpFailure = TerminalFailure(HttpTerminal);
+  Check(HttpFailure.has_value() &&
+            HttpFailure->SanitizedDescription.find("SECRET-CANARY") ==
+                std::string::npos &&
+            HttpFailure->SanitizedDescription == "Authentication failed.",
+        "http error body never leaks provider text");
+
+  FakeHttpTransport InBandTransport;
+  InBandTransport.Frames = {
+      "event: message_start\r\ndata: {\"type\":\"message_start\","
+      "\"message\":{\"id\":\"msg_canary\",\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":0}}}\r\n\r\n",
+      "event: content_block_start\r\ndata: {\"type\":"
+      "\"content_block_start\",\"index\":0,\"content_block\":"
+      "{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+      "event: content_block_delta\r\ndata: {\"type\":"
+      "\"content_block_delta\",\"index\":0,\"delta\":"
+      "{\"type\":\"text_delta\",\"text\":\"partial\"}}\r\n\r\n",
+      "event: error\r\ndata: {\"type\":\"error\",\"error\":"
+      "{\"type\":\"overloaded_error\",\"message\":"
+      "\"SECRET-CANARY-inband\"}}\r\n\r\n",
+  };
+  AnthropicMessagesProvider InBandProvider = MakeProvider(InBandTransport);
+  CanonicalTerminalEvent InBandTerminal;
+  static_cast<void>(RunFrames(InBandTransport, InBandProvider, MakeRequest(),
+                              InBandTerminal));
+  const auto InBandFailure = TerminalFailure(InBandTerminal);
+  Check(InBandFailure.has_value() &&
+            InBandFailure->Code == FailureCode::ProviderRejected &&
+            !InBandFailure->Retryable &&
+            InBandFailure->SanitizedDescription.find("SECRET-CANARY") ==
+                std::string::npos,
+        "in-band error sanitized and not retryable");
+
+  FakeHttpTransport VersionTransport;
+  AnthropicMessagesProvider VersionProvider = MakeProvider(VersionTransport);
+  auto BadVersion = MakeProfile();
+  BadVersion.ProtocolVersion = "2025-01-01";
+  CanonicalTerminalEvent VersionTerminal;
+  static_cast<void>(
+      RunFrames(VersionTransport, VersionProvider, MakeRequest(),
+                VersionTerminal, BadVersion));
+  Check(TerminalFailure(VersionTerminal).has_value() &&
+            TerminalFailure(VersionTerminal)->Code ==
+                FailureCode::InvalidProfile &&
+            VersionTransport.CallCount == 0,
+        "unsupported Anthropic version rejected");
+
+  FakeHttpTransport SequenceTransport;
+  SequenceTransport.Frames = {
+      "event: message_start\r\ndata: {\"type\":\"message_start\","
+      "\"message\":{\"id\":\"msg_seq\",\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":0}}}\r\n\r\n",
+      "event: content_block_start\r\ndata: {\"type\":"
+      "\"content_block_start\",\"index\":0,\"content_block\":"
+      "{\"type\":\"text\",\"text\":\"\"}}\r\n\r\n",
+      "event: content_block_delta\r\ndata: {\"type\":"
+      "\"content_block_delta\",\"index\":0,\"delta\":"
+      "{\"type\":\"text_delta\",\"text\":\"partial\"}}\r\n\r\n",
+  };
+  SequenceTransport.Result =
+      FailedTransport{.Code = TransportFailureCode::DnsFailure};
+  AnthropicMessagesProvider SequenceProvider = MakeProvider(SequenceTransport);
+  CanonicalTerminalEvent SequenceTerminal;
+  static_cast<void>(RunFrames(SequenceTransport, SequenceProvider,
+                              MakeRequest(), SequenceTerminal));
+  const auto* SequenceFailure =
+      std::get_if<ResponseFailedEvent>(&SequenceTerminal);
+  Check(SequenceFailure != nullptr &&
+            SequenceFailure->Metadata.SequenceNumber == 4 &&
+            SequenceFailure->Failure.Retryable,
+        "transport failure sequence follows emitted events");
+}
+
+FailureCode FailureCodeFromFixture(std::string_view Name) {
+  if (Name == "InvalidProfile") return FailureCode::InvalidProfile;
+  if (Name == "InvalidRequest") return FailureCode::InvalidRequest;
+  if (Name == "UnsupportedCapability")
+    return FailureCode::UnsupportedCapability;
+  if (Name == "AuthenticationFailure")
+    return FailureCode::AuthenticationFailure;
+  if (Name == "RateLimited") return FailureCode::RateLimited;
+  if (Name == "TransportFailure") return FailureCode::TransportFailure;
+  if (Name == "ProviderRejected") return FailureCode::ProviderRejected;
+  if (Name == "ContentFiltered") return FailureCode::ContentFiltered;
+  return FailureCode::InvalidStream;
+}
+
+bool UsageMatches(const json::object& Expected,
+                  const std::optional<UsageSnapshot>& Actual) {
+  if (!Actual.has_value()) {
+    return false;
+  }
+  const auto NumberEquals =
+      [](const json::value& Value,
+         const std::optional<std::uint64_t>& ActualValue) {
+        if (!ActualValue.has_value()) {
+          return false;
+        }
+        if (Value.is_uint64()) {
+          return *ActualValue == Value.get_uint64();
+        }
+        if (Value.is_int64() && Value.get_int64() >= 0) {
+          return *ActualValue ==
+                 static_cast<std::uint64_t>(Value.get_int64());
+        }
+        return false;
+      };
+  if (const auto* Input = Expected.if_contains("InputTokens");
+      Input != nullptr && !NumberEquals(*Input, Actual->InputTokens)) {
+    return false;
+  }
+  if (const auto* Output = Expected.if_contains("OutputTokens");
+      Output != nullptr && !NumberEquals(*Output, Actual->OutputTokens)) {
+    return false;
+  }
+  if (const auto* CacheWrite = Expected.if_contains("CachedInputWriteTokens");
+      CacheWrite != nullptr &&
+      !NumberEquals(*CacheWrite, Actual->CachedInputWriteTokens)) {
+    return false;
+  }
+  if (const auto* CacheRead = Expected.if_contains("CachedInputReadTokens");
+      CacheRead != nullptr &&
+      !NumberEquals(*CacheRead, Actual->CachedInputReadTokens)) {
+    return false;
+  }
+  return true;
+}
+
+RefusalCategory RefusalCategoryFromFixture(std::string_view Name) {
+  if (Name == "GeneralHarms" || Name == "general_harms")
+    return RefusalCategory::GeneralHarms;
+  if (Name == "Cyber" || Name == "cyber") return RefusalCategory::Cyber;
+  if (Name == "Bio" || Name == "bio") return RefusalCategory::Bio;
+  if (Name == "FrontierLlm" || Name == "frontier_llm")
+    return RefusalCategory::FrontierLlm;
+  if (Name == "ReasoningExtraction" || Name == "reasoning_extraction")
+    return RefusalCategory::ReasoningExtraction;
+  return RefusalCategory::Unclassified;
+}
+
+bool TerminalMatches(const json::object& Expected,
+                     const CanonicalTerminalEvent& Terminal) {
+  const auto& Type = Expected.at("EventType").as_string();
+  if (Type == "ResponseFailed") {
+    const auto* Failed = std::get_if<ResponseFailedEvent>(&Terminal);
+    if (Failed == nullptr) {
+      return false;
+    }
+    const auto& Payload = Expected.at("Payload").as_object();
+    const auto* FailureCodeValue = Payload.if_contains("ErrorCode");
+    if (FailureCodeValue == nullptr) {
+      FailureCodeValue = Payload.if_contains("FailureCode");
+    }
+    if (FailureCodeValue == nullptr ||
+        FailureCodeFromFixture(FailureCodeValue->as_string().c_str()) !=
+        Failed->Failure.Code) {
+      return false;
+    }
+    if (const auto* Retryable = Payload.if_contains("Retryable");
+        Retryable != nullptr &&
+        Retryable->as_bool() != Failed->Failure.Retryable) {
+      return false;
+    }
+    return true;
+  }
+  if (Type == "ResponseCompleted") {
+    const auto* Completed = std::get_if<ResponseCompletedEvent>(&Terminal);
+    if (Completed == nullptr) {
+      return false;
+    }
+    const auto& Payload = Expected.at("Payload").as_object();
+    if (const auto Kind = Payload.if_contains("CompletionKind")) {
+      const std::string_view KindName = Kind->as_string().c_str();
+      const bool Match =
+          (KindName == "FinalAnswer" &&
+           Completed->Kind == CompletionKind::FinalAnswer) ||
+          (KindName == "ToolHandoff" &&
+           Completed->Kind == CompletionKind::ToolHandoff) ||
+          (KindName == "Refusal" &&
+           Completed->Kind == CompletionKind::Refusal);
+      if (!Match) {
+        return false;
+      }
+    }
+    if (const auto* Usage = Payload.if_contains("FinalUsageSnapshot")) {
+      if (!UsageMatches(Usage->as_object(), Completed->FinalUsage)) {
+        return false;
+      }
+    }
+    if (const auto* Sequence = Payload.if_contains("StopSequenceCode");
+        Sequence != nullptr &&
+        (!Completed->StopSequenceCode.has_value() ||
+         Completed->StopSequenceCode->Value !=
+             Sequence->as_string().c_str())) {
+      return false;
+    }
+    if (const auto* StopDetails = Payload.if_contains("StopDetails");
+        StopDetails != nullptr && StopDetails->is_object()) {
+      if (!Completed->StopDetails.has_value()) {
+        return false;
+      }
+      if (const auto& Category =
+              StopDetails->as_object().at("Category").as_string();
+          RefusalCategoryFromFixture(Category.c_str()) !=
+          Completed->StopDetails->Category) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (Type == "ResponseOutputLimited") {
+    const auto* Limited = std::get_if<ResponseOutputLimitedEvent>(&Terminal);
+    if (Limited == nullptr) {
+      return false;
+    }
+    const auto& Payload = Expected.at("Payload").as_object();
+    if (const auto* Kind = Payload.if_contains("LimitKind")) {
+      const std::string_view KindName = Kind->as_string().c_str();
+      if ((KindName == "OutputTokens") !=
+          (Limited->Kind == LimitKind::OutputTokens)) {
+        return false;
+      }
+    }
+    if (const auto* Usage = Payload.if_contains("UsageSnapshot")) {
+      if (!UsageMatches(Usage->as_object(), Limited->Usage)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (Type == "ResponseOutcomeUnknown") {
+    const auto* Unknown = std::get_if<ResponseOutcomeUnknownEvent>(&Terminal);
+    return Unknown != nullptr &&
+           Unknown->Reason.Code.Value ==
+               Expected.at("Payload")
+                   .as_object()
+                   .at("ReasonCode")
+                   .as_string()
+                   .c_str();
+  }
+  if (Type == "ResponseCancelled") {
+    const auto* Cancelled = std::get_if<ResponseCancelledEvent>(&Terminal);
+    return Cancelled != nullptr &&
+           Cancelled->Reason.Code.Value ==
+               Expected.at("Payload")
+                   .as_object()
+                   .at("ReasonCode")
+                   .as_string()
+                   .c_str();
+  }
+  return false;
+}
+
+const json::object* FindCaseObject(const json::value& Root,
+                                   std::string_view CaseId) {
+  for (const auto& Value : Root.as_object().at("Cases").as_array()) {
+    const auto& Object = Value.as_object();
+    if (Object.at("CaseId").as_string() == CaseId) {
+      return &Object;
+    }
+  }
+  return nullptr;
+}
+
+CanonicalTerminalEvent RunFixtureCase(
+    FakeHttpTransport& Transport, AnthropicMessagesProvider& Provider,
+    const json::object& Case) {
+  const std::string CaseId = Case.at("CaseId").as_string().c_str();
+  std::string RequestId = "req_" + CaseId;
+  std::string TurnId = "turn_" + CaseId;
+  if (const auto* Id = Case.if_contains("RequestId");
+      Id != nullptr && Id->is_string()) {
+    RequestId = Id->as_string().c_str();
+  }
+  if (const auto* Id = Case.if_contains("AgentTurnId");
+      Id != nullptr && Id->is_string()) {
+    TurnId = Id->as_string().c_str();
+  }
+  if (const auto* Frames = Case.if_contains("WireFrames");
+      Frames != nullptr) {
+    for (const auto& Frame : Frames->as_array()) {
+      Transport.Frames.emplace_back(Frame.as_string().c_str());
+    }
+  }
+  if (const auto* Response = Case.if_contains("HttpResponse");
+      Response != nullptr) {
+    const auto& ResponseObject = Response->as_object();
+    const auto Status = static_cast<std::uint16_t>(
+        ResponseObject.at("Status").as_int64());
+    Transport.Head.StatusCode = Status;
+    Transport.Result = CompletedTransport{.StatusCode = Status,
+                                          .ReceivedBodyBytes = 0};
+    Transport.Frames = {json::serialize(ResponseObject.at("Body"))};
+  }
+  std::stop_source StopSource;
+  if (const auto* Trigger = Case.if_contains("Trigger");
+      Trigger != nullptr && Trigger->is_string() &&
+      Trigger->as_string() == "LocalCancellationBeforeNetworkSend") {
+    StopSource.request_stop();
+  }
+  if (CaseId ==
+      "cancellation_after_send_without_confirmation_is_unknown") {
+    Transport.Result =
+        CancelledTransport{.RequestMayHaveReachedEndpoint = true};
+  }
+  CanonicalTerminalEvent Terminal;
+  static_cast<void>(RunFrames(Transport, Provider,
+                              MakeRequest(RequestId, TurnId), Terminal,
+                              MakeProfile(), StopSource.get_token()));
+  return Terminal;
+}
+
+bool RunCanonicalRequestCase(const json::object& Case) {
+  const std::string CaseId = Case.at("CaseId").as_string().c_str();
+  FakeHttpTransport Transport;
+  AnthropicMessagesProvider Provider = MakeProvider(Transport);
+  auto Request = MakeRequest("req_" + CaseId, "turn_" + CaseId);
+  const auto ValidFrames = std::vector<std::string>{
+      "event: message_start\r\ndata: {\"type\":\"message_start\","
+      "\"message\":{\"id\":\"msg_req\",\"usage\":{\"input_tokens\":1,"
+      "\"output_tokens\":0}}}\r\n\r\n",
+      "event: message_delta\r\ndata: {\"type\":\"message_delta\","
+      "\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":"
+      "{\"input_tokens\":1,\"output_tokens\":1}}\r\n\r\n",
+      "event: message_stop\r\ndata: {\"type\":\"message_stop\"}\r\n\r\n"};
+  Transport.Frames = ValidFrames;
+  bool ExpectReady = false;
+  if (CaseId == "nondefault_temperature_rejected_before_send") {
+    Request.Sampling.Temperature = 0.5;
+  } else if (CaseId == "nondefault_top_p_rejected_before_send") {
+    Request.Sampling.TopP = 0.5;
+  } else if (CaseId == "nondefault_top_k_rejected_before_send") {
+    Request.Sampling.TopK = 1.0;
+  } else if (CaseId == "tool_use_tool_result_roundtrip_preserves_ids_and_order") {
+    Request.Messages.clear();
+    Request.Messages.push_back(CanonicalMessage{
+        .Role = MessageRole::User,
+        .ContentParts = {TextContentPart{.Text = "Run checks."}},
+        .FunctionCalls = {},
+        .ToolCallResultId = std::nullopt});
+    Request.Messages.push_back(CanonicalMessage{
+        .Role = MessageRole::Assistant,
+        .ContentParts = {TextContentPart{.Text = "Running."}},
+        .FunctionCalls = {FunctionCall{
+            .Id = ToolCallId{.Value = "toolu_roundtrip"},
+            .Name = "SyntheticLookup",
+            .Arguments = JsonValue{.JsonText = "{\"query\":\"alpha\"}"}}},
+        .ToolCallResultId = std::nullopt});
+    Request.Messages.push_back(CanonicalMessage{
+        .Role = MessageRole::Tool,
+        .ContentParts = {TextContentPart{.Text = "Result."}},
+        .FunctionCalls = {},
+        .ToolCallResultId = ToolCallId{.Value = "toolu_roundtrip"}});
+    Request.Messages.push_back(CanonicalMessage{
+        .Role = MessageRole::User,
+        .ContentParts = {TextContentPart{.Text = "Continue."}},
+        .FunctionCalls = {},
+        .ToolCallResultId = std::nullopt});
+    ExpectReady = true;
+  } else if (CaseId == "tool_result_after_text_rejected") {
+    Request.Messages.clear();
+    Request.Messages.push_back(CanonicalMessage{
+        .Role = MessageRole::User,
+        .ContentParts = {TextContentPart{.Text = "No tool call before this."}},
+        .FunctionCalls = {},
+        .ToolCallResultId = std::nullopt});
+    Request.Messages.push_back(CanonicalMessage{
+        .Role = MessageRole::Tool,
+        .ContentParts = {TextContentPart{.Text = "Late result."}},
+        .FunctionCalls = {},
+        .ToolCallResultId = ToolCallId{.Value = "toolu_late"}});
+  } else {
+    ExpectReady = true;
+  }
+  CanonicalTerminalEvent Terminal;
+  static_cast<void>(
+      RunFrames(Transport, Provider, Request, Terminal));
+  const auto& Expected = Case.at("Expected").as_object();
+  const std::string Outcome = Expected.at("Outcome").as_string().c_str();
+  if (Outcome == "RequestReady") {
+    return ExpectReady && Transport.CallCount == 1;
+  }
+  const auto Failure = TerminalFailure(Terminal);
+  return Failure.has_value() &&
+         Failure->Code ==
+             FailureCodeFromFixture(
+                 Expected.at("ErrorCode").as_string().c_str()) &&
+         (!Expected.if_contains("Retryable") ||
+          Failure->Retryable ==
+              Expected.at("Retryable").as_bool()) &&
+         Transport.CallCount == 0;
+}
+
+void TestFixtureIndexConformance() {
+  const auto Index = LoadFixture("AnthropicMessages/Fixtures/FixtureIndex.json")
+                         .as_object();
+  int Executed = 0;
+  std::vector<std::string> Seen;
+  for (const auto& Matrix : Index.at("CoverageMatrix").as_array()) {
+    const auto& Entry = Matrix.as_object();
+    const std::string File = Entry.at("File").as_string().c_str();
+    if (File == "All four files") {
+      continue;
+    }
+    const auto Root = LoadFixture("AnthropicMessages/Fixtures/" + File);
+    for (const auto& CaseIdValue : Entry.at("CaseIds").as_array()) {
+      const std::string CaseId = CaseIdValue.as_string().c_str();
+      const std::string Key = File + "|" + CaseId;
+      if (std::find(Seen.begin(), Seen.end(), Key) != Seen.end()) {
+        continue;
+      }
+      Seen.push_back(Key);
+      const auto* Case = FindCaseObject(Root, CaseId);
+      Check(Case != nullptr, "fixture case exists " + CaseId);
+      if (Case == nullptr) {
+        continue;
+      }
+      ++Executed;
+      if (File == "CanonicalRequest.json") {
+        Check(RunCanonicalRequestCase(*Case),
+              "fixture request outcome " + CaseId);
+        continue;
+      }
+      FakeHttpTransport Transport;
+      AnthropicMessagesProvider Provider = MakeProvider(Transport);
+      const auto Terminal = RunFixtureCase(Transport, Provider, *Case);
+      if (const auto* Expected = Case->if_contains("ExpectedTerminal");
+          Expected != nullptr && !Expected->is_null()) {
+        Check(TerminalMatches(Expected->as_object(), Terminal),
+              "fixture terminal " + CaseId);
+      } else {
+        const auto* Completed =
+            std::get_if<ResponseCompletedEvent>(&Terminal);
+        const auto Kind = CaseId == "tool_use_partial_json_and_stable_ids"
+                              ? CompletionKind::ToolHandoff
+                              : CompletionKind::FinalAnswer;
+        Check(Completed != nullptr && Completed->Kind == Kind,
+              "fixture stream terminal " + CaseId);
+      }
+    }
+  }
+  Check(Executed == 24, "all 24 FixtureIndex cases executed");
+
+  const auto Refusal = LoadFixture(
+      "AnthropicMessages/Fixtures/Version1Point2/RefusalCases.json");
+  int RefusalExecuted = 0;
+  for (const auto& CaseValue : Refusal.as_object().at("Cases").as_array()) {
+    const auto& Case = CaseValue.as_object();
+    const std::string CaseId = Case.at("CaseId").as_string().c_str();
+    FakeHttpTransport Transport;
+    AnthropicMessagesProvider Provider = MakeProvider(Transport);
+    const auto Terminal = RunFixtureCase(Transport, Provider, Case);
+    ++RefusalExecuted;
+    Check(TerminalMatches(Case.at("ExpectedTerminal").as_object(), Terminal),
+          "V1.2 refusal fixture " + CaseId);
+  }
+  Check(RefusalExecuted == 12, "all 12 V1.2 refusal cases executed");
+}
+
 } // namespace
 
 int main() {
@@ -1269,6 +1772,8 @@ int main() {
     TestTransportTerminalMatrix();
     TestRefusalVariantMatrix();
     TestEndpointAndHealthMatrix();
+    TestSanitizationVersionAndSequences();
+    TestFixtureIndexConformance();
   } catch (const std::exception& Error) {
     std::cerr << "UNHANDLED: " << Error.what() << '\n';
     return 1;

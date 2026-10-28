@@ -101,30 +101,11 @@ std::optional<json::value> ParseJsonText(std::string_view Text) {
 }
 
 ProviderError ParseInBandError(std::string_view Data) {
-  std::string Sanitized =
-      "Anthropic returned an in-band stream error after partial output.";
-  FailureCode Code = FailureCode::ProviderRejected;
-  bool Retryable = false;
-  const auto Parsed = ParseJsonText(Data);
-  if (Parsed.has_value()) {
-    if (const auto* Root = AsObject(*Parsed)) {
-      if (const auto* Error = FindValue(*Root, "error");
-          Error != nullptr && Error->is_object()) {
-        const auto& ErrorObject = Error->get_object();
-        if (const auto* Type = FindValue(ErrorObject, "type");
-            Type != nullptr && Type->is_string() &&
-            Type->get_string().c_str() == std::string("overloaded_error")) {
-          Code = FailureCode::RateLimited;
-          Retryable = true;
-        }
-        if (const auto* Message = FindValue(ErrorObject, "message");
-            Message != nullptr && Message->is_string()) {
-          Sanitized = std::string(Message->get_string().c_str());
-        }
-      }
-    }
-  }
-  return MakeError(Code, Retryable, std::move(Sanitized));
+  // Partial output makes an automatic retry unsafe; wire text never leaves the
+  // adapter.
+  static_cast<void>(Data);
+  return MakeError(FailureCode::ProviderRejected, false,
+                   "Provider rejected request.");
 }
 
 json::object MakeTextBlock(std::string_view Text) {
@@ -176,6 +157,7 @@ ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
   std::optional<json::object> PendingUser;
   json::array PendingContent;
   bool PendingHasToolResult = false;
+  bool CanAcceptToolResult = false;
   const auto FlushPending = [&Messages, &PendingUser, &PendingContent,
                              &PendingHasToolResult]() {
     if (!PendingUser.has_value()) {
@@ -210,6 +192,11 @@ ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
       if (!Message.ToolCallResultId.has_value()) {
         return MakeError(FailureCode::InvalidRequest, false,
                          "tool results require a tool call id.");
+      }
+      if (!CanAcceptToolResult) {
+        return MakeError(FailureCode::InvalidRequest, false,
+                         "tool_result must directly follow an assistant "
+                         "tool_use turn.");
       }
       if (PendingUser.has_value() && !PendingHasToolResult) {
         FlushPending();
@@ -264,6 +251,7 @@ ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
       }
       WireMessage["content"] = std::move(Content);
       Messages.push_back(std::move(WireMessage));
+      CanAcceptToolResult = !Message.FunctionCalls.empty();
       break;
     }
     case MessageRole::User: {
@@ -289,6 +277,7 @@ ProviderResult<std::string> BuildWireBody(const CanonicalModelRequest& Request,
         }
         FlushPending();
       }
+      CanAcceptToolResult = false;
       break;
     }
     }
@@ -765,12 +754,21 @@ private:
     if (Reason == "refusal") {
       const auto ParsedDetails =
           ParseRefusalDetails(FindValue(Object, "stop_details"));
-      if (!ParsedDetails.has_value()) {
+      if (ParsedDetails.Status == RefusalParseStatus::UnknownField) {
+        return Fail(FailureCode::UnsupportedCapability,
+                    "Anthropic stop_details contains an unsupported field.");
+      }
+      if (ParsedDetails.Status == RefusalParseStatus::Invalid) {
         return Fail(FailureCode::InvalidStream,
                     "Anthropic refusal is missing valid stop_details.");
       }
-      RefusalDetails_ = *ParsedDetails;
+      RefusalDetails_ = ParsedDetails.Details;
       return std::nullopt;
+    }
+    if (const auto* Details = FindValue(Object, "stop_details");
+        Details != nullptr && !Details->is_null()) {
+      return Fail(FailureCode::InvalidStream,
+                  "Non-refusal stop_reason carried stop_details.");
     }
     if ((Reason == "end_turn" || Reason == "tool_use") &&
         FinalUsage_.has_value()) {
@@ -865,50 +863,61 @@ private:
     return Terminal_;
   }
 
-  static std::optional<RefusalStopDetails> ParseRefusalDetails(
+  enum class RefusalParseStatus { Valid, UnknownField, Invalid };
+
+  struct RefusalParseResult final {
+    RefusalParseStatus Status{RefusalParseStatus::Invalid};
+    RefusalStopDetails Details;
+  };
+
+  static RefusalParseResult ParseRefusalDetails(
       const json::value* Details) {
+    RefusalParseResult Result;
     if (Details == nullptr) {
-      return std::nullopt;
+      return Result;
     }
     const auto* Object = AsObject(*Details);
     if (Object == nullptr) {
-      return std::nullopt;
+      return Result;
     }
     for (const auto& Entry : *Object) {
       const std::string_view Key(Entry.key().data(), Entry.key().size());
-      if (Key != "type" && Key != "category" && Key != "explanation") {
-        return std::nullopt;
+      if (Key != "type" && Key != "category" && Key != "explanation" &&
+          Key != "recommended_model") {
+        Result.Status = RefusalParseStatus::UnknownField;
+        return Result;
       }
     }
     const auto* Type = FindValue(*Object, "type");
     const auto* TypeText = Type != nullptr ? AsString(*Type) : nullptr;
     if (TypeText == nullptr || TypeText->c_str() != std::string("refusal")) {
-      return std::nullopt;
+      return Result;
     }
     const auto* Explanation = FindValue(*Object, "explanation");
-    if (Explanation != nullptr && !Explanation->is_string()) {
-      return std::nullopt;
+    if (Explanation != nullptr && !Explanation->is_string() &&
+        !Explanation->is_null()) {
+      return Result;
     }
-    RefusalStopDetails Result;
-    Result.Type = RefusalStopDetailsType::Refusal;
-    Result.Category = RefusalCategory::Unclassified;
+    Result.Details.Type = RefusalStopDetailsType::Refusal;
+    Result.Details.Category = RefusalCategory::Unclassified;
     const auto* Category = FindValue(*Object, "category");
     if (Category != nullptr && Category->is_string()) {
       const std::string_view Name = Category->get_string().c_str();
       if (Name == "general_harms") {
-        Result.Category = RefusalCategory::GeneralHarms;
+        Result.Details.Category = RefusalCategory::GeneralHarms;
       } else if (Name == "cyber") {
-        Result.Category = RefusalCategory::Cyber;
+        Result.Details.Category = RefusalCategory::Cyber;
       } else if (Name == "bio") {
-        Result.Category = RefusalCategory::Bio;
+        Result.Details.Category = RefusalCategory::Bio;
       } else if (Name == "frontier_llm") {
-        Result.Category = RefusalCategory::FrontierLlm;
+        Result.Details.Category = RefusalCategory::FrontierLlm;
       } else if (Name == "reasoning_extraction") {
-        Result.Category = RefusalCategory::ReasoningExtraction;
+        Result.Details.Category = RefusalCategory::ReasoningExtraction;
       }
     } else if (Category != nullptr && !Category->is_null()) {
-      return std::nullopt;
+      return Result;
     }
+    Result.Status = RefusalParseStatus::Valid;
     return Result;
   }
 
@@ -1011,7 +1020,6 @@ private:
 };
 
 ProviderError MapHttpFailure(std::uint16_t Status, std::string_view Body) {
-  std::string SanitizedMessage;
   FailureCode Code = FailureCode::ProviderRejected;
   bool Retryable = false;
   const auto Parsed = ParseJsonText(Body);
@@ -1025,10 +1033,6 @@ ProviderError MapHttpFailure(std::uint16_t Status, std::string_view Body) {
             Type->get_string().c_str() == std::string("overloaded_error")) {
           Code = FailureCode::RateLimited;
           Retryable = true;
-        }
-        if (const auto* Message = FindValue(ErrorObject, "message");
-            Message != nullptr && Message->is_string()) {
-          SanitizedMessage = std::string(Message->get_string().c_str());
         }
       }
     }
@@ -1055,11 +1059,16 @@ ProviderError MapHttpFailure(std::uint16_t Status, std::string_view Body) {
       break;
     }
   }
-  if (SanitizedMessage.empty()) {
-    SanitizedMessage = "Anthropic request failed with HTTP status " +
-                       std::to_string(Status) + ".";
+  switch (Code) {
+  case FailureCode::AuthenticationFailure:
+    return MakeError(Code, Retryable, "Authentication failed.");
+  case FailureCode::RateLimited:
+    return MakeError(Code, Retryable, "Provider rate limited.");
+  case FailureCode::TransportFailure:
+    return MakeError(Code, Retryable, "Transport failed.");
+  default:
+    return MakeError(Code, Retryable, "Provider rejected request.");
   }
-  return MakeError(Code, Retryable, std::move(SanitizedMessage));
 }
 
 } // namespace
@@ -1095,6 +1104,10 @@ ProviderResult<std::monostate> AnthropicMessagesProvider::ValidateProfile(
       Profile.ProtocolVersion.empty()) {
     return MakeError(FailureCode::InvalidProfile, false,
                      "profile id, model, and Anthropic version are required.");
+  }
+  if (Profile.ProtocolVersion != "2026-10-21") {
+    return MakeError(FailureCode::InvalidProfile, false,
+                     "unsupported Anthropic version.");
   }
   if (Profile.Authentication != AuthenticationScheme::XApiKeyHeader) {
     return MakeError(FailureCode::InvalidProfile, false,
@@ -1202,24 +1215,24 @@ CanonicalTerminalEvent AnthropicMessagesProvider::StreamTurn(
         Failed->Code == TransportFailureCode::DnsFailure ||
         Failed->Code == TransportFailureCode::ConnectFailure ||
         Failed->Code == TransportFailureCode::ResponseReadFailure;
-    return FailedTerminal(Request.Id, Request.TurnId, 1,
+    return FailedTerminal(Request.Id, Request.TurnId, State.NextSequence(),
                           MakeError(FailureCode::TransportFailure, Retryable,
                                     "Anthropic transport failed."));
   }
   if (std::holds_alternative<TimedOutTransport>(TransportResult)) {
-    return FailedTerminal(Request.Id, Request.TurnId, 1,
+    return FailedTerminal(Request.Id, Request.TurnId, State.NextSequence(),
                           MakeError(FailureCode::TransportFailure, true,
                                     "Anthropic transport timed out."));
   }
   if (std::holds_alternative<RedirectDeniedTransport>(TransportResult)) {
-    return FailedTerminal(Request.Id, Request.TurnId, 1,
+    return FailedTerminal(Request.Id, Request.TurnId, State.NextSequence(),
                           MakeError(FailureCode::TransportFailure, false,
                                     "Anthropic redirects are not permitted."));
   }
   if (const auto* Completed =
           std::get_if<CompletedTransport>(&TransportResult)) {
     if (Completed->StatusCode != 200) {
-      return FailedTerminal(Request.Id, Request.TurnId, 1,
+      return FailedTerminal(Request.Id, Request.TurnId, State.NextSequence(),
                             MapHttpFailure(Completed->StatusCode,
                                            CollectedBody));
     }
