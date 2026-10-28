@@ -1636,8 +1636,8 @@ Tasks:
     PullRequestNumber: 19
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/19
     ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
-    ReviewHeadCommit: 296ab4ace3b7eb005efb8db243c63e415c5a4766
-    ReviewStatus: ChangesRequested
+    ReviewHeadCommit: ee8c7a9d847182bf27b931c62a163a97690838b7
+    ReviewStatus: Approved
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0108-002
       Decision: Accepted
@@ -2016,6 +2016,13 @@ Tasks:
     ReviewBaseCommit: a5838bccc7de1b8589d15573ef6baea2ab2cc4be
     ReviewHeadCommit: bbe294475daf221f3babca22db5162bc73839c63
     ReviewStatus: ChangesRequested
+    ReviewFindings:
+      - "Recovery decisions must preserve Completed/Cancelled/Failed/OutcomeUnknown/Unsupported terminal phase rather than collapsing them."
+      - "Durable OperationId/IdempotencyKey is missing for restart reconciliation and duplicate message prevention."
+      - "RequestId and ContextReference must not drift across revisions."
+      - "Unsupported terminal is absent from TurnPhase."
+      - "Secret/body scans must exercise actual persisted fields."
+      - "Append store needs a declared or enforced single-writer rule."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
     AssignedBranch: Task/ED-0112-R2-TurnRecovery-stacked
     LocalCompletionHead: bbe294475daf221f3babca22db5162bc73839c63

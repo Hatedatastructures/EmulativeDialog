@@ -443,7 +443,18 @@ Tasks:
     EpicId: EP-06
     Title: 实现授权、身份和会话隔离的聊天 Memory
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Rework
+    PullRequestCreated: true
+    PullRequestNumber: 23
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/23
+    ReviewBaseCommit: c72341b22479b1fc3fde9da3ec14a2553a59ddc4
+    ReviewHeadCommit: d68e16946e880fcd49e5f62301c7ed7d8902e260
+    ReviewStatus: ChangesRequested
+    ReviewFindings:
+      - "Consent revoke must be exact scope/kind and atomic with tombstones."
+      - "Direct and Group conversation kinds must be part of storage scope and recall projection."
+      - "Consent must bind source message, proposal and policy version; capacity eviction plus put must be atomic."
+      - "SessionScope and restore/tombstone boundaries require behavioral tests."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0113-002
       Decision: Accepted
@@ -590,7 +601,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Rework
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0114-DEPS-001
       Decision: Accepted
@@ -616,6 +627,10 @@ Tasks:
     ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
     ReviewHeadCommit: 3748abe4dc72d17d9e813188cd8771645d50f3ef
     ReviewStatus: ChangesRequested
+    ReviewFindings:
+      - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
+      - "Production AgentRuntime and ToolCallCoordinator integration is required for OutputLimit dispatch blocking and Core-approved continuation with a new RequestId."
+      - "RecordProviderOutputLimited must close or mark remaining output unknown."
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
     OwnerSlotId: Worker03
@@ -1076,7 +1091,7 @@ Tasks:
     EpicId: EP-06
     Title: 固定 Boost.JSON 1.92 子模块并建立 Provider 解析构建探针
     TaskKind: Build
-    State: Review
+    State: Rework
     AssignmentNote: "Dependencies ED-0131 merged; stacked on ED-0122 branch to avoid shared-file conflicts. Temporarily reassigned to Worker03."
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0143-OWNER-001
@@ -1097,7 +1112,12 @@ Tasks:
     PullRequestNumber: 14
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/14
     ReviewBaseCommit: ee7c9b4299a2e9a500a8dc49ec72279f5536df1b
-    ReviewHeadCommit: e6dace1
+    ReviewHeadCommit: 3baa40d4f5161e10b2a7d613690ef99e988cdacc
+    ReviewStatus: ChangesRequested
+    ReviewFindings:
+      - "Boost.JSON submodule population must not perform implicit network access in the verify build step."
+      - "winpthread link mode must not propagate through the static library interface."
+      - "Dependency policy must identify EmulativeDialogBoostJson as the current build baseline and adapters as future consumers."
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker03
