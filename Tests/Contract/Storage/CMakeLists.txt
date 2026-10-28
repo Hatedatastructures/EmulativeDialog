@@ -75,5 +75,8 @@ if(EXISTS "${_EmulativeDialogSqliteStoreSource}" AND
   target_link_libraries(SqliteStoreTests PRIVATE EmulativeDialogSQLite)
   if(BUILD_TESTING)
     add_test(NAME SqliteStoreTests COMMAND SqliteStoreTests)
+    set_tests_properties(SqliteStoreTests PROPERTIES
+        ENVIRONMENT
+          "EMULATIVEDIALOG_TEST_DATA_DIR=${CMAKE_CURRENT_BINARY_DIR}/Data")
   endif()
 endif()
