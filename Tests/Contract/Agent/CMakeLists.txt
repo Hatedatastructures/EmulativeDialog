@@ -52,6 +52,21 @@ target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE AgentRuntimeObject)
 add_test(NAME AgentRuntime.Contract COMMAND AgentRuntimeContractTests)
 add_test(NAME AgentRuntime.VerticalSlice COMMAND AgentRuntimeVerticalSliceTests)
 
+set(INSTRUCTION_POLICY_SOURCE
+    "${PROJECT_ROOT}/Source/Core/InstructionPolicy.cpp")
+set(INSTRUCTION_ASSEMBLER_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/InstructionAssembler.cpp")
+
+add_executable(InstructionAssemblerTests
+    "${INSTRUCTION_POLICY_SOURCE}"
+    "${INSTRUCTION_ASSEMBLER_SOURCE}"
+    "${CMAKE_CURRENT_LIST_DIR}/InstructionAssemblerTests.cpp")
+target_include_directories(InstructionAssemblerTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(InstructionAssemblerTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_test(NAME Agent.InstructionAssembler COMMAND InstructionAssemblerTests)
+
 add_custom_target(AgentRuntimeCoverageReport
     COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
             -o "$<TARGET_OBJECTS:AgentRuntimeObject>" "${AGENT_RUNTIME_SOURCE}"
