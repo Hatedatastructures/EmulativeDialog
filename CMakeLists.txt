@@ -25,6 +25,7 @@ set_target_properties(
 add_executable(BoostAsioCoroutineProbe CMake/BoostAsioCoroutineProbe.cpp)
 target_link_libraries(BoostAsioCoroutineProbe PRIVATE EmulativeDialogBoostAsio)
 target_compile_features(BoostAsioCoroutineProbe PRIVATE cxx_std_20)
+add_dependencies(BoostAsioCoroutineProbe EmulativeDialogBoostAsioVerify)
 set_target_properties(
   BoostAsioCoroutineProbe
   PROPERTIES

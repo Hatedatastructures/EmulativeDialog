@@ -44,41 +44,74 @@ if(NOT EXISTS "${EmulativeDialogBoostSourceDir}/.git")
     TEST_COMMAND "")
 endif()
 
-execute_process(
-  COMMAND git -C "${EmulativeDialogBoostSourceDir}" rev-parse HEAD
-  OUTPUT_VARIABLE EmulativeDialogBoostActualCommit
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  RESULT_VARIABLE EmulativeDialogBoostCommitResult
-  ERROR_VARIABLE EmulativeDialogBoostCommitError)
-if(NOT EmulativeDialogBoostCommitResult EQUAL 0 OR
-   NOT "${EmulativeDialogBoostActualCommit}" STREQUAL
-       "${EmulativeDialogBoostCommit}")
-  message(FATAL_ERROR
-    "Boost checkout resolved to '${EmulativeDialogBoostActualCommit}', "
-    "expected '${EmulativeDialogBoostCommit}': "
-    "${EmulativeDialogBoostCommitError}")
-endif()
-
 set(EmulativeDialogBoostIncludeDirectories)
 foreach(Submodule IN LISTS EmulativeDialogBoostRequiredSubmodules)
   set(SubmoduleIncludeDir
       "${EmulativeDialogBoostSourceDir}/${Submodule}/include")
-  if(NOT IS_DIRECTORY "${SubmoduleIncludeDir}")
-    message(FATAL_ERROR
-      "Pinned Boost submodule is incomplete: ${Submodule}")
-  endif()
   list(APPEND EmulativeDialogBoostIncludeDirectories
        "${SubmoduleIncludeDir}")
 endforeach()
 
-if(NOT EXISTS
-       "${EmulativeDialogBoostSourceDir}/libs/asio/include/boost/asio.hpp" OR
-   NOT EXISTS
-       "${EmulativeDialogBoostSourceDir}/libs/config/include/boost/version.hpp" OR
-   NOT EXISTS "${EmulativeDialogBoostSourceDir}/LICENSE_1_0.txt")
+# Configure only registers the pinned source and consumers. The checkout is
+# populated by the ExternalProject at build time, so configure must not assume
+# that the tree already exists. Verification runs as a build-stage target
+# after population; this keeps a clean cache able to configure.
+set(EmulativeDialogBoostVerifyScript
+    "${CMAKE_BINARY_DIR}/EmulativeDialogBoostAsioVerify.cmake")
+file(WRITE "${EmulativeDialogBoostVerifyScript}" "
+execute_process(
+  COMMAND git -C \"${EmulativeDialogBoostSourceDir}\" rev-parse HEAD
+  OUTPUT_VARIABLE ActualCommit
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE CommitResult
+  ERROR_VARIABLE CommitError)
+if(NOT CommitResult EQUAL 0 OR
+   NOT \"\${ActualCommit}\" STREQUAL \"${EmulativeDialogBoostCommit}\")
   message(FATAL_ERROR
-    "Pinned Boost source tree is incomplete: "
-    "${EmulativeDialogBoostSourceDir}")
+    \"Boost checkout resolved to '\${ActualCommit}', expected '${EmulativeDialogBoostCommit}': \${CommitError}\")
+endif()
+set(RequiredSubmodules \"${EmulativeDialogBoostRequiredSubmodules}\")
+foreach(Submodule IN LISTS RequiredSubmodules)
+  if(NOT IS_DIRECTORY \"${EmulativeDialogBoostSourceDir}/\${Submodule}/include\")
+    message(FATAL_ERROR \"Pinned Boost submodule is incomplete: \${Submodule}\")
+  endif()
+endforeach()
+if(NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/asio/include/boost/asio.hpp\" OR
+   NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/config/include/boost/version.hpp\" OR
+   NOT EXISTS \"${EmulativeDialogBoostSourceDir}/LICENSE_1_0.txt\")
+  message(FATAL_ERROR
+    \"Pinned Boost source tree is incomplete: ${EmulativeDialogBoostSourceDir}\")
+endif()
+message(STATUS \"Verified pinned Boost.Asio checkout ${EmulativeDialogBoostCommit}\")
+")
+
+add_custom_target(
+  EmulativeDialogBoostAsioVerify
+  COMMAND "${CMAKE_COMMAND}" -P "${EmulativeDialogBoostVerifyScript}"
+  COMMENT "Verifying pinned Boost.Asio checkout and submodules"
+  VERBATIM)
+if(TARGET EmulativeDialogBoostAsioSource)
+  add_dependencies(EmulativeDialogBoostAsioVerify
+                   EmulativeDialogBoostAsioSource)
+endif()
+
+# When the checkout is already present at configure time, surface drift early.
+# A missing checkout is expected on a clean cache and is verified at build.
+if(EXISTS "${EmulativeDialogBoostSourceDir}/.git")
+  execute_process(
+    COMMAND git -C "${EmulativeDialogBoostSourceDir}" rev-parse HEAD
+    OUTPUT_VARIABLE EmulativeDialogBoostActualCommit
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE EmulativeDialogBoostCommitResult
+    ERROR_VARIABLE EmulativeDialogBoostCommitError)
+  if(NOT EmulativeDialogBoostCommitResult EQUAL 0 OR
+     NOT "${EmulativeDialogBoostActualCommit}" STREQUAL
+         "${EmulativeDialogBoostCommit}")
+    message(FATAL_ERROR
+      "Boost checkout resolved to '${EmulativeDialogBoostActualCommit}', "
+      "expected '${EmulativeDialogBoostCommit}': "
+      "${EmulativeDialogBoostCommitError}")
+  endif()
 endif()
 
 add_library(EmulativeDialogBoostAsio INTERFACE)
