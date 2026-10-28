@@ -2032,8 +2032,9 @@ Tasks:
       - "Append store needs a declared or enforced single-writer rule."
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
     AssignedBranch: Task/ED-0112-R2-TurnRecovery-stacked
-    LocalCompletionHead: bbe294475daf221f3babca22db5162bc73839c63
-    LocalValidation: "root ctest 11/11; TurnCheckpointStore 86.36%; TurnRecoveryCoordinator 93.58%"
+    LocalCompletionHead: 9b312513161a441eb4b94325be176348b34f7e9d
+    LocalValidation: "Windows native full build; CTest 16/16; TurnCheckpointStore 87.38% (658/753); TurnRecoveryCoordinator 94.48% (171/181); diff-check 0"
+    LocalReviewStatus: AwaitingIndependentFixedHeadReview
     Phase: P2
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02

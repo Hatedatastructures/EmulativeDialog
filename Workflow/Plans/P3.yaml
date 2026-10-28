@@ -450,6 +450,11 @@ Tasks:
     ReviewBaseCommit: c72341b22479b1fc3fde9da3ec14a2553a59ddc4
     ReviewHeadCommit: d68e16946e880fcd49e5f62301c7ed7d8902e260
     ReviewStatus: ChangesRequested
+    ReviewRound2HeadCommit: a3d060fba2d2314f260127bb791a7f983dc2151d
+    ReviewRound2Findings:
+      - "Allowed GroupMemory members still cannot read grantor-owned records because storage lookup is principal-keyed."
+      - "RestoreBackup can resurrect an existing tombstone through the fake storage upsert path."
+      - "ScopeConsent and ForgetRecovery fixture cases are not being executed by the test harness."
     ReviewFindings:
       - "Consent revoke must be exact scope/kind and atomic with tombstones."
       - "Direct and Group conversation kinds must be part of storage scope and recall projection."
@@ -627,6 +632,9 @@ Tasks:
     ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
     ReviewHeadCommit: 3748abe4dc72d17d9e813188cd8771645d50f3ef
     ReviewStatus: ChangesRequested
+    CurrentRemoteHead: 1ba0cb03b3d8d5bfbab90501894aa266e61bb2ae
+    ReviewRound2Status: AwaitingIndependentFixedHeadReview
+    ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
     ReviewFindings:
       - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
       - "Production AgentRuntime and ToolCallCoordinator integration is required for OutputLimit dispatch blocking and Core-approved continuation with a new RequestId."
@@ -1091,7 +1099,9 @@ Tasks:
     EpicId: EP-06
     Title: 固定 Boost.JSON 1.92 子模块并建立 Provider 解析构建探针
     TaskKind: Build
-    State: Rework
+    State: Merged
+    MergeCommit: be2fd36af042381f7efad163cbf55f83d7e98848
+    MergedByCoordinatorAt: 2026-10-28
     AssignmentNote: "Dependencies ED-0131 merged; stacked on ED-0122 branch to avoid shared-file conflicts. Temporarily reassigned to Worker03."
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0143-OWNER-001
@@ -1127,13 +1137,18 @@ Tasks:
       - "Boost.JSON submodule population must not perform implicit network access in the verify build step."
       - "winpthread link mode must not propagate through the static library interface."
       - "Dependency policy must identify EmulativeDialogBoostJson as the current build baseline and adapters as future consumers."
+    ReviewFinalDecision: Approved
+    ReviewFinalBaseCommit: 5ac8966
+    ReviewFinalHeadCommit: 8de7a3651b1aac89e081ec6fe9e512aef33d10bc
+    ReviewFinalReviewerSlot: Worker04
+    ReviewFinalReviewerAgentId: /root/worker04_reviewer_queue
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker03
     OwnerAgentId: /root/worker03_responses_review
-    ReviewerRole: ResponsesProviderOwner
-    ReviewerSlotId: Worker03
-    ReviewerAgentId: /root/worker03_responses_review
+    ReviewerRole: BuildAndWorkflowOwner
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/worker04_reviewer_queue
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0143-BoostJsonDependency
