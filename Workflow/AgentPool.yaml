@@ -34,65 +34,65 @@ Slots:
     AgentId: "/root/p1_trace_events_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
-    HostSessionRef: ""
+    HostSessionRef: "/root/worker01_ed0105_owner"
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0105
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
-    HostSessionRef: ""
+    HostSessionRef: "/root/worker02_ed0114_owner"
     ModuleIds:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0114
+    Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/p1_gov004_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
-    HostSessionRef: ""
+    HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0105
+    Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/p2_validation_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
-    HostSessionRef: ""
+    HostSessionRef: "/root/worker04_ed0114_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0114
+    Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderOwner
     AgentId: "/root/p3_validation_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
-    HostSessionRef: ""
+    HostSessionRef: "/root/worker05_ed0144_memory"
     ModuleIds:
       - ProviderAnthropicMessages
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0144
+    Status: Active
   - SlotId: Worker06
     RoleFamily: MemoryContextOwner
     AgentId: "/root/p1_par001_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
-    HostSessionRef: ""
+    HostSessionRef: "/root/worker06_ed0105_review"
     ModuleIds:
       - Memory
       - ContextSelector
-    CurrentTaskId: ""
-    Status: Idle
+    CurrentTaskId: ED-0105
+    Status: Active
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。

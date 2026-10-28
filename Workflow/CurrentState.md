@@ -1,10 +1,10 @@
 # 当前状态
 
-日期：2026-10-27
+日期：2026-10-28
 
 ## 仓库与分支
 
-- 原始 `H:/Qbot/EmulativeDialog` 保持只读、未跟踪且未被切换；集成状态保存在 `H:/Qbot/EmulativeDialog.integration` 的 `codex/integration`，任务实现使用独立分支/worktree。GitHub 默认分支已核实为 `main`。
+- 当前唯一集成目标是 GitHub 默认分支 `main`；代码任务在独立分支/worktree 实施，构建和评审产物放在 `H:/Qbot/EmulativeDialog.integration-port-contract.build/` 等仓库外目录。主工作区仅由 Coordinator 更新治理账本；不重置、不清理用户文件。
 - R7 固定 Base `ae13196829f9ac639f375c9afa07b0566340e3d8` → Head `195ee1632287e24cd8b94c59634227a70f6f28bf`，Worker02 **Approve / Verified**，只含六条 WriteSet 路径。只读 ReviewBundle 位于 `H:/Qbot/ReviewBundles/EmulativeDialog-ED-0013-R7`，SHA256SUMS digest `7e1b3bf21fa05497d31208d265f3640924e4f8fe90238bc57e27173d7547c482`。
 - R7 已在本地无冲突合入，集成提交为 `761b80b6b9082fc9227d63498398e3dfd530ca31`。GitHub 插件建 PR 返回 HTTP 403 `Resource not accessible by integration`；未创建 PR。该 bootstrap LocalReviewBundle 和本地合并不等于产品 PR。
 - TaskSpec 注册提交 `c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82` 已推送，`origin/codex/integration` 已核实与本地同步。该提交登记 P2/P3 15 个能力 TaskSpec、五个必要基础任务和能力图追踪；注册事件为 `c0afddb6-7fe2-4d19-986a-56d94860a8da`。
@@ -48,22 +48,12 @@
 
 ## 2026-10-28 继续执行状态（当前）
 
-- 权威主线：`origin/main = 8f8ab66`；本地 main 工作区干净。远端分支正好 4 个：`main` + `Task/ED-0113-R4-ChatMemory-impl` + `Task/ED-0114-R2-UsageLimits` + `Task/ED-0143-BoostJsonDependency-rebase`。暂不推送新分支，等现有 PR 合并释放名额。
-- 当前开放 PR：#14 ED-0143（远端 Head `3baa40d`，Worker03 正在把 pinned 子模块获取移入 populate 阶段并确保静态链接状态不传播）、#20 ED-0114（远端 Head `82c5c0c`，Worker02 正在补 Total-only 安全预算与 Runtime/ToolCall 的批准续跑门）、#23 ED-0113（远端 Head `a3d060f`，敏感字段门已补，Worker06 固定 Head 复审中）。
-- 已并入 main 的 AgentRuntime 行为 PR：#15 ED-0107 EventProjector、#16 ED-0110 TurnCancellation、#17 ED-0104 Responses adapter、#18 ED-0106 Anthropic adapter、#19 ED-0108 Core-authorized ToolCall、#22 ED-0111 bounded retry；PR #12 ED-0141 同时把 SessionState/ContextSelector 测试注册进 CTest。
-- 未推送的 ED-0112/R2 恢复实现 Head `9b31251` 已加入五种终态区分、Operation/idempotency reconciliation、请求/上下文漂移拒绝、Unsupported、安全字段 sentinel 与 single-writer 约束；Windows 全量构建与 CTest 16/16 通过，两个生产源覆盖率为 87.38%/94.48%。Worker06 固定 Head 复审与远端 PR 尚待完成。
-- PR #14、#20、#23 外，ED-0108 已合并。当前 Worker01/02/03/05 与两个 Reviewer 槽并行推进 ED-0112、预算闭环、Boost.JSON、Memory scope、固定 Head 审查；所有改动位于隔离 worktree。
-- Coordinator 对 `main@3fb4db8` 实际执行 Windows 原生 CMake configure/build 与全量 `ctest --test-dir H:/Qbot/EmulativeDialog.build/windows-agent-slice`：configure 0、build 0、14/14 tests 通过。`main@8f8ab66` 后续只新增了 ED-0112 合同 CR 与状态记录；结果包含 SessionState、ContextSelector、InstructionAssembler、EventProjector、ToolCall、TurnCancellation、ProviderOutcomePolicy、SQLite probe/store；尚未包含 Provider、Memory 与 Network 独立合同测试目录。
-- Codex 上游基线/许可证仍由 `Workflow/CodexCapabilityMap.yaml` 锁定为 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97`、Apache-2.0；地图列出 15 项 Keep/Redesign（100% 已关联 TaskSpec），但关联不代表实现完成。
-- 尚未闭环：ED-0105 Chat Completions adapter、ED-0112 恢复审查/PR、ED-0113 GroupMemory/tombstone 修复与 ED-0144 SQLite adapter、ED-0114 新 Head 复审/最终集成验证、Provider/Memory/Network 测试根 CTest、异步协程化 AgentRuntime、经授权的 QQ Adapter。CodexCapabilityMap 中所有未有合并 C++ 证据的 Keep/Redesign 继续保持未完成。
-
-### 继续执行增量
-
-- `origin/main = 5531594`；PR #14 ED-0143 已 squash 合并（Boost JSON gitlinks 在固定 ExternalProject populate 阶段获取，verify 只读）。远端分支为 main + ED-0113 + ED-0114，数量为 3。
-- PR #14 固定 Head `8de7a36` 已由 Worker04 APPROVE；热缓存根构建与 Boost.JSON CTest 3/3 通过，离线缺失依赖 fail-closed。冷缓存真实下载因本机 Schannel/TLS 断连未能完成，已如实记录。
-- ED-0112/R2 恢复实现新 Head `9b31251` 已本地提交并基于 `main@5ac8966`：五种终态区分、Operation/idempotency reconciliation、上下文/请求漂移拒绝、Unsupported、秘密字段 sentinel、single writer；全量 CTest 16/16，两个生产源覆盖率 87.38%/94.48%。尚未推送，等待独立固定 Head 审查。
-- ED-0113/R4 PR #23 最新 Head `a3d060f` 已补敏感字段策略测试；Worker06 复审仍发现 GroupMemory consent 列表不能跨 Principal 读取 grantor 记录、RestoreBackup 可覆盖既有 tombstone、fixture 未真实执行；Worker05 正在修复。
-- ED-0114/R2 PR #20 新 Head `a23f252`（Base `5531594`）已处理 Total-only/partial usage 安全阻断、Runtime 与 ToolCallCoordinator 预算门、Core 批准的新 RequestId 续跑；Worker04 正在独立固定 Head 复审。
-- ED-0105 Chat Completions adapter 已有本地 C++ 实现与 fixture 测试，现由 Worker01 接手原隔离 worktree，使用合并后的 Boost.JSON 正式目标重基、验证并准备 PR。
-- Coordinator 在 PR #14 合并后以独立 Windows 原生构建验证 `main@be2fd36`：configure 0、全量 build 0、CTest 17/17 通过（Boost.JSON 探针、缺 gitlink fail-closed、winpthread 链接检查均包括在内）。冷缓存 clone 受本机 Schannel/TLS 断连影响；热缓存 build 与离线失败关闭通过。
-- AgentRuntime 当前仍为同步采样；异步 C++20/Boost.Asio 回合循环仍未实现。
+- 当前产品代码基线为 `main@8a608831ce94020a0187cf586abd66a4834de966`（PR #23 ED-0113 merge commit）；本次 Coordinator 主线提交只更新任务/协作账本。远端分支共 3 个：`main`、`Task/ED-0105-R4-ChatCompletions`、`Task/ED-0114-R2-UsageLimits`；名额上限为 4。
+- PR #23 已由 Worker06 固定头批准并 squash 合并；GroupMemory consent 读取、tombstone 防复活和 SC-008/FR-006 场景已进入 main。ED-0144/R1 现在负责把 ConversationMemory 接到 SQLite 生产存储。
+- PR #20 ED-0114 仍开放，Base `5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a`、Head `a23f252268d32a8b7315797f74a2562b72772d2c`。Worker04 固定头结论为 CHANGES_REQUESTED：缺失 usage 仍会放行工具/续采样；续跑批准只有测试直接调用而无 Core 生产授权路径；常驻预算账本没有生产清理；16 个 diff 路径中有 3 个测试路径未列入 13 项 WriteSet。Worker03 独立 Windows C++20 验证 configure/build 均退出 0、CTest 19/19、六个生产源覆盖率 85.20%–100%。作者已收到 finding，正在提出精确 ChangeRequest/TaskRevision；问题未修复前不合并。
+- PR #24 ED-0105 的 R4 Head `d544b5ad0d59a472eb9f3772d3fc28411c18a73f` 固定头审查为 CHANGES_REQUESTED，发现 8 项 Major finding：超时重试、请求内容丢失、工具结果关联/类型、嵌套未知字段、unsupported image、fixture 未执行、malformed usage。Worker03 独立 Windows C++20 定向构建和 CTest 1/1 通过，以黑盒 probe 复现 response-head 后 timeout 被标成 retryable；coverage 835/935=89.30%。Coordinator 已接受 ED-0105/R5 CR，改用 `.hpp`、ModelProviderContract V1.2，并把 fixture ReadSet/执行验收列明；作者等待任务账本提交后重基修复，当前未合并。
+- ED-0112/R2 恢复实现仍为本地 Head `9b312513161a441eb4b94325be176348b34f7e9d`，基于 `main@5ac8966`；Windows 全量构建、CTest 16/16，两个生产源覆盖率 87.38%/94.48%。独立固定头审查待 Worker06 完成 ED-0105/R5 后继续；目前未推送、未创建 PR。
+- ED-0144/R1 在隔离 worktree `H:/Qbot/EmulativeDialog.ED-0144`、分支 `Task/ED-0144-MemorySqliteAdapter`、Base `8a608831` 已完成实际 SQLite adapter，Head `daeb204fb4b87b3405a4c05beb111bfe8d5c3f52`。Windows configure/目标/全目标 build 均退出 0，CTest 4/4；gcov JSON v2 为 289/306=94.44%。版本化可逆 `EDMemoryV1/<Category>/<0|1>` 编码保留独立 `UserConfirmed`，SQLite 重启读回六种 Provenance/confirmation 组合并拒绝 malformed/unknown/future version。代码已提交，待重基到最新 main、Worker06 固定头审查后推送 PR。
+- 已确认 Windows GitHub CLI 登录为 `Hatedatastructures`，远端 `main` 为默认分支；本轮 GitHub 插件可读取、审查与合并 PR。子 Agent 槽按主会话模型/推理继承；插件未提供子 Agent 的精确模型标签读取接口。
+- 过往 main `be2fd36` 的 Windows 根构建和 CTest 17/17 是 PR #23 之前的证据；PR #20 的 19/19 是其固定分支上的证据。PR #23 合并后新的 main 全量根测试尚未复跑。Provider、Memory 与 Network 合同测试的统一根 CMake/CTest 接入仍由 ED-0145 处理。
+- Codex 官方上游基线仍为 `openai/codex@970111f6cb62cc02fe36a82ea7d71b37a2889c97`、Apache-2.0。CodexCapabilityMap 15 项 Keep/Redesign 均链接 TaskSpec，但未有实现证据的条目继续保持未完成。AgentRuntime 仍是同步回合；Core 授权上下文压缩续跑、异步 C++20/Boost.Asio 回合、真实 QQ Adapter 和剩余能力映射仍需继续实现；本阶段不接入微信。

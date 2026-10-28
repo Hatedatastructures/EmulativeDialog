@@ -2013,6 +2013,12 @@ Tasks:
       Decision: Accepted
       ApprovedByRole: Coordinator
       Scope: "Continue ED-0112 review repairs under Worker04 after Worker01 reached its execution budget; preserve Goal, WriteSet and Reviewer."
+    OwnerChangeRequestFinal:
+      ChangeRequestId: CR-ED-0112-OWNER-003
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Record Worker01 as the implementation owner for the completed ED-0112 recovery patch; assign Worker06 as the independent fixed-head reviewer. Preserve all task acceptance and WriteSet paths."
+      AcceptedAt: 2026-10-28
     ContractWriteSetChangeRequest:
       ChangeRequestId: CR-ED-0112-003
       Decision: Accepted
@@ -2037,11 +2043,11 @@ Tasks:
     LocalReviewStatus: AwaitingIndependentFixedHeadReview
     Phase: P2
     OwnerRole: CoreOwner
-    OwnerSlotId: Worker02
-    OwnerAgentId: "/root/agent_core"
+    OwnerSlotId: Worker01
+    OwnerAgentId: /root/worker01_ed0112_recovery
     ReviewerRole: BuildAndWorkflowOwner
-    ReviewerSlotId: Worker01
-    ReviewerAgentId: "/root/workflow_controller"
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: /root/worker06_reviewer_memory_recovery
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0112-R2-TurnRecovery

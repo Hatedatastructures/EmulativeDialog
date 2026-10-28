@@ -189,26 +189,68 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0110, ED-0111, ED-0114]}
 
   - TaskId: ED-0105
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-06
     Title: 实现 OpenAI-compatible Chat Completions C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Assigned
     AssignmentNote: "Dependencies ED-0015/ED-0010/ED-0120/ED-0143 are Merged; provider implementation resumed by Worker01 after Worker04's backend task became unavailable."
     OwnerChangeRequest:
       ChangeRequestId: CR-ED-0105-OWNER-001
       Decision: Accepted
       ApprovedByRole: Coordinator
       Scope: "Reassign ED-0105/R4 completion and formal PR submission to Worker01 in the existing isolated worktree H:/Qbot/EmulativeDialog.ED-0105-R4; preserve Goal, WriteSet, Acceptance, dependencies and Reviewer."
-    LocalCompletionHead: 4542d0e
-    LocalCoverage: "89.30% lines (835/935), diagnostic Boost 1.91 build"
+    ReviewerChangeRequest:
+      ChangeRequestId: CR-ED-0105-REVIEWER-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Assign independent fixed-head review to Worker06 because the original Worker04 provider task session was unavailable; preserve all review acceptance criteria."
+    State: Rework
+    LocalCompletionHead: d544b5ad0d59a472eb9f3772d3fc28411c18a73f
+    LocalCoverage: "Independent fixed-head validation: 89.30% lines (835/935), MinGW gcov 16.1.0 JSON v2; H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0105/Validation-20261028-01/ED0105-independent-validation.txt"
+    PullRequestCreated: true
+    PullRequestNumber: 24
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/24
+    ReviewBaseCommit: 21b3278d0b13e787d48921a2813cdddbf91ff8f7
+    ReviewHeadCommit: d544b5ad0d59a472eb9f3772d3fc28411c18a73f
+    ReviewStatus: ChangesRequested
+    ReviewDecision: CHANGES_REQUESTED
+    ReviewFindings:
+      - {FindingId: ED0105-R4-F1, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "390-397", Summary: "Response/Idle timeout after provider response head can be incorrectly marked retryable; unknown side-effect outcome must fail closed."}
+      - {FindingId: ED0105-R4-F2, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "1044", Summary: "Request.ContentParts is silently dropped instead of serialized or explicitly rejected."}
+      - {FindingId: ED0105-R4-F3, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "1063", Summary: "Tool result IDs are not correlated to a preceding assistant tool call."}
+      - {FindingId: ED0105-R4-F4, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "531", Summary: "Nested unregistered response fields are silently ignored."}
+      - {FindingId: ED0105-R4-F5, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "806-863", Summary: "Tool call can become ready without a confirmed function type."}
+      - {FindingId: ED0105-R4-F6, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "1076,1279-1284", Summary: "Images without Vision support map to InvalidRequest instead of UnsupportedCapability."}
+      - {FindingId: ED0105-R4-F7, Severity: Major, Path: Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt, Lines: "38", Summary: "Registered canonical, stream, error and V1.2 refusal fixtures are not executed by the test target."}
+      - {FindingId: ED0105-R4-F8, Severity: Major, Path: Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Lines: "163-175,278-312", Summary: "Malformed/negative usage fields can be collapsed into absence and still produce Final usage."}
+    PriorRevision4Evidence:
+      TaskRevision: 4
+      State: Rework
+      Disposition: SupersededByAcceptedTaskRevision5AfterFixedHeadReview
+      Branch: Task/ED-0105-R4-ChatCompletions
+      Worktree: H:/Qbot/EmulativeDialog.ED-0105-R4
+      BaseCommit: 21b3278d0b13e787d48921a2813cdddbf91ff8f7
+      HeadCommit: d544b5ad0d59a472eb9f3772d3fc28411c18a73f
+      ReviewerDecision: CHANGES_REQUESTED
+      IndependentBuild: "Windows C++20 configure/build exit 0; CTest 1/1; ChatCompletionsProvider.cpp 835/935 (89.30%) gcov JSON v2."
+      IndependentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0105/Validation-20261028-01/ED0105-independent-validation.txt
+    Revision5ChangeRequest:
+      ChangeRequestId: CR-ED-0105-R5-001
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Create ED-0105/R5 from R4: change ChatCompletionsProvider.h to .hpp per the user's file rule; align ContractVersion and Goal to already-frozen ModelProviderContract V1.2; make AC-1 execute the registered canonical/stream/error/refusal fixture index and AC-2 require the fixed-head findings to be addressed. Preserve TaskId, dependencies, owner, independent reviewer, module boundary, and the four-path implementation scope."
+      Reason: "Worker06 and Worker03 found a retryable post-response timeout, dropped request content, unsafe tool-call correlation/type handling, silent nested fields, incorrect unsupported-image mapping, malformed-usage acceptance, unexecuted fixtures, plus the R4 .h/V1.1 task record mismatch."
+      TaskRevisionTransition: {FromRevision: 4, ToRevision: 5}
+      PreserveTaskIdDependenciesOwnerReviewerModuleBoundary: true
     Phase: P3
     OwnerRole: ChatCompletionsProviderOwner
     OwnerSlotId: Worker01
     OwnerAgentId: /root/worker01_ed0112_recovery
-    ReviewerRole: AnthropicProviderOwner
-    ReviewerSlotId: Worker05
-    ReviewerAgentId: "/root/provider_anthropic"
+    ReviewerRole: BuildAndWorkflowOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: /root/worker06_reviewer_memory_recovery
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0105-R4-ChatCompletions
@@ -274,43 +316,44 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0105/R3 Goal, Acceptance, dependencies, Owner, Reviewer, all Source/Providers/OpenAIChatCompletions WriteSet paths and protocol semantics. Move only the two test WriteSet paths into the ModuleMap-owned Tests/Contract/Providers/OpenAIChatCompletions root; update matching CMake source root and revision-specific Branch/Worktree/TaskBuildDirectory, CTest and gcov report paths."
       PreserveGoalAcceptanceDependenciesOwnerReviewerSourceWriteSetAndProtocolSemantics: true
-    Goal: "实现与 Responses 分离的 Chat Completions adapter，区分标准语义与注册服务商差异，并遵守公共 ModelProviderPort V1.1。"
+    Goal: "实现与 Responses 分离的 Chat Completions adapter，区分标准语义与注册服务商差异，并遵守已冻结的 ModelProviderContract V1.2。"
     OutOfScope: ["任意服务商猜测", "无注册的 extension 字段", "Rust/Node/Python runtime", "直接渠道发送", "微信"]
     DependsOn: [ED-0015, ED-0010, ED-0120]
-    ContractVersion: [Architecture/Contracts/ModelProviderContract.md V1.1, Architecture/Contracts/HttpTransportContract.md V1]
+    ContractVersion: [Architecture/Contracts/ModelProviderContract.md V1.2, Architecture/Contracts/HttpTransportContract.md V1]
     Context:
       ModuleId: ProviderOpenAIChatCompletions
-      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/HttpTransportContract.md, Source/Providers/Contracts/ModelProviderPort.h, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/FixtureIndex.json]
-      OnDemandSet: [Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/CanonicalRequest.json]
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/Providers.yaml, Architecture/Contracts/ModelProviderContract.md, Architecture/Contracts/HttpTransportContract.md, Source/Providers/Contracts/ModelProviderPort.h, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/FixtureIndex.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/StreamCases.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/ErrorCases.json]
+      OnDemandSet: [Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/CanonicalRequest.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/StreamCases.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/ErrorCases.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/Version1Point2/FixtureIndex.json, Tests/Contract/Providers/OpenAIChatCompletions/Fixtures/Version1Point2/RefusalCases.json]
       ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/OpenAIResponses/", "Source/Providers/AnthropicMessages/", "Source/Channels/QQ/"]
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
-    WriteSet: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.h, Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp, Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt]
+    WriteSet: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.hpp, Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp, Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp, Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt]
     SharedLocks: []
     Acceptance:
-      - {AcceptanceId: AC-1, Description: "Standard request/stream/error/refusal fields map to the canonical contract, while service-specific fields require a declared CompatibilityProfile.", Evidence: "Fixtures cover standard mode and each registered extension independently."}
-      - {AcceptanceId: AC-2, Description: "Tool names/arguments remain canonical, cancellation and unknown outcomes are safe, and no unregistered provider field is silently accepted.", Evidence: "Fixture and negative-schema tests plus no-retry assertions."}
+      - {AcceptanceId: AC-1, Description: "Standard request/stream/error/refusal fields map to ModelProviderContract V1.2, while service-specific fields require a declared CompatibilityProfile.", Evidence: "The test target executes FixtureIndex, CanonicalRequest, StreamCases, ErrorCases and the V1.2 refusal fixtures."}
+      - {AcceptanceId: AC-2, Description: "Request content, tool-call correlation/type, cancellation, unknown outcomes and nested response schemas follow the canonical contract; unsupported capabilities and malformed usage fail explicitly.", Evidence: "Negative-schema, malformed-usage, tool correlation, content, unsupported-capability, timeout and no-retry tests."}
       - {AcceptanceId: AC-3, Description: "Changed production adapter source meets at least 80 percent line coverage.", Evidence: "Fresh gcov report with denominator and tool version."}
     Validation:
       RequiredTargets: [ChatCompletionsProviderTests]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0105-R4.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0105-R5.build
+      WorkingDirectory: H:/Qbot/EmulativeDialog.ED-0105-R4
       Coverage:
         Required: true
         ProductionSources: [Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0105-R4.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0105-R5.build/Reports
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake --target ChatCompletionsProviderTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake --output-on-failure"
-      ContractFixtures: ["All ED-0010 fixtures and the declared compatibility-profile extensions."]
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0105-R4/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.ED-0105-R5.build/CMake -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0105-R5.build/CMake --target ChatCompletionsProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0105-R5.build/CMake --output-on-failure --no-tests=error"
+      ContractFixtures: ["FixtureIndex.json, CanonicalRequest.json, StreamCases.json, ErrorCases.json, and Version1Point2/RefusalCases.json execute in the Windows test target; registered service extensions are tested separately."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
         - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0105-R4.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0105-R4.build/Reports'; try { $gcno = Get-ChildItem -LiteralPath 'H:/Qbot/EmulativeDialog.ED-0105-R4.build/CMake' -Recurse -Filter 'ChatCompletionsProvider.cpp.gcno' | Select-Object -First 1; if ($null -eq $gcno) { throw 'Missing ChatCompletionsProvider.cpp.gcno' }; & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts --preserve-paths -o ($gcno.FullName -replace '\\.gcno$','') 'H:/Qbot/EmulativeDialog.ED-0105-R4/Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp' } finally { Pop-Location }\""
+        - "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0105-R5.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0105-R5.build/Reports'; try { $gcno = Get-ChildItem -LiteralPath 'H:/Qbot/EmulativeDialog.ED-0105-R5.build/CMake' -Recurse -Filter 'ChatCompletionsProvider.cpp.gcno' | Select-Object -First 1; if ($null -eq $gcno) { throw 'Missing ChatCompletionsProvider.cpp.gcno' }; & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o ($gcno.FullName -replace '\\.gcno$','') 'H:/Qbot/EmulativeDialog.ED-0105-R4/Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp' } finally { Pop-Location }\""
         - "Verify ChatCompletionsProvider.cpp is at least 80 percent line-covered with numerator, denominator, exclusions, and gcov version; reports stay under TaskBuildDirectory/Reports."
       LiveSideEffects: Forbidden
       NotRunReason: "Adapter tests use offline scripted HttpTransport and synthetic profiles."
@@ -448,18 +491,25 @@ Tasks:
     EpicId: EP-06
     Title: 实现授权、身份和会话隔离的聊天 Memory
     TaskKind: CapabilitySlice
-    State: Rework
+    State: Merged
+    MergeCommit: 8a608831ce94020a0187cf586abd66a4834de966
+    MergedByCoordinatorAt: 2026-10-28
+    RemoteTaskBranchDeleted: true
     PullRequestCreated: true
     PullRequestNumber: 23
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/23
-    ReviewBaseCommit: c72341b22479b1fc3fde9da3ec14a2553a59ddc4
-    ReviewHeadCommit: d68e16946e880fcd49e5f62301c7ed7d8902e260
-    ReviewStatus: ChangesRequested
+    ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
+    ReviewHeadCommit: b066383bf010ea70664f84a3d9b2e8e7774c55ad
+    ReviewStatus: Approved
     ReviewRound2HeadCommit: a3d060fba2d2314f260127bb791a7f983dc2151d
     ReviewRound2Findings:
       - "Allowed GroupMemory members still cannot read grantor-owned records because storage lookup is principal-keyed."
       - "RestoreBackup can resurrect an existing tombstone through the fake storage upsert path."
       - "ScopeConsent and ForgetRecovery fixture cases are not being executed by the test harness."
+    CurrentRemoteHead: b066383bf010ea70664f84a3d9b2e8e7774c55ad
+    ReviewRound3Status: Approved
+    ReviewRound3Reviewer: Worker06
+    ReviewRound3DecisionAt: 2026-10-28
     ReviewFindings:
       - "Consent revoke must be exact scope/kind and atomic with tombstones."
       - "Direct and Group conversation kinds must be part of storage scope and recall projection."
@@ -612,6 +662,12 @@ Tasks:
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
     State: Review
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0114-OWNER-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Record Worker02 as the implementation owner for the ED-0114 production budget integration and Worker04 as independent reviewer after reassignment from the unavailable original slot."
+      AcceptedAt: 2026-10-28
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0114-DEPS-001
       Decision: Accepted
@@ -636,10 +692,20 @@ Tasks:
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
     ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
     ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
-    ReviewStatus: AwaitingIndependentFixedHeadReview
+    ReviewStatus: ChangesRequested
     ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
     ReviewRound2Status: ChangesRequested
-    ReviewRound3Validation: "Full root build; CTest 19/19; all six changed production sources >=80% lines"
+    ReviewRound3Status: ChangesRequested
+    ReviewRound3Reviewer: Worker04
+    ReviewRound3DecisionAt: 2026-10-28
+    ReviewRound3Validation: "Independent Windows C++20 configure/build exit 0; full CTest 19/19; gcov JSON v2: AgentRuntime 259/304, OutputBudgetController 224/256, ToolCallCoordinator 138/141, Responses normalizer 45/46, Chat normalizer 46/47, Anthropic normalizer 22/22; no explicit source exclusions."
+    ReviewRound3Findings:
+      - {FindingId: ED0114-R2-F1, Severity: P1, Summary: "When a provider returns no usage event/snapshot at all, the ledger treats the configured budget as fully available and permits tool dispatch or further sampling; missing must be Unavailable after the request and fail closed."}
+      - {FindingId: ED0114-R2-F2, Severity: P1, Summary: "ApproveContinuation is called only by tests; CoreChatService has no production context-compression approval path, so arbitrary callers can self-authorize continuation."}
+      - {FindingId: ED0114-R2-F3, Severity: P2, Summary: "SharedTurnBudgetLedger retains every TurnId/RequestId indefinitely; EraseTurn/Reset have no production call site."}
+      - {FindingId: ED0114-R2-F4, Severity: P2, Summary: "PR changes 16 paths while frozen WriteSet lists 13; AgentRuntimeContractTests.cpp, AgentRuntimeVerticalSliceTests.cpp and ToolCallRoundTripTests.cpp must be explicitly authorized before merge."}
+    ReviewRound3Bundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0114-R2-Review-a23f252/ReviewResult.md
+    IndependentValidationSummary: H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0114/Validation-20261028-01/Reports/ED0114-independent-coverage-rerun1.txt
     ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
     ReviewFindings:
       - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
@@ -647,11 +713,11 @@ Tasks:
       - "RecordProviderOutputLimited must close or mark remaining output unknown."
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
-    OwnerSlotId: Worker03
-    OwnerAgentId: "/root/provider_responses"
+    OwnerSlotId: Worker02
+    OwnerAgentId: /root/worker02_ed0114_budget
     ReviewerRole: MemoryContextOwner
-    ReviewerSlotId: Worker06
-    ReviewerAgentId: "/root/memory_context"
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/worker04_reviewer_queue
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0114-R2-UsageLimits
@@ -1199,9 +1265,24 @@ Tasks:
   - TaskId: ED-0144
     TaskRevision: 1
     EpicId: EP-06
-    Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配并注册根 CTest
+    Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Review
+    AssignmentNote: "Dependencies ED-0113 and ED-0123 are merged; root CMake ownership is reserved to ED-0145 to avoid WriteSet conflict."
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0144-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Limit ED-0144 to the SqliteMemoryStorageAdapter implementation, its adapter tests, and Tests/Contract/Memory/CMakeLists.txt. Root CMake/CTest registration is owned by ED-0145 to preserve single-writer ownership of CMakeLists.txt."
+      AcceptedAt: 2026-10-28
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0144
+    AssignedBranch: Task/ED-0144-MemorySqliteAdapter
+    BaseCommit: 8a608831ce94020a0187cf586abd66a4834de966
+    LocalCompletionHead: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
+    LocalCoverage: "SqliteMemoryStorageAdapter.cpp 289/306 (94.44%), gcov JSON v2, GCC/gcov 16.1.0; H:/Qbot/EmulativeDialog.ED-0144.build/Standalone/Reports/SqliteMemoryStorageAdapter##H~#Qbot#EmulativeDialog.ED-0144#Source#Memory#SqliteMemoryStorageAdapter.gcov.json.gz"
+    LocalValidation: "Windows C++20 configure 0; focused target build 0; standalone all-target build 0; CTest 4/4; git diff --check Base Head 0; four changed paths exactly match WriteSet."
+    ReviewStatus: AwaitingIndependentFixedHeadReview
+    PullRequestCreated: false
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
@@ -1213,30 +1294,55 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0144-MemorySqliteAdapter
     Worktree: H:/Qbot/EmulativeDialog.ED-0144
-    Goal: "实现 MemoryStoragePort 到 SqliteStore 的生产适配器（事务化写、tombstone、scope kind 入 schema、consent tombstone、重启恢复），并把 Memory 合同测试接入根 CMake/CTest。"
+    Goal: "实现 MemoryStoragePort 到 SqliteStore 的生产适配器（事务化写、tombstone、scope kind 入 schema、consent tombstone、重启恢复）并接入独立 Memory 合同测试目标。"
     OutOfScope: ["授权策略本身", "原始私聊正文持久化", "平台副本删除声明"]
     DependsOn: [ED-0113, ED-0123]
     Context:
       ModuleId: Memory
       ReadSet: [AGENTS.md, Architecture/Contracts/MemoryContract.md, Source/Memory/ConversationMemory.hpp, Source/Storage/SqliteStore.hpp, Tests/Contract/Memory/Fixtures/FixtureIndex.json]
       OnDemandSet: [Workflow/Plans/P3.yaml]
+      ContextExpanded:
+        - {Path: Tests/Contract/Storage/CMakeLists.txt, Reason: "Link the standalone Memory contract target to the pinned EmulativeDialogSQLite target and preserve its isolated test data directory.", AcceptanceId: AC-3, WriteSetChanged: false}
+        - {Path: Tests/Contract/Storage/SqliteStoreTests.cpp, Reason: "Use the existing real-file database and restart-recovery test pattern for the Memory adapter fixtures.", AcceptanceId: AC-1, WriteSetChanged: false}
+        - {Path: Source/Memory/ConversationMemory.cpp, Reason: "Verify that StoredMemory.UserConfirmed is independent of Provenance before defining lossless persistence and recall mapping.", AcceptanceId: AC-1, WriteSetChanged: false}
       ForbiddenSet: ["Source/Providers/", "Source/Agent/"]
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 10
       ExpansionReasonRequired: true
-    WriteSet: [Source/Memory/SqliteMemoryStorageAdapter.hpp, Source/Memory/SqliteMemoryStorageAdapter.cpp, Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp, CMakeLists.txt]
+    WriteSet: [Source/Memory/SqliteMemoryStorageAdapter.hpp, Source/Memory/SqliteMemoryStorageAdapter.cpp, Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp, Tests/Contract/Memory/CMakeLists.txt]
+    AcceptedImplementationDecision:
+      ImplementationDecisionId: ED-0144-DATA-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Persist StoredMemory.Category and the independent UserConfirmed bit in the existing MemoryKind text field using the reversible EDMemoryV1/<Category>/<0|1> encoding; keep Provenance in its existing field and physical SqliteStore schema unchanged. Reject malformed, unknown, legacy-unencoded and future-version keys without recall or silent conversion."
+      Evidence: "SQLite close/reopen round trips for six Provenance x UserConfirmed combinations; malformed and EDMemoryV2 keys fail closed."
+      PreserveGoalWriteSetAcceptanceAndPhysicalSchema: true
     SharedLocks: [RootBuild]
     Acceptance:
       - {AcceptanceId: AC-1, Description: "ConversationMemory 通过真实 SqliteStore 持久化；事务失败不改变旧数据，tombstone 与 consent 撤销可恢复。", Evidence: "真实文件 DB 集成测试 + 重启恢复。"}
       - {AcceptanceId: AC-2, Description: "Direct/Group scope kind 入 schema，私聊与群记忆不可互读。", Evidence: "同 ID 不同 kind 隔离测试。"}
-      - {AcceptanceId: AC-3, Description: "根 CMake 注册 Memory 合同测试并保持现有测试全绿。", Evidence: "根 ctest 全量通过。"}
+      - {AcceptanceId: AC-3, Description: "独立 Memory 合同目标可编译并运行；根 CMake/CTest 注册由 ED-0145 统一完成。", Evidence: "Standalone CMake target and CTest pass; ED-0145 later verifies the root suite."}
     Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0144.build/Standalone
       Coverage:
         Required: true
         ProductionSources: [Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0144.build/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0144.build/Standalone/Reports
       RequiredTargets: [SqliteMemoryStorageAdapterTests]
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.ED-0144.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.ED-0144.build/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144.build/Standalone --target SqliteMemoryStorageAdapterTests --parallel 4"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144.build/Standalone --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0144.build/Standalone --output-on-failure --no-tests=error"
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen WriteSet"
+        - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+        - "Generate a gcov JSON v2 report for SqliteMemoryStorageAdapter.cpp under TaskBuildDirectory/Reports and verify at least 80 percent line coverage with numerator and denominator."
+      CoverageCommand: >-
+        $ErrorActionPreference='Stop'; $build='H:/Qbot/EmulativeDialog.ED-0144.build/Standalone'; $report=Join-Path $build 'Reports'; New-Item -ItemType Directory -Force -Path $report | Out-Null; $gcno=Get-ChildItem -LiteralPath $build -Recurse -Filter 'SqliteMemoryStorageAdapter.cpp.gcno' | Select-Object -First 1; if($null -eq $gcno){throw 'Missing SqliteMemoryStorageAdapter.cpp.gcno'}; Push-Location $report; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $gcno.FullName 'H:/Qbot/EmulativeDialog.ED-0144/Source/Memory/SqliteMemoryStorageAdapter.cpp'; if($LASTEXITCODE -ne 0){throw 'gcov failure'} } finally { Pop-Location }; $gz=Get-ChildItem -LiteralPath $report -Filter 'SqliteMemoryStorageAdapter*.gcov.json.gz' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if($null -eq $gz){throw 'Missing gcov JSON output'}; $inputStream=[System.IO.File]::OpenRead($gz.FullName); try { $zip=[System.IO.Compression.GzipStream]::new($inputStream,[System.IO.Compression.CompressionMode]::Decompress); try { $reader=[System.IO.StreamReader]::new($zip); try { $json=ConvertFrom-Json -InputObject $reader.ReadToEnd() } finally {$reader.Dispose()} } finally {$zip.Dispose()} } finally {$inputStream.Dispose()}; $file=$json.files | Where-Object { $_.file -match 'SqliteMemoryStorageAdapter\.cpp$' } | Select-Object -First 1; if($null -eq $file){throw 'Adapter source not found in gcov JSON'}; $lines=@($file.lines); $executed=@($lines | Where-Object { $_.count -gt 0 }).Count; Write-Output "FORMAT=$($json.format_version) GCC=$($json.gcc_version) COVERED=$executed TOTAL=$($lines.Count) PERCENT=$([Math]::Round(100*$executed/$lines.Count,2)) REPORT=$($gz.FullName)"; & 'C:/msys64/ucrt64/bin/gcov.exe' --version | Select-Object -First 1
       LiveSideEffects: Forbidden
       NotRunReason: "使用任务构建目录内的隔离 SQLite 文件。"
     RiskLevel: High
