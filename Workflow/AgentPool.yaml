@@ -7,6 +7,9 @@ MaximumConcurrentTaskBranches: 3
 RemoteBranchCapCountsDefaultBranch: true
 RetireRemoteTaskBranchAfterMerge: true
 State: Active
+SlotClasses:
+  SupportSlots: [Worker01, Worker06]
+  ImplementationSlots: [Worker02, Worker03, Worker04, Worker05]
 EffectiveParallelism:
   Formula: MinimumOfConfiguredSlotsHostCapacityReadyIndependentTasksAndRemoteBranchCapacity
 
@@ -38,7 +41,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0105
+    CurrentTaskId: ED-0146/R6-TaskSpecIndependentReview
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -50,7 +53,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0114
+    CurrentTaskId: ED-0147/R6-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
@@ -60,7 +63,7 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0105
+    CurrentTaskId: ED-0146/R6-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
@@ -70,28 +73,28 @@ Slots:
     HostSessionRef: "/root/worker04_ed0114_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0114
+    CurrentTaskId: ED-0147/R6-TaskSpecIndependentReview
     Status: Active
   - SlotId: Worker05
-    RoleFamily: AnthropicProviderOwner
+    RoleFamily: AnthropicProviderAndMemoryOwner
     AgentId: "/root/p3_validation_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: "/root/worker05_ed0144_memory"
     ModuleIds:
       - ProviderAnthropicMessages
-    CurrentTaskId: ED-0144
+      - Memory
+      - ContextSelector
+    CurrentTaskId: ED-0148/R4-TaskSpecOwnerReview
     Status: Active
   - SlotId: Worker06
-    RoleFamily: MemoryContextOwner
+    RoleFamily: IntegrationAndValidationSupport
     AgentId: "/root/p1_par001_luna"
     ModelRequest: InheritCoordinator
     ReasoningEffort: InheritCoordinator
     HostSessionRef: "/root/worker06_ed0105_review"
-    ModuleIds:
-      - Memory
-      - ContextSelector
-    CurrentTaskId: ED-0144
+    ModuleIds: []
+    CurrentTaskId: ED-0148/R4-TaskSpecIndependentReview
     Status: Active
 
 AssignmentRules:
@@ -100,3 +103,74 @@ AssignmentRules:
   - Reviewer 可以复用空闲槽，但不得审查自己编写的 PR。
   - 不能用重复分析、无写集工作或低价值任务填满空闲槽。
   - 每次分派/回收/恢复都追加 AgentSlotAssigned、AgentSlotRecovered 或 AgentSlotRetired 事件。
+
+TaskScopedModuleAuthorizations:
+  - ChangeRequestId: CR-ED-0112-006
+    TaskId: ED-0112
+    TaskRevision: 5
+    SlotId: Worker02
+    AgentId: /root/worker02_ed0114_owner
+    ModuleId: Storage
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Source/Storage/TurnCheckpointStore.hpp
+      - Source/Storage/TurnCheckpointStore.cpp
+      - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+    Restrictions:
+      - NoStorageModuleAuthorizationOutsideED0112R5
+      - PreserveStorageSchemaLock
+      - PreserveEightPathTaskWriteSet
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: NetworkPlatform
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Architecture/Contracts/HttpTransportContract.md
+      - Source/Platform/Network/HttpTransportPort.hpp
+      - Source/Platform/Network/WinHttpTransport.hpp
+      - Source/Platform/Network/WinHttpTransport.cpp
+      - Tests/Contract/Platform/Network/CMakeLists.txt
+      - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+      - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+    Restrictions:
+      - NoRootBuildOrDependencyPinChanges
+      - NoProviderProductionWireBehaviorChanges
+      - PreserveP3EntryGatePendingUntilED0146AndED0147Pass
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: ProviderOpenAIResponses
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: ProviderOpenAIChatCompletions
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+  - ChangeRequestId: CR-ED-0120-006
+    TaskId: ED-0146
+    TaskRevision: 6
+    SlotId: Worker03
+    AgentId: /root/worker03_ed0114_validation
+    ModuleId: ProviderAnthropicMessages
+    State: Proposed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
+    Restrictions:
+      - TestConsumersOnly
+      - NoProviderProductionWireBehaviorChanges

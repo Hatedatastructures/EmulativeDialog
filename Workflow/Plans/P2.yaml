@@ -26,10 +26,117 @@ TaskSpecRegistration:
     - ED-0111
     - ED-0112
     - ED-0115
-  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125, ED-0131]
+  AdditionalInfrastructureTaskIds: [ED-0120, ED-0124, ED-0125, ED-0131, ED-0146]
   AllTaskSpecsFrozenBeforeAssignment: true
 
 ChangeRequests:
+  - ChangeRequestId: CR-ED-0120-003
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0146
+    ProposedTaskRevision: 5
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker01_ed0105_owner
+    IndependentReviewerAgentId: /root/worker03_ed0114_validation
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    FindingId: ED-0120-R2-F001
+    Scope: >-
+      Keep the existing HttpTransportContract V1 proxy, TLS, timeout, redirect, compression,
+      cancellation, and unknown-outcome semantics. ED-0146/R5 makes endpoint-grant validation
+      mandatory at the public HttpTransportPort boundary and adapts WinHTTP plus offline provider
+      fakes to that non-bypassable entry. It does not claim that grant IDs are opaque or that Core
+      owns their issuer; those requirements move to ED-0147. Correct the prior .h WriteSet reference
+      to the actual .hpp file and freeze separate validation commands for each standalone
+      Network/Provider CMake project. R3 adds the justified ReadSet exception and executable gcov JSON v2
+      coverage gate. R4 added a non-destructive fresh-build preflight, exact `.gcno`, and absolute
+      translation-unit paths. R5 removes the unsupported root `data_file` source-path equality check,
+      binds source identity to exact `files[].file` records and physical `.gcno`/paired `.gcda`
+      evidence, and requires `Test Passed.` inside the named CTest log block. Goal, dependencies, and
+      WriteSet stay fixed.
+    Reason: >-
+      Worker03 post-merge fixed-head review found that ScriptedTransport can be constructed with a
+      null resolver, skip Validate, and still return CompletedTransport. Worker01 and Worker03
+      fixed-head reviews of ED-0146/R1 also found that its Core-only issuer acceptance was outside
+      the declared ReadSet/WriteSet and that its single CMake command could not build five targets
+      spread across four standalone projects. R2 owner and independent reviews then found that the
+      ReadSet exception lacked its required reason and the coverage steps did not enforce the 80%
+       threshold or capture the gcov executable version. R3 addresses only those verification defects.
+       R4 fixed-head review then found that local GCC 16.1.0 `data_file` samples did not match their
+       `files[].file` source records, and that a sibling CTest pass could mask a named test failure.
+       R5 uses `files[].file` for source identity and verifies the named test's own log block.
+    OwnerReviewDecision: RequestChanges
+    OwnerReviewHeadCommit: 204cfe4fbc43ba00a1ab76eab845e06c6432b5d7
+    OwnerReviewFindingIds: [ED0146-R1-O1, ED0146-R1-O2, ED0146-R1-O3, ED0146-R1-O4]
+    IndependentReviewDecision: RequestChanges
+    IndependentReviewHeadCommit: 204cfe4fbc43ba00a1ab76eab845e06c6432b5d7
+    IndependentReviewFindingIds: [ED0146-R1-I1, ED0146-R1-I2, ED0146-R1-I3]
+    Revision2OwnerReviewDecision: RequestChanges
+    Revision2OwnerReviewHeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
+    Revision2OwnerReviewFindingIds: [ED0146-R2-O1]
+    Revision2IndependentReviewDecision: RequestChanges
+    Revision2IndependentReviewHeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
+    Revision2IndependentReviewFindingIds: [ED0146-R2-I1, ED0146-R2-I2]
+    Revision3OwnerReviewDecision: RequestChanges
+    Revision3OwnerReviewHeadCommit: a8d6f64ab22c243542496080e27ff1859058add6
+    Revision3OwnerReviewFindingIds: [ED0146-R3-O1]
+    Revision3IndependentReviewDecision: RequestChanges
+    Revision3IndependentReviewHeadCommit: a8d6f64ab22c243542496080e27ff1859058add6
+    Revision3IndependentReviewFindingIds: [ED0146-R3-I1, ED0146-R3-I2]
+    Revision4OwnerReviewDecision: RequestChanges
+    Revision4OwnerReviewHeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
+    Revision4OwnerReviewFindingIds: [ED0146-R4-O1, ED0146-R4-O2]
+    Revision4IndependentReviewDecision: RequestChanges
+    Revision4IndependentReviewHeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
+    Revision4IndependentReviewFindingIds: [ED0146-R4-I1]
+    Revision5OwnerReviewDecision: RequestChanges
+    Revision5OwnerReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    Revision5OwnerReviewFindingIds: [ED0146-R5-AUTH-01]
+    Revision5IndependentReviewDecision: RequestChanges
+    Revision5IndependentReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    Revision5IndependentReviewFindingIds: [ED0146-R5-READSET-01]
+    SupersededForCurrentRevisionBy: CR-ED-0120-006
+    SplitFindingFollowUpTaskId: ED-0147
+    PreserveExistingContractSemantics: true
+    RequiresP3EntryGateToRemainPendingUntilTaskVerified: true
+    EvidenceRefs:
+      - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
+      - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/Manifest.json
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=fca1ee83-0cfa-4bbd-800d-f5afcdfac81b
+  - ChangeRequestId: CR-ED-0120-006
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0146
+    ProposedTaskRevision: 6
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/worker03_ed0114_validation
+    IndependentReviewerAgentId: /root/worker01_ed0105_owner
+    ReviewerIndependence: Required
+    Decision: Accepted
+    FindingsAddressed: [ED0146-R5-AUTH-01, ED0146-R5-READSET-01]
+    Scope: >-
+      Preserve ED-0146's goal, dependencies, contract boundary, acceptance criteria, and exact ten-path WriteSet.
+      Move implementation ownership to Worker03, an implementation slot, and add task-scoped authorization for
+      only the NetworkPlatform and three Provider contract-test modules and paths in that WriteSet. Assign
+      Worker01 as the independent reviewer. Remove directory-level ForbiddenSet entries that overlap required
+      CMake dependency files and public Provider headers; retain explicit ForbiddenSet entries for the three
+      production Provider .cpp files, channel code, root build files, and presets. Keep P3 Pending.
+    Reason: >-
+      The fixed-head R5 owner review found Worker01 is a support slot without NetworkPlatform/provider-test
+      implementation authorization. The independent reviewer found the ReadSet includes exact CMake and Provider
+      public-header paths that the directory-level ForbiddenSet forbids, so the required context cannot be loaded.
+      R6 corrects slot authorization and path-level context policy without changing product behavior or WriteSet.
+    PreserveGoalDependenciesContractsAcceptanceWriteSet: true
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    OwnerReviewFindingIds: []
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    IndependentReviewFindingIds: []
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
   - ChangeRequestId: CR-ED-0018-002
     TargetTaskId: ED-0018
     TargetTaskRevision: 2
@@ -146,6 +253,7 @@ ChangeRequests:
     TargetTaskId: ED-0124
     TargetTaskRevision: 2
     ProposedTaskRevision: 3
+    TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
     Decision: SupersededBeforeApproval
@@ -720,6 +828,204 @@ ChangeRequests:
       ChangeRequestApprovalEventId: ec86bcf8-6c1e-40c2-94eb-7e164a5f7423
       ReadinessEventId: 452f4b46-812e-44e2-9cbe-390e69102f55
 
+  - ChangeRequestId: CR-ED-0112-004
+    TargetTaskId: ED-0112
+    TargetTaskRevision: 2
+    ProposedTaskRevision: 3
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    Scope: >-
+      Preserve ED-0112 Goal, dependencies, ContractVersion, Acceptance, privacy/no-replay rules, risk, and logical
+      module intent. Materialize the already accepted .hpp/CMakeLists and CoreAgentContract WriteSet changes as exactly
+      eight paths. Move the proposed task branch/worktree to Task/ED-0112-R3TurnRecovery and
+      H:/Qbot/EmulativeDialog.ED-0112-R3, based on main@461735e50657bdc8ace070b46db3682cfb03460f. Replace every stale
+      R2/dirty-worktree validation path with an exact Windows C++20 configure/build/targeted-CTest/gcov JSON v2 command
+      set under H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R3. Keep P3 and live side effects out of
+      scope. No source-write permission is granted until this revision is approved and merged.
+    Reason: >-
+      R2 validation commands point to the protected dirty H:/Qbot/EmulativeDialog.ED-0112-R2 worktree while the clean
+      implementation branch is H:/Qbot/EmulativeDialog.ED-0112-R2-new. Its prior CTest log also contains libgcov
+      checksum warnings and its older report predates the current source fix. R3 must bind verification to a fresh,
+      revision-specific worktree and build directory so the fixed Head can be independently verified without reusing
+      stale coverage data.
+    ProposedBaseCommit: 461735e50657bdc8ace070b46db3682cfb03460f
+    ProposedOwnerSlotId: Worker01
+    ProposedOwnerAgentId: /root/worker01_ed0105_owner
+    ProposedReviewerSlotId: Worker06
+    ProposedIndependentReviewerAgentId: /root/worker06_ed0105_review
+    ProposedBranch: Task/ED-0112-R3TurnRecovery
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R3
+    ProposedWriteSet:
+      - Source/Storage/TurnCheckpointStore.hpp
+      - Source/Storage/TurnCheckpointStore.cpp
+      - Source/Core/TurnRecoveryCoordinator.hpp
+      - Source/Core/TurnRecoveryCoordinator.cpp
+      - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+      - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+      - Tests/Contract/Agent/CMakeLists.txt
+      - Architecture/Contracts/CoreAgentContract.md
+    PreserveGoal: true
+    PreserveDependencies: true
+    PreserveContractVersion: true
+    PreserveAcceptance: true
+    PreservePrivacyAndNoReplaySemantics: true
+    NoProductSourceWriteAuthorizedBeforeApproval: true
+    OwnerReviewDecision: Pending
+    IndependentReviewDecision: Pending
+    CoordinatorDecision: Pending
+
+  - ChangeRequestId: CR-ED-0112-005
+    TargetTaskId: ED-0112
+    TargetTaskRevision: 3
+    ProposedTaskRevision: 4
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve the eight-path product WriteSet, dependency set, contracts, and privacy/no-replay intent while
+      clarifying that this revision implements checkpoint restoration and deterministic recovery decisions only.
+      Correct the CMake configure command to set AGENT_RUNTIME_REPORT_DIR, make gcov unique-line aggregation
+      merge any positive duplicate-line count and compare the 80 percent threshold with integer arithmetic,
+      and require reports to be newer than both the paired .gcda and named CTest log. Reassign code ownership
+      from support Worker01 to implementation Worker02 (AgentRuntime/Core) and grant Storage access only for
+      this task's frozen WriteSet after this exact TaskSpec is approved and merged. Record 423e3d5 as an R2
+      checkpoint only; build a fresh R4 worktree from main and replay only the approved eight paths, never the
+      stacked branch ancestry. Narrow AC-1 to the behavior present in this code: restore the persisted scoped
+      checkpoint and produce a deterministic RecoveryDecision. Explicitly keep session/message rehydration and
+      production Core startup/AgentRuntime resumption open; do not mark the capability complete until a separate
+      reviewed integration task proves those behaviors.
+    Reason: >-
+      The R3 owner review found a missing AGENT_RUNTIME_REPORT_DIR that makes root configure fail; the independent
+      review also found the support-slot owner lacked Core/Storage authorization. A coordinator audit found that
+      duplicate gcov records could lose a hit, the rounded threshold could pass below 80 percent, and report
+      freshness was not tied to both the paired .gcda and CTest log. A supplemental review initially attributed
+      these script defects to ED-0146/R5, then withdrew that result after confirming the lines were ED-0112/R3;
+      R4 corrects them here. Independent source review confirmed the existing C++ code stores scoped turn state
+      and classifies recovery outcomes, but has no production Core startup call site, session/context resolver or
+      AgentRuntime resume path. Aligning AC-1 and AC-2 to that bounded implementation keeps the partial recovery
+      behavior auditable without claiming end-to-end turn restoration or an unmeasured external counter.
+    ProposedBaseCommit: 461735e50657bdc8ace070b46db3682cfb03460f
+    ProposedOwnerSlotId: Worker02
+    ProposedOwnerAgentId: /root/worker02_ed0114_owner
+    ProposedReviewerSlotId: Worker06
+    ProposedIndependentReviewerAgentId: /root/worker06_ed0105_review
+    ProposedBranch: Task/ED-0112-R4TurnRecovery
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R4
+    ProposedWriteSet:
+      - Source/Storage/TurnCheckpointStore.hpp
+      - Source/Storage/TurnCheckpointStore.cpp
+      - Source/Core/TurnRecoveryCoordinator.hpp
+      - Source/Core/TurnRecoveryCoordinator.cpp
+      - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+      - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+      - Tests/Contract/Agent/CMakeLists.txt
+      - Architecture/Contracts/CoreAgentContract.md
+    SourceCheckpoint:
+      SourceTaskRevision: 2
+      Commit: 423e3d592979c41377bbed5f8ecb54d269c8ae8b
+      ParentCommit: 9b312513161a441eb4b94325be176348b34f7e9d
+      Branch: Task/ED-0112-R2-TurnRecovery-stacked
+      Worktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
+      CheckpointCommitDeltaPaths:
+        - Source/Storage/TurnCheckpointStore.cpp
+        - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+        - Architecture/Contracts/CoreAgentContract.md
+      ReplayPaths:
+        - Source/Storage/TurnCheckpointStore.hpp
+        - Source/Storage/TurnCheckpointStore.cpp
+        - Source/Core/TurnRecoveryCoordinator.hpp
+        - Source/Core/TurnRecoveryCoordinator.cpp
+        - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+        - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+        - Tests/Contract/Agent/CMakeLists.txt
+        - Architecture/Contracts/CoreAgentContract.md
+      ReplayRule: "Reapply exactly ReplayPaths onto a fresh R5 branch from the approved BaseCommit. Never cherry-pick or merge the stacked checkpoint branch or its ancestry."
+      Validation: DiagnosticOnly
+      VerifiedEvidence:
+        Configure: {ExitCode: 0, Note: "One initial command attempt used a literal $deps string and exited 1; the corrected absolute FETCHCONTENT_BASE_DIR command exited 0."}
+        TargetBuild: {ExitCode: 0}
+        TargetedCTest: {ExitCode: 0, Passed: 2, Total: 2}
+        CoverageTargets: {ExitCode: 0}
+        TurnCheckpointStoreCoverage: {Covered: 679, Total: 775, Percent: 87.61, Toolchain: "GCC/gcov 16.1.0, gcov JSON v2"}
+        TurnRecoveryCoordinatorCoverage: {Covered: 175, Total: 185, Percent: 94.59, Toolchain: "GCC/gcov 16.1.0, gcov JSON v2"}
+        EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0112-423e3d5/windows-agent-slice
+        FreshR4Acceptance: NotRun
+      ExplicitlyNot: [TaskCompletion, PRReady, Rebase, Push, Merge]
+    PreserveDependencies: true
+    PreserveContractVersion: true
+    PreservePrivacyAndNoReplaySemantics: true
+    PreserveEightPathWriteSet: true
+    PreserveGoalIntent: true
+    ClarifyAcceptanceScope: true
+    NoProductSourceWriteAuthorizedBeforeApprovalAndMerge: true
+    OwnerReviewDecision: Pending
+    IndependentReviewDecision: Pending
+    CoordinatorDecision: Pending
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=3
+    OwnerReviewDecisionAtFixedHead: Approve
+    OwnerReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    IndependentReviewDecisionAtFixedHead: RequestChanges
+    IndependentReviewHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+    IndependentReviewFindingIds: [ED0112-R4-REPLAY-01]
+    SupersededForCurrentRevisionBy: CR-ED-0112-006
+  - ChangeRequestId: CR-ED-0112-006
+    TargetTaskId: ED-0112
+    TargetTaskRevision: 4
+    ProposedTaskRevision: 5
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    FindingsAddressed: [ED0112-R4-REPLAY-01]
+    Scope: >-
+      Preserve the eight-path WriteSet, dependencies, acceptance scope, no-replay behavior, and diagnostic-only
+      status of commit 423e3d5. Rename its three-file ChangedPaths list to CheckpointCommitDeltaPaths, add the
+      exact eight-path ReplayPaths list from the frozen WriteSet, and state that only those eight paths may be
+      replayed onto the fresh R5 branch after approval. Cherry-picking or merging the stacked checkpoint branch
+      ancestry is prohibited. No product-source change is authorized before this revision is approved, merged,
+      and separately assigned from main.
+    Reason: >-
+      The fixed-head R4 independent review found that the checkpoint's three-file commit delta was labeled as
+      paths to reapply, contradicting the eight-path WriteSet and permitting five required paths to be omitted.
+      This revision distinguishes commit provenance from the exact replay set and explicitly rejects importing
+      stacked branch ancestry.
+    ProposedOwnerSlotId: Worker02
+    ProposedOwnerAgentId: /root/worker02_ed0114_owner
+    ProposedReviewerSlotId: Worker06
+    ProposedIndependentReviewerAgentId: /root/worker06_ed0105_review
+    ProposedBranch: Task/ED-0112-R5TurnRecovery
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+    ProposedWriteSet:
+      - Source/Storage/TurnCheckpointStore.hpp
+      - Source/Storage/TurnCheckpointStore.cpp
+      - Source/Core/TurnRecoveryCoordinator.hpp
+      - Source/Core/TurnRecoveryCoordinator.cpp
+      - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+      - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+      - Tests/Contract/Agent/CMakeLists.txt
+      - Architecture/Contracts/CoreAgentContract.md
+    PreserveGoalDependenciesAndAcceptance: true
+    PreserveNoReplaySemantics: true
+    NoProductSourceWriteAuthorizedBeforeApprovalAndMainMerge: true
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -764,7 +1070,16 @@ ExitGate:
   Unlocks:
     - P2FollowupTasks
     - P3ProviderAndMemoryTasks
-  State: Pending
+  State: Passed
+  EvaluatedAtUtc: 2026-10-28T14:09:52Z
+  EvaluatedBy: /root
+  ReviewerAgentId: /root/worker06_ed0105_review
+  ReviewerDecision: Approve
+  ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0124-R9
+  ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
+  EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
+  P3EntryGateState: Pending
+  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R6 Port enforcement, and ED-0147/R6 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
 
 Tasks:
   - TaskId: ED-0109
@@ -1992,11 +2307,21 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0112
-    TaskRevision: 2
+    TaskRevision: 5
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Proposed
+    TaskSpecChangeRequestId: CR-ED-0112-006
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
+    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerAgentId: /root/worker06_ed0105_review
+    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
@@ -2026,32 +2351,71 @@ Tasks:
       Scope: "Allow Architecture/Contracts/CoreAgentContract.md to clarify the AgentTurn terminal set (Completed, Cancelled, Failed, Unsupported, OutcomeUnknown) and require recovery decisions to preserve original phase/tool/operation state, so persisted recovery semantics match the frozen product behavior and reviewer acceptance criteria."
       Reason: "The recovery implementation exposed a contract ambiguity that caused distinct terminal outcomes to collapse; the clarification preserves existing no-replay security semantics and makes recovery state auditable."
       AcceptedAt: 2026-10-28
-    ReviewBaseCommit: a5838bccc7de1b8589d15573ef6baea2ab2cc4be
-    ReviewHeadCommit: bbe294475daf221f3babca22db5162bc73839c63
-    ReviewStatus: ChangesRequested
-    ReviewFindings:
-      - "Recovery decisions must preserve Completed/Cancelled/Failed/OutcomeUnknown/Unsupported terminal phase rather than collapsing them."
-      - "Durable OperationId/IdempotencyKey is missing for restart reconciliation and duplicate message prevention."
-      - "RequestId and ContextReference must not drift across revisions."
-      - "Unsupported terminal is absent from TurnPhase."
-      - "Secret/body scans must exercise actual persisted fields."
-      - "Append store needs a declared or enforced single-writer rule."
-    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
-    AssignedBranch: Task/ED-0112-R2-TurnRecovery-stacked
-    LocalCompletionHead: 9b312513161a441eb4b94325be176348b34f7e9d
-    LocalValidation: "Windows native full build; CTest 16/16; TurnCheckpointStore 87.38% (658/753); TurnRecoveryCoordinator 94.48% (171/181); diff-check 0"
-    LocalReviewStatus: AwaitingIndependentFixedHeadReview
+    Revision2Evidence:
+      ReviewBaseCommit: a5838bccc7de1b8589d15573ef6baea2ab2cc4be
+      ReviewHeadCommit: bbe294475daf221f3babca22db5162bc73839c63
+      ReviewStatus: ChangesRequested
+      ReviewFindings:
+        - "Recovery decisions must preserve Completed/Cancelled/Failed/OutcomeUnknown/Unsupported terminal phase rather than collapsing them."
+        - "Durable OperationId/IdempotencyKey is missing for restart reconciliation and duplicate message prevention."
+        - "RequestId and ContextReference must not drift across revisions."
+        - "Unsupported terminal is absent from TurnPhase."
+        - "Secret/body scans must exercise actual persisted fields."
+        - "Append store needs a declared or enforced single-writer rule."
+      LastImplementationHeadBeforeR3: 9b312513161a441eb4b94325be176348b34f7e9d
+      SupersededValidation: "Prior full build and CTest evidence predates the final source fix; previous gcov report 87.58%/94.59% is diagnostic only because the CTest log reported libgcov checksum warnings."
+      PriorDirtyWorktreeProtected: H:/Qbot/EmulativeDialog.ED-0112-R2
+      CleanR2Worktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
+      SourceCheckpoint:
+        Commit: 423e3d592979c41377bbed5f8ecb54d269c8ae8b
+        ParentCommit: 9b312513161a441eb4b94325be176348b34f7e9d
+        Branch: Task/ED-0112-R2-TurnRecovery-stacked
+        Worktree: H:/Qbot/EmulativeDialog.ED-0112-R2-new
+        Disposition: ReapplyOnlyTheEightWriteSetPathsToFreshR4Worktree
+        Validation: DiagnosticOnly
+        TargetedCTest: {ExitCode: 0, Passed: 2, Total: 2}
+        TurnCheckpointStoreCoverage: {Covered: 679, Total: 775, Percent: 87.61, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
+        TurnRecoveryCoordinatorCoverage: {Covered: 175, Total: 185, Percent: 94.59, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
+        FreshR4Acceptance: NotRun
+    SupersededRevision3Evidence:
+      TaskSpecHeadCommit: 5f815e819ea79950ab549f80ba444883c5a20a1f
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0112-R3-VAL-01]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0112-R3-VAL-01, ED0112-R3-AUTH-01]
+      CoordinatorFindings:
+        - {FindingId: ED0112-R3-COV-01, Summary: "Duplicate line_number records used only their first count instead of merging any positive execution hit."}
+        - {FindingId: ED0112-R3-COV-02, Summary: "Coverage threshold was checked after rounding the displayed percentage."}
+        - {FindingId: ED0112-R3-COV-03, Summary: "Coverage JSON report timestamp was not required to be newer than both paired .gcda and named CTest log."}
+        - {FindingId: ED0112-R3-AC-01, Summary: "AC-1 claimed scoped message restoration although implementation preserves only opaque ContextReference and recovery state."}
+        - {FindingId: ED0112-R3-AC-02, Summary: "AC-2 claimed an unchanged external operation count although no Provider/Channel dispatch counter exists in this module."}
+      Disposition: SupersededBeforeImplementation
+      Reason: "Fixed-head reviews found a missing AGENT_RUNTIME_REPORT_DIR, owner-slot authorization mismatch, and that the checkpoint implementation does not restore messages or connect to Core startup/AgentRuntime. R4 corrects the validation and permissions and narrows this task to checkpoint persistence plus deterministic recovery decisions; end-to-end restoration remains open."
+    PreviousRevision4Evidence:
+      TaskRevision: 4
+      TaskSpecHeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+      OwnerDecision: Approve
+      IndependentReviewerDecision: RequestChanges
+      FindingIds: [ED0112-R4-REPLAY-01]
+      Disposition: SupersededBeforeImplementation
+      Reason: "The checkpoint metadata confused its three-file commit delta with the eight-path task replay set; no R4 implementation assignment or product source change was authorized."
+    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
+    TaskSpecOwnerDecision: Pending
+    TaskSpecIndependentReviewerDecision: Pending
+    ProposedBaseCommit: 461735e50657bdc8ace070b46db3682cfb03460f
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+    ProposedBranch: Task/ED-0112-R5TurnRecovery
     Phase: P2
-    OwnerRole: CoreOwner
-    OwnerSlotId: Worker01
-    OwnerAgentId: /root/worker01_ed0112_recovery
-    ReviewerRole: BuildAndWorkflowOwner
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: /root/worker02_ed0114_owner
+    ReviewerRole: IndependentReviewer
     ReviewerSlotId: Worker06
-    ReviewerAgentId: /root/worker06_reviewer_memory_recovery
+    ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0112-R2-TurnRecovery
-    Worktree: H:/Qbot/EmulativeDialog.ED-0112-R2
+    Branch: Task/ED-0112-R5TurnRecovery
+    Worktree: H:/Qbot/EmulativeDialog.ED-0112-R5
     CapabilityIds: [InterruptedTurnRecoveryAndUnknownOutcome]
     ModuleIds: [Core, Storage]
     SupersededRevision1Evidence:
@@ -2073,51 +2437,134 @@ Tasks:
       ApprovedByAgentId: /root
       Scope: "Preserve ED-0112/R1 Goal, ReadSet/WriteSet, dependencies, Acceptance, Owner, and Reviewer. Assign Branch/Worktree and an absolute sibling TaskBuildDirectory; freeze complete Windows-native C++20 compile/link/run commands and, where production sources exist, per-source gcov reports under the task sibling build Reports directory."
       PreserveGoalReadSetWriteSetDependenciesAcceptanceOwnerReviewer: true
-    Goal: "保存可恢复的安全回合检查点和副作用状态；重启后恢复确定状态，不重发未知 Provider/Channel 操作。"
-    OutOfScope: ["无限期原始聊天归档", "删除/重置现有用户数据", "任何自动重发 UnknownOutcome", "微信"]
+    Goal: "保存可恢复的安全回合检查点和副作用状态；重启后恢复确定的检查点/操作状态，不重发未知 Provider/Channel 操作。"
+    OutOfScope: ["无限期原始聊天归档", "删除/重置现有用户数据", "任何自动重发 UnknownOutcome", "会话/消息重建及生产 Core 启动到 AgentRuntime 的恢复接线（必须由后继任务完成后方可将能力标记 Complete）", "微信"]
     DependsOn: [ED-0101, ED-0102, ED-0108, ED-0109, ED-0110, ED-0111]
     ContractVersion: [Architecture/Contracts/CoreAgentContract.md V1, Architecture/Contracts/ChannelAdapterContract.md V1, Architecture/Contracts/MemoryContract.md V1]
     Context:
       ModuleId: Storage
-      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ChannelAdapterContract.md, Architecture/Contracts/MemoryContract.md]
-      OnDemandSet: []
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Workflow/AgentExecutionStandard.md, Workflow/TaskLifecycle.md, Architecture/ModuleMap.yaml, Architecture/Modules/MemoryStorage.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Architecture/Contracts/ChannelAdapterContract.md, Architecture/Contracts/MemoryContract.md]
+      OnDemandSet: [CMakeLists.txt]
+      ExpansionReason: "The task configures the root Windows C++20 CMake project and builds two registered recovery contracts; read only the root build file needed for those commands."
       ForbiddenSet: ["Workflow/Events/Bootstrap/P1.jsonl", "Source/Providers/*", "Source/Channels/QQ/"]
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
       MaxReferenceFiles: 12
       ExpansionReasonRequired: true
-    WriteSet: [Source/Storage/TurnCheckpointStore.h, Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.h, Source/Core/TurnRecoveryCoordinator.cpp, Tests/Contract/Storage/TurnCheckpointStoreTests.cpp, Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp]
+    WriteSet: [Source/Storage/TurnCheckpointStore.hpp, Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.hpp, Source/Core/TurnRecoveryCoordinator.cpp, Tests/Contract/Storage/TurnCheckpointStoreTests.cpp, Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp, Tests/Contract/Agent/CMakeLists.txt, Architecture/Contracts/CoreAgentContract.md]
     SharedLocks: [StorageSchema]
     Acceptance:
-      - {AcceptanceId: AC-1, Description: "Restart recovery restores scoped messages and deterministic state without restoring revoked/deleted/tombstoned data.", Evidence: "Temporary-store round-trip tests and scope isolation checks."}
-      - {AcceptanceId: AC-2, Description: "Unknown Provider/Channel outcome is surfaced and never reissued automatically.", Evidence: "Recovery tests assert operation count unchanged after restart."}
+      - {AcceptanceId: AC-1, Description: "Restart loading restores the exact persisted scoped checkpoint, phase, and known operation state and returns a deterministic RecoveryDecision with its opaque ContextReference; this task does not reconstruct conversation messages or invoke AgentRuntime.", Evidence: "Temporary-store round-trip and recovery tests prove exact scope/ContextReference plus deterministic phase and operation decisions. The full capability remains incomplete until a separately reviewed Core startup/session rehydration integration task passes."}
+      - {AcceptanceId: AC-2, Description: "Unknown Provider/Channel outcome is surfaced and the recovery decision never authorizes replay or dispatch.", Evidence: "Recovery tests assert persisted OutcomeUnknown, ReplayAllowed=false, and DispatchCount=0 on repeated recovery. The coordinator has no Provider/Channel dispatcher; external operation counters belong to the later Core/AgentRuntime integration task."}
       - {AcceptanceId: AC-3, Description: "Logs and checkpoints contain no secrets, raw private bodies, or prompt dumps.", Evidence: "Synthetic secret/body sentinel scan over persisted fixture and redacted event output."}
       - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh per-module gcov reports."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0112-R2.build
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice'
+        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       Coverage:
         Required: true
         ProductionSources: [Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports
-      RequiredTargets: [TurnCheckpointStoreTests, TurnRecoveryCoordinatorTests]
+        ReportFormat: gcov JSON v2
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice/Reports
+        FreshDirectoryRequired: true
+      RequiredBuildTargets: [TurnCheckpointStoreTests, TurnRecoveryCoordinatorTests, TurnCheckpointStoreCoverageReport, TurnRecoveryCoordinatorCoverageReport]
+      RequiredCTestTests: [Storage.TurnCheckpointStore, Core.TurnRecoveryCoordinator]
       TargetedBuild:
-        - "New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects','H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports' | Out-Null"
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Storage/TurnCheckpointStore.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Core/TurnRecoveryCoordinator.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinator.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Tests/Contract/Storage/TurnCheckpointStoreTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStoreTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage -std=c++20 -Wall -Wextra -Wpedantic -Werror -I \"H:/Qbot/EmulativeDialog.ED-0112-R2\" -c \"H:/Qbot/EmulativeDialog.ED-0112-R2/Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinatorTests.o\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o\" \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStoreTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnCheckpointStoreTests.exe\""
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnCheckpointStoreTests' | Out-Null; $env:TEMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnCheckpointStoreTests'; $env:TMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnCheckpointStoreTests'; Set-Location 'H:/Qbot/EmulativeDialog.ED-0112-R2'; & 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnCheckpointStoreTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
-        - "C:/msys64/ucrt64/bin/g++.exe --coverage \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o\" \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinator.o\" \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinatorTests.o\" -o \"H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnRecoveryCoordinatorTests.exe\""
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnRecoveryCoordinatorTests' | Out-Null; $env:TEMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnRecoveryCoordinatorTests'; $env:TMP='H:/Qbot/EmulativeDialog.ED-0112-R2.build/TestData/TurnRecoveryCoordinatorTests'; Set-Location 'H:/Qbot/EmulativeDialog.ED-0112-R2'; & 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/TurnRecoveryCoordinatorTests.exe'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }\""
-      ContractFixtures: ["Synthetic restart checkpoints, revoked scope, deleted record, and unknown action outcome."]
+        - >-
+          I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0112-R5 -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice/Reports -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON
+        - >-
+          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --target TurnCheckpointStoreTests TurnRecoveryCoordinatorTests --parallel 4
+        - >-
+          I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --output-on-failure --no-tests=error -R '^(Storage\.TurnCheckpointStore|Core\.TurnRecoveryCoordinator)$'
+        - >-
+          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --target TurnCheckpointStoreCoverageReport TurnRecoveryCoordinatorCoverageReport --parallel 4
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0112-R5'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice'
+        $ReportRoot = Join-Path $Build 'Reports'
+        $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+        $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
+        if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw "Missing CTest log: $TestLog" }
+        $TestLogLines = [System.IO.File]::ReadAllLines($TestLog)
+        $TestLogText = $TestLogLines -join [Environment]::NewLine
+        if ($TestLogText -match $WarningPattern) { throw 'CTest log contains a libgcov checksum/overwrite warning.' }
+
+        foreach ($TestName in @('Storage.TurnCheckpointStore', 'Core.TurnRecoveryCoordinator')) {
+          $Starts = @()
+          for ($Index = 0; $Index -lt $TestLogLines.Count; $Index++) {
+            if ($TestLogLines[$Index] -match '^\d+/\d+\s+Testing:') { $Starts += $Index }
+          }
+          $PassingBlocks = 0
+          for ($BlockIndex = 0; $BlockIndex -lt $Starts.Count; $BlockIndex++) {
+            $Start = $Starts[$BlockIndex]
+            $End = if ($BlockIndex + 1 -lt $Starts.Count) { $Starts[$BlockIndex + 1] - 1 } else { $TestLogLines.Count - 1 }
+            $Block = @($TestLogLines[$Start..$End])
+            $EscapedName = [regex]::Escape($TestName)
+            $NamedTest = @($Block | Where-Object { $_ -match "^\d+/\d+\s+Test:\s+$EscapedName$" })
+            $PassedTest = @($Block | Where-Object { $_ -match '^Test Passed\.$' })
+            if ($NamedTest.Count -gt 0 -and $PassedTest.Count -gt 0) { $PassingBlocks++ }
+          }
+          if ($PassingBlocks -ne 1) { throw "Expected exactly one passing CTest block for $TestName; found $PassingBlocks." }
+        }
+
+        function Normalize-Path([string]$Path, [string]$BaseDirectory) {
+          $Value = $Path.Replace('/', '\')
+          if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
+          return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
+        }
+        foreach ($SourceName in @('TurnCheckpointStore', 'TurnRecoveryCoordinator')) {
+          $SourcePath = if ($SourceName -eq 'TurnCheckpointStore') { Join-Path $Worktree 'Source/Storage/TurnCheckpointStore.cpp' } else { Join-Path $Worktree 'Source/Core/TurnRecoveryCoordinator.cpp' }
+          $NoteFiles = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter "$([System.IO.Path]::GetFileName($SourcePath)).gcno")
+          $DataFiles = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter "$([System.IO.Path]::GetFileName($SourcePath)).gcda")
+          if ($NoteFiles.Count -ne 1 -or $DataFiles.Count -ne 1) { throw "Expected one fresh .gcno/.gcda pair for $SourceName; found $($NoteFiles.Count)/$($DataFiles.Count)." }
+          if ($DataFiles[0].LastWriteTimeUtc -lt $NoteFiles[0].LastWriteTimeUtc) { throw "Coverage data predates the compile notes for $SourceName." }
+          if ((Get-Item -LiteralPath $TestLog).LastWriteTimeUtc -lt $DataFiles[0].LastWriteTimeUtc) { throw "CTest evidence predates the coverage data for $SourceName." }
+          $ReportPath = Join-Path $ReportRoot "$SourceName.gcov.json.gz"
+          if (-not (Test-Path -LiteralPath $ReportPath -PathType Leaf)) { throw "Missing gcov JSON v2 report: $ReportPath" }
+          $ReportInfo = Get-Item -LiteralPath $ReportPath
+          if ($ReportInfo.LastWriteTimeUtc -lt $DataFiles[0].LastWriteTimeUtc -or $ReportInfo.LastWriteTimeUtc -lt (Get-Item -LiteralPath $TestLog).LastWriteTimeUtc) { throw "Coverage report predates current CTest/profile data for $SourceName." }
+          $InputStream = [System.IO.File]::OpenRead($ReportPath)
+          try {
+            $GzipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+              $Reader = [System.IO.StreamReader]::new($GzipStream)
+              try { $Document = $Reader.ReadToEnd() | ConvertFrom-Json -ErrorAction Stop } finally { $Reader.Dispose() }
+            } finally { $GzipStream.Dispose() }
+          } finally { $InputStream.Dispose() }
+          if ([int]$Document.format_version -ne 2 -or [string]$Document.gcc_version -notmatch '^16\.1\.0') { throw "Unexpected gcov JSON/toolchain version for $SourceName." }
+          $ExpectedPath = Normalize-Path $SourcePath $Worktree
+          $SourceBase = if ([string]::IsNullOrWhiteSpace([string]$Document.current_working_directory)) { $Worktree } else { [string]$Document.current_working_directory }
+          $SourceRecords = @($Document.files | Where-Object { (Normalize-Path ([string]$_.file) $SourceBase) -eq $ExpectedPath })
+          if ($SourceRecords.Count -ne 1) { throw "Expected one exact files[].file record for $ExpectedPath; found $($SourceRecords.Count)." }
+          $LineCoverage = @{}
+          foreach ($Line in @($SourceRecords[0].lines)) {
+            if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw "Missing executable line fields for $SourceName." }
+            $LineNumber = [int]$Line.line_number
+            $Count = [long]$Line.count
+            if ($LineNumber -le 0 -or $Count -lt 0) { throw "Invalid executable line record for $SourceName." }
+            if (-not $LineCoverage.ContainsKey($LineNumber)) { $LineCoverage[$LineNumber] = $false }
+            if ($Count -gt 0) { $LineCoverage[$LineNumber] = $true }
+          }
+          $Total = $LineCoverage.Count
+          $Covered = 0
+          foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
+          if ($Total -le 0) { throw "No executable lines found for $SourceName." }
+          $Percent = [math]::Round(($Covered * 100.0) / $Total, 2)
+          if (($Covered * 100) -lt ($Total * 80)) { throw "$SourceName coverage $Covered/$Total ($Percent%) is below 80%." }
+          Write-Output "COVERAGE_OK source=$SourceName covered=$Covered total=$Total excluded=0 percent=$Percent gcc=$($Document.gcc_version) json=2"
+        }
+      ContractFixtures: ["Synthetic restart checkpoints, exact scoped ContextReference, revoked scope, deleted record, and unknown action outcome; no message rehydration or runtime dispatch is claimed."]
       StaticChecks:
-        - "git diff --check d151c5b3287718964d376ad550953e4d34890a08 HEAD"
-        - "Changed paths exactly equal frozen WriteSet"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 461735e50657bdc8ace070b46db3682cfb03460f HEAD"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 461735e50657bdc8ace070b46db3682cfb03460f HEAD; exact sorted set must equal WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "powershell -NoProfile -Command \"New-Item -ItemType Directory -Force -Path 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports' | Out-Null; Push-Location 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports'; try {;   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnCheckpointStore.o' 'H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Storage/TurnCheckpointStore.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Storage/TurnCheckpointStore.cpp' };   & 'C:/msys64/ucrt64/bin/gcov.exe' --branch-counts -o 'H:/Qbot/EmulativeDialog.ED-0112-R2.build/Objects/TurnRecoveryCoordinator.o' 'H:/Qbot/EmulativeDialog.ED-0112-R2/Source/Core/TurnRecoveryCoordinator.cpp';   if ($LASTEXITCODE -ne 0) { throw 'gcov failed for Source/Core/TurnRecoveryCoordinator.cpp' }; } finally { Pop-Location }\""
-        - "Verify each production source independently meets >=80 percent line coverage with numerator, denominator, exclusions, and gcov version; all .gcov reports are under H:/Qbot/EmulativeDialog.ED-0112-R2.build/Reports."
+        - "Run CoverageCommand and retain its per-source numerator, denominator, exclusions, percentage, GCC version, and JSON format output in the task evidence."
       LiveSideEffects: Forbidden
       NotRunReason: "All persistence fixtures are synthetic and the temporary database is isolated to TaskBuildDir."
     RiskLevel: High
@@ -2126,6 +2573,8 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, TRACE-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+    CapabilityCompletion: PartialOnly
+    CapabilityCompletionBlocker: "A separately reviewed Core startup/session rehydration integration task must connect persisted checkpoints to the production Core/AgentRuntime lifecycle and prove safe deterministic resumption. This task alone must not mark InterruptedTurnRecoveryAndUnknownOutcome Complete."
   - TaskId: ED-0115
     TaskRevision: 2
     EpicId: EP-06
@@ -2266,7 +2715,17 @@ Tasks:
       - "Proxy-Authorization is injectable via generic Headers while contract promises proxy credentials cannot be expressed."
       - "Host/Content-Length ownership between Adapter and Transport needs to be explicit."
       - "Compression clause contained an unimplementable Adapter-decodes sentence."
-    ReviewRound3Status: AwaitingFixAndReview
+    ReviewRound3Status: ChangesRequested
+    ReviewRound3BaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewRound3HeadCommit: 688df038ae4c8dcafbe37009fc7de12db194fc47
+    ReviewRound3Decision: RequestChanges
+    ReviewRound3ReviewerAgentId: /root/worker03_ed0114_validation
+    ReviewRound3FindingIds: [ED-0120-R2-F001]
+    ReviewRound3ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df
+    ReviewRound3ReviewBundleManifestSHA256: A63408EAFF0D83CF7075D45209CA10E87C84F0EE1D93D28C366C77EEE741C0BE
+    ContractFreezeStatus: PendingCorrectiveRevision
+    ReviewRound3PRMetadataNote: PR #8 is merged at 13fe929573de105e09af9b56f022ffbe62d07ba7; GitHub review submissions and threads were empty, and its body names stale Head 406283e.
+    ReviewRound3WriteSetNote: R2 TaskSpec named HttpTransportPort.h, while the fixed Head correctly created HttpTransportPort.hpp; update the next revision WriteSet to the actual .hpp path.
     Phase: P2
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -2366,6 +2825,11 @@ Tasks:
     PullRequest: https://github.com/Hatedatastructures/EmulativeDialog/pull/1
     IntegrationCommit: 38cbf4e3d55406a961c8adb7c947bd9fde04690e
     MergeMethod: squash
+    ReviewBundlePath: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0124-R9
+    ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
+    BundleReviewAgentId: /root/worker06_ed0105_review
+    BundleReviewDecision: Approve
+    BundleReviewEventId: 46ea4210-9d2c-42ab-9faa-3e311cb876af
     ModuleIds: [RootBuildAndDependencies, AgentWorkflowController]
     SupersededRevision1Evidence:
       TaskRevision: 1
@@ -3076,3 +3540,354 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, TEST-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0146
+    TaskRevision: 6
+    EpicId: EP-06
+    Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
+    TaskKind: IntegrationTask
+    State: Proposed
+    Phase: P2
+    CorrectiveToTaskId: ED-0120
+    CorrectiveFindingId: ED-0120-R2-F001
+    ChangeRequestId: CR-ED-0120-006
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker03
+    OwnerAgentId: /root/worker03_ed0114_validation
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker01
+    ReviewerAgentId: /root/worker01_ed0105_owner
+    ReviewerIndependence: Required
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    BaselineCommit: ""
+    Branch: ""
+    Worktree: ""
+    AssignedToSlot: ""
+    AssignmentNote: "Not assignable until CR-ED-0120-006 and this exact R6 TaskSpec are approved; bind the then-current main BaseCommit and isolated worktree at assignment."
+    PreviousRevision2:
+      TaskRevision: 2
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: 591a3943d10c2ead62ccc64d3db259d32ad451f0
+      Reason: "Fixed-head reviews found the 33-file ReadSet exception was not justified and the gcov commands did not calculate or enforce the unique-line 80% threshold or capture the gcov executable version."
+    PreviousRevision3:
+      TaskRevision: 3
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: a8d6f64ab22c243542496080e27ff1859058add6
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0146-R3-O1]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0146-R3-I1, ED0146-R3-I2]
+      Reason: "Owner flagged data_file semantics; the independent reviewer required non-destructive fresh-directory proof and absolute source paths for gcov. R4 records the GCC 16.1.0 output semantics and closes the reproducibility findings."
+    PreviousRevision4:
+      TaskRevision: 4
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0146-R4-O1, ED0146-R4-O2]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0146-R4-I1]
+      Reason: "The fixed-head reviews showed that local GCC 16.1.0 root data_file values do not match the corresponding files[].file worktree source, and that aggregate LastTest.log success could belong to a sibling test. R5 removes the root-field equality assertion, validates the exact test/source records, and binds Test Passed to the named test block."
+    PreviousRevision5:
+      TaskRevision: 5
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: a4b8c254e654b779ac7edf135f3da0595de9c690
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0146-R5-AUTH-01]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0146-R5-READSET-01]
+      Reason: "Worker01 is a support slot without implementation authorization for NetworkPlatform/Provider tests; the directory-level ForbiddenSet also overlapped required CMake and Provider public-header ReadSet paths. R6 reassigns the owner and makes ForbiddenSet path-specific."
+    Goal: "让所有 HTTPS TransportPort 实现都必须经过同一 resolver 验证入口；无效 grant 在 DoStream、回调、DNS/connect 或底层 transport 操作前 fail closed，并适配三种已合并 Provider 的离线测试消费者。"
+    OutOfScope:
+      - "修改三种 Provider 的生产 wire protocol 行为"
+      - "新增任意网络、Shell、主机状态、文件或通用 MCP 工具"
+      - "真实外网请求、真实凭据、QQ 或微信接入"
+      - "更改 TLS、代理、重定向、超时、压缩、取消及 unknown-outcome 既有 V1 语义"
+      - "签发不透明 EndpointGrantId、Core endpoint profile allowlist、grant expiry/revocation registry 或生产 Core resolver ownership（由 ED-0147 承担）"
+      - "根 CMakeLists.txt、依赖 pin 或其他 Provider 生产源修改"
+    DependsOn: [ED-0120, ED-0121, ED-0143, ED-0006, ED-0124]
+    ContractVersion: "HttpTransportContract V1 Port guard hardening only; full grant authority remains candidate until ED-0147 passes."
+    ModuleIds: [NetworkPlatform, ProviderOpenAIResponses, ProviderOpenAIChatCompletions, ProviderAnthropicMessages]
+    Context:
+      ModuleId: NetworkPlatform
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Platform.yaml
+        - Architecture/Modules/Providers.yaml
+        - Standards/DependencyPolicy.md
+        - Standards/SecurityAndPrivacy.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+        - CMake/DependencyPins.cmake
+        - CMake/BoostAsioDependency.cmake
+        - CMake/BoostJsonDependency.cmake
+        - CMake/BoostJsonImplementation.cpp
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - Source/Providers/OpenAIResponses/OpenAIResponsesProvider.hpp
+        - Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.hpp
+        - Source/Providers/AnthropicMessages/AnthropicMessagesProvider.hpp
+        - Source/Platform/Network/HttpTransportPort.hpp
+        - Source/Platform/Network/WinHttpTransport.hpp
+        - Source/Platform/Network/WinHttpTransport.cpp
+        - Tests/Contract/Platform/Network/CMakeLists.txt
+        - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+        - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+        - Tests/Contract/Providers/OpenAIResponses/CMakeLists.txt
+        - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+        - Tests/Contract/Providers/OpenAIChatCompletions/CMakeLists.txt
+        - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+        - Tests/Contract/Providers/AnthropicMessages/CMakeLists.txt
+        - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
+      OnDemandSet:
+        - Workflow/Plans/P2.yaml#TaskId=ED-0120
+        - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewResult.md
+        - H:/Qbot/ReviewBundles/EmulativeDialog-ED-0120-R2-Review-688df/ReviewedDiff.patch
+      ForbiddenSet:
+        - Source/Providers/OpenAIResponses/OpenAIResponsesProvider.cpp
+        - Source/Providers/OpenAIChatCompletions/ChatCompletionsProvider.cpp
+        - Source/Providers/AnthropicMessages/AnthropicMessagesProvider.cpp
+        - Source/Channels/
+        - CMakeLists.txt
+        - CMakePresets.json
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 33
+      ExpansionReasonRequired: true
+      ExpansionReason: >-
+        The 33 exact ReadSet paths form one corrective migration of the shared, non-bypassable
+        HttpTransportPort entry and its existing offline consumers. They group into eight
+        workflow/module-routing files; five security, protocol-contract, dependency-policy, and
+        transport-decision files; four pinned Boost dependency files needed to understand the
+        standalone Provider configurations; four Provider public interface headers; three Network
+        boundary/WinHTTP implementation files; and nine CMake/test files across the Network, OpenAI
+        Responses, Chat Completions, and Anthropic projects. Each group supports the shared API
+        decision, consumer compatibility, one required target/CTest registration, or the coverage
+        translation unit. These are exact paths, not directory globs.
+
+        The four CMake projects are configured and tested separately. Splitting Provider fake
+        changes into independent implementation tasks would distribute one shared Stream-to-DoStream
+        API migration across separate merge baselines, leaving main or an intermediate head without
+        all consumers migrated and unable to satisfy this corrective acceptance. The single
+        IntegrationTask keeps the shared API and three fake migrations reviewable against one Head;
+        four isolated build directories still separate their validation graphs. Splitting after a
+        separately merged Port API would change this corrective task's acceptance and keep the P3
+        gate pending through additional follow-up work. The three OnDemandSet review-evidence items
+        remain separately scoped and do not expand the 33-path ReadSet.
+    WriteSet:
+      - Architecture/Contracts/HttpTransportContract.md
+      - Source/Platform/Network/HttpTransportPort.hpp
+      - Source/Platform/Network/WinHttpTransport.hpp
+      - Source/Platform/Network/WinHttpTransport.cpp
+      - Tests/Contract/Platform/Network/CMakeLists.txt
+      - Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+      - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+      - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
+      - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
+      - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp
+    SharedLocks: [HttpTransportContractV1, WindowsTlsPolicy, HttpTransportPort]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "HttpTransportPort construction requires a non-null EndpointGrantResolver reference; its public Stream entry is non-virtual, calls Validate exactly once with the request grant and destination, and calls neither a sink nor DoStream before a Valid result.", Evidence: "Fixed API review plus offline tests prove valid grants reach DoStream only after one Validate call and non-Valid grants terminate before DoStream or either sink. Core ownership and grant opacity are explicitly outside ED-0146 and remain ED-0147 gates."}
+      - {AcceptanceId: AC-2, Description: "Missing, expired, and destination-mismatched grants all map to EndpointNotGranted; rejected requests perform no response-head/chunk callback and no DNS/connect/send.", Evidence: "Offline scripted-resolver tests assert every status, exact call ordering/count, DoStream count zero, and both sink counts zero."}
+      - {AcceptanceId: AC-3, Description: "WinHttpTransport and its system wrapper implement only the guarded DoStream entry; all three provider test fakes consume the public base Stream and cannot substitute a bypass implementation.", Evidence: "Windows transport and each of the three independently configured Provider contract targets compile and pass their named offline CTest."}
+      - {AcceptanceId: AC-4, Description: "Existing system/direct proxy, Proxy-Authorization rejection, Host/Content-Length framing, redirect denial, no-compression, timeout, cancellation, terminal, and unknown-outcome semantics remain unchanged.", Evidence: "Existing fixed fixtures remain green; added identity/non-identity compression cases stay in the platform offline suite."}
+      - {AcceptanceId: AC-5, Description: "HttpTransportPort.hpp and WinHttpTransport.cpp each retain at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 reports for the header (from HttpTransportPortTests.cpp) and WinHttpTransport.cpp record GCC/gcov versions and exact unique executable-line numerator/denominator; no stale gcda or checksum warnings."}
+    Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Platform/Network/HttpTransportPort.hpp, Source/Platform/Network/WinHttpTransport.cpp]
+        HeaderCoverageTranslationUnit: Tests/Contract/Platform/Network/HttpTransportPortTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Reports
+        ReportFormat: gcov JSON v2
+        FreshDirectoryRequired: true
+      CoverageDataFileObservation: "Local MSYS2 GCC/gcov 16.1.0 Rev5 JSON v2 samples are informational only: root data_file points under H:/Qbot/EmulativeDialog while the matching files[].file points under the ED-0124-R9 worktree. The JSON does not record gcov argv; do not use data_file as source identity or require it to equal the expected path."
+      CoverageToolchainEvidenceSha256: 6D681AC4BD173BF6ADEDCA12BBB9E95AD2A0F8BE7DEBD9781EDAC3D210B7196E
+      CoverageToolchainEvidenceRefs:
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByGcno/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
+      RequiredBuildTargets: [HttpTransportPortTests, WinHttpTransportTests, OpenAIResponsesProviderTests, ChatCompletionsProviderTests, AnthropicMessagesProviderTests]
+      RequiredCTestTests: [Platform.Network.HttpTransportPort, Platform.Network.WinHttpTransport, Provider.OpenAIResponses, Provider.ChatCompletions, Provider.AnthropicMessages]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $BuildDirectories = @(
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions',
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages'
+        )
+        foreach ($Build in $BuildDirectories) {
+          if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        }
+        Write-Output 'FRESH_BUILD_PREFLIGHT_OK=4'
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Platform/Network -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network --target HttpTransportPortTests WinHttpTransportTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network -R '^Platform\\.Network\\.(HttpTransportPort|WinHttpTransport)$' --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIResponses -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogOpenAIResponsesContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses --target OpenAIResponsesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIResponses -R Provider.OpenAIResponses --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/OpenAIChatCompletions -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions --target ChatCompletionsProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/OpenAIChatCompletions -R Provider.ChatCompletions --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0146/Tests/Contract/Providers/AnthropicMessages -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON -DCMAKE_PROJECT_EmulativeDialogAnthropicMessagesProviderContract_INCLUDE=H:/Qbot/EmulativeDialog.ED-0146/CMake/BoostJsonDependency.cmake -DEmulativeDialogBoostSourceDir=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource -DEmulativeDialogBoostCommit=afdfa32505af73e3d208144b3f623f0096cb62b6 -DEMULATIVE_DIALOG_OFFLINE=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages --target AnthropicMessagesProviderTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/AnthropicMessages -R Provider.AnthropicMessages --output-on-failure --no-tests=error"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0146'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Network'
+        $ReportRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0146-R6/Reports'
+        $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
+        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+        $ExpectedVersion = '16.1.0'
+        $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
+
+        function Normalize-CoveragePath([string]$Path, [string]$BaseDirectory) {
+          $Value = $Path.Replace('/', '\')
+          if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
+          return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
+        }
+
+        function Read-CoverageJson([string]$Path) {
+          $InputStream = [System.IO.File]::OpenRead($Path)
+          try {
+            $ZipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+              $Reader = [System.IO.StreamReader]::new($ZipStream)
+              try { $JsonText = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+            } finally { $ZipStream.Dispose() }
+          } finally { $InputStream.Dispose() }
+          return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
+        }
+
+        function Measure-Coverage([string]$Label, [string]$GcnoName, [string]$ExpectedTranslationUnit, [string]$CoverageSourcePath, [string]$TestName, [string]$RunDirectory) {
+          $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter $GcnoName)
+          if ($Notes.Count -ne 1) { throw "Expected one $GcnoName; found $($Notes.Count)" }
+          $DataPath = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
+          foreach ($RequiredPath in @($DataPath)) {
+            if (-not (Test-Path -LiteralPath $RequiredPath -PathType Leaf)) { throw "Missing gcov input: $RequiredPath" }
+          }
+          if ((Get-Item -LiteralPath $DataPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) {
+            throw "gcda predates its paired gcno for $Label"
+          }
+
+          $TestLogPath = Join-Path $Build 'Testing/Temporary/LastTest.log'
+          if (-not (Test-Path -LiteralPath $TestLogPath -PathType Leaf)) { throw "Missing CTest log for $Label" }
+          $TestLogInfo = Get-Item -LiteralPath $TestLogPath
+          $TestLogText = [System.IO.File]::ReadAllText($TestLogPath)
+          $LogLines = [System.IO.File]::ReadAllLines($TestLogPath)
+          $StartPattern = '^\d+/\d+ Testing: ' + [regex]::Escape($TestName) + '\s*$'
+          $StartIndexes = @()
+          for ($Index = 0; $Index -lt $LogLines.Count; $Index++) {
+            if ($LogLines[$Index] -match $StartPattern) { $StartIndexes += $Index }
+          }
+          if ($StartIndexes.Count -ne 1) { throw "Expected one LastTest.log block for $TestName; found $($StartIndexes.Count)" }
+          $StartIndex = $StartIndexes[0]
+          $EndIndex = $LogLines.Count
+          for ($Index = $StartIndex + 1; $Index -lt $LogLines.Count; $Index++) {
+            if ($LogLines[$Index] -match '^\d+/\d+ Testing: ' -or $LogLines[$Index] -match '^End testing:') {
+              $EndIndex = $Index
+              break
+            }
+          }
+          $TestBlock = $LogLines[$StartIndex..($EndIndex - 1)] -join [Environment]::NewLine
+          $TestEntryPattern = '(?m)^\d+/\d+ Test: ' + [regex]::Escape($TestName) + '\s*$'
+          $PassedMarkerPattern = '(?s)Test time\s*=.*?\r?\n-+\r?\nTest Passed\.\r?\n'
+          if ($TestBlock -notmatch $TestEntryPattern -or $TestBlock -notmatch $PassedMarkerPattern) {
+            throw "CTest log block does not prove $TestName passed"
+          }
+          if ($TestLogInfo.LastWriteTimeUtc -lt (Get-Item -LiteralPath $DataPath).LastWriteTimeUtc) {
+            throw "CTest log predates the coverage data for $Label"
+          }
+          if ($TestLogText -match $WarningPattern) { throw "CTest log has stale/conflicting gcov data for $Label" }
+
+          New-Item -ItemType Directory -Path $RunDirectory | Out-Null
+          Push-Location -LiteralPath $RunDirectory
+          try {
+            $TranslationUnitPath = Join-Path $Worktree $ExpectedTranslationUnit
+            $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Notes[0].FullName $TranslationUnitPath 2>&1)
+            $ExitCode = $LASTEXITCODE
+          } finally { Pop-Location }
+          $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
+          if ($ExitCode -ne 0) { throw "gcov failed for $Label with exit ${ExitCode}: $OutputText" }
+          if ($OutputText -match $WarningPattern) { throw "gcov reported stale/conflicting data for ${Label}: $OutputText" }
+
+          $JsonFiles = @(Get-ChildItem -LiteralPath $RunDirectory -File -Filter '*.gcov.json.gz')
+          if ($JsonFiles.Count -ne 1) { throw "Expected one gcov JSON for $Label; found $($JsonFiles.Count)" }
+          $Json = Read-CoverageJson $JsonFiles[0].FullName
+          if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw "Wrong gcov JSON version for $Label" }
+
+          $ExpectedTranslationUnitPath = Normalize-CoveragePath (Join-Path $Worktree $ExpectedTranslationUnit) $Worktree
+          $TranslationUnitRecords = @($Json.files | Where-Object { (Normalize-CoveragePath ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedTranslationUnitPath })
+          if ($TranslationUnitRecords.Count -ne 1) { throw "Expected one translation-unit files[].file record for $Label; found $($TranslationUnitRecords.Count)" }
+          $ExpectedSourcePath = Normalize-CoveragePath $CoverageSourcePath $Worktree
+          $Records = @($Json.files | Where-Object { (Normalize-CoveragePath ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSourcePath })
+          if ($Records.Count -ne 1) { throw "Expected one source record for $Label; found $($Records.Count)" }
+
+          $LineCoverage = @{}
+          foreach ($Line in @($Records[0].lines)) {
+            if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw "Missing line fields for $Label" }
+            $LineNumber = [int]$Line.line_number
+            $Count = [long]$Line.count
+            if ($LineNumber -le 0 -or $Count -lt 0) { throw "Invalid line record for $Label" }
+            if (-not $LineCoverage.ContainsKey($LineNumber)) { $LineCoverage[$LineNumber] = $false }
+            if ($Count -gt 0) { $LineCoverage[$LineNumber] = $true }
+          }
+          $Total = $LineCoverage.Count
+          if ($Total -eq 0) { throw "Empty executable-line denominator for $Label" }
+          $Covered = 0
+          foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
+          $Percent = 100.0 * $Covered / $Total
+          $PercentText = $Percent.ToString('F2', [System.Globalization.CultureInfo]::InvariantCulture)
+          Write-Output "$Label COVERED=$Covered EXECUTABLE=$Total PERCENT=$PercentText JSON=2 GCC=$($Json.gcc_version) REPORT=$($JsonFiles[0].FullName)"
+          if (($Covered * 100) -lt ($Total * 80)) { throw "$Label coverage is below 80 percent" }
+        }
+
+        try {
+          $CompilerVersion = (& $Gxx --version 2>&1 | Out-String)
+          $CompilerVersionPattern = "(?<![0-9.])$([regex]::Escape($ExpectedVersion))(?![0-9.])"
+          if ($LASTEXITCODE -ne 0 -or $CompilerVersion -notmatch $CompilerVersionPattern) { throw "Expected GCC ${ExpectedVersion}: $CompilerVersion" }
+          $GcovVersion = (& $Gcov --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $GcovVersion -notmatch $CompilerVersionPattern -or $GcovVersion -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2: $GcovVersion" }
+
+          New-Item -ItemType Directory -Force -Path $ReportRoot | Out-Null
+          $RunRoot = Join-Path $ReportRoot ('Run-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $RunRoot | Out-Null
+          Measure-Coverage 'HttpTransportPort.hpp' 'HttpTransportPortTests.cpp.gcno' 'Tests/Contract/Platform/Network/HttpTransportPortTests.cpp' 'Source/Platform/Network/HttpTransportPort.hpp' 'Platform.Network.HttpTransportPort' (Join-Path $RunRoot 'Port')
+          Measure-Coverage 'WinHttpTransport.cpp' 'WinHttpTransport.cpp.gcno' 'Source/Platform/Network/WinHttpTransport.cpp' 'Source/Platform/Network/WinHttpTransport.cpp' 'Platform.Network.WinHttpTransport' (Join-Path $RunRoot 'WinHttp')
+          Write-Output "GXX_VERSION=$ExpectedVersion GCOV_VERSION=$ExpectedVersion GCOV_JSON_FORMAT=2 REPORT_ROOT=$RunRoot"
+        } catch {
+          [Console]::Error.WriteLine($_.Exception.Message)
+          exit 1
+        }
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen 10-path WriteSet."
+        - "No provider production source, Core source, root CMake, dependency module, or live network call is changed."
+        - "HttpTransportPort.hpp requires a resolver reference and no derived class overrides the public non-virtual Stream entry."
+        - "Every non-Valid endpoint grant is denied before DoStream, callbacks, DNS, or connect."
+        - "Each independent build registers exactly its named CTest test; all five RequiredCTestTests are present across the four build directories."
+        - "FreshBuildPreflight fails on any existing per-target build directory; no existing build or profile file is deleted."
+        - "CoverageCommand passes the exact .gcno path and absolute translation-unit path, proves Test Passed inside the matching LastTest.log block, requires that log newer than paired .gcda, matches the expected TU and production source through exact files[].file records, and counts unique executable lines. Root data_file is informational only."
+        - "CoverageCommand exits nonzero if either source is below 80 percent; no libgcov checksum/overwrite warnings are accepted."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The task uses scripted resolver and offline transport/provider fixtures only."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0147, ED-0121, ED-0104, ED-0105, ED-0106]}
