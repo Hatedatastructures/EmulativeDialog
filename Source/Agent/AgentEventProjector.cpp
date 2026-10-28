@@ -36,23 +36,42 @@ const AgentEventMetadata& GetMetadata(
       Event);
 }
 
-void AppendOptional(std::string& Target, const auto& Value) {
-  if (Value.has_value()) {
-    Target.append(std::to_string(*Value));
+// Length-prefixed field encoding. Each field is "<length>:<bytes>;" so field
+// boundaries can never collide, even when values contain the separator bytes.
+void AppendField(std::string& Target, std::string_view Value) {
+  Target.append(std::to_string(Value.size()));
+  Target.push_back(':');
+  Target.append(Value.data(), Value.size());
+  Target.push_back(';');
+}
+
+template <typename ValueType>
+std::string NumberText(const ValueType& Value) {
+  if constexpr (std::is_enum_v<ValueType>) {
+    return std::to_string(static_cast<unsigned>(Value));
   } else {
-    Target.push_back('-');
+    return std::to_string(Value);
   }
-  Target.push_back('|');
+}
+
+void AppendOptionalNumber(std::string& Target, const auto& Value) {
+  if (!Value.has_value()) {
+    Target.push_back('0');
+    return;
+  }
+  Target.push_back('1');
+  AppendField(Target, NumberText(*Value));
 }
 
 void AppendUsage(std::string& Target, const Providers::UsageSnapshot& Usage) {
-  AppendOptional(Target, Usage.InputTokens);
-  AppendOptional(Target, Usage.OutputTokens);
-  AppendOptional(Target, Usage.TotalTokens);
-  AppendOptional(Target, Usage.CachedInputReadTokens);
-  AppendOptional(Target, Usage.CachedInputWriteTokens);
-  AppendOptional(Target, Usage.ReasoningOutputTokens);
-  Target.append(std::to_string(static_cast<unsigned>(Usage.Completeness)));
+  AppendOptionalNumber(Target, Usage.InputTokens);
+  AppendOptionalNumber(Target, Usage.OutputTokens);
+  AppendOptionalNumber(Target, Usage.TotalTokens);
+  AppendOptionalNumber(Target, Usage.CachedInputReadTokens);
+  AppendOptionalNumber(Target, Usage.CachedInputWriteTokens);
+  AppendOptionalNumber(Target, Usage.ReasoningOutputTokens);
+  AppendField(Target,
+              std::to_string(static_cast<unsigned>(Usage.Completeness)));
 }
 
 std::string Fingerprint(const AgentLifecycleEvent& Event) {
@@ -61,90 +80,80 @@ std::string Fingerprint(const AgentLifecycleEvent& Event) {
         using EventType = std::decay_t<decltype(Value)>;
         std::string Result;
         Result.reserve(64);
-        Result.append(std::to_string(Value.Metadata.SequenceNumber));
-        Result.push_back('|');
+        AppendField(Result,
+                    std::to_string(Value.Metadata.SequenceNumber));
 
         if constexpr (std::is_same_v<EventType, AgentStartedEvent>) {
-          Result.push_back('S');
-          Result.append(Value.Response.has_value() ? Value.Response->Value
-                                                   : std::string{});
+          AppendField(Result, "S");
+          if (Value.Response.has_value()) {
+            Result.push_back('1');
+            AppendField(Result, Value.Response->Value);
+          } else {
+            Result.push_back('0');
+          }
         } else if constexpr (std::is_same_v<EventType,
                                             AgentTextDeltaEvent>) {
-          Result.push_back('T');
-          Result.append(Value.Item.Value);
-          Result.push_back('|');
-          Result.append(Value.Utf8Delta);
+          AppendField(Result, "T");
+          AppendField(Result, Value.Item.Value);
+          AppendField(Result, Value.Utf8Delta);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentRefusalDeltaEvent>) {
-          Result.push_back('R');
-          Result.append(Value.Item.Value);
-          Result.push_back('|');
-          Result.append(Value.Utf8Delta);
-          Result.push_back('|');
-          if (Value.Category.has_value()) {
-            Result.append(
-                std::to_string(static_cast<unsigned>(*Value.Category)));
-          }
+          AppendField(Result, "R");
+          AppendField(Result, Value.Item.Value);
+          AppendField(Result, Value.Utf8Delta);
+          AppendOptionalNumber(Result, Value.Category);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentToolCallStartedEvent>) {
-          Result.append("TS|");
-          Result.append(Value.Item.Value);
-          Result.push_back('|');
-          Result.append(Value.Call.Value);
-          Result.push_back('|');
-          Result.append(Value.ToolName);
+          AppendField(Result, "TS");
+          AppendField(Result, Value.Item.Value);
+          AppendField(Result, Value.Call.Value);
+          AppendField(Result, Value.ToolName);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentToolArgumentDeltaEvent>) {
-          Result.append("TA|");
-          Result.append(Value.Item.Value);
-          Result.push_back('|');
-          Result.append(Value.Call.Value);
-          Result.push_back('|');
-          Result.append(Value.JsonTextDelta);
+          AppendField(Result, "TA");
+          AppendField(Result, Value.Item.Value);
+          AppendField(Result, Value.Call.Value);
+          AppendField(Result, Value.JsonTextDelta);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentToolCallReadyEvent>) {
-          Result.append("TR|");
-          Result.append(Value.Item.Value);
-          Result.push_back('|');
-          Result.append(Value.Call.Value);
-          Result.push_back('|');
-          Result.append(Value.ToolName);
-          Result.push_back('|');
-          Result.append(Value.Arguments.JsonText);
+          AppendField(Result, "TR");
+          AppendField(Result, Value.Item.Value);
+          AppendField(Result, Value.Call.Value);
+          AppendField(Result, Value.ToolName);
+          AppendField(Result, Value.Arguments.JsonText);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentUsageUpdatedEvent>) {
-          Result.push_back('U');
+          AppendField(Result, "U");
           AppendUsage(Result, Value.Usage);
         } else if constexpr (std::is_same_v<EventType, AgentFinalEvent>) {
-          Result.append("F");
+          AppendField(Result, "F");
         } else if constexpr (std::is_same_v<EventType, AgentRefusalEvent>) {
-          Result.append("RF|");
-          if (Value.Category.has_value()) {
-            Result.append(
-                std::to_string(static_cast<unsigned>(*Value.Category)));
-          }
+          AppendField(Result, "RF");
+          AppendOptionalNumber(Result, Value.Category);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentToolHandoffEvent>) {
-          Result.append("TH");
+          AppendField(Result, "TH");
         } else if constexpr (std::is_same_v<EventType,
                                             AgentOutputLimitedEvent>) {
-          Result.append("OL|");
-          Result.append(std::to_string(static_cast<unsigned>(Value.Kind)));
-          Result.push_back('|');
+          AppendField(Result, "OL");
+          AppendField(
+              Result, std::to_string(static_cast<unsigned>(Value.Kind)));
           AppendUsage(Result, Value.Usage);
-          Result.push_back(Value.HasUnsendablePartialText ? '1' : '0');
+          AppendField(Result,
+                      Value.HasUnsendablePartialText ? "1" : "0");
         } else if constexpr (std::is_same_v<EventType, AgentFailedEvent>) {
-          Result.append("X|");
-          Result.append(std::to_string(static_cast<unsigned>(Value.Code)));
-          Result.push_back(Value.Retryable ? '1' : '0');
+          AppendField(Result, "X");
+          AppendField(
+              Result, std::to_string(static_cast<unsigned>(Value.Code)));
+          AppendField(Result, Value.Retryable ? "1" : "0");
         } else if constexpr (std::is_same_v<EventType,
                                             AgentCancelledEvent>) {
-          Result.append("C|");
-          Result.append(Value.ReasonCode);
+          AppendField(Result, "C");
+          AppendField(Result, Value.ReasonCode);
         } else if constexpr (std::is_same_v<EventType,
                                             AgentOutcomeUnknownEvent>) {
-          Result.append("OU|");
-          Result.append(Value.ReasonCode);
+          AppendField(Result, "OU");
+          AppendField(Result, Value.ReasonCode);
         }
         return Result;
       },

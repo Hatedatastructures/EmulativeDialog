@@ -151,6 +151,9 @@ struct AgentProjectionError final {
 // duplicate deliveries, and enforces exactly one terminal event.
 class AgentEventProjector final {
 public:
+  // Sink exceptions are not caught. Projector state is committed only after a
+  // successful sink call, so an exception propagates to the caller and the
+  // same canonical event may be re-delivered without partial state changes.
   using Sink = std::function<void(const AgentLifecycleEvent&)>;
 
   AgentEventProjector(Providers::RequestId ExpectedRequest,

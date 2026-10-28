@@ -383,6 +383,55 @@ void IgnoresIdenticalDuplicatesAndRejectsConflicts() {
   }
 }
 
+void RejectsDelimiterCollisionDuplicates() {
+  {
+    Collector Collected;
+    Agent::AgentEventProjector Projector(ExpectedRequest(), ExpectedTurn(),
+                                         Collected.Sink());
+    const Providers::CanonicalNonTerminalEvent First =
+        Providers::TextDeltaEvent{
+            .Metadata = Meta(1),
+            .Item = Providers::ItemId{"a|b"},
+            .Utf8Delta = "c",
+        };
+    const Providers::CanonicalNonTerminalEvent Collision =
+        Providers::TextDeltaEvent{
+            .Metadata = Meta(1),
+            .Item = Providers::ItemId{"a"},
+            .Utf8Delta = "b|c",
+        };
+    Check(!Projector.Accept(First).has_value(), "first text must project");
+    Check(ErrorOf(Projector.Accept(Collision)) ==
+              Agent::AgentProjectionErrorCode::DuplicateConflict,
+          "field-boundary collision must be a duplicate conflict");
+    Check(Collected.Events.size() == 1U,
+          "colliding duplicate must not re-emit");
+  }
+  {
+    Collector Collected;
+    Agent::AgentEventProjector Projector(ExpectedRequest(), ExpectedTurn(),
+                                         Collected.Sink());
+    const Providers::CanonicalNonTerminalEvent First =
+        Providers::ToolCallStartedEvent{
+            .Metadata = Meta(1),
+            .Item = Providers::ItemId{"a|b"},
+            .Call = Providers::ToolCallId{"c"},
+            .ToolName = "lookup",
+        };
+    const Providers::CanonicalNonTerminalEvent Collision =
+        Providers::ToolCallStartedEvent{
+            .Metadata = Meta(1),
+            .Item = Providers::ItemId{"a"},
+            .Call = Providers::ToolCallId{"b|c"},
+            .ToolName = "lookup",
+        };
+    Check(!Projector.Accept(First).has_value(), "first tool must project");
+    Check(ErrorOf(Projector.Accept(Collision)) ==
+              Agent::AgentProjectionErrorCode::DuplicateConflict,
+          "tool call field-boundary collision must be a duplicate conflict");
+  }
+}
+
 void RejectsEventsAfterTerminalAndSecondTerminals() {
   Collector Collected;
   Agent::AgentEventProjector Projector(ExpectedRequest(), ExpectedTurn(),
@@ -563,6 +612,7 @@ int main() {
   RejectsWrongCorrelation();
   RejectsSequenceGapsAndRegressions();
   IgnoresIdenticalDuplicatesAndRejectsConflicts();
+  RejectsDelimiterCollisionDuplicates();
   RejectsEventsAfterTerminalAndSecondTerminals();
   RejectsTerminalCorrelationAndSequenceErrors();
   OutputLimitedMarksPartialTextUnsendable();
