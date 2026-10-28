@@ -82,3 +82,13 @@
 - WorkflowController 对 ED-0146/R5、ED-0147/R4、ED-0148/R4 的 query 均返回 Proposed；ED-0109/R4 仍返回 Merged。六个 CoverageCommand/FreshBuildPreflight PowerShell 块均通过 AST 解析；按固定任务格式对现有 CTest LastTest.log 的目标测试块做了只读脚本核对并通过。新的三组 revision-specific build 目录尚不存在；本轮没有运行 C++ build/CTest，也没有修改产品 C++ 源码。
 - Worker01/03 分别负责 ED-0146/R5 Owner/Reviewer，Worker02/04 负责 ED-0147/R4，Worker05/06 负责 ED-0148/R4。六槽已复用为固定头 TaskSpec 审查；全部 followup 未覆盖主会话模型或推理强度。宿主未暴露可核实的实际显示模型标签，因此不猜测名称。新一轮固定 Head 提交后立即开始审查。
 - 原 Worker02 ED-0114/R4 dirty worktree、Worker05 ED-0144 worktree 及现有 PR 分支本轮未修改。项目 main 仍只有同步 C++ AgentRuntime 纵向切片；异步 AgentRuntime 生命周期及剩余 Codex Keep/Redesign 能力还没有完成。接下来先把三份 task spec 审完并通过正式 PR 合入，再按门推进实际 C++ 行为实现；TaskSpec 或 WorkflowController 记录都不算 Agent 核心重写完成。
+
+## 2026-10-29 当前协调快照（17:22 UTC）
+
+- 当前 Git 基线为 origin/main=461735e50657bdc8ace070b46db3682cfb03460f。治理候选分支 Task/ED-0146-GrantBoundaryTaskSpec 尚未推送；远端分支 3/4。GitHub 插件确认 PR #19 已合并，PR #20 和 #25 仍 Open。Worker06 对 PR #25 的固定头审查 RequestChanges，发现备份恢复丢 TTL 和含 NUL 尾随字节可能绕过 fail-closed；TaskSpec WriteSet/CR 门未通过前保留原 PR 分支，不在本分支修改其代码。Worker06 已转为审查 ED-0112/R2。
+- Base 461735e50657bdc8ace070b46db3682cfb03460f、Head 4b1535b43794e9878185a786f703a8f5540c112d 的复审结果：ED-0146/R5 Owner/Reviewer 均 Approve；ED-0147/R4 Owner/Reviewer 均 RequestChanges，finding ED0147-R4-F001 指出目标 CTest Test Passed. 必须与同一命名测试块绑定；ED-0148/R4 Owner/Reviewer 均 Approve。R4 结果和事件元数据已记录，P3 EntryGate 保持 Pending。
+- 当前未冻结候选为 ED-0146/R5、ED-0147/R5、ED-0148/R4。ED-0147/R5 的覆盖命令现要求唯一 Core.EndpointGrantAuthority 测试块、匹配 Test: 行以及该块内的 Test Passed.；此前 data_file finding 仍由精确 files[].file 源记录处理。新 R5 构建目录不存在，Controller 查询返回 Proposed。
+- 六个 FreshBuildPreflight/CoverageCommand PowerShell 块通过 AST 解析；P2/P3 事件分片 306 条记录均可解析、EventId 唯一，43 条更正引用均能定位目标；目标 CTest 区块解析器通过真实 LastTest.log 样例，并拒绝“目标失败、兄弟通过”与重复目标块；git diff --check 通过。本轮尚未运行 C++ 产品构建/CTest，也没有改产品源文件。
+- 实际 C++ 进度：ED-0108/R2 的 C++ ToolCallCoordinator/BusinessActionRegistry 已由 PR #19 合入 main。ED-0112/R2 另有干净 stacked worktree H:/Qbot/EmulativeDialog.ED-0112-R2-new，Head 9b312513161a441eb4b94325be176348b34f7e9d，8 路径源码/合同/测试差异；TaskSpec 记录 Windows 全量构建、16/16 CTest 与 80% 以上覆盖率。Worker01 正在只读核验该分支及旧 review findings；原 H:/Qbot/EmulativeDialog.ED-0112-R2 的脏文件和未跟踪文件保持未动。
+- Worker02/04 已分配 ED-0147/R5 TaskSpec 复审，Worker03 已分配 ED-0146/R5 复审；Worker05 正为 PR #25 的 TTL 与 embedded-NUL findings 准备精确 ChangeRequest，之后再回到 ED-0148/R4 复审。Worker01 核验 ED-0112/R2 的既有代码/验证证据，Worker06 独立复核同一固定头。所有 follow-up 未覆盖主会话模型或推理强度；宿主仍未提供可核实的显示模型标签。
+- 下一步：固定本轮治理候选的新提交头并重发未完成的独立审查；同时完成 ED-0112/R2 现有 C++ 实现的证据核验。TaskSpec、审查或控制器记录都不算 Codex Agent 核心重写完成。

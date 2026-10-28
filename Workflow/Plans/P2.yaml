@@ -839,7 +839,7 @@ ExitGate:
   ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
   EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
   P3EntryGateState: Pending
-  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R5 Port enforcement, and ED-0147/R4 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
+  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R5 Port enforcement, and ED-0147/R5 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
 
 Tasks:
   - TaskId: ED-0109

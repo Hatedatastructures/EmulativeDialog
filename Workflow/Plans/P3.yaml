@@ -13,7 +13,7 @@ EntryGate:
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R5 must enforce the shared Port entry and ED-0147/R4 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
+  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R5 must enforce the shared Port entry and ED-0147/R5 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4
@@ -211,7 +211,7 @@ ChangeRequests:
     TargetTaskId: ED-0120
     TargetTaskRevision: 2
     ProposedTaskId: ED-0147
-    ProposedTaskRevision: 4
+    ProposedTaskRevision: 5
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker02_ed0114_owner
@@ -229,8 +229,10 @@ ChangeRequests:
       R3 also requires the exact `.gcno` input, a non-destructive fresh-build preflight, and current CTest evidence.
       R4 removes the unsupported root `data_file` source equality check; exact `files[].file` records establish
       TU/source identity, while unique `.gcno` and paired `.gcda` plus CTest timestamps establish freshness.
-      The local GCC 16.1.0 JSON sample is informational only and is not a binary pin. Do not change provider wire
-      behavior or claim production composition exists.
+      The local GCC 16.1.0 JSON sample is informational only and is not a binary pin. R5 also requires the
+      `Test Passed.` marker inside the unique matching LastTest.log block, preventing a passing sibling from
+      masking a failed endpoint-authority test. Do not change provider wire behavior or claim production
+      composition exists.
     Reason: >-
       Worker02's fixed-head Owner review found that R1 did not implement the existing contract's
       unforgeable-reference claim or define profile trust/lifecycle, and its ReadSet conflicted with
@@ -254,6 +256,12 @@ ChangeRequests:
     Revision3IndependentReviewDecision: RequestChanges
     Revision3IndependentReviewHeadCommit: 58d7bc45d23d335f9d5d954c50d203973f28da93
     Revision3IndependentReviewFindingIds: [ED0147-R3-F001]
+    Revision4OwnerReviewDecision: RequestChanges
+    Revision4OwnerReviewHeadCommit: 4b1535b43794e9878185a786f703a8f5540c112d
+    Revision4OwnerReviewFindingIds: [ED0147-R4-F001]
+    Revision4IndependentReviewDecision: RequestChanges
+    Revision4IndependentReviewHeadCommit: 4b1535b43794e9878185a786f703a8f5540c112d
+    Revision4IndependentReviewFindingIds: [ED0147-R4-F001]
 
   - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
     TargetTaskId: ED-0144
@@ -1856,7 +1864,7 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0147
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
@@ -1901,11 +1909,20 @@ Tasks:
       IndependentReviewerDecision: RequestChanges
       IndependentReviewerFindingIds: [ED0147-R3-F001]
       Reason: "The cited local JSON root data_file does not match the corresponding files[].file worktree source and does not prove equality with this task's source path. R4 uses exact files[].file source identity and paired .gcno/.gcda plus current CTest evidence."
+    PreviousRevision4:
+      TaskRevision: 4
+      Disposition: SupersededBeforeImplementation
+      HeadCommit: 4b1535b43794e9878185a786f703a8f5540c112d
+      OwnerDecision: RequestChanges
+      OwnerFindingIds: [ED0147-R4-F001]
+      IndependentReviewerDecision: RequestChanges
+      IndependentReviewerFindingIds: [ED0147-R4-F001]
+      Reason: "Fixed-head Owner and Independent Reviewer found that R4 searched the entire LastTest.log separately for the test name and Test Passed marker. R5 requires exactly one matching test block and validates the matching Test entry and Test Passed marker inside that block."
     BaselineCommit: ""
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until ED-0146/R5 and this exact R4 TaskSpec are approved and merged; bind the then-current main BaseCommit and isolated worktree at assignment."
+    AssignmentNote: "Not assignable until ED-0146/R5 and this exact R5 TaskSpec are approved and merged; bind the then-current main BaseCommit and isolated worktree at assignment."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
@@ -1967,12 +1984,12 @@ Tasks:
       - {AcceptanceId: AC-6, Description: "The registry is safe for concurrent Core requests; grant IDs are never written to logs, events, diagnostics, or persistence.", Evidence: "Deterministic multi-threaded issue/validate/revoke tests produce unique IDs and preserve fail-closed lookup; static review finds no token logging or persistence."}
       - {AcceptanceId: AC-7, Description: "EndpointGrantAuthority.cpp has at least 80 percent unique executable-line coverage.", Evidence: "CoverageCommand matches the exact EndpointGrantAuthority.cpp files[].file record and binds coverage data to its exact .gcno/.gcda pair and named CTest record; it records tool versions and fails below 80 percent."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core
       Coverage:
         Required: true
         ProductionSources: [Source/Core/EndpointGrantAuthority.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
       RequiredBuildTargets: [EndpointGrantAuthorityTests]
@@ -1984,19 +2001,19 @@ Tasks:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core --target EndpointGrantAuthorityTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core --target EndpointGrantAuthorityTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0147'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R4/Core'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R5/Core'
         $ReportRoot = Join-Path $Build 'Reports'
         $Source = Join-Path $Worktree 'Source/Core/EndpointGrantAuthority.cpp'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
@@ -2041,8 +2058,28 @@ Tasks:
           $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
           if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw 'Missing CTest LastTest.log' }
           $TestLogInfo = Get-Item -LiteralPath $TestLog
-          $TestLogText = [System.IO.File]::ReadAllText($TestLog)
-          if ($TestLogText -notmatch 'Core\.EndpointGrantAuthority' -or $TestLogText -notmatch '(?im)Test Passed\.') { throw 'LastTest.log does not prove Core.EndpointGrantAuthority passed' }
+          $TestLogLines = [System.IO.File]::ReadAllLines($TestLog)
+          $TestName = 'Core.EndpointGrantAuthority'
+          $TestStartPattern = '^\d+/\d+ Testing: ' + [regex]::Escape($TestName) + '\s*$'
+          $TestStartIndexes = @()
+          for ($Index = 0; $Index -lt $TestLogLines.Count; $Index++) {
+            if ($TestLogLines[$Index] -match $TestStartPattern) { $TestStartIndexes += $Index }
+          }
+          if ($TestStartIndexes.Count -ne 1) { throw "Expected one LastTest.log block for $TestName; found $($TestStartIndexes.Count)" }
+          $TestStartIndex = $TestStartIndexes[0]
+          $TestEndIndex = $TestLogLines.Count
+          for ($Index = $TestStartIndex + 1; $Index -lt $TestLogLines.Count; $Index++) {
+            if ($TestLogLines[$Index] -match '^\d+/\d+ Testing: ' -or $TestLogLines[$Index] -match '^End testing:') {
+              $TestEndIndex = $Index
+              break
+            }
+          }
+          $TestBlock = $TestLogLines[$TestStartIndex..($TestEndIndex - 1)] -join [Environment]::NewLine
+          $TestEntryPattern = '(?m)^\d+/\d+ Test: ' + [regex]::Escape($TestName) + '\s*$'
+          $PassedMarkerPattern = '(?s)Test time\s*=.*?\r?\n-+\r?\nTest Passed\.\r?\n'
+          if ($TestBlock -notmatch $TestEntryPattern -or $TestBlock -notmatch $PassedMarkerPattern) {
+            throw "CTest log block does not prove $TestName passed"
+          }
           if ($TestLogInfo.LastWriteTimeUtc -lt (Get-Item -LiteralPath $Data).LastWriteTimeUtc) { throw 'CTest log predates gcda execution data' }
           if ($TestLogText -match $WarningPattern) { throw 'CTest log contains a gcov checksum/overwrite warning' }
 
@@ -2090,7 +2127,7 @@ Tasks:
         - "Architecture/Modules/HostCoreAgent.yaml Core DependsOn includes NetworkPlatform; the Root ModuleMap and contracts agree."
         - "IssueForProfile has no overload taking arbitrary HttpsDestination or URL from model/provider input; CSPRNG failure/collision cannot insert or replace grants."
         - "No real network call, credential, Source/AppHost, provider source, root CMake, or Channel source is changed."
-        - "CoverageCommand passes exact .gcno and absolute source inputs, requires the named CTest log newer than paired .gcda, matches EndpointGrantAuthority.cpp through exact files[].file, and fails below 80 percent. Root data_file is informational only."
+        - "CoverageCommand passes exact .gcno and absolute source inputs, proves Test Passed inside the unique matching LastTest.log test block, requires that log newer than paired .gcda, matches EndpointGrantAuthority.cpp through exact files[].file, and fails below 80 percent. Root data_file is informational only."
       ContractFixtures: ["registered provider profiles, invalid endpoints, unknown grants, exact destination, expiry, revocation, and guarded Stream ordering"]
       LiveSideEffects: Forbidden
       NotRunReason: "All endpoint and guarded Stream behavior uses in-memory Core registry and offline fake transport."
