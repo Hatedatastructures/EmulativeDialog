@@ -2710,6 +2710,24 @@ Tasks:
         CR-ED-0131-002 supersedes R1 after the Owner found that the frozen Controller.Contract CTest command did not load
         the test preset PATH. R2 corrects ReadSet, commands, and revision-specific paths; no code assignment, branch,
         worktree, or source change began.
+    AcceptanceEvidenceChangeRequest:
+      ChangeRequestId: CR-ED-0131-003
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      Scope: "Update AC-1 evidence wording from pinned FetchContent source revision to a pinned ExternalProject checkout with build-stage HEAD and submodule verification, and require clean-environment configure to succeed without a pre-populated dependency cache. Preserve the AC-1 description, AC-2 through AC-4, WriteSet, Owner, Reviewer, and dependencies."
+      Reason: "The implementation uses ExternalProject_Add for the pinned superproject checkout; independent review on 2026-10-28 found that configure-stage git rev-parse checks break clean bootstrap and that the AC-1 evidence wording did not match the implementation. Evidence must describe the reproducible mechanism."
+    ReviewStatus:
+      ReviewerSlot: Worker04
+      ReviewerAgentId: /root/worker04_review_flow
+      ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+      ReviewHeadCommit: a6caa423dd116932359cfeed9ff8499e8617f93b
+      Decision: ChangesRequested
+      Findings:
+        - "Clean-environment configure fails: configure-stage git rev-parse runs before ExternalProject performs the pinned checkout."
+        - "AC-1 evidence wording (FetchContent) did not match the ExternalProject implementation; tracked under CR-ED-0131-003."
     Goal: "让 Windows 原生 C++20 根构建通过锁定的 Boost 1.92.0 Asio 编译和协程行为探针，为后续异步 HTTP、Provider 和 AgentRuntime 合同提供可复用构建目标。"
     OutOfScope: ["更新 Boost 版本或提交", "TLS/证书/proxy 策略", "Provider 或 AgentRuntime API 修改", "Responses/Chat Completions/Anthropic Adapter 实现", "真实网络请求", "引入其他语言运行时"]
     DependsOn: [ED-0006, ED-0124]
@@ -2725,7 +2743,7 @@ Tasks:
     WriteSet: [CMakeLists.txt, CMake/BoostAsioDependency.cmake, CMake/BoostAsioCoroutineProbe.cpp, Standards/DependencyPolicy.md]
     SharedLocks: [RootCMakeAndPresets, DependencyLock]
     Acceptance:
-      - {AcceptanceId: AC-1, Description: "The root C++20 build configures Boost.Asio from exactly Boost 1.92.0 / afdfa32505af73e3d208144b3f623f0096cb62b6 and resolves no MSYS2/system Boost fallback.", Evidence: "Pinned FetchContent source revision plus CMake target include provenance under the central Dependencies directory."}
+      - {AcceptanceId: AC-1, Description: "The root C++20 build configures Boost.Asio from exactly Boost 1.92.0 / afdfa32505af73e3d208144b3f623f0096cb62b6 and resolves no MSYS2/system Boost fallback.", Evidence: "Pinned ExternalProject checkout with build-stage HEAD and submodule verification, clean-environment configure succeeding without a pre-populated dependency cache (CR-ED-0131-003), plus CMake target include provenance under the central Dependencies directory."}
       - {AcceptanceId: AC-2, Description: "A native Windows MinGW executable compiles and runs a C++20 coroutine probe using Boost.Asio awaitable, co_spawn, io_context, and the selected executor.", Evidence: "BuildProbe.BoostAsioCxx20 CTest result and compiler command showing C++20."}
       - {AcceptanceId: AC-3, Description: "The reusable EmulativeDialogBoostAsio CMake interface target supplies pinned Asio headers to later consumers without introducing a non-C++ runtime or a new runtime DLL.", Evidence: "CMake target graph and probe link result; no dependency version change."}
       - {AcceptanceId: AC-4, Description: "DependencyPolicy records the exact Windows compile evidence, Boost Software License 1.0 distribution notice, and header-only/runtime dependency boundary.", Evidence: "Updated dependency row and required license notice."}
@@ -2765,3 +2783,65 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, PAR-002, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0120, ED-0122]}
+
+  - TaskId: ED-0140
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 固化多人协作的 PR、分支与固定 Head 审查纪律
+    TaskKind: Governance
+    State: Review
+    Phase: P2
+    OwnerRole: BuildAndWorkflowOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: /root/worker01_http_contract
+    ReviewerRole: ChatCompletionsProviderOwner
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/worker04_review_flow
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0140-CollabPrFlow
+    Worktree: H:/Qbot/EmulativeDialog.ED-0140-CollabPrFlow
+    BaselineCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    Goal: "把用户要求的多人协作纪律固化为可执行标准：远端分支上限 4（main + 3 任务分支）、模块完成即提 PR、Reviewer 对固定 Base/Head 只读审查、squash 合并后立即删除任务分支、冲突由 IntegrationOwner 统一处理。"
+    OutOfScope: ["代码行为变更", "CI 平台配置", "PR 模板新增"]
+    DependsOn: []
+    Context:
+      ModuleId: IntegrationAndRelease
+      ReadSet: [AGENTS.md, Workflow/TaskIndex.yaml, Workflow/TaskLifecycle.md, Workflow/MultiAgentCollaborationStandard.md]
+      OnDemandSet: []
+      ForbiddenSet: ["Source/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 6
+      ExpansionReasonRequired: true
+    WriteSet: [Workflow/MultiAgentCollaborationStandard.md]
+    SharedLocks: [TaskIndex]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "标准明确远端分支上限为 4（main 加最多 3 个任务/PR 分支），且模块达到验收即提 PR。", Evidence: "文档条款与 TaskIndex.yaml 的 MaximumRemoteBranches/ReservedIntegrationBranches/MaximumConcurrentTaskBranches 一致。"}
+      - {AcceptanceId: AC-2, Description: "Reviewer 对固定 BaseCommit/HeadCommit 只读审查，作者与 Reviewer 分离。", Evidence: "文档条款与 PR 模板字段一致。"}
+      - {AcceptanceId: AC-3, Description: "任务分支以 squash 方式合并后立即删除，冲突由 IntegrationOwner 处理并复核语义差异。", Evidence: "文档条款与 GitHub 仓库设置 allow_squash_merge=true 一致。"}
+    Validation:
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "治理文档任务，无生产 C++ 源码。"
+      StaticChecks:
+        - "rg -n \"4|squash|固定|Reviewer|IntegrationOwner\" Workflow/MultiAgentCollaborationStandard.md"
+        - "git diff --check f47067d...HEAD"
+    RiskLevel: Low
+    RiskOwnerRole: BuildAndWorkflowOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [GOV-002, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    PullRequestCreated: true
+    PullRequestNumber: 7
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/7
+    ReviewBaseCommit: f47067d5661b277682f3d3f0659fd4334aca39df
+    ReviewHeadCommit: a9891e7705472243a803c274d05d629718cc6a0a
+    ReviewStatus:
+      ReviewerSlot: Worker04
+      ReviewerAgentId: /root/worker04_review_flow
+      Decision: ChangesRequested
+      Findings:
+        - "旧段（约第 28 行）写最多 2 个任务 PR 分支，与新段和 TaskIndex 的 3 个任务分支上限矛盾。"
+        - "策略段仍以已不存在的 codex/integration 为默认集成分支，应改为 main。"
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
