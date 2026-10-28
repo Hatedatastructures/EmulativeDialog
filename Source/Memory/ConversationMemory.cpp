@@ -1,8 +1,6 @@
 #include "Source/Memory/ConversationMemory.hpp"
 
 #include <algorithm>
-#include <cctype>
-#include <limits>
 #include <utility>
 
 namespace EmulativeDialog::Memory {
@@ -20,22 +18,16 @@ using Context::ConversationKind;
 using Context::ConversationScopeKey;
 
 constexpr std::string_view SensitiveMarkers[] = {
-    "BEGIN PRIVATE KEY", "password=", "access_token=", "client_secret=",
-    "Bearer "};
-
-bool ContainsSensitiveMarker(std::string_view Content) {
-  for (const auto Marker : SensitiveMarkers) {
-    if (Content.find(Marker) != std::string_view::npos) {
-      return true;
-    }
-  }
-  return false;
-}
+    "BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY", "password=",
+    "access_token=", "client_secret=", "api_key=", "apikey=",
+    "aws_secret_access_key=", "payment_token=", "credit_card=", "card_number=",
+    "cvv=", "pan=", "Bearer "};
 
 ContextItemKind ToContextKind(MemoryCategory Category) {
   switch (Category) {
-  case MemoryCategory::IdentityPreference:
   case MemoryCategory::ConversationSummary:
+    return ContextItemKind::ConversationHistory;
+  case MemoryCategory::IdentityPreference:
     return ContextItemKind::IdentityPreference;
   case MemoryCategory::GroupMemory:
     return ContextItemKind::GroupMemory;
@@ -49,10 +41,11 @@ ContextItemKind ToContextKind(MemoryCategory Category) {
 
 ContextPriorityTier ToTier(MemoryCategory Category) {
   switch (Category) {
+  case MemoryCategory::ConversationSummary:
+    return ContextPriorityTier::Tier3;
   case MemoryCategory::ActiveConversationContext:
     return ContextPriorityTier::Tier4;
   case MemoryCategory::IdentityPreference:
-  case MemoryCategory::ConversationSummary:
     return ContextPriorityTier::Tier5;
   case MemoryCategory::GroupMemory:
     return ContextPriorityTier::Tier6;
@@ -74,6 +67,11 @@ ContextProvenance ToContextProvenance(MemoryProvenance Provenance) {
   return ContextProvenance::UserExplicit;
 }
 
+ConversationKind ToContextConversationKind(ConversationScopeKind Kind) {
+  return Kind == ConversationScopeKind::Group ? ConversationKind::Group
+                                              : ConversationKind::Direct;
+}
+
 std::uint64_t EstimateTokens(std::string_view Text) {
   return static_cast<std::uint64_t>(Text.size() / 4U) + 1U;
 }
@@ -88,13 +86,21 @@ bool AuthorizedMemoryContext::IsComplete() const noexcept {
 
 ConversationMemory::ConversationMemory(MemoryStoragePort& Storage,
                                        std::size_t PerScopeCapacity) noexcept
-    : Storage_(Storage), PerScopeCapacity_(PerScopeCapacity == 0U
-                                               ? 1U
-                                               : PerScopeCapacity) {}
+    : Storage_(Storage),
+      PerScopeCapacity_(PerScopeCapacity == 0U ? 1U : PerScopeCapacity) {}
 
 MemoryError ConversationMemory::Error(MemoryErrorCode Code,
                                       std::string Detail) {
   return MemoryError{.Code = Code, .Detail = std::move(Detail)};
+}
+
+bool ConversationMemory::ContainsSensitiveContent(std::string_view Text) {
+  for (const auto Marker : SensitiveMarkers) {
+    if (Text.find(Marker) != std::string_view::npos) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::optional<MemoryError> ConversationMemory::Authorize(
@@ -103,6 +109,10 @@ std::optional<MemoryError> ConversationMemory::Authorize(
   if (!Context.IsComplete()) {
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal, scope, and policy version are required");
+  }
+  if (Context.ScopeKind == ConversationScopeKind::Session) {
+    return Error(MemoryErrorCode::SessionScopeVolatile,
+                 "SessionScope is volatile and cannot be persisted");
   }
   if (Request.MemoryId.empty() || Request.MemoryId.size() > 128U ||
       Request.SubjectId.empty() || Request.Content.empty() ||
@@ -121,11 +131,20 @@ std::optional<MemoryError> ConversationMemory::Authorize(
     return Error(MemoryErrorCode::InvalidArgument,
                  "user-confirmed provenance requires explicit confirmation");
   }
-  if (ContainsSensitiveMarker(Request.Content)) {
+  if (ContainsSensitiveContent(Request.Content)) {
     return Error(MemoryErrorCode::SensitiveContent,
                  "memory content contains a forbidden sensitive marker");
   }
   return std::nullopt;
+}
+
+bool ConversationMemory::SameScope(const ConsentGrant& Grant,
+                                   const AuthorizedMemoryContext& Context) {
+  return Grant.ChannelId == Context.ChannelId &&
+         Grant.AccountId == Context.AccountId &&
+         Grant.ConversationId == Context.ConversationId &&
+         Grant.ScopeKind == Context.ScopeKind &&
+         Grant.GrantorPrincipalId == Context.PrincipalId;
 }
 
 StoredMemory ConversationMemory::ScopeTemplate(
@@ -134,6 +153,7 @@ StoredMemory ConversationMemory::ScopeTemplate(
   Template.ChannelId = Context.ChannelId;
   Template.AccountId = Context.AccountId;
   Template.ConversationId = Context.ConversationId;
+  Template.ScopeKind = Context.ScopeKind;
   Template.PrincipalId = Context.PrincipalId;
   return Template;
 }
@@ -148,24 +168,52 @@ const ConversationMemory::ActiveConsent* ConversationMemory::FindConsent(
   return nullptr;
 }
 
+const ConversationMemory::ActiveConsent* ConversationMemory::FindExactConsent(
+    const AuthorizedMemoryContext& Context,
+    std::string_view ConsentId) const {
+  for (const ActiveConsent& Consent : Consents_) {
+    if (Consent.Grant.ConsentId == ConsentId &&
+        SameScope(Consent.Grant, Context)) {
+      return &Consent;
+    }
+  }
+  return nullptr;
+}
+
 bool ConversationMemory::ConsentMatches(
     const ActiveConsent& Consent, const AuthorizedMemoryContext& Context,
-    MemoryCategory Category) const {
-  return Consent.Active && Consent.Grant.Granted &&
-         Consent.Grant.GrantorPrincipalId == Context.PrincipalId &&
-         Consent.Grant.ChannelId == Context.ChannelId &&
-         Consent.Grant.AccountId == Context.AccountId &&
-         Consent.Grant.ConversationId == Context.ConversationId &&
-         Consent.Grant.Category == Category;
+    MemoryCategory Category,
+    const std::optional<std::string>& ProposalId) const {
+  if (!Consent.Active || !Consent.Grant.Granted ||
+      !SameScope(Consent.Grant, Context) ||
+      Consent.Grant.Category != Category ||
+      Consent.Grant.IdentityPolicyVersion != Context.IdentityPolicyVersion) {
+    return false;
+  }
+  if (Consent.Grant.ProposalId.has_value() &&
+      (!ProposalId.has_value() || *ProposalId != *Consent.Grant.ProposalId)) {
+    return false;
+  }
+  if (Category == MemoryCategory::GroupMemory) {
+    const auto& Members = Consent.Grant.AllowedGroupMembers;
+    if (Members.empty() ||
+        std::find(Members.begin(), Members.end(), Context.PrincipalId) ==
+            Members.end()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 MemoryResult<std::monostate> ConversationMemory::RegisterConsent(
     const ConsentGrant& Grant) {
   if (Grant.ConsentId.empty() || Grant.GrantorPrincipalId.empty() ||
       Grant.ChannelId.empty() || Grant.AccountId.empty() ||
-      Grant.ConversationId.empty()) {
+      Grant.ConversationId.empty() || Grant.SourceMessageId.empty() ||
+      Grant.IdentityPolicyVersion == 0U) {
     return Error(MemoryErrorCode::InvalidArgument,
-                 "consent requires id, verified grantor, and exact scope");
+                 "consent requires id, verified grantor, exact scope, source "
+                 "message, and policy version");
   }
   if (FindConsent(Grant.ConsentId) != nullptr) {
     return Error(MemoryErrorCode::InvalidArgument,
@@ -187,40 +235,37 @@ MemoryResult<std::monostate> ConversationMemory::RevokeConsent(
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal and scope are required");
   }
-  for (ActiveConsent& Consent : Consents_) {
-    if (Consent.Grant.ConsentId != ConsentId) {
-      continue;
-    }
-    if (Consent.Grant.GrantorPrincipalId != Context.PrincipalId) {
-      return Error(MemoryErrorCode::UnauthorizedIdentity,
-                   "only the granting principal may revoke consent");
-    }
-    Consent.Active = false;
-    const auto Records = ListActive(Context, Now);
-    if (const auto* RecordsError = std::get_if<MemoryError>(&Records)) {
-      return *RecordsError;
-    }
-    for (const StoredMemory& Record : std::get<std::vector<StoredMemory>>(
-             Records)) {
-      if (Record.ConsentId != ConsentId) {
-        continue;
-      }
-      StoredMemory Template = ScopeTemplate(Context);
-      Template.ChannelId = Record.ChannelId;
-      Template.AccountId = Record.AccountId;
-      Template.ConversationId = Record.ConversationId;
-      Template.PrincipalId = Record.PrincipalId;
-      const auto Tombstone =
-          Storage_.Tombstone(Template, Record.MemoryId, Now);
-      if (const auto* StorageError =
-              std::get_if<MemoryStorageError>(&Tombstone)) {
-        return Error(MemoryErrorCode::StorageFailure,
-                     StorageError->Detail);
-      }
-    }
-    return std::monostate{};
+  const auto* Consent = FindExactConsent(Context, ConsentId);
+  if (Consent == nullptr) {
+    return Error(MemoryErrorCode::UnauthorizedIdentity,
+                 "revocation requires the exact grant scope and principal");
   }
-  return Error(MemoryErrorCode::InvalidArgument, "consent is not registered");
+  const auto Records = ListActive(Context, Now);
+  if (const auto* RecordsError = std::get_if<MemoryError>(&Records)) {
+    return *RecordsError;
+  }
+  MemoryMutationBatch Batch;
+  Batch.Scope = ScopeTemplate(Context);
+  for (const StoredMemory& Record :
+       std::get<std::vector<StoredMemory>>(Records)) {
+    if (Record.ConsentId == ConsentId) {
+      Batch.Tombstones.push_back(Record.MemoryId);
+    }
+  }
+  if (!Batch.Tombstones.empty()) {
+    const auto Applied = Storage_.ApplyAtomically(Batch);
+    if (const auto* StorageError =
+            std::get_if<MemoryStorageError>(&Applied)) {
+      return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
+    }
+  }
+  for (ActiveConsent& Entry : Consents_) {
+    if (Entry.Grant.ConsentId == ConsentId) {
+      Entry.Active = false;
+      break;
+    }
+  }
+  return std::monostate{};
 }
 
 MemoryResult<std::monostate> ConversationMemory::Write(
@@ -235,37 +280,21 @@ MemoryResult<std::monostate> ConversationMemory::Write(
     return Error(MemoryErrorCode::ConsentRequired,
                  "durable memory requires a registered Core consent");
   }
-  if (!ConsentMatches(*Consent, Context, Request.Category)) {
+  if (!ConsentMatches(*Consent, Context, Request.Category,
+                      Request.ProposalId)) {
     return Error(MemoryErrorCode::ConsentMismatch,
-                 "consent does not cover this principal, scope, or category");
+                 "consent does not cover this principal, scope, category, "
+                 "proposal, or policy version");
   }
   if (Request.ExpiresAt.has_value() && *Request.ExpiresAt <= Now) {
     return Error(MemoryErrorCode::InvalidArgument,
                  "new memory is already expired");
   }
-
   const auto Existing = ListActive(Context, Now);
   if (const auto* ExistingError = std::get_if<MemoryError>(&Existing)) {
     return *ExistingError;
   }
   auto Active = std::get<std::vector<StoredMemory>>(Existing);
-  if (Active.size() >= PerScopeCapacity_) {
-    std::sort(Active.begin(), Active.end(),
-              [](const StoredMemory& Left, const StoredMemory& Right) {
-                if (Left.CreatedAt != Right.CreatedAt) {
-                  return Left.CreatedAt < Right.CreatedAt;
-                }
-                return Left.MemoryId < Right.MemoryId;
-              });
-    const StoredMemory& Victim = Active.front();
-    StoredMemory Template = ScopeTemplate(Context);
-    const auto Tombstone =
-        Storage_.Tombstone(Template, Victim.MemoryId, Now);
-    if (const auto* StorageError =
-            std::get_if<MemoryStorageError>(&Tombstone)) {
-      return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
-    }
-  }
 
   StoredMemory Record = ScopeTemplate(Context);
   Record.MemoryId = Request.MemoryId;
@@ -274,18 +303,33 @@ MemoryResult<std::monostate> ConversationMemory::Write(
   Record.Content = Request.Content;
   Record.SourceReference = Request.SourceReference;
   Record.ConsentId = Request.ConsentId;
-  Record.CreatedAt = Request.CreatedAt == std::chrono::sys_seconds{}
-                         ? Now
-                         : Request.CreatedAt;
+  Record.ProposalId = Request.ProposalId;
+  Record.CreatedAt =
+      Request.CreatedAt == std::chrono::sys_seconds{} ? Now
+                                                      : Request.CreatedAt;
+  if (Record.CreatedAt > Now) {
+    Record.CreatedAt = Now;
+  }
   Record.ExpiresAt = Request.ExpiresAt;
   Record.Provenance = Request.Provenance;
   Record.UserConfirmed = Request.UserConfirmed;
   Record.Version = Request.Version;
-  if (Record.CreatedAt > Now) {
-    Record.CreatedAt = Now;
+
+  MemoryMutationBatch Batch;
+  Batch.Scope = ScopeTemplate(Context);
+  if (Active.size() >= PerScopeCapacity_) {
+    std::sort(Active.begin(), Active.end(),
+              [](const StoredMemory& Left, const StoredMemory& Right) {
+                if (Left.CreatedAt != Right.CreatedAt) {
+                  return Left.CreatedAt < Right.CreatedAt;
+                }
+                return Left.MemoryId < Right.MemoryId;
+              });
+    Batch.Tombstones.push_back(Active.front().MemoryId);
   }
-  const auto Put = Storage_.Put(Record);
-  if (const auto* StorageError = std::get_if<MemoryStorageError>(&Put)) {
+  Batch.Upserts.push_back(std::move(Record));
+  const auto Applied = Storage_.ApplyAtomically(Batch);
+  if (const auto* StorageError = std::get_if<MemoryStorageError>(&Applied)) {
     return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
   }
   return std::monostate{};
@@ -297,6 +341,10 @@ MemoryResult<std::vector<StoredMemory>> ConversationMemory::ListActive(
   if (!Context.IsComplete()) {
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal and scope are required");
+  }
+  if (Context.ScopeKind == ConversationScopeKind::Session) {
+    return Error(MemoryErrorCode::SessionScopeVolatile,
+                 "SessionScope is volatile and cannot be listed");
   }
   const auto Listed = Storage_.ListActive(ScopeTemplate(Context), Now);
   if (const auto* StorageError = std::get_if<MemoryStorageError>(&Listed)) {
@@ -314,19 +362,22 @@ MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
   }
   auto Records = std::get<std::vector<StoredMemory>>(Listed);
   Records.erase(
-      std::remove_if(Records.begin(), Records.end(),
-                     [this](const StoredMemory& Record) {
-                       const auto* Consent = FindConsent(Record.ConsentId);
-                       return Consent == nullptr || !Consent->Active ||
-                              !Consent->Grant.Granted;
-                     }),
+      std::remove_if(
+          Records.begin(), Records.end(),
+          [this, &Context](const StoredMemory& Record) {
+            if (Record.ScopeKind != Context.ScopeKind) {
+              return true;
+            }
+            const auto* Consent = FindConsent(Record.ConsentId);
+            return Consent == nullptr ||
+                   !ConsentMatches(*Consent, Context, Record.Category,
+                                   Record.ProposalId);
+          }),
       Records.end());
   std::sort(Records.begin(), Records.end(),
             [](const StoredMemory& Left, const StoredMemory& Right) {
-              const auto LeftTier = ToTier(Left.Category);
-              const auto RightTier = ToTier(Right.Category);
-              if (LeftTier != RightTier) {
-                return LeftTier < RightTier;
+              if (ToTier(Left.Category) != ToTier(Right.Category)) {
+                return ToTier(Left.Category) < ToTier(Right.Category);
               }
               if (Left.CreatedAt != Right.CreatedAt) {
                 return Left.CreatedAt > Right.CreatedAt;
@@ -349,9 +400,7 @@ MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
         .ChannelId = Record.ChannelId,
         .AccountId = Record.AccountId,
         .ConversationId = Record.ConversationId,
-        .Kind = Record.Category == MemoryCategory::GroupMemory
-                    ? ConversationKind::Group
-                    : ConversationKind::Direct,
+        .Kind = ToContextConversationKind(Context.ScopeKind),
         .PrincipalId = Record.PrincipalId,
     };
     Candidate.Source = ContextSource{
@@ -379,6 +428,10 @@ MemoryResult<std::monostate> ConversationMemory::Forget(
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal and scope are required");
   }
+  if (Context.ScopeKind == ConversationScopeKind::Session) {
+    return Error(MemoryErrorCode::SessionScopeVolatile,
+                 "SessionScope is volatile and cannot be persisted");
+  }
   const bool HasTarget = Request.MemoryId.has_value() ||
                          Request.Category.has_value() ||
                          Request.EntireAuthorizedScope;
@@ -391,9 +444,10 @@ MemoryResult<std::monostate> ConversationMemory::Forget(
   if (const auto* ListedError = std::get_if<MemoryError>(&Listed)) {
     return *ListedError;
   }
-  const auto Records = std::get<std::vector<StoredMemory>>(Listed);
-  std::size_t Tombstoned = 0;
-  for (const StoredMemory& Record : Records) {
+  MemoryMutationBatch Batch;
+  Batch.Scope = ScopeTemplate(Context);
+  for (const StoredMemory& Record :
+       std::get<std::vector<StoredMemory>>(Listed)) {
     if (Request.MemoryId.has_value() &&
         Record.MemoryId != *Request.MemoryId) {
       continue;
@@ -402,17 +456,15 @@ MemoryResult<std::monostate> ConversationMemory::Forget(
         Record.Category != *Request.Category) {
       continue;
     }
-    const auto Result =
-        Storage_.Tombstone(ScopeTemplate(Context), Record.MemoryId, Now);
-    if (const auto* StorageError =
-            std::get_if<MemoryStorageError>(&Result)) {
-      return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
-    }
-    ++Tombstoned;
+    Batch.Tombstones.push_back(Record.MemoryId);
   }
-  if (Tombstoned == 0U) {
+  if (Batch.Tombstones.empty()) {
     return Error(MemoryErrorCode::InvalidArgument,
                  "forget target matched no active memory");
+  }
+  const auto Applied = Storage_.ApplyAtomically(Batch);
+  if (const auto* StorageError = std::get_if<MemoryStorageError>(&Applied)) {
+    return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
   }
   return std::monostate{};
 }
@@ -423,35 +475,51 @@ MemoryResult<std::size_t> ConversationMemory::RestoreBackup(
     return Error(MemoryErrorCode::UnauthorizedIdentity,
                  "verified principal and scope are required");
   }
-  const auto Backup =
-      Storage_.RecallBackup(ScopeTemplate(Context), Now);
+  if (Context.ScopeKind == ConversationScopeKind::Session) {
+    return Error(MemoryErrorCode::SessionScopeVolatile,
+                 "SessionScope is volatile and cannot be restored");
+  }
+  const auto Existing = ListActive(Context, Now);
+  if (const auto* ExistingError = std::get_if<MemoryError>(&Existing)) {
+    return *ExistingError;
+  }
+  std::size_t ActiveCount =
+      std::get<std::vector<StoredMemory>>(Existing).size();
+  const auto Backup = Storage_.RecallBackup(ScopeTemplate(Context), Now);
   if (const auto* StorageError = std::get_if<MemoryStorageError>(&Backup)) {
     return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
   }
   std::size_t Restored = 0;
   for (const StoredMemory& Record :
        std::get<std::vector<StoredMemory>>(Backup)) {
-    if (Record.ChannelId != Context.ChannelId ||
+    if (Record.Tombstoned || Record.ScopeKind != Context.ScopeKind ||
+        Record.ChannelId != Context.ChannelId ||
         Record.AccountId != Context.AccountId ||
         Record.ConversationId != Context.ConversationId ||
-        Record.PrincipalId != Context.PrincipalId) {
+        Record.PrincipalId != Context.PrincipalId ||
+        ContainsSensitiveContent(Record.Content) ||
+        ActiveCount >= PerScopeCapacity_) {
       continue;
     }
     const auto* Consent = FindConsent(Record.ConsentId);
-    if (Consent == nullptr || !Consent->Active || !Consent->Grant.Granted) {
+    if (Consent == nullptr ||
+        !ConsentMatches(*Consent, Context, Record.Category,
+                        Record.ProposalId)) {
       continue;
     }
-    if (!ConsentMatches(*Consent, Context, Record.Category)) {
-      continue;
-    }
-    const auto Put = Storage_.Put(Record);
-    if (const auto* StorageError = std::get_if<MemoryStorageError>(&Put)) {
+    MemoryMutationBatch Batch;
+    Batch.Scope = ScopeTemplate(Context);
+    Batch.Upserts.push_back(Record);
+    const auto Applied = Storage_.ApplyAtomically(Batch);
+    if (const auto* StorageError =
+            std::get_if<MemoryStorageError>(&Applied)) {
       if (StorageError->Code == MemoryStorageErrorCode::VersionConflict) {
         continue;
       }
       return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
     }
     ++Restored;
+    ++ActiveCount;
   }
   return Restored;
 }

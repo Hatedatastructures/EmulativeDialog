@@ -13,6 +13,14 @@
 
 namespace EmulativeDialog::Memory {
 
+inline constexpr int SensitiveContentPolicyVersion = 1;
+
+enum class ConversationScopeKind : std::uint8_t {
+  Direct,
+  Group,
+  Session,
+};
+
 enum class MemoryCategory : std::uint8_t {
   IdentityPreference,
   ConversationSummary,
@@ -32,6 +40,7 @@ struct AuthorizedMemoryContext final {
   std::string AccountId;
   std::string ConversationId;
   std::string PrincipalId;
+  ConversationScopeKind ScopeKind{ConversationScopeKind::Direct};
   std::uint64_t IdentityPolicyVersion{0};
   bool IdentityVerified{false};
 
@@ -44,7 +53,14 @@ struct ConsentGrant final {
   std::string ChannelId;
   std::string AccountId;
   std::string ConversationId;
+  ConversationScopeKind ScopeKind{ConversationScopeKind::Direct};
   MemoryCategory Category{MemoryCategory::IdentityPreference};
+  std::string SourceMessageId;
+  std::chrono::sys_seconds GrantedAt{};
+  std::optional<std::string> ProposalId;
+  std::uint64_t IdentityPolicyVersion{0};
+  // Exact verified members allowed to read/write a GroupMemory consent.
+  std::vector<std::string> AllowedGroupMembers;
   bool Granted{true};
 };
 
@@ -69,11 +85,13 @@ struct StoredMemory final {
   std::string ChannelId;
   std::string AccountId;
   std::string ConversationId;
+  ConversationScopeKind ScopeKind{ConversationScopeKind::Direct};
   std::string PrincipalId;
   std::string SubjectId;
   std::string Content;
   std::string SourceReference;
   std::string ConsentId;
+  std::optional<std::string> ProposalId;
   std::chrono::sys_seconds CreatedAt{};
   std::optional<std::chrono::sys_seconds> ExpiresAt;
   MemoryProvenance Provenance{MemoryProvenance::UserExplicit};
@@ -97,25 +115,25 @@ struct MemoryStorageError final {
 template <typename Value>
 using MemoryStorageResult = std::variant<Value, MemoryStorageError>;
 
-// Storage seam implemented by the pinned SQLite store (production) and an
-// in-memory fake (unit contracts). Authorization never lives in storage.
+// Atomic storage batch. Implementations apply every upsert and tombstone in a
+// single transaction; a failure leaves the previous state untouched.
+struct MemoryMutationBatch final {
+  StoredMemory Scope;
+  std::vector<StoredMemory> Upserts;
+  std::vector<std::string> Tombstones;
+};
+
 class MemoryStoragePort {
 public:
   virtual ~MemoryStoragePort() = default;
   MemoryStoragePort(const MemoryStoragePort&) = delete;
   MemoryStoragePort& operator=(const MemoryStoragePort&) = delete;
 
-  [[nodiscard]] virtual MemoryStorageResult<std::monostate> Put(
-      const StoredMemory& Record) = 0;
-  [[nodiscard]] virtual MemoryStorageResult<StoredMemory> GetActive(
-      const StoredMemory& ScopeTemplate, std::string_view MemoryId,
-      std::chrono::sys_seconds Now) const = 0;
+  [[nodiscard]] virtual MemoryStorageResult<std::monostate> ApplyAtomically(
+      const MemoryMutationBatch& Batch) = 0;
   [[nodiscard]] virtual MemoryStorageResult<std::vector<StoredMemory>>
   ListActive(const StoredMemory& ScopeTemplate,
              std::chrono::sys_seconds Now) const = 0;
-  [[nodiscard]] virtual MemoryStorageResult<std::monostate> Tombstone(
-      const StoredMemory& ScopeTemplate, std::string_view MemoryId,
-      std::chrono::sys_seconds Now) = 0;
   [[nodiscard]] virtual MemoryStorageResult<std::vector<StoredMemory>>
   RecallBackup(const StoredMemory& ScopeTemplate,
                std::chrono::sys_seconds Now) const = 0;
@@ -132,6 +150,7 @@ enum class MemoryErrorCode : std::uint8_t {
   InvalidArgument,
   StorageFailure,
   ForgetScopeRequired,
+  SessionScopeVolatile,
 };
 
 struct MemoryError final {
@@ -148,8 +167,6 @@ struct ForgetRequest final {
   bool EntireAuthorizedScope{false};
 };
 
-// Chat memory built over the scoped storage seam. Development task ledgers are
-// a different domain and must never be stored here.
 class ConversationMemory final {
 public:
   explicit ConversationMemory(MemoryStoragePort& Storage,
@@ -182,17 +199,23 @@ private:
 
   [[nodiscard]] static MemoryError Error(MemoryErrorCode Code,
                                          std::string Detail);
+  [[nodiscard]] static bool ContainsSensitiveContent(std::string_view Text);
   [[nodiscard]] static std::optional<MemoryError> Authorize(
       const AuthorizedMemoryContext& Context,
       const MemoryWriteRequest& Request);
+  [[nodiscard]] static bool SameScope(
+      const ConsentGrant& Grant, const AuthorizedMemoryContext& Context);
   [[nodiscard]] StoredMemory ScopeTemplate(
       const AuthorizedMemoryContext& Context) const;
   [[nodiscard]] const ActiveConsent* FindConsent(
       std::string_view ConsentId) const;
+  [[nodiscard]] const ActiveConsent* FindExactConsent(
+      const AuthorizedMemoryContext& Context,
+      std::string_view ConsentId) const;
   [[nodiscard]] bool ConsentMatches(
       const ActiveConsent& Consent,
-      const AuthorizedMemoryContext& Context,
-      MemoryCategory Category) const;
+      const AuthorizedMemoryContext& Context, MemoryCategory Category,
+      const std::optional<std::string>& ProposalId) const;
   [[nodiscard]] MemoryResult<std::vector<StoredMemory>> ListActive(
       const AuthorizedMemoryContext& Context,
       std::chrono::sys_seconds Now) const;

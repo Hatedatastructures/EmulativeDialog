@@ -2,11 +2,9 @@
 
 #include <algorithm>
 #include <chrono>
-#include <fstream>
 #include <iostream>
 #include <map>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -33,55 +31,55 @@ std::chrono::sys_seconds Now() {
 
 std::string ScopeKey(const StoredMemory& Record) {
   return Record.ChannelId + "|" + Record.AccountId + "|" +
-         Record.ConversationId + "|" + Record.PrincipalId;
+         Record.ConversationId + "|" +
+         std::to_string(static_cast<int>(Record.ScopeKind)) + "|" +
+         Record.PrincipalId;
 }
 
 class FakeMemoryStorage final : public MemoryStoragePort {
 public:
-  bool FailPut{false};
+  bool FailApply{false};
   bool FailList{false};
-  bool FailTombstone{false};
   bool FailBackup{false};
   std::vector<StoredMemory> BackupRecords;
   std::map<std::string, std::vector<StoredMemory>> Rows;
 
-  MemoryStorageResult<std::monostate> Put(
-      const StoredMemory& Record) override {
-    if (FailPut) {
+  MemoryStorageResult<std::monostate> ApplyAtomically(
+      const MemoryMutationBatch& Batch) override {
+    if (FailApply) {
       return MemoryStorageError{.Code = MemoryStorageErrorCode::Failure,
-                                .Detail = "injected put failure"};
+                                .Detail = "injected batch failure"};
     }
-    auto& ScopeRows = Rows[ScopeKey(Record)];
-    for (StoredMemory& Existing : ScopeRows) {
-      if (Existing.MemoryId != Record.MemoryId) {
-        continue;
+    auto Staged = Rows;
+    auto& ScopeRows = Staged[ScopeKey(Batch.Scope)];
+    for (StoredMemory& Record : ScopeRows) {
+      if (std::find(Batch.Tombstones.begin(), Batch.Tombstones.end(),
+                    Record.MemoryId) != Batch.Tombstones.end()) {
+        Record.Tombstoned = true;
+        ++Record.Version;
       }
-      if (Record.Version <= Existing.Version) {
-        return MemoryStorageError{
-            .Code = MemoryStorageErrorCode::VersionConflict,
-            .Detail = "injected version conflict"};
-      }
-      Existing = Record;
-      return std::monostate{};
     }
-    ScopeRows.push_back(Record);
+    for (const StoredMemory& Upsert : Batch.Upserts) {
+      bool Replaced = false;
+      for (StoredMemory& Existing : ScopeRows) {
+        if (Existing.MemoryId != Upsert.MemoryId) {
+          continue;
+        }
+        if (Upsert.Version <= Existing.Version) {
+          return MemoryStorageError{
+              .Code = MemoryStorageErrorCode::VersionConflict,
+              .Detail = "injected version conflict"};
+        }
+        Existing = Upsert;
+        Replaced = true;
+        break;
+      }
+      if (!Replaced) {
+        ScopeRows.push_back(Upsert);
+      }
+    }
+    Rows = std::move(Staged);
     return std::monostate{};
-  }
-
-  MemoryStorageResult<StoredMemory> GetActive(
-      const StoredMemory& ScopeTemplate, std::string_view MemoryId,
-      std::chrono::sys_seconds Current) const override {
-    const auto Scope = Rows.find(ScopeKey(ScopeTemplate));
-    if (Scope == Rows.end()) {
-      return Missing();
-    }
-    for (const StoredMemory& Record : Scope->second) {
-      if (Record.MemoryId == MemoryId && !Record.Tombstoned &&
-          (!Record.ExpiresAt.has_value() || *Record.ExpiresAt > Current)) {
-        return Record;
-      }
-    }
-    return Missing();
   }
 
   MemoryStorageResult<std::vector<StoredMemory>> ListActive(
@@ -105,27 +103,6 @@ public:
     return Active;
   }
 
-  MemoryStorageResult<std::monostate> Tombstone(
-      const StoredMemory& ScopeTemplate, std::string_view MemoryId,
-      std::chrono::sys_seconds) override {
-    if (FailTombstone) {
-      return MemoryStorageError{.Code = MemoryStorageErrorCode::Failure,
-                                .Detail = "injected tombstone failure"};
-    }
-    auto Scope = Rows.find(ScopeKey(ScopeTemplate));
-    if (Scope == Rows.end()) {
-      return NotFound();
-    }
-    for (StoredMemory& Record : Scope->second) {
-      if (Record.MemoryId == MemoryId && !Record.Tombstoned) {
-        Record.Tombstoned = true;
-        ++Record.Version;
-        return std::monostate{};
-      }
-    }
-    return NotFound();
-  }
-
   MemoryStorageResult<std::vector<StoredMemory>> RecallBackup(
       const StoredMemory& ScopeTemplate,
       std::chrono::sys_seconds Current) const override {
@@ -135,413 +112,523 @@ public:
     }
     std::vector<StoredMemory> Result;
     for (const StoredMemory& Record : BackupRecords) {
-      if (ScopeKey(Record) == ScopeKey(ScopeTemplate) && !Record.Tombstoned &&
+      if (ScopeKey(Record) == ScopeKey(ScopeTemplate) &&
           (!Record.ExpiresAt.has_value() || *Record.ExpiresAt > Current)) {
         Result.push_back(Record);
       }
     }
     return Result;
   }
-
-private:
-  static MemoryStorageError Missing() {
-    return MemoryStorageError{.Code = MemoryStorageErrorCode::NotFound,
-                              .Detail = "missing"};
-  }
-  static MemoryStorageError NotFound() {
-    return MemoryStorageError{.Code = MemoryStorageErrorCode::NotFound,
-                              .Detail = "not found"};
-  }
 };
 
-AuthorizedMemoryContext AliveContext() {
-  AuthorizedMemoryContext Context;
-  Context.ChannelId = "qq";
-  Context.AccountId = "account-01";
-  Context.ConversationId = "direct-01";
-  Context.PrincipalId = "principal-01";
-  Context.IdentityPolicyVersion = 1;
-  Context.IdentityVerified = true;
-  return Context;
+AuthorizedMemoryContext Context(
+    ConversationScopeKind Kind = ConversationScopeKind::Direct,
+    std::string Principal = "principal-01",
+    std::string Conversation = "conversation-01",
+    std::uint64_t PolicyVersion = 1) {
+  AuthorizedMemoryContext Value;
+  Value.ChannelId = "qq";
+  Value.AccountId = "account-01";
+  Value.ConversationId = std::move(Conversation);
+  Value.PrincipalId = std::move(Principal);
+  Value.ScopeKind = Kind;
+  Value.IdentityPolicyVersion = PolicyVersion;
+  Value.IdentityVerified = true;
+  return Value;
 }
 
-AuthorizedMemoryContext OtherContext() {
-  auto Context = AliveContext();
-  Context.PrincipalId = "principal-02";
-  return Context;
-}
-
-ConsentGrant Consent(MemoryCategory Category,
-                     const AuthorizedMemoryContext& Context,
-                     std::string Id = "consent-01") {
+ConsentGrant Grant(MemoryCategory Category,
+                   const AuthorizedMemoryContext& Value,
+                   std::string Id = "consent-01") {
   ConsentGrant Grant;
   Grant.ConsentId = std::move(Id);
-  Grant.GrantorPrincipalId = Context.PrincipalId;
-  Grant.ChannelId = Context.ChannelId;
-  Grant.AccountId = Context.AccountId;
-  Grant.ConversationId = Context.ConversationId;
+  Grant.GrantorPrincipalId = Value.PrincipalId;
+  Grant.ChannelId = Value.ChannelId;
+  Grant.AccountId = Value.AccountId;
+  Grant.ConversationId = Value.ConversationId;
+  Grant.ScopeKind = Value.ScopeKind;
   Grant.Category = Category;
-  Grant.Granted = true;
+  Grant.SourceMessageId = "fixture-message-consent";
+  Grant.GrantedAt = Now();
+  Grant.IdentityPolicyVersion = Value.IdentityPolicyVersion;
+  if (Category == MemoryCategory::GroupMemory) {
+    Grant.AllowedGroupMembers = {Value.PrincipalId};
+  }
   return Grant;
 }
 
-MemoryWriteRequest WriteRequest(std::string Id, MemoryCategory Category,
-                                std::string ConsentId = "consent-01") {
+MemoryWriteRequest Request(std::string Id, MemoryCategory Category,
+                           std::string ConsentId = "consent-01") {
   MemoryWriteRequest Request;
   Request.MemoryId = std::move(Id);
   Request.Category = Category;
   Request.SubjectId = "principal-01";
-  Request.Content = "Synthetic preference alpha";
+  Request.Content = "Synthetic memory";
   Request.SourceReference = "fixture-message-01";
   Request.ConsentId = std::move(ConsentId);
-  Request.CreatedAt = Now() - std::chrono::seconds{600};
-  Request.Provenance = MemoryProvenance::UserExplicit;
+  Request.CreatedAt = Now() - std::chrono::seconds{100};
   Request.UserConfirmed = true;
   Request.Version = 1;
   return Request;
 }
 
 template <typename Value>
-const MemoryError* AsMemoryError(const MemoryResult<Value>& Result) {
+const MemoryError* AsError(const MemoryResult<Value>& Result) {
   return std::get_if<MemoryError>(&Result);
 }
 
-void TestIdentityAndArgumentGates() {
-  FakeMemoryStorage Storage;
-  ConversationMemory Memory(Storage);
-  auto Incomplete = AliveContext();
-  Incomplete.IdentityVerified = false;
-  Check(AsMemoryError(Memory.Write(Incomplete, WriteRequest(
-                                                 "memory-1",
-                                                 MemoryCategory::
-                                                     IdentityPreference),
-                                     Now()))->Code ==
-            MemoryErrorCode::UnauthorizedIdentity,
-        "unverified identity denied");
-  Check(AsMemoryError(Memory.Recall(Incomplete, Now(), 100))->Code ==
-            MemoryErrorCode::UnauthorizedIdentity,
-        "unverified recall denied");
-  auto Invalid = WriteRequest("", MemoryCategory::IdentityPreference);
-  Check(AsMemoryError(Memory.Write(AliveContext(), Invalid, Now()))->Code ==
-            MemoryErrorCode::InvalidArgument,
-        "empty memory id denied");
-  auto Sensitive = WriteRequest("memory-1",
-                                MemoryCategory::IdentityPreference);
-  Sensitive.Content = "password=synthetic";
-  Check(AsMemoryError(Memory.Write(AliveContext(), Sensitive, Now()))->Code ==
-            MemoryErrorCode::SensitiveContent,
-        "sensitive marker denied");
-  auto Unconfirmed = WriteRequest("memory-2",
-                                  MemoryCategory::IdentityPreference);
-  Unconfirmed.Provenance = MemoryProvenance::UserConfirmed;
-  Unconfirmed.UserConfirmed = false;
-  Check(AsMemoryError(Memory.Write(AliveContext(), Unconfirmed, Now()))->Code ==
-            MemoryErrorCode::InvalidArgument,
-        "unconfirmed provenance denied");
+std::size_t ActiveCount(const FakeMemoryStorage& Storage,
+                        const StoredMemory& Scope) {
+  const auto It = Storage.Rows.find(ScopeKey(Scope));
+  if (It == Storage.Rows.end()) {
+    return 0;
+  }
+  return static_cast<std::size_t>(
+      std::count_if(It->second.begin(), It->second.end(),
+                    [](const StoredMemory& Record) {
+                      return !Record.Tombstoned;
+                    }));
 }
 
-void TestConsentLifecycle() {
+StoredMemory ScopeOf(const AuthorizedMemoryContext& Value) {
+  StoredMemory Scope;
+  Scope.ChannelId = Value.ChannelId;
+  Scope.AccountId = Value.AccountId;
+  Scope.ConversationId = Value.ConversationId;
+  Scope.ScopeKind = Value.ScopeKind;
+  Scope.PrincipalId = Value.PrincipalId;
+  return Scope;
+}
+
+void TestIdentitySessionAndPolicy() {
   FakeMemoryStorage Storage;
   ConversationMemory Memory(Storage);
-  const auto Context = AliveContext();
-  Check(AsMemoryError(Memory.Write(
-                          Context,
-                          WriteRequest("memory-1",
-                                       MemoryCategory::IdentityPreference),
-                          Now()))
-            ->Code == MemoryErrorCode::ConsentRequired,
-        "write without consent denied");
-  Check(std::holds_alternative<std::monostate>(Memory.RegisterConsent(
-            Consent(MemoryCategory::IdentityPreference, Context))),
-        "consent registered");
-  Check(AsMemoryError(Memory.RegisterConsent(
-                          Consent(MemoryCategory::IdentityPreference,
-                                  Context)))
-            ->Code == MemoryErrorCode::InvalidArgument,
-        "duplicate consent rejected");
-  Check(AsMemoryError(Memory.RegisterConsent(ConsentGrant{}))->Code ==
+  auto Session = Context(ConversationScopeKind::Session);
+  Check(AsError(Memory.Write(
+            Session, Request("memory-1", MemoryCategory::IdentityPreference),
+            Now()))
+            ->Code == MemoryErrorCode::SessionScopeVolatile,
+        "SessionScope write rejected");
+  Check(AsError(Memory.Recall(Session, Now(), 100))->Code ==
+            MemoryErrorCode::SessionScopeVolatile,
+        "SessionScope recall rejected");
+  auto Unverified = Context();
+  Unverified.IdentityVerified = false;
+  Check(AsError(Memory.Recall(Unverified, Now(), 100))->Code ==
+            MemoryErrorCode::UnauthorizedIdentity,
+        "unverified identity rejected");
+  auto MismatchedPolicy = Context(ConversationScopeKind::Direct,
+                                  "principal-01", "conversation-01", 2);
+  static_cast<void>(Memory.RegisterConsent(
+      Grant(MemoryCategory::IdentityPreference, Context())));
+  Check(AsError(Memory.Write(
+            MismatchedPolicy,
+            Request("memory-2", MemoryCategory::IdentityPreference), Now()))
+            ->Code == MemoryErrorCode::ConsentMismatch,
+        "identity policy version change invalidates consent");
+}
+
+void TestConsentValidationAndProposalBinding() {
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  const auto Value = Context();
+  auto Invalid = Grant(MemoryCategory::IdentityPreference, Value);
+  Invalid.SourceMessageId.clear();
+  Check(AsError(Memory.RegisterConsent(Invalid))->Code ==
             MemoryErrorCode::InvalidArgument,
-        "invalid consent rejected");
-  auto WrongCategory = WriteRequest("memory-2",
-                                    MemoryCategory::GroupMemory);
-  Check(AsMemoryError(Memory.Write(Context, WrongCategory, Now()))->Code ==
+        "consent requires source message");
+  auto ProposalGrant = Grant(MemoryCategory::IdentityPreference, Value);
+  ProposalGrant.ProposalId = "proposal-a";
+  Check(std::holds_alternative<std::monostate>(
+            Memory.RegisterConsent(ProposalGrant)),
+        "proposal-bound consent registered");
+  auto WrongProposal =
+      Request("memory-1", MemoryCategory::IdentityPreference);
+  WrongProposal.ProposalId = "proposal-b";
+  Check(AsError(Memory.Write(Value, WrongProposal, Now()))->Code ==
             MemoryErrorCode::ConsentMismatch,
-        "consent category mismatch denied");
-  Check(std::holds_alternative<std::monostate>(Memory.Write(
-            Context,
-            WriteRequest("memory-1", MemoryCategory::IdentityPreference),
-            Now())),
-        "authorized write accepted");
-  Check(Storage.Rows.size() == 1, "authorized write persisted");
-  const auto Recall = Memory.Recall(Context, Now(), 1000);
-  Check(std::holds_alternative<std::vector<EmulativeDialog::Context::
-                                               ContextCandidate>>(Recall) &&
-            std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-                Recall)
-                    .size() == 1,
-        "authorized recall returns candidate");
-  Check(AsMemoryError(Memory.RevokeConsent(OtherContext(), "consent-01",
-                                           Now()))
-            ->Code == MemoryErrorCode::UnauthorizedIdentity,
-        "foreign principal cannot revoke");
-  Check(std::holds_alternative<std::monostate>(Memory.RevokeConsent(
-            Context, "consent-01", Now() + std::chrono::seconds{1})),
-        "grantor revokes consent");
-  const auto AfterRevoke =
-      Memory.Recall(Context, Now() + std::chrono::seconds{2}, 1000);
-  Check(std::holds_alternative<std::vector<EmulativeDialog::Context::
-                                               ContextCandidate>>(
-            AfterRevoke) &&
-            std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-                AfterRevoke)
-                .empty(),
-        "revoked memory no longer recalled");
-  Check(!Memory.IsConsentActive("consent-01"), "revoked consent inactive");
+        "consent A cannot authorize proposal B");
+  auto MissingProposal =
+      Request("memory-1", MemoryCategory::IdentityPreference);
+  Check(AsError(Memory.Write(Value, MissingProposal, Now()))->Code ==
+            MemoryErrorCode::ConsentMismatch,
+        "proposal-bound consent requires matching proposal");
+  auto CorrectProposal =
+      Request("memory-1", MemoryCategory::IdentityPreference);
+  CorrectProposal.ProposalId = "proposal-a";
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(Value, CorrectProposal, Now())),
+        "matching proposal writes");
+  Check(AsError(Memory.RegisterConsent(ProposalGrant))->Code ==
+            MemoryErrorCode::InvalidArgument,
+        "duplicate consent rejected");
 }
 
-void TestScopeIsolation() {
+void TestScopeKindAndGroupMembership() {
   FakeMemoryStorage Storage;
   ConversationMemory Memory(Storage);
-  auto First = AliveContext();
-  auto Second = OtherContext();
+  const auto Direct = Context(ConversationScopeKind::Direct);
+  const auto Group = Context(ConversationScopeKind::Group);
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::IdentityPreference, First, "consent-a")));
+      Grant(MemoryCategory::IdentityPreference, Direct, "consent-direct")));
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::IdentityPreference, Second, "consent-b")));
+      Grant(MemoryCategory::GroupMemory, Group, "consent-group")));
   static_cast<void>(Memory.Write(
-      First, WriteRequest("memory-a", MemoryCategory::IdentityPreference,
-                          "consent-a"),
+      Direct,
+      Request("memory-direct", MemoryCategory::IdentityPreference,
+              "consent-direct"),
       Now()));
-  const auto SecondRecall = Memory.Recall(Second, Now(), 1000);
-  Check(std::holds_alternative<std::vector<EmulativeDialog::Context::
-                                               ContextCandidate>>(
-            SecondRecall) &&
-            std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-                SecondRecall)
-                .empty(),
-        "cross principal recall isolated");
-  ForgetRequest CrossForget;
-  CrossForget.MemoryId = "memory-a";
-  Check(AsMemoryError(Memory.Forget(Second, CrossForget, Now()))->Code ==
-            MemoryErrorCode::InvalidArgument,
-        "cross principal forget does not mutate");
-  const auto FirstRecall = Memory.Recall(First, Now(), 1000);
+  static_cast<void>(Memory.Write(
+      Group,
+      Request("memory-group", MemoryCategory::GroupMemory, "consent-group"),
+      Now()));
+  const auto DirectRecall = Memory.Recall(Direct, Now(), 1000);
+  const auto GroupRecall = Memory.Recall(Group, Now(), 1000);
   Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            FirstRecall)
+            DirectRecall)
             .size() == 1,
-        "original scope unchanged");
+        "direct scope reads only direct records");
+  const auto& GroupCandidates =
+      std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+          GroupRecall);
+  Check(GroupCandidates.size() == 1 &&
+            GroupCandidates.front().Scope.Kind ==
+                EmulativeDialog::Context::ConversationKind::Group,
+        "group recall keeps group scope kind");
+  auto ExcludedMember =
+      Context(ConversationScopeKind::Group, "principal-02");
+  ExcludedMember.ConversationId = Group.ConversationId;
+  auto ExcludedConsent = Grant(MemoryCategory::GroupMemory, Group,
+                               "consent-group-excluded");
+  ExcludedConsent.GrantorPrincipalId = "principal-02";
+  ExcludedConsent.AllowedGroupMembers = {"principal-01"};
+  Check(AsError(Memory.RegisterConsent(ExcludedConsent)) == nullptr,
+        "group consent registration accepts member list");
+  Check(AsError(Memory.Write(
+            ExcludedMember,
+            Request("memory-excluded", MemoryCategory::GroupMemory,
+                    "consent-group-excluded"),
+            Now()))
+            ->Code == MemoryErrorCode::ConsentMismatch,
+        "group consent denies unlisted member");
+}
+
+void TestRevocationAtomicityAndScope() {
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  const auto Value = Context();
+  auto OtherConversation =
+      Context(ConversationScopeKind::Direct, "principal-01",
+              "conversation-02");
+  static_cast<void>(Memory.RegisterConsent(
+      Grant(MemoryCategory::IdentityPreference, Value)));
+  static_cast<void>(Memory.Write(
+      Value,
+      Request("memory-1", MemoryCategory::IdentityPreference), Now()));
+  Check(AsError(Memory.RevokeConsent(OtherConversation, "consent-01", Now()))
+            ->Code == MemoryErrorCode::UnauthorizedIdentity,
+        "revoke requires exact conversation scope");
+  Storage.FailApply = true;
+  Check(AsError(Memory.RevokeConsent(Value, "consent-01", Now()))->Code ==
+            MemoryErrorCode::StorageFailure,
+        "revoke batch failure reported");
+  Check(Memory.IsConsentActive("consent-01"),
+        "consent remains active after failed tombstone batch");
+  Check(ActiveCount(Storage, ScopeOf(Value)) == 1,
+        "record remains active after failed revoke");
+  Storage.FailApply = false;
+  Check(std::holds_alternative<std::monostate>(
+            Memory.RevokeConsent(Value, "consent-01", Now())),
+        "exact scope revoke succeeds");
+  Check(!Memory.IsConsentActive("consent-01"), "consent revoked after batch");
+  Check(ActiveCount(Storage, ScopeOf(Value)) == 0,
+        "affected records tombstoned");
 }
 
 void TestForgetAndExpiry() {
   FakeMemoryStorage Storage;
   ConversationMemory Memory(Storage);
-  const auto Context = AliveContext();
+  const auto Value = Context();
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::IdentityPreference, Context)));
+      Grant(MemoryCategory::IdentityPreference, Value)));
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::GroupMemory, Context, "consent-group")));
+      Grant(MemoryCategory::GroupMemory, Value, "consent-group")));
   static_cast<void>(Memory.Write(
-      Context, WriteRequest("memory-1",
-                            MemoryCategory::IdentityPreference),
-      Now()));
+      Value, Request("memory-1", MemoryCategory::IdentityPreference), Now()));
   static_cast<void>(Memory.Write(
-      Context, WriteRequest("memory-2", MemoryCategory::GroupMemory,
-                            "consent-group"),
+      Value, Request("memory-2", MemoryCategory::GroupMemory, "consent-group"),
       Now()));
-  ForgetRequest NoTarget;
-  Check(AsMemoryError(Memory.Forget(Context, NoTarget, Now()))->Code ==
+  ForgetRequest None;
+  Check(AsError(Memory.Forget(Value, None, Now()))->Code ==
             MemoryErrorCode::ForgetScopeRequired,
         "broad forget rejected");
-  ForgetRequest MissingTarget;
-  MissingTarget.MemoryId = "memory-missing";
-  Check(AsMemoryError(Memory.Forget(Context, MissingTarget, Now()))->Code ==
+  ForgetRequest Missing;
+  Missing.MemoryId = "memory-missing";
+  Check(AsError(Memory.Forget(Value, Missing, Now()))->Code ==
             MemoryErrorCode::InvalidArgument,
         "unmatched forget rejected");
-  ForgetRequest Precise;
-  Precise.MemoryId = "memory-1";
-  Check(std::holds_alternative<std::monostate>(
-            Memory.Forget(Context, Precise, Now())),
-        "precise forget tombstoned");
   ForgetRequest Category;
   Category.Category = MemoryCategory::GroupMemory;
   Check(std::holds_alternative<std::monostate>(
-            Memory.Forget(Context, Category, Now())),
-        "category forget tombstoned");
-  const auto Recall = Memory.Recall(Context, Now(), 1000);
-  Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            Recall)
-            .empty(),
-        "forgotten records not recalled");
-  auto Expiring = WriteRequest("memory-3",
-                               MemoryCategory::IdentityPreference);
-  Expiring.ExpiresAt = Now() - std::chrono::seconds{1};
-  Check(AsMemoryError(Memory.Write(Context, Expiring, Now()))->Code ==
+            Memory.Forget(Value, Category, Now())),
+        "category forget succeeds");
+  Check(ActiveCount(Storage, ScopeOf(Value)) == 1,
+        "category forget tombstones matching record");
+  auto Expired = Request("memory-3", MemoryCategory::IdentityPreference);
+  Expired.ExpiresAt = Now() - std::chrono::seconds{1};
+  Check(AsError(Memory.Write(Value, Expired, Now()))->Code ==
             MemoryErrorCode::InvalidArgument,
-        "expired write rejected");
-  auto FutureExpiry = WriteRequest("memory-4",
-                                   MemoryCategory::IdentityPreference);
-  FutureExpiry.ExpiresAt = Now() + std::chrono::seconds{10};
-  Check(std::holds_alternative<std::monostate>(
-            Memory.Write(Context, FutureExpiry, Now())),
-        "expiring write accepted");
-  const auto Later = Memory.Recall(
-      Context, Now() + std::chrono::seconds{11}, 1000);
-  Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            Later)
-            .empty(),
-        "expired memory filtered");
+        "already-expired write rejected");
 }
 
-void TestCapacityAndPriority() {
+void TestCapacityAndWriteAtomicity() {
   FakeMemoryStorage Storage;
   ConversationMemory Memory(Storage, 2);
-  const auto Context = AliveContext();
+  const auto Value = Context();
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::IdentityPreference, Context)));
+      Grant(MemoryCategory::IdentityPreference, Value)));
+  for (int Index = 0; Index < 2; ++Index) {
+    auto Write =
+        Request("memory-" + std::to_string(Index),
+                MemoryCategory::IdentityPreference);
+    Write.CreatedAt = Now() - std::chrono::seconds{100 - Index};
+    static_cast<void>(Memory.Write(Value, Write, Now()));
+  }
+  Storage.FailApply = true;
+  auto Third = Request("memory-2", MemoryCategory::IdentityPreference);
+  Third.CreatedAt = Now();
+  Check(AsError(Memory.Write(Value, Third, Now()))->Code ==
+            MemoryErrorCode::StorageFailure,
+        "capacity write batch failure reported");
+  Check(ActiveCount(Storage, ScopeOf(Value)) == 2,
+        "failed write preserves eviction candidate");
+  Storage.FailApply = false;
+  static_cast<void>(Memory.Write(Value, Third, Now()));
+  Check(ActiveCount(Storage, ScopeOf(Value)) == 2,
+        "successful capacity write keeps bounded count");
+  auto Conflict = Request("memory-0", MemoryCategory::IdentityPreference);
+  Conflict.Version = 1;
+  Check(AsError(Memory.Write(Value, Conflict, Now()))->Code ==
+            MemoryErrorCode::StorageFailure,
+        "version conflict maps to storage failure");
+}
+
+void TestRecallPriorityAndSummaryMapping() {
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  const auto Value = Context(ConversationScopeKind::Group);
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::ActiveConversationContext, Context,
-              "consent-task")));
-  for (int Index = 0; Index < 3; ++Index) {
-    auto Request = WriteRequest(
-        "memory-" + std::to_string(Index),
-        MemoryCategory::IdentityPreference);
-    Request.CreatedAt = Now() - std::chrono::seconds{100 - Index};
-    static_cast<void>(Memory.Write(Context, Request, Now()));
-  }
-  const auto Records = Storage.Rows.begin()->second;
-  std::size_t Active = 0;
-  for (const auto& Record : Records) {
-    Active += Record.Tombstoned ? 0U : 1U;
-  }
-  Check(Active == 2, "capacity evicts oldest deterministically");
-  auto Task = WriteRequest("memory-task",
-                           MemoryCategory::ActiveConversationContext,
-                           "consent-task");
-  Task.Content = "Active task context";
-  static_cast<void>(Memory.Write(Context, Task, Now()));
-  const auto Recall = Memory.Recall(Context, Now(), 1000);
+      Grant(MemoryCategory::ConversationSummary, Value, "consent-summary")));
+  static_cast<void>(Memory.RegisterConsent(
+      Grant(MemoryCategory::ActiveConversationContext, Value,
+            "consent-task")));
+  static_cast<void>(Memory.Write(
+      Value,
+      Request("memory-summary", MemoryCategory::ConversationSummary,
+              "consent-summary"),
+      Now()));
+  static_cast<void>(Memory.Write(
+      Value,
+      Request("memory-task", MemoryCategory::ActiveConversationContext,
+              "consent-task"),
+      Now()));
+  const auto Recall = Memory.Recall(Value, Now(), 1000);
   const auto& Candidates =
       std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
           Recall);
-  Check(!Candidates.empty() &&
+  Check(Candidates.size() == 2 &&
             Candidates.front().Kind ==
-                EmulativeDialog::Context::ContextItemKind::ActiveChatTask,
-        "higher priority task recalled first");
-  const auto SmallBudget = Memory.Recall(Context, Now(), 1);
-  Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            SmallBudget)
-                .size() <= 1,
-        "recall respects token budget");
+                EmulativeDialog::Context::ContextItemKind::
+                    ConversationHistory,
+        "tier 3 summary recalls before tier 4 active task");
+  const auto Summary = std::find_if(
+      Candidates.begin(), Candidates.end(),
+      [](const auto& Candidate) {
+        return Candidate.Id.Value == "memory-summary";
+      });
+  Check(Summary != Candidates.end() &&
+            Summary->Kind ==
+                EmulativeDialog::Context::ContextItemKind::
+                    ConversationHistory &&
+            Summary->Priority ==
+                EmulativeDialog::Context::ContextPriorityTier::Tier3,
+        "summary maps to conversation history tier 3");
 }
 
-void TestRestoreBackup() {
+void TestRestoreBackupBoundaries() {
   FakeMemoryStorage Storage;
-  ConversationMemory Memory(Storage);
-  const auto Context = AliveContext();
+  ConversationMemory Memory(Storage, 2);
+  const auto Value = Context();
   static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::IdentityPreference, Context)));
-  auto Record = WriteRequest("memory-restore",
-                             MemoryCategory::IdentityPreference);
-  StoredMemory Stored;
-  Stored.MemoryId = Record.MemoryId;
-  Stored.Category = Record.Category;
-  Stored.ChannelId = Context.ChannelId;
-  Stored.AccountId = Context.AccountId;
-  Stored.ConversationId = Context.ConversationId;
-  Stored.PrincipalId = Context.PrincipalId;
-  Stored.SubjectId = Record.SubjectId;
-  Stored.Content = Record.Content;
-  Stored.SourceReference = Record.SourceReference;
-  Stored.ConsentId = Record.ConsentId;
-  Stored.CreatedAt = Record.CreatedAt;
-  Stored.Provenance = Record.Provenance;
-  Stored.Version = 1;
-  Storage.BackupRecords.push_back(Stored);
-  const auto Restored = Memory.RestoreBackup(Context, Now());
+      Grant(MemoryCategory::IdentityPreference, Value)));
+  StoredMemory Base = ScopeOf(Value);
+  Base.MemoryId = "memory-restore";
+  Base.Category = MemoryCategory::IdentityPreference;
+  Base.SubjectId = "principal-01";
+  Base.Content = "Synthetic memory";
+  Base.SourceReference = "fixture-message-01";
+  Base.ConsentId = "consent-01";
+  Base.CreatedAt = Now() - std::chrono::seconds{100};
+  Base.Version = 1;
+  Storage.BackupRecords = {Base};
+  const auto Restored = Memory.RestoreBackup(Value, Now());
   Check(std::holds_alternative<std::size_t>(Restored) &&
             std::get<std::size_t>(Restored) == 1,
-        "authorized backup restored");
-  static_cast<void>(Memory.RevokeConsent(Context, "consent-01", Now()));
-  const auto Denied = Memory.RestoreBackup(Context, Now());
+        "eligible backup restored");
+  Storage.BackupRecords = {Base};
+  const auto Conflict = Memory.RestoreBackup(Value, Now());
+  Check(std::holds_alternative<std::size_t>(Conflict) &&
+            std::get<std::size_t>(Conflict) == 0,
+        "version conflict backup skipped");
+  auto Tombstoned = Base;
+  Tombstoned.MemoryId = "memory-tombstoned";
+  Tombstoned.Tombstoned = true;
+  Storage.BackupRecords = {Tombstoned};
+  const auto NoResurrection = Memory.RestoreBackup(Value, Now());
+  Check(std::holds_alternative<std::size_t>(NoResurrection) &&
+            std::get<std::size_t>(NoResurrection) == 0,
+        "tombstoned backup never resurrects");
+  auto Sensitive = Base;
+  Sensitive.MemoryId = "memory-sensitive";
+  Sensitive.Content = "api_key=synthetic";
+  Storage.BackupRecords = {Sensitive};
+  const auto Denied = Memory.RestoreBackup(Value, Now());
   Check(std::holds_alternative<std::size_t>(Denied) &&
             std::get<std::size_t>(Denied) == 0,
-        "revoked consent not restored");
+        "sensitive backup denied");
+  Storage.BackupRecords = {Base};
+  static_cast<void>(Memory.Write(
+      Value,
+      Request("memory-capacity", MemoryCategory::IdentityPreference), Now()));
+  const auto Full = Memory.RestoreBackup(Value, Now());
+  Check(std::holds_alternative<std::size_t>(Full) &&
+            std::get<std::size_t>(Full) == 0,
+        "backup restore respects capacity");
 }
 
-void TestStorageFailureMapping() {
+void TestRestartBoundaryAndStorageFailures() {
   FakeMemoryStorage Storage;
-  ConversationMemory Memory(Storage);
-  const auto Context = AliveContext();
-  static_cast<void>(Memory.RegisterConsent(
-      Consent(MemoryCategory::IdentityPreference, Context)));
+  const auto Value = Context();
+  {
+    ConversationMemory Memory(Storage);
+    static_cast<void>(Memory.RegisterConsent(
+        Grant(MemoryCategory::IdentityPreference, Value)));
+    static_cast<void>(Memory.Write(
+        Value,
+        Request("memory-durable", MemoryCategory::IdentityPreference), Now()));
+  }
+  ConversationMemory Restarted(Storage);
+  static_cast<void>(Restarted.RegisterConsent(
+      Grant(MemoryCategory::IdentityPreference, Value)));
+  const auto Recall = Restarted.Recall(Value, Now(), 1000);
+  Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+            Recall)
+            .size() == 1,
+        "durable scope recovers after restart");
   Storage.FailList = true;
-  Check(AsMemoryError(Memory.Recall(Context, Now(), 10))->Code ==
+  Check(AsError(Restarted.Recall(Value, Now(), 1000))->Code ==
             MemoryErrorCode::StorageFailure,
         "list failure mapped");
   Storage.FailList = false;
-  Storage.FailPut = true;
-  Check(AsMemoryError(Memory.Write(
-                          Context,
-                          WriteRequest("memory-1",
-                                       MemoryCategory::IdentityPreference),
-                          Now()))
-            ->Code == MemoryErrorCode::StorageFailure,
-        "put failure mapped");
-  Storage.FailPut = false;
-  Check(std::holds_alternative<std::monostate>(Memory.Write(
-            Context,
-            WriteRequest("memory-live",
-                         MemoryCategory::IdentityPreference),
-            Now())),
-        "record for tombstone failure");
-  Storage.FailTombstone = true;
-  ForgetRequest Request;
-  Request.MemoryId = "memory-live";
-  Check(AsMemoryError(Memory.Forget(Context, Request, Now()))->Code ==
-            MemoryErrorCode::StorageFailure,
-        "tombstone failure mapped");
   Storage.FailBackup = true;
-  Check(std::get<MemoryError>(Memory.RestoreBackup(Context, Now())).Code ==
+  Check(AsError(Restarted.RestoreBackup(Value, Now()))->Code ==
             MemoryErrorCode::StorageFailure,
         "backup failure mapped");
 }
 
-void TestFixtureCaseCoverage() {
-  std::ifstream Fixture(
-      "Tests/Contract/Memory/Fixtures/ScopeConsentCases.json",
-      std::ios::binary);
-  std::ostringstream Buffer;
-  Buffer << Fixture.rdbuf();
-  const std::string Content = Buffer.str();
-  for (const char* CaseId :
-       {"SC-001", "SC-002", "SC-006", "SC-008", "SC-009", "SC-010",
-        "SC-011"}) {
-    Check(Content.find(CaseId) != std::string::npos,
-          std::string("fixture case present ") + CaseId);
-  }
-  std::ifstream Forget(
-      "Tests/Contract/Memory/Fixtures/ForgetRecoveryCases.json",
-      std::ios::binary);
-  std::ostringstream ForgetBuffer;
-  ForgetBuffer << Forget.rdbuf();
-  const std::string ForgetContent = ForgetBuffer.str();
-  for (const char* CaseId : {"FR-001", "FR-004", "FR-008"}) {
-    Check(ForgetContent.find(CaseId) != std::string::npos,
-          std::string("forget fixture case present ") + CaseId);
-  }
+void TestAdditionalReviewScenarios() {
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage, 3);
+  const auto Value = Context();
+  auto OtherPrincipal =
+      Context(ConversationScopeKind::Direct, "principal-02");
+  OtherPrincipal.ConversationId = Value.ConversationId;
+  Check(AsError(Memory.RevokeConsent(OtherPrincipal, "consent-01", Now()))
+            ->Code == MemoryErrorCode::UnauthorizedIdentity,
+        "revoke denies foreign principal on same conversation");
+  auto EmptyGrantor = Grant(MemoryCategory::IdentityPreference, Value);
+  EmptyGrantor.GrantorPrincipalId.clear();
+  Check(AsError(Memory.RegisterConsent(EmptyGrantor))->Code ==
+            MemoryErrorCode::InvalidArgument,
+        "consent requires grantor principal");
+  auto EmptyPolicy = Grant(MemoryCategory::IdentityPreference, Value);
+  EmptyPolicy.IdentityPolicyVersion = 0;
+  Check(AsError(Memory.RegisterConsent(EmptyPolicy))->Code ==
+            MemoryErrorCode::InvalidArgument,
+        "consent requires identity policy version");
+  auto EmptyConversation = Grant(MemoryCategory::IdentityPreference, Value);
+  EmptyConversation.ConversationId.clear();
+  Check(AsError(Memory.RegisterConsent(EmptyConversation))->Code ==
+            MemoryErrorCode::InvalidArgument,
+        "consent requires exact conversation scope");
+  static_cast<void>(Memory.RegisterConsent(
+      Grant(MemoryCategory::IdentityPreference, Value)));
+  auto CardSensitive =
+      Request("memory-sensitive", MemoryCategory::IdentityPreference);
+  CardSensitive.Content = "card_number=synthetic";
+  Check(AsError(Memory.Write(Value, CardSensitive, Now()))->Code ==
+            MemoryErrorCode::SensitiveContent,
+        "payment marker rejected");
+  auto CvvSensitive =
+      Request("memory-sensitive", MemoryCategory::IdentityPreference);
+  CvvSensitive.Content = "cvv=synthetic";
+  Check(AsError(Memory.Write(Value, CvvSensitive, Now()))->Code ==
+            MemoryErrorCode::SensitiveContent,
+        "cvv marker rejected");
+  static_cast<void>(Memory.Write(
+      Value,
+      Request("memory-a", MemoryCategory::IdentityPreference), Now()));
+  static_cast<void>(Memory.Write(
+      Value,
+      Request("memory-b", MemoryCategory::IdentityPreference), Now()));
+  ForgetRequest Precise;
+  Precise.MemoryId = "memory-a";
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Forget(Value, Precise, Now())),
+        "precise forget succeeds");
+  ForgetRequest WholeScope;
+  WholeScope.EntireAuthorizedScope = true;
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Forget(Value, WholeScope, Now())),
+        "entire authorized scope forget succeeds");
+  Check(ActiveCount(Storage, ScopeOf(Value)) == 0,
+        "scope forget tombstones all matching records");
+  auto Session = Context(ConversationScopeKind::Session);
+  Check(AsError(Memory.Forget(Session, Precise, Now()))->Code ==
+            MemoryErrorCode::SessionScopeVolatile,
+        "SessionScope forget rejected");
+  Check(AsError(Memory.RevokeConsent(Value, "missing-consent", Now()))->Code ==
+            MemoryErrorCode::UnauthorizedIdentity,
+        "unknown consent revoke denied");
+  auto FutureExpiry =
+      Request("memory-expiry", MemoryCategory::IdentityPreference);
+  FutureExpiry.ExpiresAt = Now() + std::chrono::seconds{5};
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(Value, FutureExpiry, Now())),
+        "future expiry accepted");
+  Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+            Memory.Recall(Value, Now() + std::chrono::seconds{6}, 1000))
+            .empty(),
+        "expired recall filtered");
+  Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+            Memory.Recall(Value, Now(), 1))
+            .empty(),
+        "tiny token budget yields no candidates");
 }
 
 } // namespace
 
 int main() {
-  TestIdentityAndArgumentGates();
-  TestConsentLifecycle();
-  TestScopeIsolation();
+  TestIdentitySessionAndPolicy();
+  TestConsentValidationAndProposalBinding();
+  TestScopeKindAndGroupMembership();
+  TestRevocationAtomicityAndScope();
   TestForgetAndExpiry();
-  TestCapacityAndPriority();
-  TestRestoreBackup();
-  TestStorageFailureMapping();
-  TestFixtureCaseCoverage();
+  TestCapacityAndWriteAtomicity();
+  TestRecallPriorityAndSummaryMapping();
+  TestRestoreBackupBoundaries();
+  TestRestartBoundaryAndStorageFailures();
+  TestAdditionalReviewScenarios();
   if (Failures != 0) {
     std::cerr << Failures << " checks failed\n";
     return 1;
