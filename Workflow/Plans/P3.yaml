@@ -319,10 +319,15 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Anthropic Messages C++ Provider Adapter
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Review
     AssignmentNote: "Dependencies ED-0015/ED-0011/ED-0120 are Merged; assigned to Worker05; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
     LocalCompletionHead: 6797cea
     LocalCoverage: "95.30% lines (771/809), 124/124 fixture assertions"
+    PullRequestCreated: true
+    PullRequestNumber: 18
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/18
+    ReviewBaseCommit: 13fe929573de105e09af9b56f022ffbe62d07ba7
+    ReviewHeadCommit: 2450f78
     Phase: P3
     OwnerRole: AnthropicProviderOwner
     OwnerSlotId: Worker05
@@ -575,7 +580,20 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Blocked
+    State: Assigned
+    DependencyChangeRequest:
+      ChangeRequestId: CR-ED-0114-DEPS-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Start ED-0114 against the frozen canonical usage event model and merged ED-0107 projector while provider adapter PRs are pending; integrate normalizers after their PRs merge."
+    WriteSetChangeRequest:
+      ChangeRequestId: CR-ED-0114-002
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Allow .hpp file names in place of planned .h paths and add Tests/Contract/Agent/CMakeLists.txt to register the budget and usage normalization tests."
+      AcceptedAt: 2026-10-28
+    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0114-R2
+    AssignedBranch: Task/ED-0114-R2-UsageLimits
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
     OwnerSlotId: Worker03

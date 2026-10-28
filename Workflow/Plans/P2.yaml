@@ -1501,7 +1501,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现规范化流式 Agent 事件投影与终态门
     TaskKind: CapabilitySlice
-    State: Review
+    State: Merged
+    MergeCommit: e0b48b37f7bde724904e7ed42b587a54171a22c6
+    MergedByCoordinatorAt: 2026-10-28
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0107-DEPS-001
       Decision: Accepted
