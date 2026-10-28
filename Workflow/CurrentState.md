@@ -59,10 +59,11 @@
 
 ### 继续执行增量
 
-- `origin/main = be2fd36`；PR #14 ED-0143 已 squash 合并（Boost JSON gitlinks 在固定 ExternalProject populate 阶段获取，verify 只读）。远端分支为 main + ED-0113 + ED-0114，数量为 3。
+- `origin/main = 5531594`；PR #14 ED-0143 已 squash 合并（Boost JSON gitlinks 在固定 ExternalProject populate 阶段获取，verify 只读）。远端分支为 main + ED-0113 + ED-0114，数量为 3。
 - PR #14 固定 Head `8de7a36` 已由 Worker04 APPROVE；热缓存根构建与 Boost.JSON CTest 3/3 通过，离线缺失依赖 fail-closed。冷缓存真实下载因本机 Schannel/TLS 断连未能完成，已如实记录。
-- ED-0112/R2 恢复实现新 Head `9b31251` 已本地提交并基于 `main@5ac8966`：五种终态区分、Operation/idempotency reconciliation、上下文/请求漂移拒绝、Unsupported、秘密字段 sentinel、single writer；全量 CTest 16/16，两个生产源覆盖率 87.38%/94.48%。尚未推送，等待分支名额与独立固定 Head 审查。
+- ED-0112/R2 恢复实现新 Head `9b31251` 已本地提交并基于 `main@5ac8966`：五种终态区分、Operation/idempotency reconciliation、上下文/请求漂移拒绝、Unsupported、秘密字段 sentinel、single writer；全量 CTest 16/16，两个生产源覆盖率 87.38%/94.48%。尚未推送，等待独立固定 Head 审查。
 - ED-0113/R4 PR #23 最新 Head `a3d060f` 已补敏感字段策略测试；Worker06 复审仍发现 GroupMemory consent 列表不能跨 Principal 读取 grantor 记录、RestoreBackup 可覆盖既有 tombstone、fixture 未真实执行；Worker05 正在修复。
-- ED-0114/R2 PR #20 新 Head `1ba0cb0` 已处理 Total-only/partial usage 安全阻断、Runtime 与 ToolCallCoordinator 预算门、Core 批准的新 RequestId 续跑；待独立固定 Head 复审，并重基到最新 main。
+- ED-0114/R2 PR #20 新 Head `a23f252`（Base `5531594`）已处理 Total-only/partial usage 安全阻断、Runtime 与 ToolCallCoordinator 预算门、Core 批准的新 RequestId 续跑；Worker04 正在独立固定 Head 复审。
+- ED-0105 Chat Completions adapter 已有本地 C++ 实现与 fixture 测试，现由 Worker01 接手原隔离 worktree，使用合并后的 Boost.JSON 正式目标重基、验证并准备 PR。
 - Coordinator 在 PR #14 合并后以独立 Windows 原生构建验证 `main@be2fd36`：configure 0、全量 build 0、CTest 17/17 通过（Boost.JSON 探针、缺 gitlink fail-closed、winpthread 链接检查均包括在内）。冷缓存 clone 受本机 Schannel/TLS 断连影响；热缓存 build 与离线失败关闭通过。
 - AgentRuntime 当前仍为同步采样；异步 C++20/Boost.Asio 回合循环仍未实现。

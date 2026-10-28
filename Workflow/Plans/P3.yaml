@@ -194,13 +194,18 @@ Tasks:
     Title: 实现 OpenAI-compatible Chat Completions C++ Provider Adapter
     TaskKind: CapabilitySlice
     State: Assigned
-    AssignmentNote: "Dependencies ED-0015/ED-0010/ED-0120 are Merged; assigned to Worker04; JSON dependency delivered by ED-0143 (EmulativeDialogBoostJson)."
+    AssignmentNote: "Dependencies ED-0015/ED-0010/ED-0120/ED-0143 are Merged; provider implementation resumed by Worker01 after Worker04's backend task became unavailable."
+    OwnerChangeRequest:
+      ChangeRequestId: CR-ED-0105-OWNER-001
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      Scope: "Reassign ED-0105/R4 completion and formal PR submission to Worker01 in the existing isolated worktree H:/Qbot/EmulativeDialog.ED-0105-R4; preserve Goal, WriteSet, Acceptance, dependencies and Reviewer."
     LocalCompletionHead: 4542d0e
     LocalCoverage: "89.30% lines (835/935), diagnostic Boost 1.91 build"
     Phase: P3
     OwnerRole: ChatCompletionsProviderOwner
-    OwnerSlotId: Worker04
-    OwnerAgentId: "/root/provider_chat"
+    OwnerSlotId: Worker01
+    OwnerAgentId: /root/worker01_ed0112_recovery
     ReviewerRole: AnthropicProviderOwner
     ReviewerSlotId: Worker05
     ReviewerAgentId: "/root/provider_anthropic"
@@ -606,7 +611,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Rework
+    State: Review
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0114-DEPS-001
       Decision: Accepted
@@ -629,11 +634,12 @@ Tasks:
     PullRequestCreated: true
     PullRequestNumber: 20
     PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
-    ReviewBaseCommit: 5931f0fbc40237f67056f5ae143068fc7da4df09
-    ReviewHeadCommit: 3748abe4dc72d17d9e813188cd8771645d50f3ef
-    ReviewStatus: ChangesRequested
-    CurrentRemoteHead: 1ba0cb03b3d8d5bfbab90501894aa266e61bb2ae
-    ReviewRound2Status: AwaitingIndependentFixedHeadReview
+    ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
+    ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
+    ReviewStatus: AwaitingIndependentFixedHeadReview
+    ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
+    ReviewRound2Status: ChangesRequested
+    ReviewRound3Validation: "Full root build; CTest 19/19; all six changed production sources >=80% lines"
     ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
     ReviewFindings:
       - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
