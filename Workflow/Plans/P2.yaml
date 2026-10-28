@@ -2861,3 +2861,59 @@ Tasks:
         - "旧段（约第 28 行）写最多 2 个任务 PR 分支，与新段和 TaskIndex 的 3 个任务分支上限矛盾。"
         - "策略段仍以已不存在的 codex/integration 为默认集成分支，应改为 main。"
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0141
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 补齐 AgentRuntime 行为覆盖并注册现有合同测试
+    TaskKind: TestSupport
+    State: Assigned
+    Phase: P2
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: /root/worker02_instruction_assembly
+    ReviewerRole: BuildAndWorkflowOwner
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: /root/worker06_coverage_gate
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    Branch: Task/ED-0141-AgentRuntimeCoverage
+    Worktree: H:/Qbot/EmulativeDialog.ED-0141
+    BaselineCommit: 942b22ac5d66e7fd7e18c7fbd8d2ba7c71be4d9c
+    Goal: "把 Source/Agent/AgentRuntime.cpp 的行/分支覆盖率从 72.56%/78.00% 提升到 >=80%，同时把已实现的 ConversationSessionStateTests 与 ContextSelectorTests 注册进 CMake/CTest，防止回归漏测。"
+    OutOfScope: ["改变 AgentRuntime 公共行为", "新增 Provider", "修改 Provider/Channel/Memory 实现", "真实网络调用"]
+    DependsOn: [ED-0101, ED-0102, ED-0103]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml, Architecture/Modules/HostCoreAgent.yaml, Architecture/Contracts/CoreAgentContract.md, Source/Agent/AgentRuntime.cpp, Tests/Contract/Agent/AgentRuntimeContractTests.cpp, Tests/Contract/Core/ConversationSessionStateTests.cpp, Tests/Contract/Context/ContextSelectorTests.cpp]
+      OnDemandSet: []
+      ForbiddenSet: ["Source/Providers/", "Source/Channels/", "Workflow/Plans/"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [Tests/Contract/Agent/AgentRuntimeContractTests.cpp, Tests/Contract/Agent/CMakeLists.txt, Source/Agent/AgentRuntime.cpp]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "AgentRuntime.cpp 行覆盖率 >=80% 且分支覆盖率 >=80%。", Evidence: "gcov JSON v2 + 文本 .gcov，覆盖错误映射、Unsupported、取消、无效流、输出受限等路径。"}
+      - {AcceptanceId: AC-2, Description: "ConversationSessionStateTests 与 ContextSelectorTests 被注册进 CTest 并实际执行。", Evidence: "ctest -N 显示目标，ctest 运行通过。"}
+      - {AcceptanceId: AC-3, Description: "若测试暴露 AgentRuntime 缺陷，修复且不改变合同语义。", Evidence: "缺陷回归用例 + 修复提交。"}
+    Validation:
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Agent/AgentRuntime.cpp]
+        TestDriverSource: Tests/Contract/Agent/AgentRuntimeContractTests.cpp
+        MinimumLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0141.build/Reports
+      RequiredTargets: [AgentRuntimeContractTests, ConversationSessionStateTests, ContextSelectorTests]
+      TargetedBuild:
+        - "$env:PATH='C:/msys64/ucrt64/bin;'+$env:PATH; I:/cmake/bin/cmake.exe --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --parallel 6"
+        - "I:/cmake/bin/ctest.exe --preset windows-agent-slice --output-on-failure -R 'AgentRuntime|ConversationSessionState|ContextSelector'"
+      LiveSideEffects: Forbidden
+      NotRunReason: "测试仅使用 FakeProvider 与进程内对象。"
+    RiskLevel: Medium
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, TEST-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
