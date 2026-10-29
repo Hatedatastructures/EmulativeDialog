@@ -1,6 +1,6 @@
 # Core Endpoint Grant Contract V1
 
-Status: Frozen by ED-0147/R7.
+Status: ED-0147/R9 freeze candidate for CoreEndpointGrantContract V1; frozen only after independent approval and merge of PR #46.
 
 ## Scope and ownership
 
