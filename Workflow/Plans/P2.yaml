@@ -3757,6 +3757,13 @@ Tasks:
     ResolvedFindingIds: [ED-0120-R5-F001, ED-0120-R5-F002]
     PRMergedEventId: 2cd6c152-5f46-430f-934f-f08232bc7c16
     TaskClosedEventId: 9f6930b0-9214-497c-b23b-77c31cc92011
+    PostMergeWorktreeMigration:
+      CommandEventId: 44b424af-57dd-4a52-a4de-f5933155a11b
+      PreviousBranch: Task/ED-0120-R5ContractCloseout
+      PreviousHeadCommit: f4c3203061c9ff5680fbc407695ad31d8805453e
+      FinalMainCommit: b4c2712e2d9e1d1221e69c812fba9a6d028aef5a
+      BranchRefPreservedAt: f4c3203061c9ff5680fbc407695ad31d8805453e
+      WorktreeCleanAfterMigration: true
     ValidationCommandEventId: 213b7f14-e0eb-461d-a4c4-bcc0069835ac
     PostCloseoutValidationEventId: 1edda28c-5ba1-450c-b23b-a632f1506d0c
     Validation025EventId: 01e0de9c-f23c-4946-a2f2-2a6da70a9b8d

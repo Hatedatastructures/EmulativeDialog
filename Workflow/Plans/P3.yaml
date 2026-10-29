@@ -2192,7 +2192,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P3
     ChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
     CorrectiveToTaskId: ED-0120
@@ -2265,6 +2265,15 @@ Tasks:
       NativeGitHubReviewSubmissionCount: 0
       NativeReviewCountSource: "GitHub plugin list_pull_request_reviews"
       FindingsReportedInPRBody: 0
+    TaskValidationCompletedEventId: f49548d9-794f-4974-87c2-b2cde2efadcf
+    TaskClosedEventId: 2477fb9a-c355-4383-bf58-a5792bcf60e6
+    PostMergeWorktreeMigration:
+      CommandEventId: 48e50bda-1484-44e4-8b47-227524950de8
+      PreviousBranch: Task/ED-0147-CoreEndpointGrantAuthorityR7
+      PreviousHeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+      FinalMainCommit: b4c2712e2d9e1d1221e69c812fba9a6d028aef5a
+      BranchRefPreservedAt: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+      WorktreeCleanAfterMigration: true
     PreviousRevision8Evidence:
       TaskRevision: 8
       ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
