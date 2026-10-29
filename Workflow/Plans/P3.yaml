@@ -2218,7 +2218,7 @@ Tasks:
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Ready
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0144-R3-CONSENT-001
     OwnerRole: MemoryOwner
@@ -2236,11 +2236,11 @@ Tasks:
     TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
-    BaselineCommit: ""
-    Branch: ""
-    Worktree: ""
-    AssignedToSlot: ""
-    AssignmentNote: "Implementation may start before the HTTP EntryGate only after this exact R4 TaskSpec and CR-ED-0144-R3-CONSENT-001 receive Owner/Reviewer approval and merge to main. The scoped exception never passes P3 EntryGate and does not unblock ED-0114, ED-0144, or ED-0145; durable Memory remains blocked until ED-0148 passes."
+    BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
+    Branch: Task/ED-0148-R4ConsentMatchingImpl
+    Worktree: H:/Qbot/EmulativeDialog.ED-0148
+    AssignedToSlot: Worker05
+    AssignmentNote: "PR #26 merged the approved R4 TaskSpec and consent CR; ED-0113 is merged. Assignment uses main baseline d8e918bd812f55b82babd3ef8df6a9b1b08f1eda. Worker05 may begin the two-path WriteSet only after this separate assignment-ledger PR merges. The scoped pre-gate exception does not pass P3 EntryGate or unblock ED-0114/ED-0144/ED-0145."
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
