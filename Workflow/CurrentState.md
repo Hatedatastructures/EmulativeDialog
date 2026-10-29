@@ -167,6 +167,6 @@
 ## 2026-10-29 ED-0112/R6 validation-only revision
 
 - CR-ED-0112-007 已在固定治理 Base `b04f407403c12ad13e47e4aea8ad092a9dbba321` → Head `456b2172f88460e6eb4ebd02f5c8c450cc44ca96` 上获得 Worker02 Owner 与 Worker06 Independent Reviewer 的 Approve；Coordinator 已接受。CR 仅改两条 StaticChecks 比较基线，不变更 Goal、Acceptance、Dependencies、ContractVersion、ReadSet、WriteSet、ForbiddenSet、Owner、Reviewer、branch、worktree 或产品源代码。
-- P2 当前生成 ED-0112/R6 TaskSpec 候选：任务仍 Assigned 到 Worker02，保持原实现 Base `0b666e655e75f7fdc7074a405cb2b2a35975a6fc`、分支和 worktree；R6 的 Owner/Reviewer/Coordinator TaskSpec 决策目前 Pending，等待对 R6 版本本身的固定头审查。R5 原始冲突值保留在 `PreviousRevision5Evidence`。追加式更正分别记录 R5 `TaskSpecReviewStatus`、`TaskSpecOwnerDecision` 与独立 Reviewer 状态；没有改写 R5 原记录。
+- ED-0112/R6 TaskSpec 已由 Owner Worker02、独立 Reviewer Worker06 在固定候选 Head `4ec9abbb68b763c88cce73f3647e6ff987f3f951` 批准，Coordinator 已接受；治理 PR 尚待创建/合入。Worker02 仍负责同一实现任务，Base `0b666e655e75f7fdc7074a405cb2b2a35975a6fc`、代码分支和 worktree 保持不变。R5 原始冲突值保留在 `PreviousRevision5Evidence`；追加式更正记录 R5 `TaskSpecReviewStatus`、`TaskSpecOwnerDecision` 与独立 Reviewer 状态，没有改写 R5 原记录。
 - Windows 静态验收日志 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5-MajorFix9/windows-agent-slice/Reports/CR-ED-0112-007-StaticChecks.txt` 记录了 Base `0b666e...` → Head `19691cb...`：`git diff --check` 退出 0，实际路径 8/8 与 WriteSet 完全相同；合并前旧基线会得到 16 条路径。日志只覆盖静态检查，不表示本次重跑 C++ 构建、CTest 或覆盖率。
-- ED-0112 的既有 C++ Windows 构建、CTest 2/2 与 89.66%/91.53% 覆盖率证据仍对应原实现 Head `19691cb...`。代码分支尚未推送或创建 PR；须先完成 R6 TaskSpec 固定头复审与治理 PR，然后 Worker06 对实现代码按获批 R6 再审，才提交实现 PR。远端分支仍 3/4；根工作区 `$deps/` 未触碰。
+- ED-0112 的既有 C++ Windows 构建、CTest 2/2 与 89.66%/91.53% 覆盖率证据仍对应原实现 Head `19691cb...`。代码分支尚未推送或创建 PR；治理 PR 合入后，Worker06 仍须对实现代码按获批 R6 固定 Base/Head 再审，才提交实现 PR。远端分支仍 3/4；根工作区 `$deps/` 未触碰。
