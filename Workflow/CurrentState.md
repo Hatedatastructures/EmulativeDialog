@@ -1,6 +1,6 @@
 # 当前状态
 
-日期：2026-10-28
+日期：2026-10-29
 
 ## 仓库与分支
 
@@ -289,3 +289,26 @@
 - assignment-ledger PR 合并并通过 WorkflowController validate-assignment 前，不运行 R9 configure/build/CTest/coverage。R8 编译和定向测试通过，但覆盖率没有测得。
 - P3 EntryGate 仍 Pending；异步 C++ AgentRuntime、Provider/WinHTTP 生产接线和真实 QQ Adapter 仍未完成。
 - 远端目前 3/4 个分支：main、PR #25、PR #45。PR #25 的 Memory TTL 备份恢复问题仍阻塞。
+
+## 2026-10-29 ED-0147/R9 合并事实与验收证据补录（15:01 UTC）
+
+- PR #45 ED-0147/R9 assignment ledger 固定 Head `395899c57596cac55b92e631abca906796a8fd03`，于 `2026-10-29T12:16:42Z` squash 合并为 `b037f2b8dfce76f504213b4f6e46d1faf15424ed`。PR #46 以该 merge commit 为 Base，固定 Head `3a9f00aff097c4a23a655eaea1093c35096c67b0`，于 `2026-10-29T12:47:14Z` squash 合并为 P3 产品基线 `5364581858c8299884e87e00730748b86fb43346`。
+- PR #46 记录 WorkflowController `validate-assignment` 返回 `AssignmentAccepted`、Windows C++20 configure 与定向构建退出码 0、`Core.EndpointGrantAuthority` CTest 1/1 与断言 13/13、gcov JSON v2 277/292（94.86%）。assignment 报告、CTest 日志与 coverage 报告在对应中央 `.build` 路径均可读取；Worker06 实际解析 coverage 报告为 GCC/gcov 16.1.0。configure/build 原始 stdout 未留存，退出码来自 PR #46 正文记录。
+- PR #46 正文记录 Worker04 与 Worker06 对 Base→Head 的内部固定头 APPROVE、0 findings；GitHub 插件的 native review submissions 查询返回 0。账本保留两者为不同证据来源。
+- ED-0147/R9 仍保持 `State: Assigned`，没有写入 TaskClosed/终态 Merged。P3 EntryGate 仍 `Pending`：ADR-0003 允许诊断日志记录 EndpointGrantId，CoreEndpointGrantContract V1 AC-6 禁止 grant IDs 进入日志、事件、诊断或持久化；HttpTransportContract V1 仍待合同修订与冻结。生产 Provider/WinHTTP composition 仍未接线。
+- WorkflowController `query` 均退出 0：ED-0147/R9=`Assigned`；ED-0149/R1=`Proposed` 且 Owner/Branch 为空；ED-0150/R1=`Proposed` 且 Owner/Branch 为空。ED-0149 仍需 P3 EntryGate Passed、TaskSpec 审批合并、ED-0007/ED-0015/ED-0131 完成及独立 assignment ledger；ED-0150 另依赖 ED-0114 与 ED-0149，不得在当前 Gate Pending 时实施。
+
+## 2026-10-29 ED-0120/R3 contract assignment ledger
+
+- PR #49 已在 `04e9aac141e3bf2233e556f0fd44e2da4c068b59` 合并到 `main`；该提交包含获批的 ED-0120/R3 TaskSpec。其远端 Task 分支已按匹配 Head 删除，GitHub 分支搜索与 `git ls-remote` 均确认不存在；原干净 proposal worktree 的 Head `2bb000ce45dd69f3fc7eb0b368dc8421ff022455` 已保存在本地 `Archive/ED-0120-R3TaskSpec-2bb000ce45dd` 分支后释放 worktree。
+- PR #50 已合并到 `main`，合并提交 `ced48746f2cd2e49379ae3a79095d85b3c8ccad3`；它只补录 ED-0147/R9 的已合并验收事实。PR #49 与 #50 都没有产品 C++ 变更。
+- ED-0120/R3 assignment-ledger 候选在基线 `ced48746f2cd2e49379ae3a79095d85b3c8ccad3` 的隔离 worktree `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-AssignmentLedger`。任务实施的固定 BaselineCommit 为 TaskSpec 合并提交 `04e9aac141e3bf2233e556f0fd44e2da4c068b59`。Worker01 是仅限三份合同/ADR 文档的 owner，Worker06 是独立固定头 reviewer；他们在派工前均为 Active 且 CurrentTaskId 为空。
+- assignment ledger 只登记已接受的 TaskSpec、固定写集、依赖、验收、命令和槽位绑定。候选分支上的 WorkflowController query 与 validate-assignment 均退出 0，后者返回 `AssignmentAccepted`；首次 query 因历史 R2 排在新 R3 前而退出 1，已调整顺序并复验通过。PR #51 已推送并开放；固定 Base `ced48746f2cd2e49379ae3a79095d85b3c8ccad3` → Head `ab6ed3ef44157256266341e74324b15f60ba3959` 的 Worker06 内部固定头复审为 CHANGES_REQUESTED，发现编号 `ED0120-R3-ASSIGN-F002`（CR 记录中重复的 `Reason` 键）；本次修订删除了重复键并追加了对应评审事件。此前 F001 的过期分支状态已更正。新 Head 仍待复审。PR 合并后仍须重跑验证并创建隔离实现 worktree，之后才记录 TaskStarted 并开始文档修改。本任务没有产品代码写入。
+- P3 EntryGate 仍 Pending。当前异步 AgentRuntime 产品行为为 0%；本 assignment PR 不计入 AgentRuntime 重写完成度。远端共有 3 个分支：`main`、`Task/ED-0120-R3-AssignmentLedger`、`Task/ED-0144-MemorySqliteAdapter`；PR #25 仍因备份恢复丢失到期时间的审查发现而不能合并。
+
+## 2026-10-30 ED-0120/R4 assignment-ledger candidate
+
+- PR #54 merged the accepted R4 TaskSpec to main at 1ed281389bc6736858c2340938b56dee38bc2f77; fixed TaskSpec Head was 482aad7dd251ee9f531d76eeda377f8c9308ace0. The source-lineage BaselineCommit remains 04e9aac141e3bf2233e556f0fd44e2da4c068b59, while the product PRBaseCommit is bound to then-current main 1ed281389bc6736858c2340938b56dee38bc2f77.
+- In isolated Task/ED-0120-R4AssignmentLedger at Base 1ed281389bc6736858c2340938b56dee38bc2f77, WorkflowController queried R4 as Ready (exit 0, 241.364 ms), then queried Assigned and validated the assignment. Final query 007 confirmed the completed record still parses as Assigned (exit 0, 236.684 ms); final validate-assignment 006 returned AssignmentAccepted (exit 0, 858.591 ms). Logs 005-007 are under H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/.
+- This candidate explicitly releases Worker01/Worker06 from R3, assigns Worker01 as R4 owner and Worker06 as independent reviewer, and marks R3 superseded while preserving its exact six-path draft and patch. PR #55 is pushed and open, not merged; the assignment becomes effective only after the PR merges and post-merge Controller validation passes. No R4 product worktree or TaskStarted exists, the R3 draft has not been migrated, and P3 EntryGate remains Pending.
+- Remote branch count before publishing this candidate: 2/4 (main and Task/ED-0144-MemorySqliteAdapter). Root worktree user changes remain untouched.
