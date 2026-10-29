@@ -109,8 +109,8 @@ Slots:
     ReasoningEffort: max
     HostSessionRef: "/root/luna06_capability_status_audit"
     ModuleIds: []
-    CurrentTaskId: ED-0112/R8-TurnRecoveryAcceptanceReview
-    Status: Assigned
+    CurrentTaskId: ""
+    Status: Active
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。
