@@ -3540,12 +3540,16 @@ Tasks:
     EpicId: EP-06
     Title: 统一 HTTPS transport grant 日志规则并校准合同状态
     TaskKind: ContractFreeze
-    State: Proposed
+    State: Assigned
     Phase: P2
     ChangeRequestId: CR-ED-0120-008
     TaskSpecProposalBaseCommit: 74f2bfdaa01dcaeb5d50bcbd3405dc32d8b656c4
-    TaskSpecMergeStatus: PendingReviewAndMainMerge
-    PRBaseCommitBindingStatus: PendingPostMergeAssignmentLedger
+    TaskSpecMergeStatus: Merged
+    TaskSpecMergedToMainCommit: 1ed281389bc6736858c2340938b56dee38bc2f77
+    TaskSpecPullRequestNumber: 54
+    TaskSpecHeadCommit: 482aad7dd251ee9f531d76eeda377f8c9308ace0
+    PRBaseCommitBindingStatus: BoundPostMergeAssignmentLedger
+    PRBaseCommit: 1ed281389bc6736858c2340938b56dee38bc2f77
     BaselineCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -3554,16 +3558,28 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: "/root/luna06_capability_status_audit"
     ReviewerIndependence: Required
+    OwnerAssignmentEventId: 1b26e5ee-8863-4930-bc7e-4aac4fb0bd6b
+    ReviewerAssignmentEventId: 8d3236d8-a37b-4a3c-b5d4-389fe5771e15
     CreatedBy: Coordinator
     CreatedAt: "2026-10-30"
+    AssignedAt: "2026-10-30T02:16:19+08:00"
     Branch: Task/ED-0120-R4ContractCloseout
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build
     EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4
-    TaskSpecStatusNote: "Proposed candidate only; this unmerged TaskSpec is not dispatchable. CR-ED-0120-008 was accepted from merged PR #52. The R4 TaskSpec PR is not yet merged; its merge SHA and product PRBaseCommit are intentionally unset. The later AssignmentLedger must transition the accepted task through Ready and then Assigned after binding exact post-merge values. No assignment events, AgentPool slot reservation, product worktree creation, TaskStarted, or R3 draft migration are authorized in this TaskSpec step."
+    AssignmentNote: "PR #54 merged to main at 1ed281389bc6736858c2340938b56dee38bc2f77; TaskSpec Head=482aad7dd251ee9f531d76eeda377f8c9308ace0. The preserved task BaselineCommit remains 04e9aac141e3bf2233e556f0fd44e2da4c068b59; PRBaseCommit is bound to current main at 1ed281389bc6736858c2340938b56dee38bc2f77. Worker01 owns the six-path contract correction; Worker06 is the independent reviewer. R3 slots are superseded/released in this ledger candidate. No product worktree, TaskStarted, or product write until this ledger merges and post-merge validate-assignment returns AssignmentAccepted."
+    PreMergeAssignmentValidation:
+      ReadinessQuery: {ExitCode: 0, DurationMs: 241.364, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-002-ready.log}
+      Query: {ExitCode: 0, DurationMs: 306.608, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-003-assigned-query.log}
+      ValidateAssignment: {ExitCode: 0, DurationMs: 921.853, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=4", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-004-validate-assignment.log}
+      Status: CandidateOnly; repeat query and assignment validation against main after this ledger PR merges before creating the product worktree.
+      FinalCandidateQuery: {ExitCode: 0, DurationMs: 237.328, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-005-final-query.log}
+      FinalCandidateValidateAssignment: {ExitCode: 0, DurationMs: 858.591, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=4", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-006-final-assignment.log}
+      FinalRecordQuery: {ExitCode: 0, DurationMs: 236.684, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-007-final-record-query.log}
+    TaskSpecStatusNote: "R4 TaskSpec PR #54 merged at 1ed281389bc6736858c2340938b56dee38bc2f77 from fixed Head 482aad7dd251ee9f531d76eeda377f8c9308ace0. This AssignmentLedger binds that merge SHA and PRBaseCommit=1ed281389bc6736858c2340938b56dee38bc2f77. State is Assigned in this candidate ledger; assignment is effective only after merge and post-merge Controller validation. No TaskStarted, product writes, product worktree creation, or R3 draft migration is authorized before that validation."
     PredecessorHandoff:
       TaskRevision: 3
-      Status: SupersessionPendingAssignmentLedger
+      Status: SupersededByR4AssignmentLedgerCandidate
       BaselineCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
       PreservedDiffPatch: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/Preserved/ED-0120-R3-current-six-path-diff.patch
       PreservedChangedPaths:
@@ -3794,13 +3810,13 @@ Tasks:
     EpicId: EP-06
     Title: 统一 HTTPS transport grant 日志规则并校准合同状态
     TaskKind: ContractFreeze
-    State: Assigned
+    State: Superseded
     SuccessorTaskRevision: 4
-    SupersessionStatus: PendingAssignmentLedger
+    SupersessionStatus: SupersededByED0120R4AssignmentLedgerCandidate
     PreservedDraftStatus: OriginalSixPathDiffPreservedUnchanged
     PreservedDraftPatch: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/Preserved/ED-0120-R3-current-six-path-diff.patch
     PreservedDraftChangedPaths: [Architecture/Contracts/CoreEndpointGrantContract.md, Architecture/Contracts/HttpTransportContract.md, Architecture/Decisions/Adr0003WindowsHttpTransport.md, Workflow/CurrentState.md, Workflow/Events/CodexRewrite/P2.jsonl, Workflow/Plans/P2.yaml]
-    HandoffStatus: PendingR4AssignmentLedgerAndIntegrationOwnerTransfer
+    HandoffStatus: PendingIntegrationOwnerTransferAfterR4Assignment
     Phase: P2
     ChangeRequestId: CR-ED-0120-007
     TaskSpecMergedToMainCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
