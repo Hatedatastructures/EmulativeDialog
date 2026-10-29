@@ -3290,3 +3290,272 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0151
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 独立核验并关闭 P3 EntryGate
+    TaskKind: Governance
+    State: Proposed
+    Phase: P3
+    OwnerRole: Coordinator
+    OwnerSlotId: Coordinator
+    OwnerAgentId: "/root"
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: "/root/luna04_ed0144_branch_review"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-30"
+    ParallelGroup: P3GateCloseout
+    TaskSpecProposalBaseCommit: 74f2bfdaa01dcaeb5d50bcbd3405dc32d8b656c4
+    TaskSpecMergedToMainCommit: ""
+    BaselineCommit: ""
+    PRBaseCommit: ""
+    AssignmentBaselinePolicy: >-
+      TaskSpecProposalBaseCommit is only the base for reviewing/merging this TaskSpec. After the TaskSpec PR merges,
+      Coordinator records its merge SHA separately as TaskSpecMergedToMainCommit. Do not copy that SHA into BaselineCommit.
+      After this TaskSpec is merged and all dependencies complete, including ED-0120/R4 branch/worktree migration and
+      release of its CurrentState.md write lock, the assignment ledger binds BaselineCommit to the then-current
+      origin/main SHA. At the gate-closeout product PR, capture GitHub base.sha as PRBaseCommit separately; validate
+      the exact four-path WriteSet on the GitHub three-dot diff PRBaseCommit...HeadCommit and audit any
+      BaselineCommit...PRBaseCommit inherited difference independently. BaselineCommit must be an ancestor of PRBaseCommit,
+      and PRBaseCommit must be an ancestor of HeadCommit. Do not bind either value while this TaskSpec is Proposed.
+    Goal: >-
+      在 ED-0120/R4 合同修正 PR 已合并、其所需合同状态均有独立审批与合并证据，且 P1/P2/ED-0146/ED-0147
+      证据经 WorkflowController 和固定头审查核实后，独立决定 P3 EntryGate 是否满足 Passed 条件。全部条件成立时，
+      只更新 P3 EntryGate、P3 阶段路由和当前状态摘要，并向 P3 事件账本追加唯一的门通过事件；任一条件缺失时
+      保持 Pending，不产生通过事件。若 R4 在本任务派工前被后继修订取代，必须先经接受的 ChangeRequest 精确更新
+      本任务依赖修订和验收引用。不得修改任何其他任务的 State，也不得改动 P2 计划或事件。
+    OutOfScope:
+      - 修改 ED-0120、ED-0146、ED-0147 或任何其他任务的状态、验收证据、范围或写集
+      - 修改 Workflow/Plans/P2.yaml、Workflow/Events/CodexRewrite/P2.jsonl 或 P2 EntryGate/ExitGate
+      - 修改任何产品 C++、测试、CMake、Provider/WinHTTP composition 或 Channel 实现
+      - 修改 ADR-0003、HttpTransportContract V1 或 CoreEndpointGrantContract V1
+      - 将 P3 EntryGate 通过表述为 Codex Agent 重写完成、Provider 生产接线完成或真实 QQ 已接入
+      - 关闭、删除或重写任何历史事件
+    BlockedBy: >-
+      TaskSpec candidate only. Review or merge of this proposal does not pass P3. The pinned ED-0120 dependency is R4
+      (CR-ED-0120-008). If a later ED-0120 revision supersedes R4 before this task is assigned, an accepted ChangeRequest
+      must first update this task's exact dependency revision, Controller query, and acceptance/static-check references;
+      never infer or silently substitute a later revision. Do not assign or execute until the pinned ED-0120 revision's
+      TaskSpec and contract PR are approved and main-merged, and Controller reports that exact revision as Merged.
+      ED-0120/R4's branch/worktree must be rebased or migrated to its final main baseline, validated, and closed with no
+      active writes to CurrentState.md; this task's
+      CurrentState write must be strictly later and serialized after that completion. Do not use the current R3 SHA or
+      this TaskSpec's merge SHA as this task's assignment baseline. Do not assign or execute until ED-0146/R6,
+      ED-0147/R9, ED-0101/R5, ED-0109/R4, ED-0124/R9, ED-0125/R3, and ED-0006/R1, ED-0007/R1,
+      ED-0008/R4 are all Controller-queryable as Merged on the then-current main baseline. ED-0147 must be closed through
+      its own lifecycle after contract freeze; this task may not change its status. The R4-or-later ED-0120 TaskSpec and
+      contract PR must be independently approved and merged, and its exact review, merge, and migration evidence recorded.
+      Both required P3 contracts must be Frozen on their own approval/merge evidence, the P1 gate must remain Passed,
+      and the P2 first-slice gate must remain Passed.
+      This ED-0151 TaskSpec must itself be independently reviewed and main-merged, and its exact merge SHA recorded in
+      TaskSpecMergedToMainCommit, before it is separately assigned. WorkflowController validate-assignment must accept
+      the assigned worktree and non-empty assignment-time BaselineCommit before any gate-state write.
+    DependsOn: [ED-0006, ED-0007, ED-0008, ED-0101, ED-0109, ED-0120, ED-0124, ED-0125, ED-0146, ED-0147]
+    DependsOnRevisionPolicy: >-
+      DependsOn remains a TaskId-only list for WorkflowController compatibility. The exact pinned revisions are
+      ED-0006/R1, ED-0007/R1, ED-0008/R4, ED-0101/R5, ED-0109/R4, ED-0120/R4, ED-0124/R9, ED-0125/R3,
+      ED-0146/R6, and ED-0147/R9. Every exact revision must report State=Merged before assignment. If an approved
+      successor supersedes any pinned revision before assignment, update this policy, BlockedBy, ControllerCommands,
+      Acceptance, and StaticChecks by accepted ChangeRequest before assignment; TaskId-only dependency satisfaction
+      is insufficient.
+    ContractVersion: P3 EntryGate evidence rules in Workflow/Plans/P3.yaml; no product API change
+    Context:
+      ModuleId: AgentWorkflowController
+      AlwaysLoad:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/WorkflowTools.yaml
+        - Workflow/Plans/P2.yaml
+        - Workflow/Plans/P3.yaml
+        - Workflow/Events/CodexRewrite/P3.jsonl
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Contracts/CoreEndpointGrantContract.md
+      OnDemandSet:
+        - Workflow/Plans/P1.yaml
+        - Workflow/Events/Bootstrap/P1.jsonl
+        - Workflow/Events/CodexRewrite/P2.jsonl
+        - Workflow/AgentPool.yaml
+        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      ForbiddenSet:
+        - Source/
+        - Tests/
+        - CMakeLists.txt
+        - CMake/
+      Budget:
+        CoreDocumentsTargetPercent: 10
+        TaskReferencesTargetPercent: 25
+        ImplementationContextReserveMinimumPercent: 50
+        MeasurementMode: EstimateUntilTelemetryExists
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Workflow/Plans/P3.yaml
+      - Workflow/TaskIndex.yaml
+      - Workflow/CurrentState.md
+      - Workflow/Events/CodexRewrite/P3.jsonl
+    WriteSetRationale:
+      - "P3.yaml records the P3 EntryGate decision and this task's own completion evidence; no other task State may change."
+      - "TaskIndex.yaml advances only the P3 phase route after the gate is Passed; P2 and LargeScaleProductImplementation remain untouched."
+      - "CurrentState.md reflects the same gate decision, while the P3 JSONL receives one append-only decision event."
+    SharedLocks: [AgentWorkflowStateAndEventStore, TaskIndexAndTaskState]
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          The existing P1 gate AgentWorkflowControllerAndCoreContractsVerified is Passed, with ED-0006/R1,
+          ED-0007/R1, and ED-0008/R4 reported Merged by WorkflowController on the assigned baseline.
+        Evidence: >-
+          Controller query logs for all three exact revisions, the TaskIndex gate signoff, and the corresponding P1
+          evidence references; no P1 plan or task-state edits are included in this task.
+      - AcceptanceId: AC-2
+        Description: >-
+          The existing P2 gate FirstCppAgentRuntimeVerticalSliceVerified is Passed, and ED-0109/R4, ED-0125/R3,
+          ED-0101/R5, and ED-0124/R9 are Merged on the assigned baseline.
+        Evidence: >-
+          Controller query logs for the four exact revisions, P2.yaml ExitGate=Passed, and the P2ExitGatePassed event
+          with its fixed-head review and Windows verification references.
+      - AcceptanceId: AC-3
+        Description: >-
+          ED-0146/R6 and ED-0147/R9 implementation evidence is verified from exact merged PR metadata, fixed-head
+          independent approvals, and the recorded Windows acceptance; the pinned ED-0120/R4 contract correction PR is
+          merged and independently approved. If R4 is superseded before assignment, the accepted ChangeRequest must
+          update this TaskSpec to the exact successor revision before that revision can satisfy this condition. Its task
+          state is Merged, its worktree/base migration is complete, and no active writer still owns CurrentState.md.
+          HttpTransportContract V1
+          and CoreEndpointGrantContract V1 are each Frozen only when their own recorded approval and merge evidence
+          supports that status. ADR-0003 no longer permits EndpointGrantId disclosure and the contracts consistently
+          reserve transport correlation for TransportRequestId.
+        Evidence: >-
+          Read-only GitHub PR metadata at exact base/head/merge SHAs, P2/P3 plan and event evidence, both contract
+          status headers, the ADR logging clause, and Controller query logs. A clean or mergeable PR alone is not
+          evidence of required checks or contract freeze.
+      - AcceptanceId: AC-4
+        Description: >-
+          The gate closeout changes no other task State, including ED-0120, ED-0146, and ED-0147; it does not edit
+          P2.yaml or the P2 event shard. ED-0147 must meet its dependency through its own lifecycle before assignment.
+          Since the pinned ED-0120/R4 task writes CurrentState.md, this task cannot be assigned or started until its PR is
+          merged, its task branch/worktree has completed any required baseline migration, and that writer has released
+          the path. An approved successor must be pinned through ChangeRequest first and must release the same path.
+        Evidence: >-
+          Fixed Base/Head field-level comparison of P3 task records, byte-identical P2 paths, Controller queries
+          before and after, and changed-path verification against the frozen four-path WriteSet.
+      - AcceptanceId: AC-5
+        Description: >-
+          P3 EntryGate changes from Pending to Passed only when AC-1 through AC-4 are satisfied; P3 phase status,
+          TaskIndex PhasePlans.P3 route, and CurrentState agree. On success, set Workflow/Plans/P3.yaml top-level
+          State=Current and EntryGate.State=Passed, remove PendingReason, set PassedReason to the verified gate evidence
+          summary, EvaluatedBy=/root, ReviewerAgentId=/root/luna04_ed0144_branch_review, ReviewerDecision=Approve,
+          EvaluatedAtUtc to the actual decision time, and EvaluationEventId to the unique success EventId; set TaskIndex
+          PhasePlans[P3].State=Current and
+          LoadWhen=AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerifiedAndP3EntryGatePassed;
+          append a CurrentState section titled "P3 EntryGate Closeout" with P3EntryGateState=Passed,
+          P3PhaseState=Current, GateCloseoutTask=ED-0151/R1, the same EvaluationEventId as the P3 event,
+          P2FirstSliceGate=Passed, LargeScaleProductImplementation=BlockedUnverified, and
+          CodexAgentRewrite=Incomplete. Preserve all prior CurrentState history. If evidence is missing, the task
+          remains blocked and preserves P3 top-level State=PendingEntryGateWithScopedPreGateTaskReview and
+          EntryGate.State=Pending; keep TaskIndex PhasePlans[P3].State=RegisteredEntryGatePendingWithScopedPreGateTaskReview and
+          LoadWhen=AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerified, update
+          PendingReason to list the exact unmet AcceptanceIds and missing evidence, and append a CurrentState section
+          titled "P3 EntryGate Closeout Blocker" with P3EntryGateState=Pending,
+          P3PhaseState=RegisteredEntryGatePendingWithScopedPreGateTaskReview, GateCloseoutTask=ED-0151/R1, and the
+          same blocker summary. Preserve prior CurrentState history and do not change P2FirstSliceGate,
+          LargeScaleProductImplementation, or CodexAgentRewrite.
+        Evidence: >-
+          Independent Reviewer checks exact gate fields and cross-file state consistency at the fixed Head; missing
+          evidence is recorded as a blocker with no pass transition.
+      - AcceptanceId: AC-6
+        Description: >-
+          Success path only: after AC-1 through AC-5 pass, append exactly one P3EntryGatePassed event with a unique
+          EventId, exact task/revision, gate ID and evidence references. If any gate condition fails, keep P3 Pending,
+          append no P3EntryGatePassed event, and record the missing evidence in the ED-0151 TaskBlocked event/checkpoint.
+          In either path, preserve the prior P3 event bytes as an unchanged prefix and keep EventIds unique.
+        Evidence: >-
+          Prefix comparison, JSONL parse, unique EventId check, and fixed-head review of either the single success event
+          or the failure blocker record, with no success event on failure.
+      - AcceptanceId: AC-7
+        Description: >-
+          TaskIndex updates only the P3 phase route to State=Current and
+          LoadWhen=AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerifiedAndP3EntryGatePassed.
+          ProductCodeScope and
+          LargeScaleProductImplementation remain unchanged, and passing P3 is not reported as full rewrite completion.
+        Evidence: >-
+          Exact TaskIndex field diff and aligned CurrentState/P3 event wording; changed paths are limited to the WriteSet.
+      - AcceptanceId: AC-8
+        Description: >-
+          The task remains governance-only: no product source, test, build configuration, protocol wire behavior,
+          live network, credential, or QQ/WeChat path is changed or exercised.
+        Evidence: >-
+          Exact changed-path list, static diff review, and absence of build/test/live-side-effect commands.
+    Validation:
+      Mode: GovernanceOnly
+      BuildRequired: false
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs
+      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree
+      RequiredTargets: []
+      RequiredCTestTests: []
+      Coverage: {Required: false, ProductionSources: [], MinimumLinePercent: 80}
+      ControllerExecutable: H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe
+      ControllerCommandTiming: >-
+        Run each pinned-revision query only after the corresponding accepted TaskSpec revision is materialized in its
+        phase plan; use the exact revisions in DependsOnRevisionPolicy. ED-0120/R4 must first be accepted and merged as
+        a TaskSpec so Controller can query revision 4, then its contract task must finish its own lifecycle before
+        ED-0151 assignment. If a successor revision is approved before assignment, update the pinned revision and
+        commands through accepted ChangeRequest before querying or assigning.
+      ControllerCommands:
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P1 ED-0006 1"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P1 ED-0007 1"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P1 ED-0008 4"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P2 ED-0101 5"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P2 ED-0109 4"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P2 ED-0120 4"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P2 ED-0124 9"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P2 ED-0125 3"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P2 ED-0146 6"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P3 ED-0147 9"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree' P3 ED-0151 1"
+      AssignmentValidation: |-
+        $ErrorActionPreference = 'Stop'
+        $RepositoryRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree'
+        $Controller = 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe'
+        $QueryOutput = & $Controller query $RepositoryRoot P3 ED-0151 1
+        if ($LASTEXITCODE -ne 0) { throw "Controller query failed with exit $LASTEXITCODE" }
+        $BaselineLine = @($QueryOutput | Where-Object { $_ -match '^BaselineCommit=' } | Select-Object -First 1)
+        if ($BaselineLine.Count -ne 1) { throw 'Controller query did not return exactly one BaselineCommit' }
+        $BaselineCommit = $BaselineLine[0] -replace '^BaselineCommit=', ''
+        if ($BaselineCommit -notmatch '^[0-9a-f]{40}$') { throw 'Assignment ledger must bind a non-empty full BaselineCommit before validation' }
+        & git -C $RepositoryRoot cat-file -e ($BaselineCommit + '^{commit}')
+        if ($LASTEXITCODE -ne 0) { throw 'Assignment BaselineCommit is not available as a Git commit in the assigned worktree' }
+        & $Controller validate-assignment $RepositoryRoot P3 ED-0151 1 '/root' 'Task/ED-0151-P3GateCloseout' $RepositoryRoot $BaselineCommit
+        if ($LASTEXITCODE -ne 0) { throw "Controller assignment validation failed with exit $LASTEXITCODE" }
+        Write-Output 'AssignmentAccepted TaskId=ED-0151 TaskRevision=1'
+      TargetedBuild: []
+      StaticChecks:
+        - "WorkflowController queries every exact revision in DependsOnRevisionPolicy (and ED-0151/R1) successfully; all dependency revisions report State=Merged before assignment."
+        - "P1 and P2 gate statuses and their exact coordinator/reviewer evidence are Passed on the assigned baseline."
+        - "The pinned ED-0120/R4 TaskSpec and contract PR are merged and independently approved; Controller query P2 ED-0120 4 reports State=Merged, its final branch/worktree migration is complete, and no writer remains on CurrentState.md. A superseding revision is accepted only after an approved ChangeRequest updates this TaskSpec's exact revision references before assignment. Both P3 contracts have independently supported Frozen status."
+        - "TaskSpecMergedToMainCommit records only the TaskSpec PR merge SHA. Assignment-time BaselineCommit is bound by the assignment ledger to then-current origin/main after every dependency and migration prerequisite; it is not copied from the proposal base or TaskSpec merge SHA. PRBaseCommit is captured separately from GitHub base.sha for the actual main-targeting PR."
+        - "BaselineCommit is an ancestor of PRBaseCommit, and PRBaseCommit is an ancestor of HeadCommit. git diff --check PRBaseCommit...HeadCommit exits 0 and the changed paths in that exact GitHub three-dot PR diff equal the four-path WriteSet; BaselineCommit...PRBaseCommit inherited main changes are separately listed and reviewed."
+        - "P2.yaml and Workflow/Events/CodexRewrite/P2.jsonl are byte-identical to BaseCommit."
+        - "Existing P3 JSONL is an unchanged prefix; every resulting line parses as JSON and EventId values are unique."
+        - "Only EntryGate and P3 route fields change; every other task State field, especially ED-0120/ED-0146/ED-0147, remains unchanged. ED-0151 task-state transitions are Coordinator-owned lifecycle records outside the gate decision diff."
+        - "Success: P3 top-level State=Current; EntryGate.State=Passed, PendingReason absent, PassedReason is the verified evidence summary, EvaluatedBy=/root, ReviewerAgentId=/root/luna04_ed0144_branch_review, ReviewerDecision=Approve, EvaluatedAtUtc is the actual fixed-head decision time, and EvaluationEventId equals the unique P3EntryGatePassed EventId; TaskIndex PhasePlans[P3].State=Current and LoadWhen=AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerifiedAndP3EntryGatePassed; CurrentState appends P3 EntryGate Closeout with P3EntryGateState=Passed, P3PhaseState=Current, GateCloseoutTask=ED-0151/R1, the same EvaluationEventId, P2FirstSliceGate=Passed, LargeScaleProductImplementation=BlockedUnverified, and CodexAgentRewrite=Incomplete. Failure: P3 top-level State remains PendingEntryGateWithScopedPreGateTaskReview and EntryGate.State remains Pending; TaskIndex P3 pending State/LoadWhen remain unchanged, PendingReason is updated with exact unmet AcceptanceIds/evidence, CurrentState appends P3 EntryGate Closeout Blocker, and no P3EntryGatePassed event is appended."
+        - "No product source, test, CMake, protocol, credentials, live network, QQ, or WeChat paths are changed or exercised."
+      LiveSideEffects: Forbidden
+      NotRunReason: "This is a workflow gate decision only; no product C++ source or test behavior changes."
+    RiskLevel: High
+    RiskOwnerRole: Coordinator
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
