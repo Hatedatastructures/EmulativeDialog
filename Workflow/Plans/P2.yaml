@@ -265,17 +265,6 @@ ChangeRequests:
       candidate. R3 aligns these records without changing behavior. The P3
       EntryGate remains independently controlled and must not be inferred
       from this documentation correction.
-    Reason: >-
-      ADR-0003 currently permits diagnostic logging of an endpoint grant ID,
-      while CoreEndpointGrantContract V1 prohibits logging grant IDs because
-      they are bearer capabilities. HttpTransportContract V1 already defines
-      TransportRequestId as a local diagnostic/event correlation ID and says
-      sensitive values must not enter terminal results, events, or logs.
-      The same P2 task record still marks HttpTransportContract V1 as
-      PendingCorrectiveRevision, while the contract itself says freeze
-      candidate. R3 aligns these records without changing behavior. The
-      P3 EntryGate remains independently controlled and must not be inferred
-      from this documentation correction.
     R2Disposition: MergedHistoryPreserved
     ProposedWriteSetChangeReason: >-
       R2 compiled Port and contract-test work remain merged and immutable. R3
