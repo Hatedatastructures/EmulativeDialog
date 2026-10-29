@@ -2190,14 +2190,23 @@ Tasks:
       TaskSpecOwnerDecision: Approve
       TaskSpecReviewerDecision: Approve
       TaskSpecCoordinatorDecision: Accepted
-      TaskSpecHeadCommit: 4aa60bf2064fc5ff690fe827f59d4f5350dbd069
+      TaskSpecOwnerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+      TaskSpecReviewerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+      TaskSpecCoordinatorDecisionHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+      TaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+      TaskSpecFinalPullRequestHeadCommit: 4aa60bf2064fc5ff690fe827f59d4f5350dbd069
       TaskSpecMergedToMainCommit: 791f5763c8018ee1b4d9d53a7f3ee55d13e37bad
       TaskSpecMergePullRequestNumber: 42
       TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/42
       AssignmentLedgerMergePullRequestNumber: 43
       AssignmentLedgerMergedToMainCommit: c110dcd88d6eda625b10f24c99e2dc761ec32278
       AssignmentValidationExitCode: 0
-      AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8-Assignment/Controller-ValidateAssignment.txt
+      AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Assignment/Controller-ValidateAssignment.txt
+      AssignmentValidationRerunCommand: "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8-AssignmentLedger P3 ED-0147 8 /root/luna02_ed0148_pr_ready Task/ED-0147-CoreEndpointGrantAuthorityR7 H:/Qbot/EmulativeDialog.ED-0147 269379817d7f51082b16ae2d0ded1ccedd2a54b7"
+      AssignmentValidationRerunExitCode: 0
+      AssignmentValidationRerunDurationMs: Unavailable
+      AssignmentValidationRerunDurationReason: "The validation output was captured after the command without a process timer; duration is not estimated."
+      AssignmentValidationRerunReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Assignment/Controller-ValidateAssignment-Rerun.txt
       AssignmentNote: "R8 assignment bound Worker02, the existing six-path implementation, and the original product baseline. Controller returned AssignmentAccepted. Fresh R8 configure, build and targeted CTest passed; coverage stopped before gcov because the frozen CMakeCache precondition rejected actual CRLF and CMAKE_CXX_COMPILER:STRING formatting. No JSON report or coverage percentage was produced. R9 changes only the fresh validation directory and cache-entry comparison, and requires a new assignment-ledger update and Controller validation after merge."
       ImplementationHeadCommitAtValidation: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
       ValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core

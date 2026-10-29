@@ -278,3 +278,5 @@
 - R8 覆盖率命令退出 1，失败发生在 gcov 运行前。冻结脚本没有接受实际 CMakeCache 的 CRLF 行尾，并且只接受 CMAKE_CXX_COMPILER:FILEPATH，实际条目为 CMAKE_CXX_COMPILER:STRING。没有生成覆盖率 JSON，也没有测得覆盖率百分比；R8 不满足 AC-7。完整日志保留在 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/。
 - 现提出 ED-0147/R9 ChangeRequest CR-ED-0147-R9-COVERAGE-CACHE-001：只更换到全新 R9 构建目录，并用 ReadAllLines 对 CMakeCache 的完整路径和编译器类型/值做精确检查。Goal、Acceptance、产品六路径 WriteSet、依赖、合同、Owner 和 Reviewer 保持不变。R9 状态仍为 Proposed，未获准运行；须先完成固定头评审、合并、更新 assignment ledger 并由 WorkflowController 接受。
 - ED-0147 产品 C++ 仍在原隔离实现 worktree/分支中；本修订没有改产品源代码。P3 EntryGate 仍 Pending，异步 C++ AgentRuntime 和生产 Provider/WinHTTP 接线均未完成。
+
+- R8 Controller 指派验证的实际报告路径现已核对为 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Assignment/Controller-ValidateAssignment.txt；报告内容为 AssignmentAccepted。为补齐命令追踪，已在隔离的 R8 assignment worktree 重跑同一只读校验，退出 0，报告另存于 Controller-ValidateAssignment-Rerun.txt；原报告未覆盖。
