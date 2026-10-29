@@ -1036,6 +1036,14 @@ ChangeRequests:
     IndependentReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
     FindingIds: [ED0112-R5-STATIC-BASE-01]
+    Findings:
+      - FindingId: ED0112-R5-STATIC-BASE-01
+        Severity: Major
+        Path: Workflow/Plans/P2.yaml
+        Location: TaskId=ED-0112/TaskRevision=5/Validation/StaticChecks[0..1]
+        Evidence: "At fixed implementation Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and Head 19691cb10c32d5081d6c0e18fafb5d7322971779, the assigned baseline produces exactly the frozen eight WriteSet paths; the stale comparison base 461735e50657bdc8ace070b46db3682cfb03460f produces sixteen paths, including eight inherited Workflow paths."
+        Impact: "The frozen exact-WriteSet check cannot pass against the task's assigned branch baseline, preventing formal acceptance despite the implementation diff matching the assigned WriteSet."
+        RequiredFix: "Change only both StaticChecks comparison bases to BaselineCommit 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and prove the fixed Base/Head comparison returns exactly the eight WriteSet paths with diff --check exit 0."
     Scope: >-
       Change only the two ED-0112/R5 Validation.StaticChecks comparison bases from the pre-merge TaskSpec review base
       461735e50657bdc8ace070b46db3682cfb03460f to the assigned implementation BaselineCommit
