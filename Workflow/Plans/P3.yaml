@@ -420,6 +420,55 @@ ChangeRequests:
     CoordinatorDecision: Accepted
     PreserveGoalAcceptanceDependenciesContractWriteSetOwnerReviewer: true
     NoAdditionalProductSourceWriteAuthorizedBeforeMerge: true
+
+  - ChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
+    TargetTaskId: ED-0147
+    TargetTaskRevision: 6
+    ProposedTaskRevision: 7
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve ED-0147's Core endpoint-authority behavior, Goal, ReadSet, six-path product WriteSet,
+      dependencies, Acceptance, validation commands, security boundary, OwnerSlot Worker02, and
+      ReviewerSlot Worker04. Update only OwnerAgentId and ReviewerAgentId to the current AgentPool
+      bindings authorized by AgentSlotMigration-2026-10-29-LunaMax. Do not assign a branch, worktree,
+      or BaseCommit in this TaskSpec review PR; bind those only in the later assignment ledger after
+      this TaskSpec revision merges. No product source write is authorized by this CR.
+    Reason: >-
+      ED-0147/R6 was approved before the user-authorized stable-slot migration. WorkflowController's
+      assignment validator requires the assigned owner AgentId to exactly match the frozen TaskSpec;
+      the R6 identity /root/worker02_ed0114_owner is no longer the active Worker02 binding, and the R6
+      reviewer /root/worker04_ed0114_review is no longer the active Worker04 binding. Updating these
+      two identities makes the task assignment and independent review auditable against the current
+      Worker02 and Worker04 slots without changing either logical role or any product scope.
+    Impact: >-
+      No C++ API, runtime behavior, data format, dependency, build target, or test changes. The fixed
+      reviewer remains a different stable slot from the author. Product validation remains gated on a
+      later assignment PR merge.
+    Rollback: >-
+      If either fixed-head TaskSpec reviewer rejects the binding change, keep ED-0147 unassigned and
+      P3 EntryGate Pending; retain R6 as PreviousRevision6Evidence and make no product source changes.
+    ProposedTaskSpecBaseCommit: 680eb8dc591174c861e4045d6dd4897e500d77df
+    ProposedOwnerSlotId: Worker02
+    ProposedReviewerSlotId: Worker04
+    ProposedProductWriteSet:
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Source/Core/EndpointGrantAuthority.hpp
+      - Source/Core/EndpointGrantAuthority.cpp
+      - Tests/Contract/Core/CMakeLists.txt
+      - Tests/Contract/Core/EndpointGrantAuthorityTests.cpp
+    EvidenceRefs:
+      - Workflow/AgentPool.yaml#AgentSlotMigration-2026-10-29-LunaMax
+      - Workflow/Plans/P3.yaml#TaskId=ED-0147&TaskRevision=6
+      - Tools/WorkflowController/WorkflowController.cpp#ValidateAssignment
+      - 680eb8dc591174c861e4045d6dd4897e500d77df
+    PreserveGoalReadSetWriteSetDependenciesAcceptanceContractAndSlots: true
+    NoProductSourceWriteAuthorized: true
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
@@ -1967,30 +2016,42 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0147
-    TaskRevision: 6
+    TaskRevision: 7
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Ready
+    State: Proposed
     Phase: P3
     ChangeRequestId: CR-ED-0120-005
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
     OwnerRole: CoreOwner
     OwnerSlotId: Worker02
-    OwnerAgentId: /root/worker02_ed0114_owner
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
     ReviewerRole: IndependentReviewer
     ReviewerSlotId: Worker04
-    ReviewerAgentId: /root/worker04_ed0114_review
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecOwnerDecision: Approve
-    TaskSpecReviewerDecision: Approve
-    TaskSpecCoordinatorDecision: Accepted
-    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    TaskSpecChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
+    TaskSpecReviewStatus: ProposedAwaitingFixedHeadReview
+    TaskSpecOwnerDecision: Pending
+    TaskSpecReviewerDecision: Pending
+    TaskSpecCoordinatorDecision: Pending
+    TaskSpecHeadCommit: ""
+    TaskSpecMergedToMainCommit: ""
+    PreviousRevision6Evidence:
+      TaskRevision: 6
+      ChangeRequestId: CR-ED-0120-005
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecOwnerDecision: Approve
+      TaskSpecReviewerDecision: Approve
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+      OwnerAgentId: /root/worker02_ed0114_owner
+      ReviewerAgentId: /root/worker04_ed0114_review
+      State: Ready
+      Disposition: SupersededBeforeAssignmentByRevision7
+      NoImplementationBranchOrWorktreeCreated: true
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation

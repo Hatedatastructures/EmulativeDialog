@@ -228,3 +228,10 @@
 - ED-0112/R8 validation and independent acceptance review passed. Fresh Windows C++20 configure and targeted build exited 0; selected CTest passed 2/2; coverage is 90.02% for `TurnCheckpointStore.cpp` and 92.39% for `TurnRecoveryCoordinator.cpp`. Detailed logs and hashes remain under `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/Logs/`.
 - The recovery implementation is explicitly partial: checkpoints and no-replay decisions are implemented, while reconnecting recovery to AgentRuntime startup/session state and rebuilding chat history remain open. Do not mark the full Codex capability complete.
 - Remote branches are 2/4: `main` and PR #25 `Task/ED-0144-MemorySqliteAdapter`. Root worktree `?? $deps/` remains untouched. Worker06 was released after acceptance review. Next, register and freeze the asynchronous Agent/Provider/Transport contract, then start the actual C++20 coroutine AgentRuntime slice.
+
+## 2026-10-29 ED-0147/R7 稳定工作槽绑定提案（09:05 UTC）
+
+- 当前 `main` 与 `origin/main` 为 `680eb8dc591174c861e4045d6dd4897e500d77df`。远端变更分支为 2/4：`Task/ED-0144-MemorySqliteAdapter`；开放 PR #25 尚无 GitHub review submission。
+- ED-0147/R6 已冻结但尚未分配。Controller 要求派工 OwnerAgentId 与 TaskSpec 精确匹配；R6 的旧 Worker02/Worker04 AgentId 已不符合已授权的稳定槽迁移。R7 提案只更新到当前 Worker02 `/root/luna02_ed0148_pr_ready` 和 Worker04 `/root/luna04_ed0144_branch_review`，保留原 Goal、ReadSet、依赖、Acceptance、验证命令、安全边界和六路径产品 WriteSet。
+- R7 当前仅在 Coordinator 隔离工作树 `H:/Qbot/EmulativeDialog.ED-0147-Assignment` 的本地分支 `Task/ED-0147-R7-AgentBindingTaskSpec` 中作为治理候选，等待 Owner 与独立 Reviewer 对固定 Head 审查。没有修改产品 C++，也没有派发或创建产品实现工作树。
+- P3 EntryGate 仍 Pending；ED-0147 实际实现与 Windows 验收尚未开始。`LargeScaleProductImplementation` 仍为 `BlockedUnverified`：当前仓库没有 GitHub Actions workflow、main 分支保护或 ruleset 的通过证据。
