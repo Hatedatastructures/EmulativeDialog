@@ -1780,24 +1780,40 @@ ChangeRequests:
     ProposedReviewerSlotId: Worker06
     ProposedReviewerRole: IndependentReviewer
     ReviewerIndependence: Required
-    Decision: ProposedAwaitingIndependentReview
+    Decision: Accepted
     FindingIds: [ED-0120-R4-AC7-F001, ED-0120-R4-AC5-F002]
-    OwnerCRDecision: ChangesRequested
+    OwnerCRDecision: Approve
     OwnerFieldSemanticsDirectionDecision: Approve
-    OwnerCRDecisionScope: ExactInitialFixedHeadReviewed
+    OwnerCRDecisionScope: CorrectedFixedHeadOnly
     OwnerCRDecisionEvidence: >-
-      Worker01 /root/luna01_ed0112_r8_audit approved the Controller-compatible field direction, then reviewed
-      the exact CR at Base fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e / Head
-      63a015832df327b9e9edd157053517da4a66a623 and requested changes for finding ED-0120-R5-CR009-O1
-      (PR proposal paths were outside the declared proposal WriteSet and the product/governance sets overlapped)
-      and ED-0120-R5-CR009-O2 (telemetry was missing from the security disclosure list). The baseline field
-      direction itself remains approved; the exact CR is not yet approved.
+      Worker01 /root/luna01_ed0112_r8_audit first requested changes at Base fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e /
+      Head 63a015832df327b9e9edd157053517da4a66a623 for ED-0120-R5-CR009-O1/O2. After those findings were corrected,
+      Worker01 approved the CR proposal at the same Base / Head a175deb848253284998daac28fe3c5d9afcee927 with no
+      remaining Owner findings. The original Changes Requested decision remains append-only in P2 events and is not
+      erased by this current-decision field.
     OwnerReviewBaseCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
-    OwnerReviewHeadCommit: 63a015832df327b9e9edd157053517da4a66a623
-    OwnerReviewFindingIds: [ED-0120-R5-CR009-O1, ED-0120-R5-CR009-O2]
-    IndependentReviewDecision: Pending
-    CoordinatorDecision: Pending
-    ProposedTaskSpecBaseCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
+    OwnerReviewHeadCommit: a175deb848253284998daac28fe3c5d9afcee927
+    OwnerReviewFindingIds: []
+    OwnerPreviousReviewHeadCommit: 63a015832df327b9e9edd157053517da4a66a623
+    OwnerPreviousReviewFindingIds: [ED-0120-R5-CR009-O1, ED-0120-R5-CR009-O2]
+    IndependentReviewDecision: Approve
+    IndependentReviewerBaseCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
+    IndependentReviewerHeadCommit: a175deb848253284998daac28fe3c5d9afcee927
+    IndependentReviewerFindingIds: []
+    IndependentReviewSource: InternalFixedHeadReview
+    GitHubNativeReviewSubmissionCount: 0
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: a175deb848253284998daac28fe3c5d9afcee927
+    CoordinatorDecisionScope: CRProposalOnlyTaskSpecPRRequiredNoProductWriteAuthorized
+    CRProposalPullRequestNumber: 57
+    CRProposalPullRequestHeadCommit: a175deb848253284998daac28fe3c5d9afcee927
+    CRProposalMergedToMainCommit: 1d88b4e16fca891155b80b9189a1e4f947e840df
+    CRProposalMergedAt: "2026-10-29T19:58:21Z"
+    OwnerReviewEventId: 33f33903-0e1e-4cbe-a686-cde156169d78
+    IndependentReviewEventId: 9f3d8138-e9f3-4565-92a1-e43bec711a60
+    CoordinatorAcceptanceEventId: aa19a155-47c6-480b-886a-e48a3e77f4f6
+    ProposedTaskSpecBaseCommit: 1d88b4e16fca891155b80b9189a1e4f947e840df
     ProposedTaskKind: ContractFreeze
     ProposedEpicId: EP-06
     ProposedPhase: P2
@@ -1878,6 +1894,10 @@ ChangeRequests:
       gate and are not part of ED-0120/R5's six-path task WriteSet.
     ProposedAssignmentLedgerWriteSet:
       - Workflow/AgentPool.yaml
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    TaskSpecProposalWriteSet:
       - Workflow/Plans/P2.yaml
       - Workflow/Events/CodexRewrite/P2.jsonl
       - Workflow/CurrentState.md
@@ -3693,6 +3713,192 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, CTX-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+  - TaskId: ED-0120
+    TaskRevision: 5
+    EpicId: EP-06
+    Title: 统一 HTTPS transport grant 日志规则并校准合同状态
+    TaskKind: ContractFreeze
+    State: Proposed
+    Phase: P2
+    ChangeRequestId: CR-ED-0120-009
+    RevisionTransition: {FromRevision: 4, ToRevision: 5}
+    ReexecutionOfTaskRevision: 4
+    TaskSpecProposalBaseCommit: 1d88b4e16fca891155b80b9189a1e4f947e840df
+    TaskSpecPullRequestNumber: ""
+    TaskSpecMergeStatus: AwaitingTaskSpecPR
+    TaskSpecMergedToMainCommit: ""
+    TaskSpecHeadCommit: ""
+    PRBaseCommitBindingStatus: UnboundUntilActualProductPrMetadataVerified
+    PRBaseCommit: ""
+    SourceLineageCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
+    BaselineCommit: ""
+    AssignmentBaseCommit: ""
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: /root/luna01_ed0112_r8_audit
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: /root/luna06_capability_status_audit
+    ReviewerIndependence: Required
+    OwnerAssignmentEventId: ""
+    ReviewerAssignmentEventId: ""
+    AssignedAt: ""
+    Branch: ""
+    Worktree: ""
+    ProposedBranch: Task/ED-0120-R5ContractCloseout
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout
+    TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build
+    EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r5
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-30"
+    ModuleIds: [NetworkPlatform, Core]
+    Goal: >-
+      Correct the cross-document status and disclosure conflict among ADR-0003,
+      HttpTransportContract V1, and CoreEndpointGrantContract V1. Treat
+      EndpointGrantId as a bearer capability that is never disclosed in logs,
+      events, telemetry, diagnostics, persistence, command output, or user-visible
+      output; use the local TransportRequestId for transport correlation. Preserve
+      existing APIs, transport semantics, security decisions, contract versions,
+      and keep the P3 EntryGate Pending until its separate closeout.
+    Scope: >-
+      Re-execute the same three ADR/contract document corrections in a clean R5
+      assignment. Preserve the accepted ADR-0003 Windows transport decisions,
+      the EndpointGrantId no-disclosure rule, TransportRequestId local-only
+      correlation, and existing V1 API/wire behavior. Reapply these semantics
+      from the R5 worktree's authorized baseline after TaskStarted; do not copy or
+      stage any R3/R4 product draft. Update only the six paths in this task's
+      ProductWriteSet plus GovernanceWriteSet. Keep P3 Pending.
+    OutOfScope: ["C++ API or implementation", "Tests", "Wire behavior", "Security decision", "Contract version", "P3 plan/events or EntryGate transition", "Provider/WinHTTP production composition"]
+    DependsOn: [ED-0006, ED-0007, ED-0008, ED-0146]
+    ContractVersion: "HttpTransportContract V1; CoreEndpointGrantContract V1; no version bump"
+    Context:
+      ModuleId: NetworkPlatform
+      AdditionalModuleIds: [Core]
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/TaskLifecycle.md
+        - Workflow/Plans/P2.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Platform.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Standards/SecurityAndPrivacy.md
+        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Contracts/CoreEndpointGrantContract.md
+      OnDemandSet:
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/Events/CodexRewrite/P2.jsonl
+        - Workflow/Plans/P3.yaml
+        - Workflow/AgentPool.yaml
+        - Tools/WorkflowController/WorkflowController.cpp
+      ForbiddenSet:
+        - Workflow/Events/CodexRewrite/P3.jsonl
+        - Source/
+        - Tests/
+        - CMakeLists.txt
+        - CMake/
+        - Architecture/Contracts/ModelProviderContract.md
+      DocumentedForbiddenReadSet:
+        - Workflow/Events/CodexRewrite/P3.jsonl
+        - Source/
+        - Tests/
+        - CMakeLists.txt
+        - CMake/
+        - Architecture/Contracts/ModelProviderContract.md
+      ForbiddenSetBinding: "Materialize only the approved ForbiddenSet into the active assignment. Validate positive WriteSet paths first, then reject changes matching ForbiddenSet. ForbiddenSet does not filter the declared read context."
+      ContextSetInvariant: "The exact six-path WriteSet is the only write authorization. P3 plan is read-only on demand; P3 event shard, Source, Tests, and build files are forbidden writes."
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    ProductWriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+    GovernanceWriteSet:
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    WriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    SharedLocks: [HttpTransportContractV1, CoreEndpointGrantContractV1, Adr0003WindowsHttpTransport, CrossModuleContractVersions]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "ADR-0003 remains Accepted and its decision history is preserved; its diagnostic logging clause no longer permits EndpointGrantId disclosure.", Evidence: "Fixed-head review of the ADR diff."}
+      - {AcceptanceId: AC-2, Description: "HttpTransportContract V1 and CoreEndpointGrantContract V1 consistently exclude EndpointGrantId from logs, events, telemetry, diagnostics, persistence, command output, and user-visible output.", Evidence: "Fixed-head review of both contract diffs."}
+      - {AcceptanceId: AC-3, Description: "TransportRequestId remains the local transport correlation identifier and is never sent to the remote endpoint; no grant ID is substituted for it.", Evidence: "Fixed-head review of the correlation clauses."}
+      - {AcceptanceId: AC-4, Description: "Contract status labels are supported by exact independent review and merge evidence. Mark HttpTransportContract V1 Frozen only after ED-0120/R5 is independently approved and merged; mark CoreEndpointGrantContract V1 Frozen only if its own approval and merge prerequisites are verified. Missing evidence leaves the relevant status a candidate and records a blocker.", Evidence: "Exact approval and merge commit records for each contract status."}
+      - {AcceptanceId: AC-5, Description: "No API, C++ source, test, wire behavior, security decision, or contract version changes. The actual GitHub product PR with base.ref=main is checked using its base.sha and head.sha; the exact three-dot diff contains precisely the six-path ProductWriteSet plus GovernanceWriteSet.", Evidence: "GitHub PR metadata plus git diff --name-status base.sha...head.sha and exact six-path comparison."}
+      - {AcceptanceId: AC-6, Description: "Treat PR #46 at fixed Head 3a9f00aff097c4a23a655eaea1093c35096c67b0, its Worker04/Worker06 approvals, and Windows acceptance as read-only authority implementation evidence; do not change ED-0147 Task.State from Assigned or infer that ED-0147 is closed or P3 passed.", Evidence: "Pinned PR #46 metadata, internal review record, and recorded Windows acceptance."}
+      - {AcceptanceId: AC-7, Description: "Merge this TaskSpec PR, then use a separate AssignmentLedger to release and verify Worker01/Worker06 R4 slot bindings, record BaselineCommit=AssignmentBaseCommit as then-current origin/main before Proposed→Ready, and freeze that baseline. WorkflowController query and validate-assignment must accept that exact baseline. Only after the assignment ledger merges and post-merge validation succeeds may IntegrationOwner create/advance the isolated R5 worktree and record TaskStarted; only after TaskStarted may Worker01 write the three product documents.", Evidence: "TaskSpec merge metadata, AssignmentLedger PR, post-merge Controller query/validate-assignment evidence, and TaskStarted event ordering."}
+      - {AcceptanceId: AC-8, Description: "P3 EntryGate and P3 event history remain untouched and Pending. This task does not emit a P3 gate-passed event; a separately registered and independently reviewed gate-closeout task is required.", Evidence: "P3 plan/event paths are absent from the product PR diff and the gate state remains Pending."}
+    P3GateEffect: DoesNotSatisfyEntryGate
+    P3StateAfterTask: Pending
+    RequiresSeparateIndependentP3GateCloseout: true
+    Validation:
+      Mode: DocumentationAndGovernanceOnly
+      BuildRequired: false
+      RequiredTargets: []
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "The WriteSet contains only ADR/contract and governance documents; no C++ source or tests are authorized."
+        ProductionSources: []
+        MinimumLinePercent: 80
+        ReportDirectory: ""
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r5
+      ControllerEvidencePathPattern: "WorkflowControllerEvidence/ED-0120/r5/Validation-<command-index>-<steady-clock>.log"
+      BaseCommitBinding: "AssignmentLedger records the exact TaskSpec merge SHA separately and binds BaselineCommit=AssignmentBaseCommit to assignment-time origin/main before Proposed→Ready; keep SourceLineageCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59. Do not bind PRBaseCommit until actual product PR metadata supplies base.ref=main, base.sha, and head.sha."
+      HeadCommitBinding: "Use the exact product PR head SHA for fixed-head independent review; obtain base.ref/base.sha/head.sha from the actual GitHub PR metadata."
+      CommandEvidenceRule: "For every executed command, append CommandExecuted with measured DurationMs, exit code, redacted summary, and OutputFile under EvidenceDirectory; never estimate durations or log EndpointGrantId."
+      ControllerCommands:
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query $RepositoryRoot P2 ED-0120 5"
+        - "After TaskSpec merge and AssignmentLedger materialization: & 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' validate-assignment $RepositoryRoot P2 ED-0120 5 $OwnerAgentId $Branch $Worktree $AssignmentBaseCommit"
+      CreateWorktreeCommand: "After post-merge AssignmentAccepted only: & 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' create-worktree H:/Qbot/EmulativeDialog P2 ED-0120 5"
+      ManualStaticChecks:
+        - "git -C $RepositoryRoot merge-base --is-ancestor $TASK_BASELINE_COMMIT $PR_BASE_COMMIT"
+        - "git -C $RepositoryRoot merge-base --is-ancestor $PR_BASE_COMMIT $HEAD_COMMIT"
+        - "git -C $RepositoryRoot diff --check ($PR_BASE_COMMIT + '...' + $HEAD_COMMIT)"
+        - "git -C $RepositoryRoot diff --name-status ($PR_BASE_COMMIT + '...' + $HEAD_COMMIT)"
+        - "Confirm the exact product PR changed paths equal the three ProductWriteSet plus three GovernanceWriteSet entries."
+        - "Confirm PRBaseCommit/head are read from actual GitHub PR metadata and never inferred from the TaskSpec or AssignmentLedger."
+        - "Parse P2 JSONL row by row, verify unique EventId values, and compare the full baseline prefix byte-for-byte."
+        - "Confirm R4 remains Blocked with original timestamps and R3/R4 worktrees and patches are preserved."
+        - "Confirm P3 plan/events are absent from the product PR diff and P3 EntryGate remains Pending."
+      StaticChecks:
+        - "TaskSpec PR changed paths are exactly Workflow/Plans/P2.yaml, Workflow/Events/CodexRewrite/P2.jsonl, and Workflow/CurrentState.md; no product document is edited before an accepted assignment and TaskStarted."
+        - "The accepted CR preserves the exact six-path product task WriteSet; product and governance sets are disjoint, and the CR proposal PR's five-path set is separate."
+        - "R4 remains Blocked; its historical TaskStarted/AssignmentAccepted timestamps, findings, branch, worktree, and PRBaseCommit candidate status are not rewritten."
+        - "P2 JSONL is append-only, parses line by line, and all EventId values are unique; its baseline rows are unchanged."
+        - "P3 EntryGate remains Pending; P3 plan and event paths are not in this TaskSpec PR's actual changed path set."
+      LiveSideEffects: Forbidden
+      NotRunReason: "This is a TaskSpec/governance PR only; the R5 product task remains Proposed and no product document, build, test, credential, provider, or channel operation is authorized before a separate accepted AssignmentLedger and TaskStarted."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    Risk: "EndpointGrantId is a bearer capability. Allowing it into diagnostics can enable replay or unauthorized endpoint use if logs are exposed. Incorrect contract labels could falsely suggest P3 is unblocked."
+    Rollback: "If R5 is rejected or blocked, keep R4 Blocked and preserve all R3/R4 events, branches, worktrees, drafts, and patches. Do not write product documents; retain P3 Pending."
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#ChangeRequestId=CR-ED-0120-009
+      - Workflow/Plans/P2.yaml#TaskId=ED-0120&TaskRevision=4
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=959e4ddf-a69e-40c2-b72c-19d0efa2c78f
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=33f33903-0e1e-4cbe-a686-cde156169d78
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=9f3d8138-e9f3-4565-92a1-e43bec711a60
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=aa19a155-47c6-480b-886a-e48a3e77f4f6
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=d504fa38-5a42-4c68-a4ac-940bc1568bb3
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/57
+      - https://github.com/Hatedatastructures/EmulativeDialog/commit/1d88b4e16fca891155b80b9189a1e4f947e840df
+    Checkpoint: {LastCompletedAcceptance: "CR-ED-0120-009 accepted at fixed Base fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e / Head a175deb848253284998daac28fe3c5d9afcee927 and PR #57 merged to main at 1d88b4e16fca891155b80b9189a1e4f947e840df", CurrentFindingOrFailure: "No product write is authorized; R5 TaskSpec and subsequent separate AssignmentLedger still require review and merge", TriedApproaches: ["R4 remains Blocked after AC-7 ordering finding; historical timestamps were preserved"], NextAction: "Review and merge the exact R5 TaskSpec proposal, then create and independently review a separate assignment ledger before any R5 TaskStarted or product document edit", OpenMessageIds: [], LastValidationResult: "TaskSpec proposal only; implementation is not Assigned or Active"}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
   - TaskId: ED-0120
     TaskRevision: 4
     EpicId: EP-06
