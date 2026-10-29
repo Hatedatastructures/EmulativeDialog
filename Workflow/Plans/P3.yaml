@@ -2187,6 +2187,9 @@ Tasks:
     TaskSpecMergePullRequestNumber: 44
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/44
     TaskSpecMergeMethod: squash
+    AssignmentLedgerPullRequestNumber: 45
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/45
+    AssignmentLedgerPullRequestCreatedHeadCommit: bcca45b49e1228bf11ad55c51364a379513a9780
     PreviousRevision8Evidence:
       TaskRevision: 8
       ChangeRequestId: CR-ED-0147-R8-VALIDATION-001

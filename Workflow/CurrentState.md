@@ -281,10 +281,11 @@
 
 - R8 Controller 指派验证的实际报告路径现已核对为 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Assignment/Controller-ValidateAssignment.txt；报告内容为 AssignmentAccepted。为补齐命令追踪，已在隔离的 R8 assignment worktree 重跑同一只读校验，退出 0，报告另存于 Controller-ValidateAssignment-Rerun.txt；原报告未覆盖。
 
-## 2026-10-29 ED-0147/R9 TaskSpec 已合并，重新派工 PR 准备中
+## 2026-10-29 ED-0147/R9 TaskSpec 已合并，重新派工 PR #45 已创建
 
 - PR #44 的 R9 TaskSpec/CR 在语义 Head 84918ea6f67622d999fc5499e7238ce9dc009866 上通过 Owner、独立 Reviewer、治理 Reviewer 固定头审查，于 11:51:36 UTC squash 合并到 main，提交 faed1f26cf726435f41dcd59b6b8ba842c565579。该 PR 只改三条治理路径，没有产品 C++ 源码。
-- R9 TaskSpec 和 ChangeRequest 已记为批准/合并，现准备 assignment-ledger PR。实现任务仍沿用原产品分支 Task/ED-0147-CoreEndpointGrantAuthorityR7、worktree H:/Qbot/EmulativeDialog.ED-0147 和六路径 WriteSet；未提交的产品改动保持不变。
+- R9 assignment-ledger PR #45 已创建，Base 为 faed1f26cf726435f41dcd59b6b8ba842c565579。固定头审查要求补记 PRCreated 与 Controller query 输出文件；候选账本已补齐这些记录，推送后须对新 Head 重新审查。该 PR 只更新治理记录，不含产品 C++。
+- 实现任务仍沿用原产品分支 Task/ED-0147-CoreEndpointGrantAuthorityR7、worktree H:/Qbot/EmulativeDialog.ED-0147 和六路径 WriteSet；未提交的产品改动保持不变。
 - assignment-ledger PR 合并并通过 WorkflowController validate-assignment 前，不运行 R9 configure/build/CTest/coverage。R8 编译和定向测试通过，但覆盖率没有测得。
 - P3 EntryGate 仍 Pending；异步 C++ AgentRuntime、Provider/WinHTTP 生产接线和真实 QQ Adapter 仍未完成。
-- 远端分支目前为 main 与 PR #25，共 2/4；PR #25 的 Memory TTL 备份恢复问题仍阻塞。
+- 远端目前 3/4 个分支：main、PR #25、PR #45。PR #25 的 Memory TTL 备份恢复问题仍阻塞。
