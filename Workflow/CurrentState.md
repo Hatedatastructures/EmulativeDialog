@@ -389,3 +389,10 @@
 - ED-0120/R5 的干净产品工作树也已在 PR #62 后分离到最终 main；保留原本地分支引用。
 - Worker01、Worker06 的 ED-0120/R5 职责结束后已释放，Worker02 在 ED-0147/R9 收尾后已释放。Worker06 在 ED-0148/R5 中的身份分配仍需先核对，才能恢复验证；未静默指定替代身份。
 - P3 EntryGate 仍为 Pending。ED-0151/R2 的独立门禁评估尚未执行，ED-0114 仍受阻；本次治理收尾不声称异步 AgentRuntime 已实现。
+
+## 2026-10-30 ED-0151/R2 任务规格合并、就绪核验与派工
+
+- PR #61 合并了 ED-0151/R2 TaskSpec，merge SHA 为 `8c9791e1bddf787fc703cac43aedd70d37a81bcd`；固定头 Base/Head 为 `f4c21b67591548b33a09f9c3b03d4c03ce2e5f28` → `c84a7532a6e20afb36440022a7c9bdde0caf194c`。Worker04 内部固定头评审为 APPROVE；GitHub 原生 review submission 数为 0。
+- Coordinator 在 `origin/main@bdbf292a51f7ba1e7ee569be6e05e2965f8a18b6` 上重查十项精确依赖，10/10 Controller 查询均退出码 0 且为 Merged；P1/P2 门通过、两份 P3 合同 Frozen、ED-0147/R9 已 Merged/Closed。完整输出见 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-R2AssignmentLedger.build/Readiness/ED0151-R2-Readiness-20261029T2232Z.log`。
+- ED-0151/R2 已按其独立 TaskSpec 绑定基线 `bdbf292a51f7ba1e7ee569be6e05e2965f8a18b6`、Owner `/root`、Reviewer Worker04、分支 `Task/ED-0151-P3GateCloseout` 与独立工作树 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree`；TaskSpec merge 与 readiness 事件已追加。
+- 当前只记录为 Assigned。任务尚未开始；必须先在合并后的任务工作树取得 `WorkflowController validate-assignment` 接受，再追加 TaskStarted 或写 P3 门状态。P3 EntryGate 仍为 Pending；过期 PendingReason 只在获准的 ED-0151 门评估中更正。

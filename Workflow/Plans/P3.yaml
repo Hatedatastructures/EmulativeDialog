@@ -3372,7 +3372,7 @@ Tasks:
     EpicId: EP-06
     Title: 独立核验并关闭 P3 EntryGate
     TaskKind: Governance
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: Coordinator
     OwnerSlotId: Coordinator
@@ -3385,9 +3385,26 @@ Tasks:
     CreatedAt: "2026-10-30"
     ParallelGroup: P3GateCloseout
     TaskSpecProposalBaseCommit: f4c21b67591548b33a09f9c3b03d4c03ce2e5f28
-    TaskSpecMergedToMainCommit: ""
-    BaselineCommit: ""
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewBaseCommit: f4c21b67591548b33a09f9c3b03d4c03ce2e5f28
+    TaskSpecReviewHeadCommit: c84a7532a6e20afb36440022a7c9bdde0caf194c
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerReviewBaseCommit: f4c21b67591548b33a09f9c3b03d4c03ce2e5f28
+    TaskSpecReviewerReviewHeadCommit: c84a7532a6e20afb36440022a7c9bdde0caf194c
+    TaskSpecNativeGitHubReviewSubmissionCount: 0
+    TaskSpecMergePullRequestNumber: 61
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/61
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainCommit: 8c9791e1bddf787fc703cac43aedd70d37a81bcd
+    TaskSpecMergedEventId: 9440252c-75d2-4425-850f-6bd701f4fb3c
+    BaselineCommit: bdbf292a51f7ba1e7ee569be6e05e2965f8a18b6
     PRBaseCommit: ""
+    TaskReadinessValidatedEventId: 2d24af80-9473-40a5-96f8-0b7fde6e040f
+    TaskAssignedEventId: 1958f7c1-8639-4f75-8b78-28742d1f74f5
+    PreMergeAssignmentValidationEventId: 8af3c00e-311f-4d70-a2ff-46ca8d29477f
+    Branch: Task/ED-0151-P3GateCloseout
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeAssignmentByAcceptedChangeRequest
