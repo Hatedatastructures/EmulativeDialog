@@ -194,7 +194,7 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker04_ed0114_review
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     FindingId: ED-0120-R2-F001
     Scope: >-
       Add a Core-owned EndpointGrantAuthority that registers trusted ProviderProfileId to HTTPS destination
@@ -223,7 +223,7 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker04_ed0114_review
-    Decision: Accepted
+    Decision: ProposedAwaitingOwnerAndReviewerReview
     FindingId: ED-0120-R2-F001
     Scope: >-
       Preserve ED-0147's Core endpoint authority goal, six-path WriteSet, dependency ordering, and explicit
@@ -480,6 +480,76 @@ ChangeRequests:
     AcceptedAt: 2026-10-29
     PreserveGoalReadSetWriteSetDependenciesAcceptanceContractAndSlots: true
     NoProductSourceWriteAuthorized: true
+
+  - ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
+    TargetTaskId: ED-0147
+    TargetTaskRevision: 7
+    ProposedTaskRevision: 8
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve ED-0147's Goal, Acceptance, six-path product WriteSet, dependencies, contracts, Owner,
+      Reviewer, security boundary, product BaseCommit, implementation branch and worktree. Move only
+      the formal validation outputs from the already-consumed R6 build directory to the unique
+      ED-0147-R8/Core directory, and record the exact R7 configure/build/CTest results as superseded
+      evidence. Keep all R7 outputs. R8 validation is authorized only after this TaskSpec revision is
+      approved and merged, the assignment ledger is updated, and WorkflowController readiness checks
+      pass. The existing Worker02 implementation may continue only inside the original six-path
+      WriteSet while this validation-only revision is reviewed.
+    Reason: >-
+      The frozen R7 validation directory was H:/Qbot/EmulativeDialog.integration-port-contract.build/
+      ED-0147-R6/Core. Its configure succeeded. The checkpoint and author report state that an initial
+      target build exited 2 because a test-fixture initializer omitted RetryAfter, followed by a
+      successful rebuild; however, the currently referenced Build.log itself says "Built target" and
+      does not substantiate that reported failure, so the initial exit and cause are unverified. The
+      first CTest failed 10 of 11 assertions on a URL escape expectation and emitted a libgcov
+      checksum/overwrite warning; its diagnostic retry passed after the assertion changed. Two
+      generated .gcda files were removed by the task agent after the mismatch. Additional tests were
+      added after that diagnostic retry and were not run in the directory. Coverage was not run. The
+      path is consumed and cannot establish fresh R8 acceptance; the new path preserves the required
+      fresh-build and paired coverage evidence.
+    Impact: >-
+      No C++ API, product behavior, data format, dependency, contract version, Acceptance, or
+      implementation WriteSet change. The existing R7 outputs remain retained for audit. ED-0147
+      and P3 EntryGate remain incomplete until the new frozen validation, independent review, and
+      contract-freeze gates pass.
+    Rollback: >-
+      If either fixed-head TaskSpec review rejects this revision, do not run another configure,
+      build, CTest, or coverage command in the consumed R6 directory and do not claim ED-0147
+      acceptance. Preserve the product worktree and all R7 logs; submit a corrected ChangeRequest
+      before using a different validation directory.
+    ProposedTaskSpecBaseCommit: 62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9
+    ProposedOwnerSlotId: Worker02
+    ProposedReviewerSlotId: Worker04
+    ProposedProductBaselineCommit: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
+    ProposedBranch: Task/ED-0147-CoreEndpointGrantAuthorityR7
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0147
+    ProposedProductWriteSet:
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Source/Core/EndpointGrantAuthority.hpp
+      - Source/Core/EndpointGrantAuthority.cpp
+      - Tests/Contract/Core/CMakeLists.txt
+      - Tests/Contract/Core/EndpointGrantAuthorityTests.cpp
+    ProposedGovernanceWriteSet:
+      - Workflow/Plans/P3.yaml
+      - Workflow/Events/CodexRewrite/P3.jsonl
+      - Workflow/CurrentState.md
+    ProposedTaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    OwnerCRDecision: Approve
+    OwnerCRDecisionEvidence: "Worker02 approved the validation-only TaskSpec at fixed Base 62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9 / Head 59fa1193d3fc23f9df1ad851b37908f3a29ef27d."
+    IndependentReviewerDecision: Approve
+    IndependentReviewerEvidence: "Worker04 independently approved the validation-only TaskSpec at fixed Base 62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9 / Head 59fa1193d3fc23f9df1ad851b37908f3a29ef27d."
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionEvidence: "Coordinator accepted after both fixed-head TaskSpec approvals; scope remains validation-path-only and P3 EntryGate remains Pending."
+    AcceptedAt: 2026-10-29
+    PreserveGoalAcceptanceDependenciesContractsOwnerReviewerAndProductWriteSet: true
+    NoProductWriteSetExpansion: true
+    R8ValidationRequiresTaskSpecMergeAndAssignmentReadiness: true
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
@@ -2027,13 +2097,13 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0147
-    TaskRevision: 7
+    TaskRevision: 8
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Rework
     Phase: P3
-    ChangeRequestId: CR-ED-0120-005
+    ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
     OwnerRole: CoreOwner
@@ -2043,19 +2113,75 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
-    TaskSpecChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecChangeRequestId: CR-ED-0147-R8-VALIDATION-001
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
     TaskSpecOwnerDecision: Approve
-    TaskSpecOwnerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    TaskSpecOwnerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
     TaskSpecReviewerDecision: Approve
-    TaskSpecReviewerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    TaskSpecReviewerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
     TaskSpecCoordinatorDecision: Accepted
-    TaskSpecCoordinatorDecisionHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
-    TaskSpecHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
-    TaskSpecMergedToMainCommit: bc280f05216821984e1bbb750006803832f50b56
-    TaskSpecMergePullRequestNumber: 39
-    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/39
+    TaskSpecCoordinatorDecisionHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    TaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergePullRequestNumber: 42
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/42
     TaskSpecMergeMethod: squash
+    PreviousRevision7Evidence:
+      TaskRevision: 7
+      ChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
+      State: Assigned
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecOwnerDecision: Approve
+      TaskSpecOwnerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+      TaskSpecReviewerDecision: Approve
+      TaskSpecReviewerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecCoordinatorDecisionHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+      TaskSpecHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+      TaskSpecMergedToMainCommit: bc280f05216821984e1bbb750006803832f50b56
+      TaskSpecMergePullRequestNumber: 39
+      TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/39
+      TaskSpecMergeMethod: squash
+      AssignmentLedgerPullRequestNumber: 41
+      AssignmentLedgerMergeCommit: 62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9
+      ProductBaselineCommit: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
+      ImplementationBranch: Task/ED-0147-CoreEndpointGrantAuthorityR7
+      ImplementationWorktree: H:/Qbot/EmulativeDialog.ED-0147
+      AssignedToSlot: Worker02
+      AssignmentNote: "R7 TaskSpec PR #39 is merged. Assignment ledger binds Worker02 /root/luna02_ed0148_pr_ready to Base 269379817d7f51082b16ae2d0ded1ccedd2a54b7 on branch Task/ED-0147-CoreEndpointGrantAuthorityR7 and isolated worktree H:/Qbot/EmulativeDialog.ED-0147; Worker04 /root/luna04_ed0144_branch_review remains the fixed independent Reviewer. Product writes start only after this assignment ledger merges. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
+      ImplementationHeadCommitAtValidation: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
+      ImplementationChangesWereUncommitted: true
+      ValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core
+      FreshBuildPreflightResult: Passed
+      ConfigureExitCode: 0
+      InitialTargetBuildReportedExitCode: 2
+      InitialTargetBuildExitCode: Unverified
+      InitialTargetBuildFindingReportedByCheckpoint: "Test fixture allegedly omitted ResponseHeadMetadata::RetryAfter; fixture was reportedly corrected."
+      InitialTargetBuildEvidenceConflict: "Referenced Build.log currently reports [100%] Built target EndpointGrantAuthorityTests and does not substantiate the reported exit code 2. The original failing output is not present in the referenced report directory."
+      CommandEventBranch: Task/ED-0147-CoreEndpointGrantAuthorityR7
+      CommandEventDurationMs: Unavailable
+      CommandEventDurationReason: "R7 logs and retained command records do not contain process wall-clock durations; correction events mark the values unavailable rather than estimate from file timestamps."
+      TargetRebuildAfterFixtureCorrectionExitCode: 0
+      InitialCTestExitCode: 8
+      InitialCTestAssertionsPassed: 10
+      InitialCTestAssertionsTotal: 11
+      InitialCTestFinding: "EndpointGrantAuthorityTests.cpp line 163 expected /?model=a%3Ab; implemented parser produced /?model=a%3ab."
+      InitialCTestLibgcovChecksumOverwriteWarning: true
+      GeneratedGcdaFilesRemovedAfterMismatch: 2
+      DiagnosticCTestExitCode: 0
+      DiagnosticCTestResult: "1/1 CTest passed after the URL-escape assertion was updated; diagnostic only, not fresh acceptance."
+      AdditionalTestsAddedAfterDiagnosticCTest: true
+      CoverageCommandRun: false
+      CoverageAcceptance: NotMet
+      EvidenceFiles:
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports/Configure.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports/Build.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports/Build-AfterFixtureFix.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports/CTest-InitialFailure.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports/CTest.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports/ED-0147-R7-ValidationCheckpoint.txt
+      Disposition: SupersededByValidationOnlyRevision
+      Reason: "R7's diagnostic rerun did not include later test additions, the build directory emitted a gcov checksum/overwrite warning, and the required coverage threshold was not measured."
     PreviousRevision6Evidence:
       TaskRevision: 6
       ChangeRequestId: CR-ED-0120-005
@@ -2120,7 +2246,7 @@ Tasks:
     Branch: Task/ED-0147-CoreEndpointGrantAuthorityR7
     Worktree: H:/Qbot/EmulativeDialog.ED-0147
     AssignedToSlot: Worker02
-    AssignmentNote: "R7 TaskSpec PR #39 is merged. Assignment ledger binds Worker02 /root/luna02_ed0148_pr_ready to Base 269379817d7f51082b16ae2d0ded1ccedd2a54b7 on branch Task/ED-0147-CoreEndpointGrantAuthorityR7 and isolated worktree H:/Qbot/EmulativeDialog.ED-0147; Worker04 /root/luna04_ed0144_branch_review remains the fixed independent Reviewer. Product writes start only after this assignment ledger merges. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
+    AssignmentNote: "R8 is a validation-only revision proposed after R7's frozen build directory was consumed. Preserve the existing Worker02 product branch/worktree and six-path WriteSet. After the R8 TaskSpec PR merges, record the new TaskSpec merge commit in a separate assignment ledger, validate the assignment with WorkflowController, then run only the fresh ED-0147-R8/Core validation commands. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
@@ -2182,12 +2308,12 @@ Tasks:
       - {AcceptanceId: AC-6, Description: "The registry is safe for concurrent Core requests; grant IDs are never written to logs, events, diagnostics, or persistence.", Evidence: "Deterministic multi-threaded issue/validate/revoke tests produce unique IDs and preserve fail-closed lookup; static review finds no token logging or persistence."}
       - {AcceptanceId: AC-7, Description: "EndpointGrantAuthority.cpp has at least 80 percent unique executable-line coverage.", Evidence: "CoverageCommand matches the exact EndpointGrantAuthority.cpp files[].file record and binds coverage data to its exact .gcno/.gcda pair and named CTest record; it records tool versions and fails below 80 percent."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core
       Coverage:
         Required: true
         ProductionSources: [Source/Core/EndpointGrantAuthority.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
       RequiredBuildTargets: [EndpointGrantAuthorityTests]
@@ -2199,19 +2325,19 @@ Tasks:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core --target EndpointGrantAuthorityTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core --target EndpointGrantAuthorityTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0147'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core'
         $ReportRoot = Join-Path $Build 'Reports'
         $Source = Join-Path $Worktree 'Source/Core/EndpointGrantAuthority.cpp'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
