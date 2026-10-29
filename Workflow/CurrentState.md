@@ -243,3 +243,49 @@
 - PR #39 merged to `main` by squash at `bc280f05216821984e1bbb750006803832f50b56`; its remote task branch was deleted. Remote branch count returned to 2/4: `main` and `Task/ED-0144-MemorySqliteAdapter`.
 - ED-0147/R7 TaskSpec semantic Head `20ed3b35a30f945d69368a6df89c33b6e7e4102d` was approved by Worker02 Owner and Worker04 independent Reviewer; Worker06 approved the final governance PR Head `551973d72e5bd696af7cfd225560ab2808161f73`.
 - Product TaskSpec is now merged. The closeout candidate records the merge SHA and Proposed → Ready transition; the Controller readiness query already passed with `State=Ready`, exit 0, duration 147 ms, and output at `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R7-TaskSpecCloseout/Reports/TaskReadinessQuery.txt`. No implementation branch/worktree is assigned yet, no C++ product source changed, and P3 EntryGate remains Pending.
+
+## 2026-10-29 ED-0147/R7 implementation assignment candidate
+
+- The current main baseline is 269379817d7f51082b16ae2d0ded1ccedd2a54b7. WorkflowController validate-assignment accepted Owner /root/luna02_ed0148_pr_ready, branch Task/ED-0147-CoreEndpointGrantAuthorityR7, and the frozen validation worktree path H:/Qbot/EmulativeDialog.ED-0147; exit code 0, duration 1008 ms on the assigned candidate; the query and validation outputs are in H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R7-Assignment/Reports/CandidateAssignmentVerification.txt.
+- The TaskSpec is already on main from PR #39 at bc280f05216821984e1bbb750006803832f50b56. The assignment candidate binds the existing six-path WriteSet without changing Goal, ReadSet, dependencies, Acceptance, Validation, Owner, or Reviewer.
+- The isolated implementation worktree does not yet exist. No ED-0147 product C++ has been written; this assignment becomes active only after its governance PR merges.
+- P3 EntryGate remains Pending. Remote branches were main plus open PR #25 at assignment preparation; the four-branch limit remains in effect.
+
+
+## 2026-10-29 ED-0147/R8 验收路径重开（10:36 UTC）
+
+- 远端 main 基线为 `62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9`。PR #41 已合并，远端当前只有 main 和 ED-0144/R2 的 PR #25 两条分支。
+- ED-0147/R7 已在 `H:/Qbot/EmulativeDialog.ED-0147` 的 `Task/ED-0147-CoreEndpointGrantAuthorityR7` 上写出冻结六路径的真实 C++ 实现、合同、模块依赖和行为测试。产品改动仍在本地未提交；目前尚无 ED-0147 产品 PR。
+- R7 实际验证目录是 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core`。Configure 退出 0；检查点报告首轮目标构建退出 2，但被引用的 `Build.log` 实际写着 `[100%] Built target`，原始失败输出目前不可用，因此首轮退出码和原因标为未核实；`Build-AfterFixtureFix.log` 显示后续构建成功。首轮 CTest 退出 8，10/11 断言通过并报告 libgcov checksum overwrite；修正 URL 转义断言后的诊断 CTest 退出 0、1/1 通过。此后又加入测试，尚未在该目录运行；覆盖率命令未运行。此目录已消费，旧日志保留，不得用作新验收。
+- Worker02 完成了 AC-1 至 AC-6 的静态缺口修复，范围仍限于六路径 WriteSet；这些新增/修复的行为目前尚未编译或测试。AC-7 的 80% 覆盖率门仍未验证。
+- 已提出 `CR-ED-0147-R8-VALIDATION-001`，只将正式验证切到 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core` 并记录 R7 结果。Owner Worker02 与独立 Reviewer Worker04 审核及 PR 合并之前，不得运行 R8 构建、CTest 或覆盖率。
+- 固定头审查发现 R7 的 `Build.log` 与检查点声称的首轮 exit 2 不一致；原始失败输出无法从保留报告中恢复，R8 已把首轮结果改标未核实并追加纠正事件。五条既有 `CommandExecuted` 事件也追加分支/耗时字段纠正；耗时记录为不可得，不从文件时间估算。Worker02 与 Worker04 已在 Base `62fbe87` / TaskSpec Head `59fa119` 批准；PR #42 现待独立治理复核和合并，ED-0147/R8 正式验证仍未获准。
+- ED-0147 通过验收、独立评审并冻结合同之前，P3 EntryGate 保持 Pending；真正的异步 C++ AgentRuntime 和生产 Provider/WinHTTP composition 仍未完成。
+
+## 2026-10-29 ED-0147/R8 合并与派工账本修正
+
+- PR #42 已于 11:03 UTC squash 合并到 `main`，合并提交为 `791f5763c8018ee1b4d9d53a7f3ee55d13e37bad`；已删除合并后的 `Task/ED-0147-R8-ValidationPath` 远端分支。
+- Worker01 合并后审计发现 P3 事件追加顺序与 `OccurredAt` 时间顺序不一致，并且事件账本漏记 PR #42 Head 从 `59fa1193d3fc23f9df1ad851b37908f3a29ef27d` 更新至 `4aa60bf2064fc5ff690fe827f59d4f5350dbd069`。旧事件行保持不变；当前 assignment-ledger 候选追加事件顺序说明和 Head 更正，等待固定 Head 独立复审。
+- R8 assignment-ledger 候选分支 `Task/ED-0147-R8-AssignmentLedger` 位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8-AssignmentLedger`。它绑定既有 Worker02 产品 worktree 的六路径改动；该改动早于 R8 审批，且没有越出 WriteSet。
+- 本节状态边界由 P3 事件账本确定；补录和派工事件的 `OccurredAt`/`RecordedAt` 保留精确时间，不再用标题快照时间代替事件时间。
+- R8 新构建路径 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core` 尚未创建。本候选 PR 合并且 WorkflowController `validate-assignment` 返回接受之前，不运行 configure、build、CTest 或 coverage。
+- P3 EntryGate 仍 Pending；本轮没有完成 AgentRuntime 协程实现，也没有生产 Provider/WinHTTP 接线。远端分支保持在 4 条上限以内。
+
+## 2026-10-29 ED-0147/R8 验证结果与 R9 覆盖率修订提案
+
+- 当前远端 main 为 c110dcd88d6eda625b10f24c99e2dc761ec32278；远端分支为 main 和 PR #25 的 Task/ED-0144-MemorySqliteAdapter，共 2/4。PR #25 仍未合并；独立审查发现备份恢复会丢失 ExpiresAt，需要先修复数据语义。
+- ED-0147/R8 TaskSpec PR #42 和 assignment-ledger PR #43 已合并。Controller 的 R8 AssignmentAccepted 验证退出码为 0。Worker02 在新鲜 ED-0147-R8/Core 目录中完成 configure、目标构建、定向 CTest、GCC 和 gcov 版本检查：configure/build/CTest 均退出 0，CTest 1/1 且 13/13 断言通过，GCC/gcov 为 16.1.0。
+- R8 覆盖率命令退出 1，失败发生在 gcov 运行前。冻结脚本没有接受实际 CMakeCache 的 CRLF 行尾，并且只接受 CMAKE_CXX_COMPILER:FILEPATH，实际条目为 CMAKE_CXX_COMPILER:STRING。没有生成覆盖率 JSON，也没有测得覆盖率百分比；R8 不满足 AC-7。完整日志保留在 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/。
+- 现提出 ED-0147/R9 ChangeRequest CR-ED-0147-R9-COVERAGE-CACHE-001：只更换到全新 R9 构建目录，并用 ReadAllLines 对 CMakeCache 的完整路径和编译器类型/值做精确检查。Goal、Acceptance、产品六路径 WriteSet、依赖、合同、Owner 和 Reviewer 保持不变。R9 状态仍为 Proposed，未获准运行；须先完成固定头评审、合并、更新 assignment ledger 并由 WorkflowController 接受。
+- ED-0147 产品 C++ 仍在原隔离实现 worktree/分支中；本修订没有改产品源代码。P3 EntryGate 仍 Pending，异步 C++ AgentRuntime 和生产 Provider/WinHTTP 接线均未完成。
+
+- R8 Controller 指派验证的实际报告路径现已核对为 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Assignment/Controller-ValidateAssignment.txt；报告内容为 AssignmentAccepted。为补齐命令追踪，已在隔离的 R8 assignment worktree 重跑同一只读校验，退出 0，报告另存于 Controller-ValidateAssignment-Rerun.txt；原报告未覆盖。
+
+## 2026-10-29 ED-0147/R9 TaskSpec 已合并，重新派工 PR #45 已创建
+
+- PR #44 的 R9 TaskSpec/CR 在语义 Head 84918ea6f67622d999fc5499e7238ce9dc009866 上通过 Owner、独立 Reviewer、治理 Reviewer 固定头审查，于 11:51:36 UTC squash 合并到 main，提交 faed1f26cf726435f41dcd59b6b8ba842c565579。该 PR 只改三条治理路径，没有产品 C++ 源码。
+- R9 assignment-ledger PR #45 已创建，Base 为 faed1f26cf726435f41dcd59b6b8ba842c565579。固定头审查要求补记 PRCreated 与 Controller query 输出文件；候选账本已补齐这些记录，推送后须对新 Head 重新审查。该 PR 只更新治理记录，不含产品 C++。
+- 实现任务仍沿用原产品分支 Task/ED-0147-CoreEndpointGrantAuthorityR7、worktree H:/Qbot/EmulativeDialog.ED-0147 和六路径 WriteSet；未提交的产品改动保持不变。
+- assignment-ledger PR 合并并通过 WorkflowController validate-assignment 前，不运行 R9 configure/build/CTest/coverage。R8 编译和定向测试通过，但覆盖率没有测得。
+- P3 EntryGate 仍 Pending；异步 C++ AgentRuntime、Provider/WinHTTP 生产接线和真实 QQ Adapter 仍未完成。
+- 远端目前 3/4 个分支：main、PR #25、PR #45。PR #25 的 Memory TTL 备份恢复问题仍阻塞。
