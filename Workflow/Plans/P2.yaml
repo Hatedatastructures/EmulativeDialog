@@ -137,6 +137,194 @@ ChangeRequests:
     CoordinatorDecision: Accepted
     CoordinatorDecisionAgentId: /root
     CoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+  - ChangeRequestId: CR-ED-0120-007
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 2
+    ProposedTaskId: ED-0120
+    ProposedTaskRevision: 3
+    TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/luna01_ed0112_r8_audit
+    ProposedOwnerSlotId: Worker01
+    ProposedOwnerRole: ContractOwner
+    ProposedOwnerAuthorization: "Upon CR acceptance, Coordinator grants Worker01 task-scoped ownership of the three listed contract documents only; this grants no C++ source or test write permission."
+    IndependentReviewerAgentId: /root/luna06_capability_status_audit
+    ProposedReviewerSlotId: Worker06
+    ProposedReviewerRole: IndependentReviewer
+    ProposedReviewerIndependence: Required
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    ProposedTaskSpecBaseCommit: 5364581858c8299884e87e00730748b86fb43346
+    ProposedTaskKind: ContractFreeze
+    ProposedEpicId: EP-06
+    ProposedPhase: P2
+    ProposedTitle: 统一 HTTPS transport grant 日志规则并校准合同状态
+    ProposedModuleIds: [NetworkPlatform, Core]
+    ProposedContextModuleId: NetworkPlatform
+    ProposedAdditionalModuleIds: [Core]
+    ProposedBaselinePolicy: "After the approved TaskSpec is merged, bind BaselineCommit to that exact main commit before assignment; do not start from this proposal base."
+    ProposedBranch: Task/ED-0120-R3-ContractCloseout
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout
+    ProposedEvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Validation
+    ProposedGoal: >-
+      Correct the cross-document status and disclosure conflict among ADR-0003,
+      HttpTransportContract V1, and CoreEndpointGrantContract V1. Treat
+      EndpointGrantId as a bearer capability that is never logged; use the
+      local TransportRequestId for transport diagnostic/event correlation.
+      Preserve the existing API and transport semantics, and keep the P3
+      EntryGate Pending until a separate independent gate closeout.
+    Scope: >-
+      Create ED-0120/R3 as a documentation and contract-status correction.
+      Keep the ADR decision Accepted and its Windows TLS, proxy, redirect,
+      timeout, cancellation, and unknown-outcome decisions unchanged. Replace
+      the ADR clause that permits logging an endpoint grant ID with the
+      uniform no-disclosure rule. State consistently in HttpTransportContract
+      V1 and CoreEndpointGrantContract V1 that EndpointGrantId is an opaque
+      bearer capability and must not appear in logs, events, telemetry,
+      diagnostics, persisted records, command output, or user-visible output;
+      use TransportRequestId only for transport-level request correlation.
+      Set each contract status only when its exact independent review and
+      merge evidence supports that status. Do not change C++ API, wire
+      behavior, security decisions, contract version, implementation, or tests.
+      Do not edit the P3 plan or P3 event shard.
+    Reason: >-
+      ADR-0003 currently permits diagnostic logging of an endpoint grant ID,
+      while CoreEndpointGrantContract V1 prohibits logging grant IDs because
+      they are bearer capabilities. HttpTransportContract V1 already defines
+      TransportRequestId as a local diagnostic/event correlation ID and says
+      sensitive values must not enter terminal results, events, or logs.
+      The same P2 task record still marks HttpTransportContract V1 as
+      PendingCorrectiveRevision, while the contract itself says freeze
+      candidate. R3 aligns these records without changing behavior. The
+      P3 EntryGate remains independently controlled and must not be inferred
+      from this documentation correction.
+    R2Disposition: MergedHistoryPreserved
+    ProposedWriteSetChangeReason: >-
+      R2 compiled Port and contract-test work remain merged and immutable. R3
+      limits product writes to the three documentation paths needed to remove
+      the grant-ID disclosure contradiction and correct status labels; it adds
+      no C++ implementation or test write permission.
+    ProposedPreservedRevision2Fields: [ApiBehavior, TransportSemantics, SecurityBoundaries]
+    ProposedDependencyChangeReason: "Preserve ED-0006/ED-0007/ED-0008; add ED-0146 and ED-0147 as explicit evidence dependencies because their merged work established the grant-guard and Core-owned grant contract being reconciled."
+    ProposedDependencies: [ED-0006, ED-0007, ED-0008, ED-0146, ED-0147]
+    ProposedDependencyReadyGate: "All five dependencies must be Merged before ED-0120/R3 becomes Ready or TaskStarted; in particular, wait for ED-0147 implementation and independent acceptance to finish."
+    ProposedContractVersion: "HttpTransportContract V1 and CoreEndpointGrantContract V1; no version bump or API change."
+    ProposedSharedLocks: [HttpTransportContractV1, CoreEndpointGrantContractV1, Adr0003WindowsHttpTransport, CrossModuleContractVersions]
+    ProposedReadSet:
+      - AGENTS.md
+      - Workflow/CurrentState.md
+      - Workflow/TaskIndex.yaml
+      - Workflow/TaskLifecycle.md
+      - Workflow/Plans/P2.yaml
+      - Architecture/ModuleMap.yaml
+      - Architecture/Modules/Platform.yaml
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Standards/SecurityAndPrivacy.md
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+    ProposedOnDemandSet:
+      - Workflow/AgentExecutionStandard.md
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/Plans/P3.yaml
+      - Workflow/AgentPool.yaml
+    ProposedOnDemandReasons:
+      - "Load only the CommandExecuted/event-field requirements before writing or appending the P2 event."
+      - "Inspect only the existing ED-0120 event prefix and relevant EventIds to preserve append-only history."
+      - "Confirm the exact EntryGate remains Pending; this task has no P3 write permission."
+      - "Revalidate Worker01 and Worker06 CurrentTaskId and independence immediately before assignment."
+    ProposedContextLimits: {MaxReferenceFiles: 12, ExpansionReasonRequired: true, NoFullHistoryScan: true}
+    ProposedProductWriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+    ProposedGovernanceWriteSet:
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    ProposedForbiddenSet:
+      - Workflow/Plans/P3.yaml
+      - Workflow/Events/CodexRewrite/P3.jsonl
+      - Workflow/TaskIndex.yaml
+      - Workflow/AgentPool.yaml
+      - Source/
+      - Tests/
+      - CMakeLists.txt
+      - CMake/
+      - Architecture/Contracts/ModelProviderContract.md
+    ProposedAcceptance:
+      - "ADR-0003 remains Accepted and its decision history is preserved; the diagnostic logging clause no longer permits EndpointGrantId disclosure."
+      - "HttpTransportContract V1 and CoreEndpointGrantContract V1 consistently define EndpointGrantId as a bearer capability that is excluded from logs, events, telemetry, diagnostics, persistence, command output, and user-visible output."
+      - "TransportRequestId remains the local transport-level correlation identifier and is never sent to the remote endpoint; no grant ID is substituted for it."
+      - "Contract status labels are supported by exact fixed-head independent review and merge evidence. Mark HttpTransportContract V1 Frozen only after ED-0120/R3 is independently approved and merged; mark CoreEndpointGrantContract V1 Frozen only if its own recorded approval and merge prerequisites are verified. Missing evidence leaves the relevant status as a candidate and records a blocker."
+      - "No API, C++ source, test, wire behavior, security decision, or contract version changes; changed paths equal ProductWriteSet union GovernanceWriteSet."
+      - "P3 EntryGate and P3 event history remain untouched and Pending. This task does not emit a P3 gate-passed event; a separately registered and independently reviewed gate-closeout task is required."
+    ProposedP3GateEffect: DoesNotSatisfyEntryGate
+    ProposedP3StateAfterTask: Pending
+    RequiresSeparateIndependentP3GateCloseout: true
+    ProposedValidation:
+      Mode: DocumentationAndGovernanceOnly
+      BuildRequired: false
+      RequiredTargets: []
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "The ProductWriteSet contains Markdown contracts/ADR only and no production C++ source or tests."
+        ProductionSources: []
+        MinimumLinePercent: 80
+        ReportDirectory: ""
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Validation
+      BaseCommitBinding: "Exact main commit containing the accepted ED-0120/R3 TaskSpec; record this value before assignment."
+      HeadCommitBinding: "Exact implementation PR HeadCommit fixed for independent review."
+      CommandEvidenceRule: "For each executed command, append a CommandExecuted event with measured DurationMs, exit code, redacted output summary, and OutputFile under EvidenceDirectory; never estimate duration or include a grant ID."
+      Commands:
+        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout diff --check $BASE_COMMIT $HEAD_COMMIT"
+        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout diff --name-only $BASE_COMMIT $HEAD_COMMIT"
+        - "rg -n 'Status:|状态：|TransportRequestId|EndpointGrantId|日志|diagnostic' H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Architecture/Decisions/Adr0003WindowsHttpTransport.md H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Architecture/Contracts/HttpTransportContract.md H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Architecture/Contracts/CoreEndpointGrantContract.md"
+        - >-
+          powershell -NoProfile -Command "$events = @(Get-Content -LiteralPath
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Workflow/Events/CodexRewrite/P2.jsonl' |
+          Where-Object { $_.Trim().Length -gt 0 } | ForEach-Object {
+          ConvertFrom-Json -InputObject $_ -ErrorAction Stop }); if (($events.EventId |
+          Sort-Object -Unique).Count -ne $events.Count) { throw 'Duplicate EventId' }"
+        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout diff --unified=0 $BASE_COMMIT $HEAD_COMMIT -- Workflow/Events/CodexRewrite/P2.jsonl"
+        - "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe query H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout P2 ED-0120 3"
+        - "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout P2 ED-0120 3 /root/luna01_ed0112_r8_audit Task/ED-0120-R3-ContractCloseout H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout $BASE_COMMIT"
+        - "rg -n '^EntryGate:|^  State: Pending$|^  PendingReason:' H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Workflow/Plans/P3.yaml"
+      StaticChecks:
+        - "Changed paths exactly equal the six-path union of ProductWriteSet and GovernanceWriteSet."
+        - "P2 YAML parses and WorkflowController query returns ED-0120/R3 after Coordinator materializes the approved CR into the active TaskSpec."
+        - "P2 JSONL parses, EventIds remain unique, and the existing event prefix is preserved."
+        - "P3 EntryGate remains Pending; P3 plan/events are outside the WriteSet."
+        - "Every contract status claim cites a fixed BaseCommit/HeadCommit review and merge record; no review status is inferred from a PR merge alone."
+      LiveSideEffects: Forbidden
+      NotRunReason: "Documentation and governance validation only; no network, credentials, product build, or C++ tests."
+    ProposedRiskLevel: High
+    ProposedRiskOwnerRole: ContractOwner
+    ProposedRisk: >-
+      EndpointGrantId is a bearer capability. Allowing it into diagnostics can
+      enable replay or unauthorized endpoint use if logs are exposed. Incorrect
+      freeze labels can also make P3 appear unblocked without evidence.
+    ProposedRollback: >-
+      Preserve the no-grant-ID-disclosure rule on rollback. If independent
+      approval/merge evidence for a status is missing, revert only that
+      unsupported status label to a candidate state, retain the historical
+      decision and evidence, and keep P3 Pending.
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0120&TaskRevision=2&ContractFreezeStatus=PendingCorrectiveRevision
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md#Decision-9
+      - Architecture/Contracts/HttpTransportContract.md#TransportRequestId-and-EndpointGrantId
+      - Architecture/Contracts/CoreEndpointGrantContract.md#Concurrency-and-disclosure
+      - Workflow/Plans/P3.yaml#EntryGate.State=Pending
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/46
+    ActivationRules:
+      - "This CR is a proposal only; no product/document writes or TaskStarted event are authorized before Owner review, Worker06 fixed-head review, Coordinator acceptance, merge to main, and a fresh Controller assignment validation."
+      - "Before assignment, Coordinator must materialize the accepted Proposed* fields as the active ED-0120/R3 TaskSpec and freeze the post-merge BaselineCommit; then recheck Worker01 and Worker06 slot availability."
+      - "If the 12-file ReadSet requires additional on-demand context beyond the listed targeted sections, record a task-scoped ContextExpanded event and obtain the required approval before loading it."
+      - "After R3 is accepted, P3 remains Pending until a separate independent gate-closeout task validates every entry-gate prerequisite and the Coordinator records the gate transition."
   - ChangeRequestId: CR-ED-0018-002
     TargetTaskId: ED-0018
     TargetTaskRevision: 2
