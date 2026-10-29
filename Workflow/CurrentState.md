@@ -289,3 +289,12 @@
 - assignment-ledger PR 合并并通过 WorkflowController validate-assignment 前，不运行 R9 configure/build/CTest/coverage。R8 编译和定向测试通过，但覆盖率没有测得。
 - P3 EntryGate 仍 Pending；异步 C++ AgentRuntime、Provider/WinHTTP 生产接线和真实 QQ Adapter 仍未完成。
 - 远端目前 3/4 个分支：main、PR #25、PR #45。PR #25 的 Memory TTL 备份恢复问题仍阻塞。
+
+
+## 2026-10-29 ED-0147/R9 产品 PR 合并收尾
+
+- main 基线现为 `5364581858c8299884e87e00730748b86fb43346`。PR #45 的 assignment ledger 已合并；R9 Controller 返回 `AssignmentAccepted`。PR #46 的 Core endpoint grant authority 已按六路径 WriteSet 合并，CoreEndpointGrantContract V1 随合并冻结。
+- 固定头审查：Worker04、Worker06 均对 Base `b037f2b` → Head `3a9f00a` Approve，Finding 为 0。验收记录：Windows C++20 configure/build 均退出 0；CTest 1/1、13/13 断言通过；gcov JSON v2 为 277/292 行、94.86%。
+- Coordinator 的 ledger-closeout PR 补记 PR #45/#46、AssignmentAccepted、审查、验收、TaskClosed 和 Worker02 槽位释放，并将 P3 EntryGate 评估为 Passed。该状态在 closeout PR 合并后才进入 main。
+- P3 EntryGate 只开放 Provider/Memory 任务，不代表生产 Provider/WinHTTP 已接线。现有 AgentRuntime 仍通过同步 `RunTurn` 和 `StreamTurn` 工作；真正 awaitable/会挂起的 AgentRuntime 仍为 0%。下一步须先冻结异步 Provider/Core API 合同，再按写集冲突顺序实现整条 Core→AgentRuntime→FakeProvider→Mock receipt 切片。
+- ED-0114 的实现写集与建议的异步切片重叠 `Source/Agent/AgentRuntime.cpp`、`Source/Core/CoreChatService.cpp` 和 Agent 测试 CMake；必须先排队或走 ChangeRequest 拆分。Memory SQLite PR #25 仍因 backup restore 丢失 TTL 未合并。

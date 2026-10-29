@@ -1,7 +1,7 @@
 SchemaVersion: 1
 PhaseId: P3
 PhaseName: Provider Protocols and Durable Memory
-State: PendingEntryGateWithScopedPreGateTaskReview
+State: Active
 
 EntryGate:
   RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
@@ -12,8 +12,15 @@ EntryGate:
     - HttpTransportContract V1 Port enforcement (ED-0120, hardened by ED-0146)
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
-  State: Pending
-  PendingReason: ED-0146/R6 is merged as PR #29 at b04f407403c12ad13e47e4aea8ad092a9dbba321 and enforces the shared Port grant entry. P3 remains Pending until ED-0147/R6 implements Core-owned profile-bound grant authority, passes fixed-head review and Windows verification, and the required contracts freeze. Neither task establishes production Provider/WinHTTP composition wiring.
+  State: Passed
+  PassedAt: "2026-10-29T13:03:11Z"
+  PassedBy: /root
+  PassedEventId: ef3ea88a-f2a9-49c0-ad74-01ed507143e7
+  PassedEvidence:
+    - "P1 AgentWorkflowControllerAndCoreContractsVerified: Passed; P2 FirstCppAgentRuntimeVerticalSliceVerified: Passed."
+    - "ED-0146/R6 is merged as PR #29 and enforces the HttpTransportPort grant entry."
+    - "ED-0147/R9 PR #46 merged at 5364581858c8299884e87e00730748b86fb43346; CoreEndpointGrantContract V1 froze on merge."
+    - "PR #46 records AssignmentAccepted, Windows C++20 configure/build exit 0, targeted CTest 1/1 and 13/13 assertions, and gcov JSON v2 277/292 lines (94.86%)."
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4
@@ -2161,7 +2168,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P3
     ChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
     CorrectiveToTaskId: ED-0120
@@ -2190,6 +2197,9 @@ Tasks:
     AssignmentLedgerPullRequestNumber: 45
     AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/45
     AssignmentLedgerPullRequestCreatedHeadCommit: bcca45b49e1228bf11ad55c51364a379513a9780
+    AssignmentLedgerMergePullRequestNumber: 45
+    AssignmentLedgerMergeCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+    AssignmentLedgerMergedAt: "2026-10-29T12:16:42Z"
     PreviousRevision8Evidence:
       TaskRevision: 8
       ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
@@ -2599,6 +2609,39 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
     OpenIntegrationGap: "No production Provider/WinHTTP composition call site exists on main. ED-0147 does not close this gap; do not claim real Provider requests use Core grants until a separately reviewed composition task passes."
+    ProductPullRequestNumber: 46
+    ProductPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/46
+    ProductPullRequestBaseCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+    ProductPullRequestHeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+    ProductPullRequestMergeCommit: 5364581858c8299884e87e00730748b86fb43346
+    ProductPullRequestMergeMethod: squash
+    CoreEndpointGrantContractFrozenAt: "2026-10-29T12:47:14Z"
+    CoreEndpointGrantContractFreezeCommit: 5364581858c8299884e87e00730748b86fb43346
+    FixedHeadReview:
+      BaseCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+      HeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+      Worker04Decision: Approve
+      Worker06Decision: Approve
+      FindingsRemaining: 0
+      EvidenceRef: "PR #46 body, fixed-head reviews recorded in P3 event ledger"
+    AssignmentValidationExitCode: 0
+    AssignmentValidationResult: AssignmentAccepted
+    AssignmentValidationCommand: "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9-Assignment P3 ED-0147 9 /root/luna02_ed0148_pr_ready Task/ED-0147-CoreEndpointGrantAuthorityR7 H:/Qbot/EmulativeDialog.ED-0147 269379817d7f51082b16ae2d0ded1ccedd2a54b7"
+    AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Assignment/Controller-ValidateAssignment.txt
+    WindowsConfigureExitCode: 0
+    TargetBuildExitCode: 0
+    TargetCTestExitCode: 0
+    TargetCTestPassed: 1
+    TargetCTestTotal: 1
+    TargetAssertionsPassed: 13
+    TargetAssertionsTotal: 13
+    CoverageCommandExitCode: 0
+    CoverageFormat: gcov JSON v2
+    CoverageCoveredLines: 277
+    CoverageTotalLines: 292
+    CoveragePercent: 94.86
+    CoverageReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core/Reports/Run-b7e2aa5fbba64ec09fdd26593f5f869c/EndpointGrantAuthority##H~#Qbot#EmulativeDialog.ED-0147#Source#Core#EndpointGrantAuthority.gcov.json.gz
+    TaskClosedEventId: 857d8027-f7b2-47ff-8ebc-5c7eb59059e8
 
   - TaskId: ED-0148
     TaskRevision: 5
