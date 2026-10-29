@@ -2926,7 +2926,7 @@ Tasks:
         - Source/Channels/
         - CMakePresets.json
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-      MaxReferenceFiles: 18
+      MaxReferenceFiles: 12
       ExpansionReasonRequired: false
     WriteSet:
       - Architecture/Contracts/AsyncModelProviderContract.md
@@ -3081,7 +3081,7 @@ Tasks:
         - CMakePresets.json
         - Tests/Contract/Agent/CMakeLists.txt
       Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-      MaxReferenceFiles: 20
+      MaxReferenceFiles: 12
       ExpansionReasonRequired: false
     WriteSet:
       - Source/Agent/AsyncAgentRuntime.cpp
@@ -3168,15 +3168,19 @@ Tasks:
         $Sources = @('Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')
         if (-not (Test-Path -LiteralPath $CTestLog -PathType Leaf)) { throw "Missing fresh CTest log: $CTestLog" }
         $CTestText = [System.IO.File]::ReadAllText($CTestLog)
-        $TestHeaders = [System.Text.RegularExpressions.Regex]::Matches($CTestText, '(?m)^1/1 Testing: Agent\.AsyncRuntimeVerticalSlice$')
-        $PassMarkers = [System.Text.RegularExpressions.Regex]::Matches($CTestText, '(?m)^Test Passed\.$')
-        if ($TestHeaders.Count -ne 1 -or $PassMarkers.Count -ne 1) { throw 'CTest log does not contain exactly one matching test block and one pass marker' }
-        $HeaderText = '1/1 Testing: Agent.AsyncRuntimeVerticalSlice'
-        $HeaderIndex = $CTestText.IndexOf($HeaderText, [System.StringComparison]::Ordinal)
-        $HeaderEnd = $HeaderIndex + $HeaderText.Length
-        $PassIndex = $CTestText.IndexOf('Test Passed.', $HeaderEnd, [System.StringComparison]::Ordinal)
-        $NextTestIndex = $CTestText.IndexOf('Testing:', $HeaderEnd, [System.StringComparison]::Ordinal)
-        if ($PassIndex -lt $HeaderEnd -or ($NextTestIndex -ge 0 -and $NextTestIndex -lt $PassIndex)) { throw 'The passing marker is not inside the exact required CTest block' }
+        $NormalizedCTestText = [System.Text.RegularExpressions.Regex]::Replace($CTestText, '\r\n?|\n', [string][char]10)
+        $TestName = 'Agent.AsyncRuntimeVerticalSlice'
+        $TestHeaderPattern = '(?m)^1/1 Testing: ' + [regex]::Escape($TestName) + '$'
+        $TestHeaders = [System.Text.RegularExpressions.Regex]::Matches($NormalizedCTestText, $TestHeaderPattern)
+        if ($TestHeaders.Count -ne 1) { throw "Expected exactly one CTest block for $TestName; found $($TestHeaders.Count)" }
+        $HeaderIndex = $TestHeaders[0].Index
+        $HeaderEnd = $HeaderIndex + $TestHeaders[0].Length
+        $RemainingCTestText = $NormalizedCTestText.Substring($HeaderEnd)
+        $NextTestHeader = [System.Text.RegularExpressions.Regex]::Match($RemainingCTestText, '(?m)^\d+/\d+ Testing: ')
+        $TestBlockEnd = if ($NextTestHeader.Success) { $HeaderEnd + $NextTestHeader.Index } else { $NormalizedCTestText.Length }
+        $TestBlock = $NormalizedCTestText.Substring($HeaderIndex, $TestBlockEnd - $HeaderIndex)
+        $PassMarkers = [System.Text.RegularExpressions.Regex]::Matches($TestBlock, '(?m)^Test Passed\.$')
+        if ($PassMarkers.Count -ne 1) { throw "The unique CTest block for $TestName does not contain exactly one Test Passed marker" }
         if ($CTestText -match '(?i)(libgcov|profiling error|checksum mismatch|overwrit|profile count data mismatch|cannot open notes file)') { throw 'CTest output contains a gcov checksum, overwrite, or profiling warning' }
         $TestInfo = Get-Item -LiteralPath $CTestLog
         $CoverageLog = Join-Path $Logs 'CoverageCommand.log'
