@@ -135,12 +135,20 @@ std::optional<Storage::TurnCheckpoint> BuildIsolationCheckpoint(
       Isolated.ToolState = Storage::ToolExecutionState::UnknownOutcome;
     }
   }
-  if (Isolated.Operation == Storage::OperationState::Dispatched ||
-      Isolated.Operation == Storage::OperationState::UnknownOutcome ||
-      ((Checkpoint.UnknownSideEffect ||
-        Checkpoint.ToolState == Storage::ToolExecutionState::Dispatched ||
-        Checkpoint.ToolState == Storage::ToolExecutionState::UnknownOutcome) &&
-       Isolated.Operation != Storage::OperationState::None)) {
+  const bool ProviderRequestInFlight =
+      Checkpoint.Phase == Storage::TurnPhase::ProviderDispatched ||
+      Checkpoint.Phase == Storage::TurnPhase::ProviderStreaming;
+  // An unresolved provider request does not erase a separate known action result.
+  const bool PreserveSuccessfulOperation =
+      ProviderRequestInFlight &&
+      Checkpoint.Operation == Storage::OperationState::Succeeded;
+  if (!PreserveSuccessfulOperation &&
+      (Isolated.Operation == Storage::OperationState::Dispatched ||
+       Isolated.Operation == Storage::OperationState::UnknownOutcome ||
+       ((Checkpoint.UnknownSideEffect ||
+         Checkpoint.ToolState == Storage::ToolExecutionState::Dispatched ||
+         Checkpoint.ToolState == Storage::ToolExecutionState::UnknownOutcome) &&
+        Isolated.Operation != Storage::OperationState::None))) {
     Isolated.Operation = Storage::OperationState::UnknownOutcome;
   }
   return Isolated;

@@ -857,66 +857,83 @@ void TestKnownOperationOutcomeIsReconciledWithoutReplay() {
 void TestSuccessfulOperationCannotMaskUnknownProviderOutcome() {
   for (const TurnPhase ProviderPhase :
        {TurnPhase::ProviderDispatched, TurnPhase::ProviderStreaming}) {
-    const auto Path = TempPath("provider-inflight-known-operation");
-    RemoveIfExists(Path);
-    TurnCheckpointStore Store(Path);
-    TurnCheckpoint Checkpoint =
-        MakeTurn("turn-provider-known-operation", "scope-provider-known");
-    Expect(Store.Append(Checkpoint).index() == 0);
-    Checkpoint.Phase = TurnPhase::ReadyToDispatch;
-    Checkpoint.Revision = 2;
-    Checkpoint.Operation = OperationState::Prepared;
-    Checkpoint.OperationId = OperationToken("operation-provider-known");
-    Checkpoint.IdempotencyKey = IdempotencyToken("idem-provider-known");
-    Checkpoint.ActionId = ActionToken("action-provider-known");
-    Expect(Store.Append(Checkpoint).index() == 0);
-    Checkpoint.Phase = TurnPhase::ProviderDispatched;
-    Checkpoint.RequestId = RequestToken("request-provider-known");
-    Checkpoint.Revision = 3;
-    Checkpoint.Operation = OperationState::Authorized;
-    Expect(Store.Append(Checkpoint).index() == 0);
-    if (ProviderPhase == TurnPhase::ProviderStreaming) {
-      Checkpoint.Phase = TurnPhase::ProviderStreaming;
-      Checkpoint.Revision = 4;
+    for (const bool UnknownSideEffect : {false, true}) {
+      const auto Path = TempPath("provider-inflight-known-operation");
+      RemoveIfExists(Path);
+      TurnCheckpointStore Store(Path);
+      TurnCheckpoint Checkpoint =
+          MakeTurn("turn-provider-known-operation", "scope-provider-known");
       Expect(Store.Append(Checkpoint).index() == 0);
+      Checkpoint.Phase = TurnPhase::ReadyToDispatch;
+      Checkpoint.Revision = 2;
+      Checkpoint.Operation = OperationState::Prepared;
+      Checkpoint.OperationId = OperationToken("operation-provider-known");
+      Checkpoint.IdempotencyKey = IdempotencyToken("idem-provider-known");
+      Checkpoint.ActionId = ActionToken("action-provider-known");
+      Expect(Store.Append(Checkpoint).index() == 0);
+      Checkpoint.Phase = TurnPhase::ProviderDispatched;
+      Checkpoint.RequestId = RequestToken("request-provider-known");
+      Checkpoint.Revision = 3;
+      Checkpoint.Operation = OperationState::Authorized;
+      Expect(Store.Append(Checkpoint).index() == 0);
+      if (ProviderPhase == TurnPhase::ProviderStreaming) {
+        Checkpoint.Phase = TurnPhase::ProviderStreaming;
+        Checkpoint.Revision = 4;
+        Expect(Store.Append(Checkpoint).index() == 0);
+      }
+      ++Checkpoint.Revision;
+      Checkpoint.Operation = OperationState::Dispatched;
+      Expect(Store.Append(Checkpoint).index() == 0);
+      ++Checkpoint.Revision;
+      Checkpoint.Operation = OperationState::Succeeded;
+      Expect(Store.Append(Checkpoint).index() == 0);
+      if (UnknownSideEffect) {
+        ++Checkpoint.Revision;
+        Checkpoint.UnknownSideEffect = true;
+        Expect(Store.Append(Checkpoint).index() == 0);
+      }
+
+      const CheckpointSnapshot BeforeRecovery = Snapshot(Store.Load());
+      const TurnCheckpoint& BeforeIsolation =
+          BeforeRecovery.LatestByTurn.at(
+              TurnToken("turn-provider-known-operation"));
+      Expect(BeforeIsolation.Operation == OperationState::Succeeded);
+      Expect(BeforeIsolation.UnknownSideEffect == UnknownSideEffect);
+
+      TurnRecoveryCoordinator Coordinator(Store);
+      const RecoveryReport First =
+          ExpectReport(Coordinator.Recover(ScopeToken("scope-provider-known")));
+      Expect(First.Decisions.size() == 1);
+      const RecoveryDecision& Decision = First.Decisions.front();
+      Expect(Decision.Disposition == RecoveryDisposition::IsolatedOutcomeUnknown);
+      Expect(Decision.OriginalPhase == ProviderPhase);
+      Expect(Decision.Operation == OperationState::Succeeded);
+      Expect(Decision.OperationId == OperationToken("operation-provider-known"));
+      Expect(!Decision.ReplayAllowed);
+      Expect(First.DispatchCount == 0);
+      Expect(First.CheckpointsPersisted == 1);
+
+      const CheckpointSnapshot AfterIsolation = Snapshot(Store.Load());
+      const TurnCheckpoint& Isolated = AfterIsolation.LatestByTurn.at(
+          TurnToken("turn-provider-known-operation"));
+      Expect(Isolated.Phase == TurnPhase::OutcomeUnknown);
+      Expect(Isolated.Operation == OperationState::Succeeded);
+      Expect(Isolated.UnknownSideEffect);
+
+      const RecoveryReport Second =
+          ExpectReport(Coordinator.Recover(ScopeToken("scope-provider-known")));
+      Expect(Second.Decisions.front().Disposition ==
+             RecoveryDisposition::OutcomeUnknown);
+      Expect(Second.Decisions.front().Operation == OperationState::Succeeded);
+      Expect(!Second.Decisions.front().ReplayAllowed);
+      Expect(Second.CheckpointsPersisted == 0);
+      Expect(Second.DispatchCount == 0);
+      const std::size_t ExpectedRecords =
+          (ProviderPhase == TurnPhase::ProviderStreaming ? 7U : 6U) +
+          (UnknownSideEffect ? 1U : 0U);
+      Expect(Snapshot(Store.Load()).RecordCount == ExpectedRecords);
+      RemoveIfExists(Path);
     }
-    ++Checkpoint.Revision;
-    Checkpoint.Operation = OperationState::Dispatched;
-    Expect(Store.Append(Checkpoint).index() == 0);
-    ++Checkpoint.Revision;
-    Checkpoint.Operation = OperationState::Succeeded;
-    Expect(Store.Append(Checkpoint).index() == 0);
-
-    TurnRecoveryCoordinator Coordinator(Store);
-    const RecoveryReport First =
-        ExpectReport(Coordinator.Recover(ScopeToken("scope-provider-known")));
-    Expect(First.Decisions.size() == 1);
-    const RecoveryDecision& Decision = First.Decisions.front();
-    Expect(Decision.Disposition == RecoveryDisposition::IsolatedOutcomeUnknown);
-    Expect(Decision.OriginalPhase == ProviderPhase);
-    Expect(Decision.Operation == OperationState::Succeeded);
-    Expect(Decision.OperationId == OperationToken("operation-provider-known"));
-    Expect(!Decision.ReplayAllowed);
-    Expect(First.DispatchCount == 0);
-    Expect(First.CheckpointsPersisted == 1);
-
-    const CheckpointSnapshot AfterIsolation = Snapshot(Store.Load());
-    const TurnCheckpoint& Isolated = AfterIsolation.LatestByTurn.at(
-        TurnToken("turn-provider-known-operation"));
-    Expect(Isolated.Phase == TurnPhase::OutcomeUnknown);
-    Expect(Isolated.Operation == OperationState::Succeeded);
-    Expect(Isolated.UnknownSideEffect);
-
-    const RecoveryReport Second =
-        ExpectReport(Coordinator.Recover(ScopeToken("scope-provider-known")));
-    Expect(Second.Decisions.front().Disposition ==
-           RecoveryDisposition::OutcomeUnknown);
-    Expect(Second.Decisions.front().Operation == OperationState::Succeeded);
-    Expect(!Second.Decisions.front().ReplayAllowed);
-    Expect(Second.CheckpointsPersisted == 0);
-    Expect(Snapshot(Store.Load()).RecordCount ==
-           (ProviderPhase == TurnPhase::ProviderStreaming ? 7U : 6U));
-    RemoveIfExists(Path);
   }
 }
 
