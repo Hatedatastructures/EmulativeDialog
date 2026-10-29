@@ -1765,6 +1765,130 @@ ChangeRequests:
       - https://github.com/Hatedatastructures/EmulativeDialog/commit/a4eeec277c37876ef314aaca4df206f2fb2a8fce
     NoProductWriteAuthorizedBeforeMerge: true
 
+  - ChangeRequestId: CR-ED-0120-009
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 4
+    ProposedTaskId: ED-0120
+    ProposedTaskRevision: 5
+    TaskRevisionTransition: {FromRevision: 4, ToRevision: 5}
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerAgentId: /root/luna01_ed0112_r8_audit
+    ProposedOwnerSlotId: Worker01
+    ProposedOwnerRole: NetworkOwner
+    IndependentReviewerAgentId: /root/luna06_capability_status_audit
+    ProposedReviewerSlotId: Worker06
+    ProposedReviewerRole: IndependentReviewer
+    ReviewerIndependence: Required
+    Decision: ProposedAwaitingIndependentReview
+    FindingIds: [ED-0120-R4-AC7-F001, ED-0120-R4-AC5-F002]
+    OwnerCRDecision: Approve
+    OwnerCRDecisionScope: FieldSemanticsDirectionOnlyNotFixedHeadApproval
+    OwnerCRDecisionEvidence: >-
+      Worker01 /root/luna01_ed0112_r8_audit explicitly approved the Controller-compatible field direction:
+      R5 BaselineCommit equals the assignment-time main baseline used by Controller; the old 04e9aac... value
+      moves to SourceLineageCommit; PRBaseCommit stays unbound until actual GitHub product PR metadata exists.
+      The owner also confirmed the AC-7 execution order and exact six-path AC-5 check remain intact. This is
+      not approval of an unfrozen exact-head CR or TaskSpec.
+    IndependentReviewDecision: Pending
+    CoordinatorDecision: Pending
+    ProposedTaskSpecBaseCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
+    ProposedTaskKind: ContractFreeze
+    ProposedEpicId: EP-06
+    ProposedPhase: P2
+    ProposedTitle: 重执行 HTTPS transport grant 日志合同修订
+    ProposedModuleIds: [NetworkPlatform, Core]
+    ProposedBranch: Task/ED-0120-R5ContractCloseout
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout
+    ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build
+    ProposedEvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r5
+    Reason: >-
+      R4 cannot be repaired by changing timestamps or rerunning only its final validation: the durable TaskStarted
+      record precedes the only retained post-merge AssignmentAccepted command by 482.32 seconds. R4 also recorded
+      PRBaseCommit before any product PR existed, so its actual GitHub base/head pair is unverified. Preserve both
+      findings and all R4/R3 history; do not create an R4 product PR.
+    Scope: >-
+      Create a fresh R5 execution of the same three ADR/contract document corrections. Keep the security intent
+      that EndpointGrantId is an opaque bearer capability excluded from logs, events, diagnostics, persistence,
+      command output, and user-visible output; use TransportRequestId only for local transport correlation. Do
+      not change C++ APIs, wire behavior, contract versions, P3 status, or product scope.
+    ProposedTaskSpecPreservation:
+      PreserveGoal: true
+      PreserveOutOfScope: true
+      PreserveModuleIds: true
+      PreserveDependencies: true
+      PreserveContractVersionAndSharedLocks: true
+      PreserveReadSet: true
+      PreserveForbiddenSet: true
+      PreserveProductAndGovernanceWriteSet: true
+      PreserveOwnerAndReviewer: true
+      PreserveRiskAndNoLiveSideEffects: true
+      PreserveAcceptanceIds: [AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8]
+      ChangeAcceptanceEvidence:
+        - AcceptanceId: AC-5
+          Description: "Bind PRBaseCommit only from the actual GitHub base.sha for base.ref=main and record actual head.sha; verify the exact six-path three-dot PR diff against that fixed pair."
+        - AcceptanceId: AC-7
+          Description: "TaskSpec merge and assignment ledger precede successful post-merge Controller AssignmentAccepted; only then create/advance the isolated R5 worktree, record TaskStarted, and begin product document writes."
+    ProposedBaselinePolicy: >-
+      At R5 assignment, bind BaselineCommit to the exact assignment-time origin/main commit consumed by the existing
+      WorkflowController for query, validate-assignment, and worktree creation. Record BaselineCommit equal to
+      AssignmentBaseCommit. Preserve 04e9aac141e3bf2233e556f0fd44e2da4c068b59 only as SourceLineageCommit; it is
+      historical lineage and is not the R5 worktree or assignment baseline. Record the exact TaskSpec merge SHA
+      separately as TaskSpecMergedToMainCommit.
+    ProposedPRBasePolicy: >-
+      Leave PRBaseCommit unbound until the product PR exists. Read base.ref, base.sha, and head.sha from actual
+      GitHub PR metadata; require base.ref=main and use that base.sha/head.sha pair for fixed-head review and the
+      exact six-path git diff --check / git diff --name-status three-dot validation. Require BaselineCommit to be
+      an ancestor of PRBaseCommit and PRBaseCommit to be an ancestor of HeadCommit. If the PR base differs from
+      AssignmentBaseCommit, IntegrationOwner advances the branch, rechecks the exact six paths, and obtains a new
+      fixed-head review; never rewrite historical R4 values.
+    ProposedProductWriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    ProposedGovernanceWriteSet:
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    ProposedTaskRevisionHandoff:
+      PreserveR4State: Blocked
+      PreserveR4TaskStartedAndAssignmentEvents: true
+      PreserveR4BranchAndWorktree: true
+      PreserveR3BranchWorktreeAndPatch: true
+      R5ImplementationRule: "Do not migrate or stage R4/R3 product drafts as R5 work. After accepted R5 assignment and TaskStarted, reapply the three document changes from the R5 worktree's authorized baseline; Coordinator alone updates the three governance paths."
+      Sequence:
+        - "CR-ED-0120-009 receives independent fixed-head approval and Coordinator acceptance, then merges."
+        - "Coordinator materializes ED-0120/R5 as a separate TaskSpec PR; Owner and independent Reviewer approve its exact fixed head."
+        - "After TaskSpec merge, record assignment-time main in BaselineCommit and AssignmentBaseCommit; preserve SourceLineageCommit separately; create and validate the isolated assignment."
+        - "Merge the assignment ledger, rerun Controller query and validate-assignment on merged main, then advance the product branch to the accepted main head before TaskStarted."
+        - "Only after TaskStarted may Worker01 edit the three contract/ADR paths; no C++ implementation is authorized by this CR."
+    ProposedValidation:
+      Mode: GovernanceAndTaskSpecOnly
+      BuildRequired: false
+      CoverageRequired: false
+      StaticChecks:
+        - "R4 remains Blocked; its TaskStarted, AssignmentAccepted timestamps, findings, branch, and worktree are unchanged."
+        - "R5 BaselineCommit is defined as Controller's assignment-time baseline; SourceLineageCommit preserves 04e9aac...; PRBaseCommit remains empty until actual product PR metadata is available."
+        - "The proposed R5 product WriteSet equals the frozen six paths; no contract/API/wire/security intent is broadened and P3 remains Pending."
+        - "JSONL event history is append-only, parses line by line, and EventId values are unique."
+      LiveSideEffects: Forbidden
+      NotRunReason: "This CR proposes a task-record correction only; product document writes and C++ validation remain gated on later R5 TaskSpec and assignment merges."
+    RiskLevel: High
+    RiskOwnerRole: Coordinator
+    Rollback: "If the CR is rejected, keep R4 Blocked and preserve all R4/R3 branches, worktrees, patches, and events; do not materialize R5 or write product documents."
+    NoProductSourceWriteAuthorizedBeforeMerge: true
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0120&TaskRevision=4
+      - Workflow/Plans/P2.yaml#ChangeRequestId=CR-ED-0120-009
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=ffe5833e-9ce8-4083-9dc3-a4ce42f56c4c
+      - Workflow/Events/CodexRewrite/P2.jsonl#EventId=db68f60b-7e88-413f-a394-3bc607b5d5c4
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-postmerge/Validation-021-postmerge-assignment.log
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/55
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/56
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -1818,7 +1942,7 @@ ExitGate:
   ReviewBundleManifestSHA256: 4EF7F4583E66307DFAEA51408E7FA2AE0218795CF8BA40AE70E0F95D992E5BE7
   EvaluationEventId: 2e08b001-3e15-4d71-9896-47c17ea4ab23
   P3EntryGateState: Pending
-  P3PendingReason: ED-0120/R2 fixed-head ReviewRound3 completed with RequestChanges; the optional resolver bypass requires ED-0146/R6 Port enforcement, and ED-0147/R6 must add Core-owned profile-bound grant authority before HttpTransportContract V1 can freeze. Both corrective TaskSpecs remain proposals until fixed-head owner/reviewer approvals and main merge.
+  P3PendingReason: ED-0146/R6 and ED-0147/R9 product changes are merged, but ED-0147 remains Assigned and its contract is still a freeze candidate. ED-0120/R4 is Blocked by the TaskStarted/AssignmentAccepted ordering finding and unverified product PR base; await the reviewed R5 contract correction, then independently close ED-0147 and run the P3 gate closeout. No async AgentRuntime or production Provider/WinHTTP composition is authorized while the gate is Pending.
 
 Tasks:
   - TaskId: ED-0109
@@ -3540,7 +3664,7 @@ Tasks:
     EpicId: EP-06
     Title: 统一 HTTPS transport grant 日志规则并校准合同状态
     TaskKind: ContractFreeze
-    State: Assigned
+    State: Blocked
     Phase: P2
     ChangeRequestId: CR-ED-0120-008
     TaskSpecProposalBaseCommit: 74f2bfdaa01dcaeb5d50bcbd3405dc32d8b656c4
@@ -3548,8 +3672,8 @@ Tasks:
     TaskSpecMergedToMainCommit: 1ed281389bc6736858c2340938b56dee38bc2f77
     TaskSpecPullRequestNumber: 54
     TaskSpecHeadCommit: 482aad7dd251ee9f531d76eeda377f8c9308ace0
-    PRBaseCommitBindingStatus: BoundPostMergeAssignmentLedger
-    PRBaseCommit: 1ed281389bc6736858c2340938b56dee38bc2f77
+    PRBaseCommitBindingStatus: CandidateOnlyUntilActualProductPrMetadataVerified
+    PRBaseCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
     BaselineCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
@@ -3567,19 +3691,48 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build
     EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4
-    AssignmentNote: "PR #54 merged to main at 1ed281389bc6736858c2340938b56dee38bc2f77; TaskSpec Head=482aad7dd251ee9f531d76eeda377f8c9308ace0. The preserved task BaselineCommit remains 04e9aac141e3bf2233e556f0fd44e2da4c068b59; PRBaseCommit is bound to current main at 1ed281389bc6736858c2340938b56dee38bc2f77. Worker01 owns the six-path contract correction; Worker06 is the independent reviewer. R3 slots are superseded/released in this ledger candidate. No product worktree, TaskStarted, or product write until this ledger merges and post-merge validate-assignment returns AssignmentAccepted."
+    AssignmentNote: "PR #54 TaskSpec merged as 1ed281389bc6736858c2340938b56dee38bc2f77. PR #55 AssignmentLedger merged at 1daa147859705a1b0ae5551e282c3982eedf55c5 (Head aa1edd46d39e5f7598680c53ae944f641c4ce0fc) and post-merge Controller query/validate-assignment both passed. Preserve BaselineCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59 as source lineage; bind PRBaseCommit to the actual product PR base main@1daa147859705a1b0ae5551e282c3982eedf55c5. Controller created the exact task branch/worktree from the frozen baseline and IntegrationOwner fast-forwarded it to 1daa147 without conflict. Worker01 owns only the three contract/ADR author paths; Coordinator owns the three governance paths; Worker06 is independent reviewer. R3 remains Superseded and its original six-path patch remains preserved after selective reconciliation."
     PreMergeAssignmentValidation:
       ReadinessQuery: {ExitCode: 0, DurationMs: 241.364, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-002-ready.log}
       Query: {ExitCode: 0, DurationMs: 306.608, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-003-assigned-query.log}
       ValidateAssignment: {ExitCode: 0, DurationMs: 921.853, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=4", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-004-validate-assignment.log}
-      Status: CandidateOnly; repeat query and assignment validation against main after this ledger PR merges before creating the product worktree.
+      Status: PreMergeCandidateValidated; post-merge query and assignment validation are recorded under PostMergeAssignmentValidation.
       FinalCandidateQuery: {ExitCode: 0, DurationMs: 237.328, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-005-final-query.log}
       FinalCandidateValidateAssignment: {ExitCode: 0, DurationMs: 858.591, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=4", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-006-final-assignment.log}
       FinalRecordQuery: {ExitCode: 0, DurationMs: 236.684, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-007-final-record-query.log}
-    TaskSpecStatusNote: "R4 TaskSpec PR #54 merged at 1ed281389bc6736858c2340938b56dee38bc2f77 from fixed Head 482aad7dd251ee9f531d76eeda377f8c9308ace0. This AssignmentLedger binds that merge SHA and PRBaseCommit=1ed281389bc6736858c2340938b56dee38bc2f77. State is Assigned in this candidate ledger; assignment is effective only after merge and post-merge Controller validation. No TaskStarted, product writes, product worktree creation, or R3 draft migration is authorized before that validation."
+    TaskSpecStatusNote: "R4 TaskSpec PR #54 and AssignmentLedger PR #55 are merged. R4 source-lineage BaselineCommit remains 04e9aac141e3bf2233e556f0fd44e2da4c068b59. The recorded PRBaseCommit 1daa147859705a1b0ae5551e282c3982eedf55c5 is only a candidate: no R4 product PR exists, so its actual GitHub base metadata is unverified. The preserved TaskStarted and post-merge AssignmentAccepted timestamps do not satisfy AC-7 ordering; fixed-head review requested changes and Coordinator state is Blocked."
+    ReviewStatus: ChangesRequested
+    ReviewBaseCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
+    ReviewHeadCommit: 73f2634b9c57520a6b377f88d19162ebcca49b6b
+    ReviewDecisionEventId: ffe5833e-9ce8-4083-9dc3-a4ce42f56c4c
+    BlockedEventId: db68f60b-7e88-413f-a394-3bc607b5d5c4
+    ReviewFindings:
+      - FindingId: ED-0120-R4-AC7-F001
+        Severity: Blocker
+        AcceptanceId: AC-7
+        Summary: "TaskStarted 2026-10-29T18:49:13Z precedes the only retained post-merge AssignmentAccepted at 2026-10-29T18:57:15.3204911Z by 482.32 seconds. This history cannot be repaired inside R4."
+        EvidenceRefs: [Workflow/Events/CodexRewrite/P2.jsonl#EventId=1d5ff220-528e-4a60-94c6-dc58473c4faa, Workflow/Events/CodexRewrite/P2.jsonl#EventId=42f66af4-d056-4393-a218-d863d21c1599]
+      - FindingId: ED-0120-R4-AC5-F002
+        Severity: Major
+        AcceptanceId: AC-5
+        Summary: "PRBaseCommit cannot be confirmed as the actual GitHub PR base because no R4 product PR was created."
+        EvidenceRefs: [Workflow/CurrentState.md#2026-10-30-ED-0120-R4-review-blocker]
+    ResolutionStatus: AwaitingOwnerApprovedChangeRequestAndNewTaskRevision
+    AssignmentLedgerPullRequestNumber: 55
+    AssignmentLedgerPullRequestHeadCommit: aa1edd46d39e5f7598680c53ae944f641c4ce0fc
+    AssignmentLedgerMergedToMainCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
+    AssignmentLedgerMergedAt: "2026-10-29T18:33:33Z"
+    PostMergeAssignmentValidation:
+      Query: {ExitCode: 0, DurationMs: 251.425, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-postmerge/Validation-020-postmerge-query.log}
+      ValidateAssignment: {ExitCode: 0, DurationMs: 925.972, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=4", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-postmerge/Validation-021-postmerge-assignment.log}
+      CreatedWorktree: {ExitCode: 0, Branch: Task/ED-0120-R4ContractCloseout, Path: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout, InitialHead: 04e9aac141e3bf2233e556f0fd44e2da4c068b59, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-010-create-worktree.log}
+      ProductBranchFastForward: {ExitCode: 0, From: 04e9aac141e3bf2233e556f0fd44e2da4c068b59, To: 1daa147859705a1b0ae5551e282c3982eedf55c5, Conflicts: 0, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-assignment/Validation-011-product-worktree-fastforward.log}
+      InheritedMainAudit: {Command: "git diff --name-status 04e9aac141e3bf2233e556f0fd44e2da4c068b59...1daa147859705a1b0ae5551e282c3982eedf55c5", ExitCode: 0, Paths: [Workflow/AgentPool.yaml, Workflow/CurrentState.md, Workflow/Events/CodexRewrite/P2.jsonl, Workflow/Events/CodexRewrite/P3.jsonl, Workflow/Plans/P2.yaml, Workflow/Plans/P3.yaml], OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-postmerge/Validation-022-inherited-main-audit.log}
+      TaskStartedEventId: 1d5ff220-528e-4a60-94c6-dc58473c4faa
+      TaskStartedAtEvidence: "2026-10-29T18:49:13Z is the earliest durable implementation commit timestamp; the exact first-edit time is not present in retained command logs."
     PredecessorHandoff:
       TaskRevision: 3
-      Status: SupersededByR4AssignmentLedgerCandidate
+      Status: SupersededByMergedR4AssignmentLedger
       BaselineCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
       PreservedDiffPatch: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/Preserved/ED-0120-R3-current-six-path-diff.patch
       PreservedChangedPaths:
@@ -3589,9 +3742,20 @@ Tasks:
         - Workflow/CurrentState.md
         - Workflow/Events/CodexRewrite/P2.jsonl
         - Workflow/Plans/P2.yaml
-      TransferStatus: PendingPostMergeAssignmentAndIntegrationReview
+      TransferStatus: ReconciledByIntegrationOwnerAfterAssignment
+      PreservedPatchSHA256: D56B7E90DD808B511933A0714ED969CF83A8B5382973240929916C803B17312B
+      PreservedR3WorktreeHead: a4eeec277c2d2e49379ae3a79095d85b3c8ccad3
+      TextualApplyCheckExitCode: 1
+      ThreeWayApplyCheckExitCode: 0
+      ThreeWayConflictPaths: [Architecture/Contracts/CoreEndpointGrantContract.md, Architecture/Contracts/HttpTransportContract.md, Architecture/Decisions/Adr0003WindowsHttpTransport.md, Workflow/CurrentState.md, Workflow/Events/CodexRewrite/P2.jsonl]
+      ProductDocumentsReconciledInR4: [Architecture/Contracts/CoreEndpointGrantContract.md, Architecture/Contracts/HttpTransportContract.md, Architecture/Decisions/Adr0003WindowsHttpTransport.md]
+      HistoricalR3EventsImportedIntoP2: true
+      R3RemainsSuperseded: true
+      OriginalR3WorktreeAndPatchPreserved: true
+      ReconciliationEvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4-postmerge
+      HistoricalEventIdsImported: [c6027772-a189-4329-96f1-84fa50cea373, 0e9c1994-53f8-4e73-be33-1a5c09e6206f, ff8d274c-e881-4502-bb2a-23aae8714130, 044fba15-eccc-40f1-9f7c-88ec6672897d, a386ed16-07bf-4633-a60d-59f49b4cbd2e, de2f4b2a-3551-446a-b22d-21ddaf364644, 4fb7fa16-8c22-470c-93b5-9a6be11ead88, 91a5939b-0c3e-4222-ac9e-21b6fc41ca56, 167b32db-7289-403d-acc1-3fada91fe686]
       ProductImplementationCompleted: false
-      Rule: "Keep the R3 worktree, branch, baseline, and six-path diff unchanged. AssignmentLedger must release R3 slot bindings and assign R4 before IntegrationOwner migrates or reconciles the preserved patch."
+      Rule: "Do not blindly apply stale R3 hunks after R4 assignment. Preserve its original six-path worktree and patch; manually reconcile applicable product-document semantics, import genuine historical R3 events append-only, and keep R3's current state Superseded by R4."
     ModuleIds: [NetworkPlatform, Core]
     Goal: >-
       Correct the cross-document status and disclosure conflict among ADR-0003,
@@ -3800,7 +3964,7 @@ Tasks:
           CoverageExecutableLines: 292
           CoveragePercent: 94.86
         NotClosedByThisEvidence: "This establishes authority implementation and reported acceptance only. It does not close ED-0147 Task.State or pass P3 EntryGate."
-    Checkpoint: {LastCompletedAcceptance: "CR-ED-0120-008 accepted by Coordinator based on merged PR #52", CurrentFindingOrFailure: "R4 TaskSpec PR remains Proposed and unmerged; TaskSpec merge SHA, PRBaseCommit, assignment events, and AgentPool handoff are intentionally pending", TriedApproaches: [], NextAction: "Obtain independent fixed-head review; after merge, create AssignmentLedger binding the exact merge and origin/main commits, then run Controller assignment validation", OpenMessageIds: [], LastValidationResult: "Controller query for candidate ED-0120/R4 returned Proposed with exit 0; no validate-assignment run"}
+    Checkpoint: {LastCompletedAcceptance: "R4 TaskSpec PR #54 and AssignmentLedger PR #55 merged; post-merge Controller assignment accepted", CurrentFindingOrFailure: "R4 is Blocked: TaskStarted predates the only retained post-merge AssignmentAccepted by 482.32 seconds, and its product PRBaseCommit was never verified against an actual product PR", TriedApproaches: ["Fixed-head review of Base 1daa147859705a1b0ae5551e282c3982eedf55c5 / Head 73f2634b9c57520a6b377f88d19162ebcca49b6b returned Changes Requested; historical event times remain unchanged"], NextAction: "Submit CR-ED-0120-009 for an R5 re-execution using Controller-compatible assignment-baseline semantics; do not write product documents until the accepted R5 TaskSpec is merged and post-merge Controller assignment validation passes", OpenMessageIds: [], LastValidationResult: "R4 candidate query and assignment validation passed before review, but AC-7 ordering is contradicted by retained timestamps; R4 cannot be Verified or Merged"}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
 
@@ -3812,11 +3976,13 @@ Tasks:
     TaskKind: ContractFreeze
     State: Superseded
     SuccessorTaskRevision: 4
-    SupersessionStatus: SupersededByED0120R4AssignmentLedgerCandidate
+    SupersessionStatus: SupersededByED0120R4AssignmentLedgerMerged
     PreservedDraftStatus: OriginalSixPathDiffPreservedUnchanged
     PreservedDraftPatch: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/Preserved/ED-0120-R3-current-six-path-diff.patch
     PreservedDraftChangedPaths: [Architecture/Contracts/CoreEndpointGrantContract.md, Architecture/Contracts/HttpTransportContract.md, Architecture/Decisions/Adr0003WindowsHttpTransport.md, Workflow/CurrentState.md, Workflow/Events/CodexRewrite/P2.jsonl, Workflow/Plans/P2.yaml]
-    HandoffStatus: PendingIntegrationOwnerTransferAfterR4Assignment
+    HandoffStatus: ReconciledByIntegrationOwnerAfterR4Assignment
+    HandoffReconciliationEventId: 67fc2f25-36a8-48b8-8e64-122f6b812cf8
+    LateImportedHistoricalEventIds: [c6027772-a189-4329-96f1-84fa50cea373, 0e9c1994-53f8-4e73-be33-1a5c09e6206f, ff8d274c-e881-4502-bb2a-23aae8714130, 044fba15-eccc-40f1-9f7c-88ec6672897d, a386ed16-07bf-4633-a60d-59f49b4cbd2e, de2f4b2a-3551-446a-b22d-21ddaf364644, 4fb7fa16-8c22-470c-93b5-9a6be11ead88, 91a5939b-0c3e-4222-ac9c-21b6fc41ca56, 167b32db-7289-403d-acc1-3fada91fe686]
     Phase: P2
     ChangeRequestId: CR-ED-0120-007
     TaskSpecMergedToMainCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59

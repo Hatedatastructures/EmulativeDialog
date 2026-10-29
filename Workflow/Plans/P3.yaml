@@ -13,7 +13,7 @@ EntryGate:
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0146/R6 (PR #29, merged as b04f407403c12ad13e47e4aea8ad092a9dbba321) and ED-0147/R9 (PR #46, merged as 5364581858c8299884e87e00730748b86fb43346) are merged; R9 validation and fixed-head review evidence are recorded. P3 remains Pending because HttpTransportContract V1 remains a freeze candidate and ADR-0003 permits EndpointGrantId in diagnostic logs while CoreEndpointGrantContract V1 AC-6 prohibits grant IDs in logs, events, diagnostics, and persistence. Await the separately reviewed ED-0120/R3 contract revision and required contract freeze. Neither task establishes production Provider/WinHTTP composition wiring.
+  PendingReason: ED-0146/R6 (PR #29) and ED-0147/R9 (PR #46) product changes are merged; ED-0147/R9 still requires its own closeout and both contracts remain freeze candidates. P3 remains Pending because ADR-0003 permits EndpointGrantId in diagnostic logs while CoreEndpointGrantContract V1 AC-6 prohibits grant IDs in logs, events, diagnostics, and persistence. ED-0120/R4 was blocked by its TaskStarted/AssignmentAccepted ordering finding; CR-ED-0120-009 proposes a fresh R5 contract correction with an assignment-time Controller baseline and PR metadata bound only after the product PR exists. Even after that correction, independently verify contract freeze evidence and close ED-0147 before running the separate P3 gate closeout. No production Provider/WinHTTP composition wiring is established here.
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4
@@ -2918,6 +2918,21 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewerReviewBaseCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
+    TaskSpecReviewerReviewHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+    TaskSpecReviewSource: InternalFixedHeadReview
+    GitHubNativeReviewSubmissionCount: 0
+    TaskSpecHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+    TaskSpecFinalPullRequestHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+    TaskSpecMergedToMainCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
+    TaskSpecMergePullRequestNumber: 56
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/56
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: "2026-10-29T19:10:33Z"
+    TaskSpecStatusNote: "PR #56 merged the reviewed TaskSpec corrections only. Task State remains Proposed while P3 EntryGate is Pending; this record grants no implementation authority."
     BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
     Goal: >-
       冻结不破坏 V1 同步 API 的 C++20 Boost.Asio awaitable ModelProvider 与 AgentRuntime 公共合同，并新增独立
@@ -3051,6 +3066,21 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerIndependence: Required
     CreatedBy: Coordinator
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewerReviewBaseCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
+    TaskSpecReviewerReviewHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+    TaskSpecReviewSource: InternalFixedHeadReview
+    GitHubNativeReviewSubmissionCount: 0
+    TaskSpecHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+    TaskSpecFinalPullRequestHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+    TaskSpecMergedToMainCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
+    TaskSpecMergePullRequestNumber: 56
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/56
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: "2026-10-29T19:10:33Z"
+    TaskSpecStatusNote: "PR #56 merged the reviewed TaskSpec corrections only. Task State remains Proposed while P3 EntryGate is Pending; this record grants no implementation authority."
     BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
