@@ -261,3 +261,12 @@
 - 已提出 `CR-ED-0147-R8-VALIDATION-001`，只将正式验证切到 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core` 并记录 R7 结果。Owner Worker02 与独立 Reviewer Worker04 审核及 PR 合并之前，不得运行 R8 构建、CTest 或覆盖率。
 - 固定头审查发现 R7 的 `Build.log` 与检查点声称的首轮 exit 2 不一致；原始失败输出无法从保留报告中恢复，R8 已把首轮结果改标未核实并追加纠正事件。五条既有 `CommandExecuted` 事件也追加分支/耗时字段纠正；耗时记录为不可得，不从文件时间估算。Worker02 与 Worker04 已在 Base `62fbe87` / TaskSpec Head `59fa119` 批准；PR #42 现待独立治理复核和合并，ED-0147/R8 正式验证仍未获准。
 - ED-0147 通过验收、独立评审并冻结合同之前，P3 EntryGate 保持 Pending；真正的异步 C++ AgentRuntime 和生产 Provider/WinHTTP composition 仍未完成。
+
+## 2026-10-29 ED-0147/R8 合并与派工账本修正
+
+- PR #42 已于 11:03 UTC squash 合并到 `main`，合并提交为 `791f5763c8018ee1b4d9d53a7f3ee55d13e37bad`；已删除合并后的 `Task/ED-0147-R8-ValidationPath` 远端分支。
+- Worker01 合并后审计发现 P3 事件追加顺序与 `OccurredAt` 时间顺序不一致，并且事件账本漏记 PR #42 Head 从 `59fa1193d3fc23f9df1ad851b37908f3a29ef27d` 更新至 `4aa60bf2064fc5ff690fe827f59d4f5350dbd069`。旧事件行保持不变；当前 assignment-ledger 候选追加事件顺序说明和 Head 更正，等待固定 Head 独立复审。
+- R8 assignment-ledger 候选分支 `Task/ED-0147-R8-AssignmentLedger` 位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8-AssignmentLedger`。它绑定既有 Worker02 产品 worktree 的六路径改动；该改动早于 R8 审批，且没有越出 WriteSet。
+- 本节状态边界由 P3 事件账本确定；补录和派工事件的 `OccurredAt`/`RecordedAt` 保留精确时间，不再用标题快照时间代替事件时间。
+- R8 新构建路径 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core` 尚未创建。本候选 PR 合并且 WorkflowController `validate-assignment` 返回接受之前，不运行 configure、build、CTest 或 coverage。
+- P3 EntryGate 仍 Pending；本轮没有完成 AgentRuntime 协程实现，也没有生产 Provider/WinHTTP 接线。远端分支保持在 4 条上限以内。

@@ -2101,7 +2101,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Rework
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
     CorrectiveToTaskId: ED-0120
@@ -2114,7 +2114,7 @@ Tasks:
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     TaskSpecChangeRequestId: CR-ED-0147-R8-VALIDATION-001
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
     TaskSpecReviewerDecision: Approve
@@ -2122,7 +2122,7 @@ Tasks:
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecCoordinatorDecisionHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
     TaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: 791f5763c8018ee1b4d9d53a7f3ee55d13e37bad
     TaskSpecMergePullRequestNumber: 42
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/42
     TaskSpecMergeMethod: squash
@@ -2246,7 +2246,7 @@ Tasks:
     Branch: Task/ED-0147-CoreEndpointGrantAuthorityR7
     Worktree: H:/Qbot/EmulativeDialog.ED-0147
     AssignedToSlot: Worker02
-    AssignmentNote: "R8 is a validation-only revision proposed after R7's frozen build directory was consumed. Preserve the existing Worker02 product branch/worktree and six-path WriteSet. After the R8 TaskSpec PR merges, record the new TaskSpec merge commit in a separate assignment ledger, validate the assignment with WorkflowController, then run only the fresh ED-0147-R8/Core validation commands. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
+    AssignmentNote: "R8 TaskSpec PR #42 was squash-merged to main at 791f5763c8018ee1b4d9d53a7f3ee55d13e37bad. This assignment ledger binds Worker02 /root/luna02_ed0148_pr_ready to the existing product branch Task/ED-0147-CoreEndpointGrantAuthorityR7, worktree H:/Qbot/EmulativeDialog.ED-0147, and frozen product baseline 269379817d7f51082b16ae2d0ded1ccedd2a54b7; Worker04 /root/luna04_ed0144_branch_review remains the independent Reviewer. The existing six-path product diff predates R8 approval and has no paths outside the frozen WriteSet. Do not run R8 validation until this assignment ledger merges and WorkflowController validate-assignment accepts it; then use only the fresh ED-0147-R8/Core path. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
