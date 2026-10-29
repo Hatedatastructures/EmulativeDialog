@@ -381,3 +381,11 @@
 - Worker06 对 Base 8c9791e1bddf787fc703cac43aedd70d37a81bcd → Head 187273901356553725cd4f4052bcc78bd79ac135 提出的 finding ED-0120-R5LC-I1 已解决。P2 计划保留 Validation-024 历史，并将 Validation-025 标为此前最新验证；该命令运行时读取 **438 行/438 个唯一事件**，追加自身 CommandExecuted 记录后为 **439 行/439 个唯一事件**。
 - Validation-026 是这次修正后的完整验证：finding 解决事件追加后，命令运行时为 **440 行/440 个唯一事件**；追加 Validation-026 的 CommandExecuted 事件后为 **441 行/441 个唯一事件**。验证命令退出码 0，日志路径见 P2.jsonl EventId=a9afe24b-8add-4a1d-abc7-5e5abaff2d9e。P2 的 FinalScopeValidationEventId 指向 Validation-026，P3 EntryGate 仍为 Pending。
 - 此次仅更新 ED-0120/R5 账本与状态摘要；PR #60 合并事实和合同状态不变，不修改 P3、AgentPool 或 C++ 源码/测试/CMake。
+
+## 2026-10-30 ED-0147/R9 收尾与已合并任务工作树核对
+
+- Coordinator 复核了 PR #46 元数据、固定 Base/Head 的独立评审记录、派工接受记录、定向 CTest 1/1（断言 13/13）和 gcov JSON v2 的 277/292（94.86%）。原始 configure/build 标准输出未留存；本次收尾不声称重新运行了 C++ 构建或测试。
+- ED-0147/R9 按产品 PR 合并提交 `5364581858c8299884e87e00730748b86fb43346` 记录为 Merged/Closed；本地保留任务分支引用，干净实现工作树已分离到最终 main `b4c2712e2d9e1d1221e69c812fba9a6d028aef5a`。
+- ED-0120/R5 的干净产品工作树也已在 PR #62 后分离到最终 main；保留原本地分支引用。
+- Worker01、Worker06 的 ED-0120/R5 职责结束后已释放，Worker02 在 ED-0147/R9 收尾后已释放。Worker06 在 ED-0148/R5 中的身份分配仍需先核对，才能恢复验证；未静默指定替代身份。
+- P3 EntryGate 仍为 Pending。ED-0151/R2 的独立门禁评估尚未执行，ED-0114 仍受阻；本次治理收尾不声称异步 AgentRuntime 已实现。
