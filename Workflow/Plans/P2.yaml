@@ -1025,6 +1025,62 @@ ChangeRequests:
     EvidenceRefs:
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
+  - ChangeRequestId: CR-ED-0112-007
+    TargetTaskId: ED-0112
+    TargetTaskRevision: 5
+    ProposedTaskRevision: 6
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 456b2172f88460e6eb4ebd02f5c8c450cc44ca96
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: 456b2172f88460e6eb4ebd02f5c8c450cc44ca96
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 456b2172f88460e6eb4ebd02f5c8c450cc44ca96
+    AcceptedAt: 2026-10-29
+    FindingIds: [ED0112-R5-STATIC-BASE-01]
+    Findings:
+      - FindingId: ED0112-R5-STATIC-BASE-01
+        Severity: Major
+        Path: Workflow/Plans/P2.yaml
+        Location: TaskId=ED-0112/TaskRevision=5/Validation/StaticChecks[0..1]
+        Evidence: "At fixed implementation Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and Head 19691cb10c32d5081d6c0e18fafb5d7322971779, the assigned baseline produces exactly the frozen eight WriteSet paths; the stale comparison base 461735e50657bdc8ace070b46db3682cfb03460f produces sixteen paths, including eight inherited Workflow paths."
+        Impact: "The frozen exact-WriteSet check cannot pass against the task's assigned branch baseline, preventing formal acceptance despite the implementation diff matching the assigned WriteSet."
+        RequiredFix: "Change only both StaticChecks comparison bases to BaselineCommit 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and prove the fixed Base/Head comparison returns exactly the eight WriteSet paths with diff --check exit 0."
+    Scope: >-
+      Change only the two ED-0112/R5 Validation.StaticChecks comparison bases from the pre-merge TaskSpec review base
+      461735e50657bdc8ace070b46db3682cfb03460f to the assigned implementation BaselineCommit
+      0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Comparing the assigned branch with 461735 includes eight inherited
+      Workflow paths integrated by PRs #26-#28; comparing BaselineCommit to Head yields exactly the frozen eight-path
+      WriteSet. Preserve Goal, Acceptance, Dependencies, ContractVersion, ReadSet, WriteSet, ForbiddenSet, Owner,
+      Reviewer, branch, worktree, product source behavior, and all build/coverage commands. This is validation-only;
+      no additional product write is authorized.
+    Reason: >-
+      Worker06's fixed Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc to Head
+      19691cb10c32d5081d6c0e18fafb5d7322971779 review found the C++ diff exactly matches the eight-path WriteSet,
+      but the frozen StaticChecks still use 461735e50657bdc8ace070b46db3682cfb03460f, which predates the approved
+      TaskSpec and assignment ledger merges. The stale comparison returns 16 inherited-plus-task paths and cannot
+      pass the exact WriteSet check. The assigned BaseCommit comparison returns the intended eight paths.
+    ProposedStaticChecks:
+      - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 0b666e655e75f7fdc7074a405cb2b2a35975a6fc 19691cb10c32d5081d6c0e18fafb5d7322971779"
+      - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 0b666e655e75f7fdc7074a405cb2b2a35975a6fc 19691cb10c32d5081d6c0e18fafb5d7322971779; exact sorted set must equal WriteSet"
+    PreserveGoalAcceptanceDependenciesContractsReadWriteAndForbiddenSets: true
+    PreserveOwnerReviewerAndAssignment: true
+    ProductSourceWriteSetChanged: false
+    ApprovalRequiredBeforeRevision6: false
+    AcceptedTaskRevision: 6
+    ProposedImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
+    ProposedBaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
+      - Workflow/TaskLifecycle.md#Section=TaskRecordsAndImmutability
+      - 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+      - 19691cb10c32d5081d6c0e18fafb5d7322971779
 
 ParallelGroups:
   - GroupId: FirstProductSlice
@@ -2310,22 +2366,25 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0112
-    TaskRevision: 5
+    TaskRevision: 6
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
     State: Assigned
-    TaskSpecChangeRequestId: CR-ED-0112-006
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecChangeRequestId: CR-ED-0112-007
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
-    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecOwnerReviewHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
     TaskSpecReviewerDecision: Approve
     TaskSpecReviewerAgentId: /root/worker06_ed0105_review
-    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecReviewerReviewHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
+    TaskSpecIndependentReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
-    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    TaskSpecCoordinatorDecisionHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
+    TaskSpecHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
+    ImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
+    TaskSpecMergedToMainCommit: ""
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
     AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR to main; all six dependencies are merged. The exact eight-path implementation assignment is bound to main baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may begin only after this assignment-ledger PR merges; do not reuse or merge the protected R2 worktrees."
@@ -2406,9 +2465,42 @@ Tasks:
       FindingIds: [ED0112-R4-REPLAY-01]
       Disposition: SupersededBeforeImplementation
       Reason: "The checkpoint metadata confused its three-file commit delta with the eight-path task replay set; no R4 implementation assignment or product source change was authorized."
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
-    TaskSpecOwnerDecision: Pending
-    TaskSpecIndependentReviewerDecision: Pending
+    PreviousRevision5Evidence:
+      TaskRevision: 5
+      TaskSpecChangeRequestId: CR-ED-0112-006
+      TaskSpecHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+      TaskSpecReviewStatusRecordedValues:
+        - {Value: ApprovedAndMergedToMain, Provenance: "R5 Owner/Reviewer approvals and PR #26 merge"}
+        - {Value: AwaitingOwnerAndIndependentReviewerReview, Provenance: "Stale duplicate mapping value; retained as historical evidence"}
+      AuthoritativeTaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecReviewStatusCorrectionEventId: 3c6a7a8b-a9a1-4d0d-a113-22d0e4c50001
+      TaskSpecOwnerDecisionRecordedValues:
+        - {Value: Approve, ReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997}
+        - {Value: Pending, Provenance: "Stale duplicate mapping value; retained as historical evidence"}
+      AuthoritativeTaskSpecOwnerDecision: Approve
+      TaskSpecOwnerDecisionCorrectionEventId: 55f0a9f1-7a19-4c20-b099-26b4c9500001
+      TaskSpecReviewerDecisionRecordedValues:
+        - {Field: TaskSpecReviewerDecision, Value: Approve, ReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997}
+        - {Field: TaskSpecIndependentReviewerDecision, Value: Pending, Provenance: "Stale conflicting reviewer metadata; retained as historical evidence"}
+      AuthoritativeIndependentReviewerDecision: Approve
+      TaskSpecReviewerDecisionCorrectionEventId: 55f0a9f1-7a19-4c20-b099-26b4c9500002
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+      TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+      BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+      AssignedToSlot: Worker02
+      Branch: Task/ED-0112-R5TurnRecovery
+      Worktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+      ImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
+      CodeReviewStatus: RequestChanges
+      CodeReviewerAgentId: /root/worker06_ed0105_review
+      CodeReviewFindingIds: [ED0112-R5-STATIC-BASE-01]
+      ValidationEvidence:
+        TargetedCTest: {ExitCode: 0, Passed: 2, Total: 2}
+        TurnCheckpointStoreCoverage: {Covered: 737, Total: 822, Percent: 89.66, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
+        TurnRecoveryCoordinatorCoverage: {Covered: 173, Total: 189, Percent: 91.53, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
+      Disposition: SupersededByAcceptedValidationOnlyRevision
+      Reason: "R6 changes only the two stale StaticChecks bases under CR-ED-0112-007. The assigned implementation Base, Owner, Reviewer, branch, worktree, source behavior and eight-path WriteSet remain unchanged."
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2564,8 +2656,8 @@ Tasks:
         }
       ContractFixtures: ["Synthetic restart checkpoints, exact scoped ContextReference, revoked scope, deleted record, and unknown action outcome; no message rehydration or runtime dispatch is claimed."]
       StaticChecks:
-        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 461735e50657bdc8ace070b46db3682cfb03460f HEAD"
-        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 461735e50657bdc8ace070b46db3682cfb03460f HEAD; exact sorted set must equal WriteSet"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 0b666e655e75f7fdc7074a405cb2b2a35975a6fc HEAD"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 0b666e655e75f7fdc7074a405cb2b2a35975a6fc HEAD; exact sorted set must equal WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
         - "Run CoverageCommand and retain its per-source numerator, denominator, exclusions, percentage, GCC version, and JSON format output in the task evidence."
@@ -3550,7 +3642,7 @@ Tasks:
     EpicId: EP-06
     Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P2
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
@@ -3575,6 +3667,15 @@ Tasks:
     Worktree: H:\Qbot\EmulativeDialog.ED-0146
     AssignedToSlot: Worker03
     AssignmentNote: "PR #26 merged to main at b43ebd954cffb358645cfe173e832aa3b6a3110e; CR-ED-0120-006 and the exact R6 TaskSpec have Owner, independent Reviewer, and Coordinator approval; all five dependencies are Merged. Worker03 is assigned on the b43 product baseline in the isolated worktree. Keep P3 EntryGate Pending until ED-0146 and ED-0147 pass implementation, review, and Windows verification."
+    PullRequestCreated: true
+    PullRequestNumber: 29
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/29
+    ReviewBaseCommit: 7723b52e5a77689a35aade10a6af9cdd400430fe
+    ReviewHeadCommit: 66a57729c2d4ca675c583857811f8023e0af75eb
+    ReviewStatus: Approved
+    MergeCommit: b04f407403c12ad13e47e4aea8ad092a9dbba321
+    MergedAt: 2026-10-28T20:13:02Z
+    MergeMethod: squash
     PreviousRevision2:
       TaskRevision: 2
       Disposition: SupersededBeforeImplementation

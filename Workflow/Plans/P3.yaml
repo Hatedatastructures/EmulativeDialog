@@ -13,12 +13,12 @@ EntryGate:
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0120/R2 fixed-head review found the Port grant check can be bypassed. ED-0146/R6 must enforce the shared Port entry and ED-0147/R6 must implement Core-owned profile-bound grant authority; both require approved TaskSpecs, implementation, fixed-head review, and Windows verification before the contracts freeze. Authority implementation alone does not claim Provider/WinHTTP composition is wired.
+  PendingReason: ED-0146/R6 is merged as PR #29 at b04f407403c12ad13e47e4aea8ad092a9dbba321 and enforces the shared Port grant entry. P3 remains Pending until ED-0147/R6 implements Core-owned profile-bound grant authority, passes fixed-head review and Windows verification, and the required contracts freeze. Neither task establishes production Provider/WinHTTP composition wiring.
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4
       ChangeRequestId: CR-ED-0144-R3-CONSENT-001
-      State: ApprovedAwaitingMainMerge
+      State: ApprovedAndMergedToMain
       Scope: "Only exact ProposalId consent matching in Memory may proceed after its own TaskSpec/CR approval and merge; this exception does not pass the P3 EntryGate."
       DoesNotSatisfyEntryGate: true
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
@@ -1928,7 +1928,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Ready
     Phase: P3
     ChangeRequestId: CR-ED-0120-005
     CorrectiveToTaskId: ED-0120
@@ -1940,13 +1940,14 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/worker04_ed0114_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
@@ -2217,7 +2218,7 @@ Tasks:
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Ready
     Phase: P3
     ChangeRequestId: CR-ED-0144-R3-CONSENT-001
     OwnerRole: MemoryOwner
@@ -2227,13 +2228,14 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
     TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
     BaselineCommit: ""
     Branch: ""
     Worktree: ""
