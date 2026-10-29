@@ -135,12 +135,13 @@ std::optional<Storage::TurnCheckpoint> BuildIsolationCheckpoint(
       Isolated.ToolState = Storage::ToolExecutionState::UnknownOutcome;
     }
   }
-  const bool ProviderRequestInFlight =
+  const bool ProviderOrChannelRequestInFlight =
       Checkpoint.Phase == Storage::TurnPhase::ProviderDispatched ||
-      Checkpoint.Phase == Storage::TurnPhase::ProviderStreaming;
-  // An unresolved provider request does not erase a separate known action result.
+      Checkpoint.Phase == Storage::TurnPhase::ProviderStreaming ||
+      Checkpoint.Phase == Storage::TurnPhase::Sending;
+  // An unresolved provider request or channel send does not erase a known action result.
   const bool PreserveSuccessfulOperation =
-      ProviderRequestInFlight &&
+      ProviderOrChannelRequestInFlight &&
       Checkpoint.Operation == Storage::OperationState::Succeeded;
   if (!PreserveSuccessfulOperation &&
       (Isolated.Operation == Storage::OperationState::Dispatched ||

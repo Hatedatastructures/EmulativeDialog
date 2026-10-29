@@ -937,6 +937,64 @@ void TestSuccessfulOperationCannotMaskUnknownProviderOutcome() {
   }
 }
 
+void TestSuccessfulOperationCannotMaskUnknownChannelSend() {
+  const auto Path = TempPath("successful-operation-unknown-channel-send");
+  RemoveIfExists(Path);
+  TurnCheckpointStore Store(Path);
+  TurnCheckpoint Checkpoint = ReachProviderCompleted(
+      Store, "turn-send-known-operation", "scope-send-known-operation",
+      ToolExecutionState::Completed);
+  Checkpoint.Phase = TurnPhase::Sending;
+  ++Checkpoint.Revision;
+  Expect(Store.Append(Checkpoint).index() == 0);
+  Checkpoint.UnknownSideEffect = true;
+  ++Checkpoint.Revision;
+  Expect(Store.Append(Checkpoint).index() == 0);
+
+  const CheckpointSnapshot BeforeRecovery = Snapshot(Store.Load());
+  const TurnCheckpoint& Sending = BeforeRecovery.LatestByTurn.at(
+      TurnToken("turn-send-known-operation"));
+  Expect(Sending.Phase == TurnPhase::Sending);
+  Expect(Sending.ToolState == ToolExecutionState::Completed);
+  Expect(Sending.Operation == OperationState::Succeeded);
+  Expect(Sending.UnknownSideEffect);
+
+  TurnRecoveryCoordinator Coordinator(Store);
+  const RecoveryReport First =
+      ExpectReport(Coordinator.Recover(ScopeToken("scope-send-known-operation")));
+  Expect(First.Decisions.size() == 1);
+  const RecoveryDecision& FirstDecision = First.Decisions.front();
+  Expect(FirstDecision.Disposition ==
+         RecoveryDisposition::IsolatedOutcomeUnknown);
+  Expect(FirstDecision.OriginalPhase == TurnPhase::Sending);
+  Expect(FirstDecision.OriginalToolState == ToolExecutionState::Completed);
+  Expect(FirstDecision.Operation == OperationState::Succeeded);
+  Expect(!FirstDecision.ReplayAllowed);
+  Expect(First.DispatchCount == 0);
+  Expect(First.CheckpointsPersisted == 1);
+
+  const CheckpointSnapshot AfterFirst = Snapshot(Store.Load());
+  const TurnCheckpoint& Isolated = AfterFirst.LatestByTurn.at(
+      TurnToken("turn-send-known-operation"));
+  Expect(Isolated.Phase == TurnPhase::OutcomeUnknown);
+  Expect(Isolated.ToolState == ToolExecutionState::Completed);
+  Expect(Isolated.Operation == OperationState::Succeeded);
+  Expect(Isolated.UnknownSideEffect);
+
+  const RecoveryReport Second =
+      ExpectReport(Coordinator.Recover(ScopeToken("scope-send-known-operation")));
+  Expect(Second.Decisions.size() == 1);
+  const RecoveryDecision& SecondDecision = Second.Decisions.front();
+  Expect(SecondDecision.Disposition == RecoveryDisposition::OutcomeUnknown);
+  Expect(SecondDecision.OriginalToolState == ToolExecutionState::Completed);
+  Expect(SecondDecision.Operation == OperationState::Succeeded);
+  Expect(!SecondDecision.ReplayAllowed);
+  Expect(Second.DispatchCount == 0);
+  Expect(Second.CheckpointsPersisted == 0);
+  Expect(Snapshot(Store.Load()).RecordCount == AfterFirst.RecordCount);
+  RemoveIfExists(Path);
+}
+
 void TestAuthorizedUndispatchedOperationCanResumeWithSameKey() {
   const auto Path = TempPath("authorized-operation");
   RemoveIfExists(Path);
@@ -1050,6 +1108,7 @@ int main() {
   TestOperationRecoveryCarriesOperationState();
   TestKnownOperationOutcomeIsReconciledWithoutReplay();
   TestSuccessfulOperationCannotMaskUnknownProviderOutcome();
+  TestSuccessfulOperationCannotMaskUnknownChannelSend();
   TestAuthorizedUndispatchedOperationCanResumeWithSameKey();
   TestRecoveryEventsNeverContainForbiddenContent();
   std::puts("TurnRecoveryCoordinator contract tests passed");
