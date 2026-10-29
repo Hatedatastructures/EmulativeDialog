@@ -3421,7 +3421,7 @@ Tasks:
     EpicId: EP-06
     Title: 独立核验并关闭 P3 EntryGate
     TaskKind: Governance
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: Coordinator
     OwnerSlotId: Coordinator
@@ -3434,26 +3434,26 @@ Tasks:
     CreatedAt: "2026-10-30"
     ParallelGroup: P3GateCloseout
     TaskSpecProposalBaseCommit: 3c48d918fb227303ea527de767660b0446caef8a
-    TaskSpecReviewStatus: Proposed
-    TaskSpecReviewBaseCommit: ""
-    TaskSpecReviewHeadCommit: ""
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewBaseCommit: 3c48d918fb227303ea527de767660b0446caef8a
+    TaskSpecReviewHeadCommit: b38653ef5a296de2575efa5f4465378e3bb49f63
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewerReviewBaseCommit: ""
-    TaskSpecReviewerReviewHeadCommit: ""
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerReviewBaseCommit: 3c48d918fb227303ea527de767660b0446caef8a
+    TaskSpecReviewerReviewHeadCommit: b38653ef5a296de2575efa5f4465378e3bb49f63
     TaskSpecNativeGitHubReviewSubmissionCount: 0
-    TaskSpecMergePullRequestNumber: ""
-    TaskSpecMergePullRequestUrl: ""
-    TaskSpecMergeMethod: ""
-    TaskSpecMergedToMainCommit: ""
-    TaskSpecMergedEventId: ""
-    BaselineCommit: ""
+    TaskSpecMergePullRequestNumber: 65
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/65
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainCommit: 554ba46146eeada94b2863a97c2b5b96e1260b51
+    TaskSpecMergedEventId: 6998676c-5f82-411e-a583-1ef563d9fbb7
+    BaselineCommit: 554ba46146eeada94b2863a97c2b5b96e1260b51
     PRBaseCommit: ""
-    TaskReadinessValidatedEventId: ""
-    TaskAssignedEventId: ""
-    PreMergeAssignmentValidationEventId: ""
-    Branch: ""
-    Worktree: ""
+    TaskReadinessValidatedEventId: f8ae50df-3f3d-4f01-a822-b86504d4bc1b
+    TaskAssignedEventId: 72d20ab0-2dc0-463b-a1bd-def79d608986
+    PreMergeAssignmentValidationEventId: f5f5fe61-4ab9-4aea-a89e-9a00818152ac
+    Branch: Task/ED-0151-P3GateCloseout
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeAssignmentByAcceptedChangeRequest
@@ -3499,7 +3499,7 @@ Tasks:
       BlockerId: ED0151-R2-AC5-AC6-CYCLE-001
       P3EntryGateState: Pending
       P3EntryGatePassedEventCount: 0
-      HistoryNote: "R2 TaskSpec, readiness, TaskAssigned, and pre-merge validation were already on main. The post-merge validation, TaskStarted, fixed-head finding, TaskBlocked, and CR-proposed events are appended in this isolated candidate and are not yet on main; their original IDs and R2 revision are preserved."
+      HistoryNote: "At PR #65 Base 3c48d918fb227303ea527de767660b0446caef8a, the later R2 post-merge validation, TaskStarted, finding, TaskBlocked, and CR-proposed events existed only in the candidate. PR #65 merged them to main at 554ba46146eeada94b2863a97c2b5b96e1260b51; all original EventIds and R2 revision are preserved."
     AssignmentBaselinePolicy: >-
       TaskSpecProposalBaseCommit is only the base for reviewing/merging this TaskSpec. After the TaskSpec PR merges,
       Coordinator records its merge SHA separately as TaskSpecMergedToMainCommit. Do not copy that SHA into BaselineCommit.
@@ -3752,10 +3752,10 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "CR-ED-0151-003 received independent fixed-head approval for Base 3c48d918fb227303ea527de767660b0446caef8a -> Head ac21451483631f56d7a196093afb5d07ce30df00 and was accepted by the Coordinator; the R3 candidate passes final pre-review Controller and normalized ledger checks."
-      CurrentFindingOrFailure: "R2 AC-5/AC-6 fixed-head cycle is addressed in accepted CR-ED-0151-003. R3 is not assigned or started; P3 remains Pending and no P3EntryGatePassed event exists."
+      LastCompletedAcceptance: "ED-0151/R3 TaskSpec PR #65 received Worker04 fixed-head APPROVE for Base 3c48d918fb227303ea527de767660b0446caef8a -> Head b38653ef5a296de2575efa5f4465378e3bb49f63 and squash-merged to main at 554ba46146eeada94b2863a97c2b5b96e1260b51; all 10 pinned dependency queries returned Merged on that baseline."
+      CurrentFindingOrFailure: "R3 assignment is recorded in the candidate ledger on baseline 554ba46146eeada94b2863a97c2b5b96e1260b51. Candidate validate-assignment returned AssignmentAccepted, but this is pre-merge only; post-merge validation and TaskStarted are still required. P3 remains Pending."
       TriedApproaches: ["R2 could not record a success event after an immutable fixed-head decision. CR-ED-0151-003 separates GateDecisionReview from H2 finalization and FinalPRReview."]
-      NextAction: "Finish R3 TaskSpec, independently review and merge it; then revalidate readiness and assignment before R3 GateDecisionReview. Keep P3 Pending until the final H2 PR is independently reviewed and merged."
-      LastValidationResult: "R2 post-merge AssignmentAccepted and ten pinned dependency queries passed. Final R3 pre-review validation passed: query returns Proposed, R2 query is stale, 221-line prefix preserved, 241 JSON lines unique/valid, no gate-pass event, P2 blobs identical, WriteSet limited, P3 Pending, and diff-check 0. See ED0151-R3-FinalPreReview-20261029T2320Z.log. One earlier CRLF-sensitive validator regex was corrected."
+      NextAction: "Obtain Worker04 fixed-head review and merge the assignment ledger PR; then rerun Controller query and validate-assignment on post-merge main before TaskStarted and H1 GateDecisionReview."
+      LastValidationResult: "Ten exact dependencies returned Merged on baseline 554ba46146eeada94b2863a97c2b5b96e1260b51; P1/P2 gates are Passed, P3 contracts Frozen, and ED-0147/R9 is Merged/Closed. Latest candidate query returned Assigned and validate-assignment returned AssignmentAccepted (exit 0; 3010.833 ms; pre-merge only). Final integrity log confirms exact three-path WriteSet, diff-check 0, unchanged P2 blobs, intact 242-line P3 prefix, 252 valid unique events, zero pass events and zero R3 TaskStarted; stale R2 was rejected as expected. Log: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-FinalCandidateIntegrity-20261030.log. Earlier checker-script failures and corrections are retained in ED0151-R3-AssignmentLedgerValidationScriptAttempts-20261030.log. Post-merge validation is still required before TaskStarted; P3 remains Pending."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
