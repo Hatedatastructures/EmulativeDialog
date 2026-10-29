@@ -63,6 +63,10 @@ AgentTurn 的终态集合固定为 `Completed`、`Cancelled`、`Failed`、`Unsup
 
 持久化记录不得把 `Completed`、`Cancelled`、`Failed` 或 `Unsupported` 与仍处于 `Dispatched` 的 tool execution 或 operation 状态组合。dispatch 后缺少确定结果/回执时必须记录为 `OutcomeUnknown`；无法验证该不变量的 checkpoint 必须 fail closed，不能生成确定终态决策或重放。
 
+Tool execution 必须按 `NotRequested` → `Authorized` → `Dispatched` → `Completed`/`Failed`/`UnknownOutcome` 推进；不得跳过授权或 dispatch 来记作完成/失败。dispatch 后无确定结果时只能记为 `UnknownOutcome` 并设置 `UnknownSideEffect`。已持久化的 `ToolExecutionState::Dispatched` 不得在后续 revision 中清除或退回 `NotRequested`/`Authorized`，只能转为 `Completed`、`Failed` 或 `UnknownOutcome`。已成功的 operation 不能证明并行 Provider request 已结束；若 checkpoint 仍处于 `ProviderDispatched` 或 `ProviderStreaming`，恢复必须将 turn 隔离为 `OutcomeUnknown`，同时保留 operation 的 `Succeeded` 状态，并禁止重放。
+
+Turn recovery checkpoint 的标识字段仅接受由可信 Core issuer 生成的域标签不透明 token：`turn_`、`request_`、`scope_`、`context_`、`operation_`、`idem_` 或 `action_` 后必须恰有 32 位小写十六进制值。普通文本、正文、凭据或未经域验证的引用不得写入 checkpoint 或恢复事件；Recovery component 不负责生成这些 token，生产 issuer/接线由独立 Core integration task 提供。多次工具调用必须保留每个已完成工具/operation 状态；只有一个已结束的工具周期经过新的 Provider request 到达 `ProviderCompleted`，并用新的 operation ID 和幂等键建立 `Prepared` 状态后，才可开始下一个工具周期；同一 ActionId 可以在新的获批 operation 中再次使用。
+
 ProviderRequest 的 `ResponseCompleted` 表示该模型响应结束，不等于 AgentTurn `Completed`。带工具提案的响应由 Core 授权后续跑；最终答复只有成功发送回执后才算完成。状态记录关联 `AgentTurnId`、`RequestId`、`OperationId`、`ProviderProfileId` 和可用的 `ChannelReceiptId`。
 
 ProviderRequest 的 `ResponseOutputLimited` 不得执行未完成的工具参数。AgentRuntime 只能在 Core 批准 ContextSelector 重新压缩/预算后，使用新 RequestId 发起有界续跑；若预算耗尽则 AgentTurn 以稳定 `OutputLimitReached` 错误结束。`ResponseFailed` 仅按 profile 明列的安全 retry policy 处理；`ResponseCancelled` 在无未决副作用时转 `Cancelled`；`ResponseOutcomeUnknown` 转 AgentTurn `OutcomeUnknown`，不重新生成或派发工具。

@@ -8,9 +8,8 @@
 namespace EmulativeDialog::Core {
 namespace {
 
-Storage::ScopeState FindScopeState(
-    const Storage::CheckpointSnapshot& Snapshot,
-    std::string_view ScopeRef) {
+Storage::ScopeState FindScopeState(const Storage::CheckpointSnapshot& Snapshot,
+                                   std::string_view ScopeRef) {
   const auto Match = Snapshot.LatestScopeById.find(std::string(ScopeRef));
   if (Match == Snapshot.LatestScopeById.end()) {
     return Storage::ScopeState::Active;
@@ -35,20 +34,20 @@ bool HasUnsafeDispatch(const Storage::TurnCheckpoint& Checkpoint) noexcept {
     return true;
   }
   switch (Checkpoint.Phase) {
-  case Storage::TurnPhase::ProviderDispatched:
-  case Storage::TurnPhase::ProviderStreaming:
-  case Storage::TurnPhase::ToolDispatched:
-  case Storage::TurnPhase::Sending:
-    return true;
-  case Storage::TurnPhase::Created:
-  case Storage::TurnPhase::ReadyToDispatch:
-  case Storage::TurnPhase::ProviderCompleted:
-  case Storage::TurnPhase::Completed:
-  case Storage::TurnPhase::Cancelled:
-  case Storage::TurnPhase::Failed:
-  case Storage::TurnPhase::Unsupported:
-  case Storage::TurnPhase::OutcomeUnknown:
-    return false;
+    case Storage::TurnPhase::ProviderDispatched:
+    case Storage::TurnPhase::ProviderStreaming:
+    case Storage::TurnPhase::Sending:
+      return true;
+    case Storage::TurnPhase::Created:
+    case Storage::TurnPhase::ReadyToDispatch:
+    case Storage::TurnPhase::ProviderCompleted:
+    case Storage::TurnPhase::ToolDispatched:
+    case Storage::TurnPhase::Completed:
+    case Storage::TurnPhase::Cancelled:
+    case Storage::TurnPhase::Failed:
+    case Storage::TurnPhase::Unsupported:
+    case Storage::TurnPhase::OutcomeUnknown:
+      return false;
   }
   return true;
 }
@@ -61,18 +60,18 @@ bool HasDefiniteOperationOutcome(
     return false;
   }
   switch (Checkpoint.Operation) {
-  case Storage::OperationState::Succeeded:
-  case Storage::OperationState::Rejected:
-  case Storage::OperationState::Unsupported:
-  case Storage::OperationState::Failed:
-    return true;
-  case Storage::OperationState::None:
-  case Storage::OperationState::Prepared:
-  case Storage::OperationState::Authorized:
-    break;
-  case Storage::OperationState::Dispatched:
-  case Storage::OperationState::UnknownOutcome:
-    return false;
+    case Storage::OperationState::Succeeded:
+    case Storage::OperationState::Rejected:
+    case Storage::OperationState::Unsupported:
+    case Storage::OperationState::Failed:
+      return true;
+    case Storage::OperationState::None:
+    case Storage::OperationState::Prepared:
+    case Storage::OperationState::Authorized:
+      break;
+    case Storage::OperationState::Dispatched:
+    case Storage::OperationState::UnknownOutcome:
+      return false;
   }
   return Checkpoint.ToolState == Storage::ToolExecutionState::Completed ||
          Checkpoint.ToolState == Storage::ToolExecutionState::Failed;
@@ -80,24 +79,24 @@ bool HasDefiniteOperationOutcome(
 
 std::string_view StableCode(RecoveryDisposition Disposition) noexcept {
   switch (Disposition) {
-  case RecoveryDisposition::SafeToResume:
-    return "SafeToResume";
-  case RecoveryDisposition::IsolatedOutcomeUnknown:
-    return "OutcomeUnknown";
-  case RecoveryDisposition::OperationReconciliationRequired:
-    return "OperationReconciliationRequired";
-  case RecoveryDisposition::Completed:
-    return "Completed";
-  case RecoveryDisposition::Cancelled:
-    return "Cancelled";
-  case RecoveryDisposition::Failed:
-    return "Failed";
-  case RecoveryDisposition::Unsupported:
-    return "Unsupported";
-  case RecoveryDisposition::OutcomeUnknown:
-    return "OutcomeUnknown";
-  case RecoveryDisposition::SkippedInactiveScope:
-    return "InactiveScope";
+    case RecoveryDisposition::SafeToResume:
+      return "SafeToResume";
+    case RecoveryDisposition::IsolatedOutcomeUnknown:
+      return "OutcomeUnknown";
+    case RecoveryDisposition::OperationReconciliationRequired:
+      return "OperationReconciliationRequired";
+    case RecoveryDisposition::Completed:
+      return "Completed";
+    case RecoveryDisposition::Cancelled:
+      return "Cancelled";
+    case RecoveryDisposition::Failed:
+      return "Failed";
+    case RecoveryDisposition::Unsupported:
+      return "Unsupported";
+    case RecoveryDisposition::OutcomeUnknown:
+      return "OutcomeUnknown";
+    case RecoveryDisposition::SkippedInactiveScope:
+      return "InactiveScope";
   }
   return "Failed";
 }
@@ -105,25 +104,24 @@ std::string_view StableCode(RecoveryDisposition Disposition) noexcept {
 std::optional<RecoveryDisposition> TerminalDisposition(
     Storage::TurnPhase Phase) noexcept {
   switch (Phase) {
-  case Storage::TurnPhase::Completed:
-    return RecoveryDisposition::Completed;
-  case Storage::TurnPhase::Cancelled:
-    return RecoveryDisposition::Cancelled;
-  case Storage::TurnPhase::Failed:
-    return RecoveryDisposition::Failed;
-  case Storage::TurnPhase::Unsupported:
-    return RecoveryDisposition::Unsupported;
-  case Storage::TurnPhase::OutcomeUnknown:
-    return RecoveryDisposition::OutcomeUnknown;
-  default:
-    return std::nullopt;
+    case Storage::TurnPhase::Completed:
+      return RecoveryDisposition::Completed;
+    case Storage::TurnPhase::Cancelled:
+      return RecoveryDisposition::Cancelled;
+    case Storage::TurnPhase::Failed:
+      return RecoveryDisposition::Failed;
+    case Storage::TurnPhase::Unsupported:
+      return RecoveryDisposition::Unsupported;
+    case Storage::TurnPhase::OutcomeUnknown:
+      return RecoveryDisposition::OutcomeUnknown;
+    default:
+      return std::nullopt;
   }
 }
 
 std::optional<Storage::TurnCheckpoint> BuildIsolationCheckpoint(
     const Storage::TurnCheckpoint& Checkpoint) {
-  if (Checkpoint.Revision ==
-      std::numeric_limits<std::uint64_t>::max()) {
+  if (Checkpoint.Revision == std::numeric_limits<std::uint64_t>::max()) {
     return std::nullopt;
   }
   Storage::TurnCheckpoint Isolated = Checkpoint;
@@ -155,28 +153,27 @@ std::string RedactIfForbidden(std::string Value) {
   return Value;
 }
 
-} // namespace
+}  // namespace
 
 TurnRecoveryCoordinator::TurnRecoveryCoordinator(
     Storage::TurnCheckpointStore& Store, EventSink EventSink)
     : StoreRef(Store), Sink(std::move(EventSink)) {}
 
-std::variant<RecoveryReport, RecoveryError>
-TurnRecoveryCoordinator::Recover(std::string_view ScopeRef) {
-  if (!Storage::TurnCheckpointStore::IsValidIdentifier(ScopeRef)) {
-    return RecoveryError{.Code = RecoveryErrorCode::InvalidScope,
-                         .SanitizedDescription =
-                             "Recovery scope identifier is invalid."};
+std::variant<RecoveryReport, RecoveryError> TurnRecoveryCoordinator::Recover(
+    std::string_view ScopeRef) {
+  if (!Storage::TurnCheckpointStore::IsValidIdentifier(ScopeRef) ||
+      !ScopeRef.starts_with("scope_")) {
+    return RecoveryError{
+        .Code = RecoveryErrorCode::InvalidScope,
+        .SanitizedDescription = "Recovery scope identifier is invalid."};
   }
 
   const Storage::CheckpointResult<Storage::CheckpointSnapshot> Loaded =
       StoreRef.Load();
-  if (const auto* Failure =
-          std::get_if<Storage::CheckpointStoreError>(&Loaded);
+  if (const auto* Failure = std::get_if<Storage::CheckpointStoreError>(&Loaded);
       Failure != nullptr) {
     return RecoveryError{.Code = RecoveryErrorCode::StoreFailure,
-                         .SanitizedDescription =
-                             Failure->SanitizedDescription};
+                         .SanitizedDescription = Failure->SanitizedDescription};
   }
 
   const Storage::CheckpointSnapshot& Snapshot =
@@ -199,23 +196,17 @@ TurnRecoveryCoordinator::Recover(std::string_view ScopeRef) {
     bool ReplayAllowed = false;
     if (IsInactive(State)) {
       Disposition = RecoveryDisposition::SkippedInactiveScope;
-    } else if (const auto Terminal =
-                   TerminalDisposition(Checkpoint.Phase);
+    } else if (const auto Terminal = TerminalDisposition(Checkpoint.Phase);
                Terminal.has_value() &&
                *Terminal != RecoveryDisposition::OutcomeUnknown &&
                HasUnsafeDispatch(Checkpoint)) {
-      return RecoveryError{
-          .Code = RecoveryErrorCode::StoreFailure,
-          .SanitizedDescription =
-              "Determinate terminal checkpoint contains an unresolved dispatch."};
-    } else if (const auto Terminal =
-                   TerminalDisposition(Checkpoint.Phase);
+      return RecoveryError{.Code = RecoveryErrorCode::StoreFailure,
+                           .SanitizedDescription =
+                               "Determinate terminal checkpoint contains an "
+                               "unresolved dispatch."};
+    } else if (const auto Terminal = TerminalDisposition(Checkpoint.Phase);
                Terminal.has_value()) {
       Disposition = *Terminal;
-    } else if (HasDefiniteOperationOutcome(Checkpoint)) {
-      // The operation result is durable and known. Surface its identity and
-      // idempotency key for reconciliation, but never replay it automatically.
-      Disposition = RecoveryDisposition::OperationReconciliationRequired;
     } else if (HasUnsafeDispatch(Checkpoint)) {
       const std::optional<Storage::TurnCheckpoint> Isolated =
           BuildIsolationCheckpoint(Checkpoint);
@@ -230,12 +221,18 @@ TurnRecoveryCoordinator::Recover(std::string_view ScopeRef) {
       if (const auto* Failure =
               std::get_if<Storage::CheckpointStoreError>(&Persisted);
           Failure != nullptr) {
-        return RecoveryError{.Code = RecoveryErrorCode::StoreFailure,
-                             .SanitizedDescription =
-                                 Failure->SanitizedDescription};
+        return RecoveryError{
+            .Code = RecoveryErrorCode::StoreFailure,
+            .SanitizedDescription = Failure->SanitizedDescription};
       }
       ++Report.CheckpointsPersisted;
       Disposition = RecoveryDisposition::IsolatedOutcomeUnknown;
+    } else if (HasDefiniteOperationOutcome(Checkpoint)) {
+      // The operation result is durable and known. Surface its identity and
+      // idempotency key for reconciliation, but never replay it automatically.
+      // An unresolved Provider or Channel dispatch was handled above and must
+      // not be hidden by this independent operation result.
+      Disposition = RecoveryDisposition::OperationReconciliationRequired;
     } else {
       Disposition = RecoveryDisposition::SafeToResume;
       ReplayAllowed = true;
@@ -294,4 +291,4 @@ std::optional<RecoveryError> TurnRecoveryCoordinator::Deliver(
   return std::nullopt;
 }
 
-} // namespace EmulativeDialog::Core
+}  // namespace EmulativeDialog::Core

@@ -15,7 +15,6 @@ namespace {
 constexpr std::string_view RecordPrefix = "EDCP";
 constexpr std::string_view RecordVersion = "1";
 constexpr std::string_view TurnRecordVersion = "2";
-constexpr std::size_t MaximumIdentifierBytes = 128;
 constexpr std::size_t MaximumRecordBytes = 2048;
 
 CheckpointStoreError Error(CheckpointStoreErrorCode Code,
@@ -24,23 +23,26 @@ CheckpointStoreError Error(CheckpointStoreErrorCode Code,
                               .SanitizedDescription = std::move(Description)};
 }
 
-bool IsContinueCharacter(unsigned char Character) noexcept {
-  return (Character >= static_cast<unsigned char>('a') &&
-          Character <= static_cast<unsigned char>('z')) ||
-         (Character >= static_cast<unsigned char>('A') &&
-          Character <= static_cast<unsigned char>('Z')) ||
-         (Character >= static_cast<unsigned char>('0') &&
-          Character <= static_cast<unsigned char>('9')) ||
-         Character == static_cast<unsigned char>('-') ||
-         Character == static_cast<unsigned char>('_') ||
-         Character == static_cast<unsigned char>('.') ||
-         Character == static_cast<unsigned char>(':') ||
-         Character == static_cast<unsigned char>('@');
+bool IsOpaqueIdentifier(std::string_view Identifier,
+                        std::string_view Prefix) noexcept {
+  constexpr std::size_t OpaqueTokenHexBytes = 32;
+  if (Identifier.size() != Prefix.size() + OpaqueTokenHexBytes ||
+      !Identifier.starts_with(Prefix)) {
+    return false;
+  }
+  for (const char Character : Identifier.substr(Prefix.size())) {
+    const bool IsHexDigit = (Character >= '0' && Character <= '9') ||
+                            (Character >= 'a' && Character <= 'f');
+    if (!IsHexDigit) {
+      return false;
+    }
+  }
+  return true;
 }
 
-bool IsOptionalIdentifier(std::string_view Identifier) noexcept {
-  return Identifier.empty() ||
-         TurnCheckpointStore::IsValidIdentifier(Identifier);
+bool IsOptionalOpaqueIdentifier(std::string_view Identifier,
+                                std::string_view Prefix) noexcept {
+  return Identifier.empty() || IsOpaqueIdentifier(Identifier, Prefix);
 }
 
 std::optional<TurnPhase> ParseTurnPhase(std::string_view Value) noexcept {
@@ -85,30 +87,30 @@ std::optional<TurnPhase> ParseTurnPhase(std::string_view Value) noexcept {
 
 std::string_view TurnPhaseName(TurnPhase Phase) noexcept {
   switch (Phase) {
-  case TurnPhase::Created:
-    return "Created";
-  case TurnPhase::ReadyToDispatch:
-    return "ReadyToDispatch";
-  case TurnPhase::ProviderDispatched:
-    return "ProviderDispatched";
-  case TurnPhase::ProviderStreaming:
-    return "ProviderStreaming";
-  case TurnPhase::ProviderCompleted:
-    return "ProviderCompleted";
-  case TurnPhase::ToolDispatched:
-    return "ToolDispatched";
-  case TurnPhase::Sending:
-    return "Sending";
-  case TurnPhase::Completed:
-    return "Completed";
-  case TurnPhase::Cancelled:
-    return "Cancelled";
-  case TurnPhase::Failed:
-    return "Failed";
-  case TurnPhase::Unsupported:
-    return "Unsupported";
-  case TurnPhase::OutcomeUnknown:
-    return "OutcomeUnknown";
+    case TurnPhase::Created:
+      return "Created";
+    case TurnPhase::ReadyToDispatch:
+      return "ReadyToDispatch";
+    case TurnPhase::ProviderDispatched:
+      return "ProviderDispatched";
+    case TurnPhase::ProviderStreaming:
+      return "ProviderStreaming";
+    case TurnPhase::ProviderCompleted:
+      return "ProviderCompleted";
+    case TurnPhase::ToolDispatched:
+      return "ToolDispatched";
+    case TurnPhase::Sending:
+      return "Sending";
+    case TurnPhase::Completed:
+      return "Completed";
+    case TurnPhase::Cancelled:
+      return "Cancelled";
+    case TurnPhase::Failed:
+      return "Failed";
+    case TurnPhase::Unsupported:
+      return "Unsupported";
+    case TurnPhase::OutcomeUnknown:
+      return "OutcomeUnknown";
   }
   return "OutcomeUnknown";
 }
@@ -138,18 +140,18 @@ std::optional<ToolExecutionState> ParseToolState(
 
 std::string_view ToolStateName(ToolExecutionState State) noexcept {
   switch (State) {
-  case ToolExecutionState::NotRequested:
-    return "NotRequested";
-  case ToolExecutionState::Authorized:
-    return "Authorized";
-  case ToolExecutionState::Dispatched:
-    return "Dispatched";
-  case ToolExecutionState::Completed:
-    return "Completed";
-  case ToolExecutionState::Failed:
-    return "Failed";
-  case ToolExecutionState::UnknownOutcome:
-    return "UnknownOutcome";
+    case ToolExecutionState::NotRequested:
+      return "NotRequested";
+    case ToolExecutionState::Authorized:
+      return "Authorized";
+    case ToolExecutionState::Dispatched:
+      return "Dispatched";
+    case ToolExecutionState::Completed:
+      return "Completed";
+    case ToolExecutionState::Failed:
+      return "Failed";
+    case ToolExecutionState::UnknownOutcome:
+      return "UnknownOutcome";
   }
   return "UnknownOutcome";
 }
@@ -188,30 +190,29 @@ std::optional<OperationState> ParseOperationState(
 
 std::string_view OperationStateName(OperationState State) noexcept {
   switch (State) {
-  case OperationState::None:
-    return "None";
-  case OperationState::Prepared:
-    return "Prepared";
-  case OperationState::Authorized:
-    return "Authorized";
-  case OperationState::Dispatched:
-    return "Dispatched";
-  case OperationState::Succeeded:
-    return "Succeeded";
-  case OperationState::Rejected:
-    return "Rejected";
-  case OperationState::Unsupported:
-    return "Unsupported";
-  case OperationState::Failed:
-    return "Failed";
-  case OperationState::UnknownOutcome:
-    return "UnknownOutcome";
+    case OperationState::None:
+      return "None";
+    case OperationState::Prepared:
+      return "Prepared";
+    case OperationState::Authorized:
+      return "Authorized";
+    case OperationState::Dispatched:
+      return "Dispatched";
+    case OperationState::Succeeded:
+      return "Succeeded";
+    case OperationState::Rejected:
+      return "Rejected";
+    case OperationState::Unsupported:
+      return "Unsupported";
+    case OperationState::Failed:
+      return "Failed";
+    case OperationState::UnknownOutcome:
+      return "UnknownOutcome";
   }
   return "UnknownOutcome";
 }
 
-std::optional<ScopeState> ParseScopeState(
-    std::string_view Value) noexcept {
+std::optional<ScopeState> ParseScopeState(std::string_view Value) noexcept {
   if (Value == "Active") {
     return ScopeState::Active;
   }
@@ -229,14 +230,14 @@ std::optional<ScopeState> ParseScopeState(
 
 std::string_view ScopeStateName(ScopeState State) noexcept {
   switch (State) {
-  case ScopeState::Active:
-    return "Active";
-  case ScopeState::Revoked:
-    return "Revoked";
-  case ScopeState::Deleted:
-    return "Deleted";
-  case ScopeState::Tombstoned:
-    return "Tombstoned";
+    case ScopeState::Active:
+      return "Active";
+    case ScopeState::Revoked:
+      return "Revoked";
+    case ScopeState::Deleted:
+      return "Deleted";
+    case ScopeState::Tombstoned:
+      return "Tombstoned";
   }
   return "Tombstoned";
 }
@@ -252,8 +253,7 @@ bool RequiresRequestId(TurnPhase Phase) noexcept {
   return Phase == TurnPhase::ProviderDispatched ||
          Phase == TurnPhase::ProviderStreaming ||
          Phase == TurnPhase::ProviderCompleted ||
-         Phase == TurnPhase::ToolDispatched ||
-         Phase == TurnPhase::Sending ||
+         Phase == TurnPhase::ToolDispatched || Phase == TurnPhase::Sending ||
          Phase == TurnPhase::Completed;
 }
 
@@ -264,42 +264,41 @@ bool CanAdvanceTurn(TurnPhase Previous, TurnPhase Requested) noexcept {
   if (Previous == Requested) {
     return true;
   }
-  if (Requested == TurnPhase::Failed ||
-      Requested == TurnPhase::Unsupported ||
+  if (Requested == TurnPhase::Failed || Requested == TurnPhase::Unsupported ||
       Requested == TurnPhase::OutcomeUnknown) {
     return true;
   }
   switch (Previous) {
-  case TurnPhase::Created:
-    return Requested == TurnPhase::ReadyToDispatch ||
-           Requested == TurnPhase::Cancelled;
-  case TurnPhase::ReadyToDispatch:
-    return Requested == TurnPhase::ProviderDispatched ||
-           Requested == TurnPhase::Cancelled;
-  case TurnPhase::ProviderDispatched:
-    return Requested == TurnPhase::ProviderStreaming ||
-           Requested == TurnPhase::ProviderCompleted ||
-           Requested == TurnPhase::Cancelled;
-  case TurnPhase::ProviderStreaming:
-    return Requested == TurnPhase::ProviderCompleted ||
-           Requested == TurnPhase::Cancelled;
-  case TurnPhase::ProviderCompleted:
-    return Requested == TurnPhase::ToolDispatched ||
-           Requested == TurnPhase::Sending ||
-           Requested == TurnPhase::Completed ||
-           Requested == TurnPhase::Cancelled;
-  case TurnPhase::ToolDispatched:
-    return Requested == TurnPhase::ProviderDispatched ||
-           Requested == TurnPhase::ProviderStreaming;
-  case TurnPhase::Sending:
-    return Requested == TurnPhase::Completed ||
-           Requested == TurnPhase::Cancelled;
-  case TurnPhase::Completed:
-  case TurnPhase::Cancelled:
-  case TurnPhase::Failed:
-  case TurnPhase::Unsupported:
-  case TurnPhase::OutcomeUnknown:
-    return false;
+    case TurnPhase::Created:
+      return Requested == TurnPhase::ReadyToDispatch ||
+             Requested == TurnPhase::Cancelled;
+    case TurnPhase::ReadyToDispatch:
+      return Requested == TurnPhase::ProviderDispatched ||
+             Requested == TurnPhase::Cancelled;
+    case TurnPhase::ProviderDispatched:
+      return Requested == TurnPhase::ProviderStreaming ||
+             Requested == TurnPhase::ProviderCompleted ||
+             Requested == TurnPhase::Cancelled;
+    case TurnPhase::ProviderStreaming:
+      return Requested == TurnPhase::ProviderCompleted ||
+             Requested == TurnPhase::Cancelled;
+    case TurnPhase::ProviderCompleted:
+      return Requested == TurnPhase::ToolDispatched ||
+             Requested == TurnPhase::Sending ||
+             Requested == TurnPhase::Completed ||
+             Requested == TurnPhase::Cancelled;
+    case TurnPhase::ToolDispatched:
+      return Requested == TurnPhase::ProviderDispatched ||
+             Requested == TurnPhase::ProviderStreaming;
+    case TurnPhase::Sending:
+      return Requested == TurnPhase::Completed ||
+             Requested == TurnPhase::Cancelled;
+    case TurnPhase::Completed:
+    case TurnPhase::Cancelled:
+    case TurnPhase::Failed:
+    case TurnPhase::Unsupported:
+    case TurnPhase::OutcomeUnknown:
+      return false;
   }
   return false;
 }
@@ -310,32 +309,122 @@ bool CanAdvanceOperation(OperationState Previous,
     return true;
   }
   switch (Previous) {
-  case OperationState::None:
-    return Requested == OperationState::Prepared;
-  case OperationState::Prepared:
-    return Requested == OperationState::Authorized ||
-           Requested == OperationState::Rejected ||
-           Requested == OperationState::Unsupported ||
-           Requested == OperationState::Failed;
-  case OperationState::Authorized:
-    return Requested == OperationState::Dispatched ||
-           Requested == OperationState::Rejected ||
-           Requested == OperationState::Unsupported ||
-           Requested == OperationState::Failed;
-  case OperationState::Dispatched:
-    return Requested == OperationState::Succeeded ||
-           Requested == OperationState::Rejected ||
-           Requested == OperationState::Unsupported ||
-           Requested == OperationState::Failed ||
-           Requested == OperationState::UnknownOutcome;
-  case OperationState::Succeeded:
-  case OperationState::Rejected:
-  case OperationState::Unsupported:
-  case OperationState::Failed:
-  case OperationState::UnknownOutcome:
-    return false;
+    case OperationState::None:
+      return Requested == OperationState::Prepared;
+    case OperationState::Prepared:
+      return Requested == OperationState::Authorized ||
+             Requested == OperationState::Rejected ||
+             Requested == OperationState::Unsupported ||
+             Requested == OperationState::Failed;
+    case OperationState::Authorized:
+      return Requested == OperationState::Dispatched ||
+             Requested == OperationState::Rejected ||
+             Requested == OperationState::Unsupported ||
+             Requested == OperationState::Failed;
+    case OperationState::Dispatched:
+      return Requested == OperationState::Succeeded ||
+             Requested == OperationState::Rejected ||
+             Requested == OperationState::Unsupported ||
+             Requested == OperationState::Failed ||
+             Requested == OperationState::UnknownOutcome;
+    case OperationState::Succeeded:
+    case OperationState::Rejected:
+    case OperationState::Unsupported:
+    case OperationState::Failed:
+    case OperationState::UnknownOutcome:
+      return false;
   }
   return false;
+}
+
+bool CanAdvanceToolState(ToolExecutionState Previous,
+                         ToolExecutionState Requested) noexcept {
+  if (Previous == Requested) {
+    return true;
+  }
+  switch (Previous) {
+    case ToolExecutionState::NotRequested:
+      return Requested == ToolExecutionState::Authorized;
+    case ToolExecutionState::Authorized:
+      return Requested == ToolExecutionState::Dispatched;
+    case ToolExecutionState::Dispatched:
+      return Requested == ToolExecutionState::Completed ||
+             Requested == ToolExecutionState::Failed ||
+             Requested == ToolExecutionState::UnknownOutcome;
+    case ToolExecutionState::Completed:
+    case ToolExecutionState::Failed:
+    case ToolExecutionState::UnknownOutcome:
+      return false;
+  }
+  return false;
+}
+
+bool HasKnownOperationOutcome(OperationState State) noexcept {
+  return State == OperationState::Succeeded ||
+         State == OperationState::Rejected ||
+         State == OperationState::Unsupported ||
+         State == OperationState::Failed;
+}
+
+bool HasKnownToolOutcome(ToolExecutionState State) noexcept {
+  return State == ToolExecutionState::Completed ||
+         State == ToolExecutionState::Failed;
+}
+
+bool HasValidInitialTurnState(const TurnCheckpoint& Checkpoint) noexcept {
+  return Checkpoint.ToolState == ToolExecutionState::NotRequested &&
+         Checkpoint.Operation == OperationState::None &&
+         !Checkpoint.UnknownSideEffect;
+}
+
+bool IsNewProviderRequest(const TurnCheckpoint& Previous,
+                          const TurnCheckpoint& Requested) noexcept {
+  return Previous.Phase == TurnPhase::ToolDispatched &&
+         Requested.Phase == TurnPhase::ProviderDispatched &&
+         HasKnownToolOutcome(Previous.ToolState) &&
+         !Previous.UnknownSideEffect &&
+         Previous.Operation != OperationState::Dispatched &&
+         Previous.Operation != OperationState::UnknownOutcome &&
+         !Requested.RequestId.empty() &&
+         Previous.RequestId != Requested.RequestId;
+}
+
+bool IsNewOperationCycle(const TurnCheckpoint& Previous,
+                         const TurnCheckpoint& Requested) noexcept {
+  return HasKnownOperationOutcome(Previous.Operation) &&
+         HasKnownToolOutcome(Previous.ToolState) &&
+         (Previous.Phase == TurnPhase::ProviderDispatched ||
+          Previous.Phase == TurnPhase::ProviderStreaming) &&
+         Requested.Phase == TurnPhase::ProviderCompleted &&
+         Requested.Operation == OperationState::Prepared &&
+         Requested.ToolState == Previous.ToolState &&
+         !Previous.OperationId.empty() && !Previous.IdempotencyKey.empty() &&
+         !Previous.ActionId.empty() &&
+         Previous.OperationId != Requested.OperationId &&
+         Previous.IdempotencyKey != Requested.IdempotencyKey;
+}
+
+bool CanAdvanceOperation(const TurnCheckpoint& Previous,
+                         const TurnCheckpoint& Requested) noexcept {
+  return CanAdvanceOperation(Previous.Operation, Requested.Operation) ||
+         IsNewOperationCycle(Previous, Requested);
+}
+
+bool CanAdvanceToolState(const TurnCheckpoint& Previous,
+                         const TurnCheckpoint& Requested) noexcept {
+  if (CanAdvanceToolState(Previous.ToolState, Requested.ToolState)) {
+    return true;
+  }
+  return HasKnownToolOutcome(Previous.ToolState) &&
+         Previous.ToolState != ToolExecutionState::UnknownOutcome &&
+         Previous.Phase == TurnPhase::ProviderCompleted &&
+         Requested.Phase == TurnPhase::ProviderCompleted &&
+         Previous.Operation == OperationState::Prepared &&
+         Requested.Operation == OperationState::Authorized &&
+         Previous.OperationId == Requested.OperationId &&
+         Previous.IdempotencyKey == Requested.IdempotencyKey &&
+         Previous.ActionId == Requested.ActionId &&
+         Requested.ToolState == ToolExecutionState::Authorized;
 }
 
 std::int64_t ToMilliseconds(
@@ -348,10 +437,9 @@ std::int64_t ToMilliseconds(
 std::optional<std::chrono::system_clock::time_point> FromMilliseconds(
     std::string_view Text) noexcept {
   std::int64_t Milliseconds = 0;
-  const auto Parsed = std::from_chars(
-      Text.data(), Text.data() + Text.size(), Milliseconds, 10);
-  if (Parsed.ec != std::errc{} ||
-      Parsed.ptr != Text.data() + Text.size()) {
+  const auto Parsed =
+      std::from_chars(Text.data(), Text.data() + Text.size(), Milliseconds, 10);
+  if (Parsed.ec != std::errc{} || Parsed.ptr != Text.data() + Text.size()) {
     return std::nullopt;
   }
   return std::chrono::system_clock::time_point{
@@ -362,8 +450,7 @@ std::optional<std::uint64_t> ParseUnsigned(std::string_view Text) noexcept {
   std::uint64_t Value = 0;
   const auto Parsed =
       std::from_chars(Text.data(), Text.data() + Text.size(), Value, 10);
-  if (Parsed.ec != std::errc{} ||
-      Parsed.ptr != Text.data() + Text.size()) {
+  if (Parsed.ec != std::errc{} || Parsed.ptr != Text.data() + Text.size()) {
     return std::nullopt;
   }
   return Value;
@@ -410,13 +497,13 @@ CheckpointResult<std::monostate> ValidateTurn(
     return Error(CheckpointStoreErrorCode::UnsupportedVersion,
                  "Checkpoint version is not supported.");
   }
-  if (!TurnCheckpointStore::IsValidIdentifier(Checkpoint.TurnId) ||
-      !TurnCheckpointStore::IsValidIdentifier(Checkpoint.ScopeRef) ||
-      !IsOptionalIdentifier(Checkpoint.RequestId) ||
-      !IsOptionalIdentifier(Checkpoint.ContextReference) ||
-      !IsOptionalIdentifier(Checkpoint.OperationId) ||
-      !IsOptionalIdentifier(Checkpoint.IdempotencyKey) ||
-      !IsOptionalIdentifier(Checkpoint.ActionId)) {
+  if (!IsOpaqueIdentifier(Checkpoint.TurnId, "turn_") ||
+      !IsOpaqueIdentifier(Checkpoint.ScopeRef, "scope_") ||
+      !IsOptionalOpaqueIdentifier(Checkpoint.RequestId, "request_") ||
+      !IsOptionalOpaqueIdentifier(Checkpoint.ContextReference, "context_") ||
+      !IsOptionalOpaqueIdentifier(Checkpoint.OperationId, "operation_") ||
+      !IsOptionalOpaqueIdentifier(Checkpoint.IdempotencyKey, "idem_") ||
+      !IsOptionalOpaqueIdentifier(Checkpoint.ActionId, "action_")) {
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Checkpoint identifiers are invalid.");
   }
@@ -443,14 +530,12 @@ CheckpointResult<std::monostate> ValidateTurn(
                  "Checkpoint state is invalid.");
   }
   if (Checkpoint.Operation != OperationState::None &&
-      (Checkpoint.OperationId.empty() ||
-       Checkpoint.IdempotencyKey.empty() ||
+      (Checkpoint.OperationId.empty() || Checkpoint.IdempotencyKey.empty() ||
        Checkpoint.ActionId.empty())) {
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Operations require stable reconciliation identifiers.");
   }
-  if (RequiresRequestId(Checkpoint.Phase) &&
-      Checkpoint.RequestId.empty()) {
+  if (RequiresRequestId(Checkpoint.Phase) && Checkpoint.RequestId.empty()) {
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Dispatched checkpoints require a request identifier.");
   }
@@ -459,7 +544,8 @@ CheckpointResult<std::monostate> ValidateTurn(
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Dispatched checkpoints require a recovery context.");
   }
-  if (IsToolDispatched(Checkpoint.ToolState) &&
+  if ((Checkpoint.ToolState == ToolExecutionState::Dispatched ||
+       Checkpoint.ToolState == ToolExecutionState::UnknownOutcome) &&
       Checkpoint.Phase < TurnPhase::ProviderCompleted) {
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Tool state is inconsistent with the turn phase.");
@@ -480,8 +566,7 @@ CheckpointResult<std::monostate> ValidateTurn(
                  "Unknown operation outcomes must be isolated.");
   }
   if (Checkpoint.Phase == TurnPhase::OutcomeUnknown &&
-      (!Checkpoint.UnknownSideEffect ||
-       Checkpoint.ContextReference.empty())) {
+      (!Checkpoint.UnknownSideEffect || Checkpoint.ContextReference.empty())) {
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Unknown outcomes must preserve safe recovery context.");
   }
@@ -494,8 +579,9 @@ CheckpointResult<std::monostate> ValidateTurn(
       Checkpoint.Phase == TurnPhase::Failed ||
       Checkpoint.Phase == TurnPhase::Unsupported;
   if (HasDeterminateTerminal && HasPendingDispatch) {
-    return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
-                 "A pending dispatch cannot have a determinate terminal state.");
+    return Error(
+        CheckpointStoreErrorCode::InvalidCheckpoint,
+        "A pending dispatch cannot have a determinate terminal state.");
   }
   if (Checkpoint.UnknownSideEffect &&
       (Checkpoint.Phase == TurnPhase::Completed ||
@@ -514,7 +600,7 @@ CheckpointResult<std::monostate> ValidateScope(
     return Error(CheckpointStoreErrorCode::UnsupportedVersion,
                  "Scope checkpoint version is not supported.");
   }
-  if (!TurnCheckpointStore::IsValidIdentifier(Checkpoint.ScopeRef) ||
+  if (!IsOpaqueIdentifier(Checkpoint.ScopeRef, "scope_") ||
       Checkpoint.Revision == 0 ||
       static_cast<unsigned>(Checkpoint.State) >
           static_cast<unsigned>(ScopeState::Tombstoned)) {
@@ -530,8 +616,7 @@ CheckpointResult<std::monostate> ValidateScope(
 
 bool SameTurnState(const TurnCheckpoint& Left,
                    const TurnCheckpoint& Right) noexcept {
-  return Left.TurnId == Right.TurnId &&
-         Left.RequestId == Right.RequestId &&
+  return Left.TurnId == Right.TurnId && Left.RequestId == Right.RequestId &&
          Left.ScopeRef == Right.ScopeRef &&
          Left.ContextReference == Right.ContextReference &&
          Left.Phase == Right.Phase && Left.ToolState == Right.ToolState &&
@@ -548,13 +633,11 @@ bool CanAdvanceScope(ScopeState Previous, ScopeState Requested) noexcept {
     return true;
   }
   if (Requested == ScopeState::Tombstoned) {
-    return Previous == ScopeState::Active ||
-           Previous == ScopeState::Revoked ||
+    return Previous == ScopeState::Active || Previous == ScopeState::Revoked ||
            Previous == ScopeState::Deleted;
   }
   if (Requested == ScopeState::Deleted) {
-    return Previous == ScopeState::Active ||
-           Previous == ScopeState::Revoked;
+    return Previous == ScopeState::Active || Previous == ScopeState::Revoked;
   }
   if (Requested == ScopeState::Revoked) {
     return Previous == ScopeState::Active;
@@ -654,13 +737,12 @@ CheckpointResult<std::monostate> ValidateChecksumAndSplit(
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Checkpoint checksum is malformed.");
   }
-  const std::uint64_t Expected = Checksum(
-      std::string_view(Line).substr(0, Line.size() - Fields.back().size() - 1U));
+  const std::uint64_t Expected = Checksum(std::string_view(Line).substr(
+      0, Line.size() - Fields.back().size() - 1U));
   const std::string_view ActualText = Fields.back();
   std::uint64_t Actual = 0;
-  const auto Parsed =
-      std::from_chars(ActualText.data(),
-                      ActualText.data() + ActualText.size(), Actual, 16);
+  const auto Parsed = std::from_chars(
+      ActualText.data(), ActualText.data() + ActualText.size(), Actual, 16);
   if (Parsed.ec != std::errc{} ||
       Parsed.ptr != ActualText.data() + ActualText.size() ||
       Actual != Expected) {
@@ -670,18 +752,32 @@ CheckpointResult<std::monostate> ValidateChecksumAndSplit(
   return std::monostate{};
 }
 
-// A correlation field may be filled once (empty -> value) but must never be
-// cleared or replaced on a later revision of the same turn.
+// A correlation field is stable within its request/operation cycle. Only the
+// explicit completed-tool -> new-provider -> new-prepared-operation path may
+// replace request or operation identity.
 bool StableFieldCompatible(const std::string& Previous,
                            const std::string& Requested) noexcept {
   return Previous.empty() || Previous == Requested;
 }
 
+bool AreCorrelationFieldsCompatible(const TurnCheckpoint& Previous,
+                                    const TurnCheckpoint& Requested) noexcept {
+  const bool NewProviderRequest = IsNewProviderRequest(Previous, Requested);
+  const bool NewOperationCycle = IsNewOperationCycle(Previous, Requested);
+  return (StableFieldCompatible(Previous.RequestId, Requested.RequestId) ||
+          NewProviderRequest) &&
+         StableFieldCompatible(Previous.ContextReference,
+                               Requested.ContextReference) &&
+         (NewOperationCycle ||
+          (StableFieldCompatible(Previous.OperationId, Requested.OperationId) &&
+           StableFieldCompatible(Previous.IdempotencyKey,
+                                 Requested.IdempotencyKey) &&
+           StableFieldCompatible(Previous.ActionId, Requested.ActionId)));
+}
+
 CheckpointResult<std::monostate> ParseTurnRecord(
-    const std::vector<std::string_view>& Fields,
-    CheckpointSnapshot& Snapshot) {
-  if (Fields.size() < 3U || Fields[0] != RecordPrefix ||
-      Fields[2] != "T") {
+    const std::vector<std::string_view>& Fields, CheckpointSnapshot& Snapshot) {
+  if (Fields.size() < 3U || Fields[0] != RecordPrefix || Fields[2] != "T") {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Turn checkpoint record is malformed.");
   }
@@ -691,8 +787,7 @@ CheckpointResult<std::monostate> ParseTurnRecord(
     return Error(CheckpointStoreErrorCode::UnsupportedVersion,
                  "Turn checkpoint record version is not supported.");
   }
-  if ((Legacy && Fields.size() != 12U) ||
-      (Current && Fields.size() != 16U)) {
+  if ((Legacy && Fields.size() != 12U) || (Current && Fields.size() != 16U)) {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Turn checkpoint record is malformed.");
   }
@@ -703,8 +798,7 @@ CheckpointResult<std::monostate> ParseTurnRecord(
   Checkpoint.ContextReference = std::string(Fields[6]);
   const auto Phase = ParseTurnPhase(Fields[7]);
   const auto ToolState = ParseToolState(Fields[8]);
-  const auto UpdatedAt =
-      FromMilliseconds(Fields[Current ? 14U : 10U]);
+  const auto UpdatedAt = FromMilliseconds(Fields[Current ? 14U : 10U]);
   const auto Revision = ParseUnsigned(Fields[Current ? 15U : 11U]);
   std::optional<OperationState> Operation = OperationState::None;
   if (Current) {
@@ -713,9 +807,8 @@ CheckpointResult<std::monostate> ParseTurnRecord(
     Checkpoint.IdempotencyKey = std::string(Fields[12]);
     Checkpoint.ActionId = std::string(Fields[13]);
   }
-  if (!Phase.has_value() || !ToolState.has_value() ||
-      !Operation.has_value() || !UpdatedAt.has_value() ||
-      !Revision.has_value() ||
+  if (!Phase.has_value() || !ToolState.has_value() || !Operation.has_value() ||
+      !UpdatedAt.has_value() || !Revision.has_value() ||
       (Fields[9] != "0" && Fields[9] != "1")) {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Turn checkpoint fields are corrupt.");
@@ -738,20 +831,17 @@ CheckpointResult<std::monostate> ParseTurnRecord(
     if (Previous.ScopeRef != Checkpoint.ScopeRef ||
         Checkpoint.Revision != Previous.Revision + 1U ||
         !CanAdvanceTurn(Previous.Phase, Checkpoint.Phase) ||
-        !CanAdvanceOperation(Previous.Operation, Checkpoint.Operation) ||
+        !CanAdvanceToolState(Previous, Checkpoint) ||
+        !CanAdvanceOperation(Previous, Checkpoint) ||
         (Previous.UnknownSideEffect && !Checkpoint.UnknownSideEffect) ||
-        !StableFieldCompatible(Previous.RequestId, Checkpoint.RequestId) ||
-        !StableFieldCompatible(Previous.ContextReference,
-                               Checkpoint.ContextReference) ||
-        !StableFieldCompatible(Previous.OperationId,
-                               Checkpoint.OperationId) ||
-        !StableFieldCompatible(Previous.IdempotencyKey,
-                               Checkpoint.IdempotencyKey) ||
-        !StableFieldCompatible(Previous.ActionId, Checkpoint.ActionId)) {
+        !AreCorrelationFieldsCompatible(Previous, Checkpoint)) {
       return Error(CheckpointStoreErrorCode::CorruptRecord,
                    "Turn checkpoint revision history is corrupt.");
     }
-  } else if (Checkpoint.Revision != 1U) {
+  } else if (Checkpoint.Revision != 1U ||
+             !HasValidInitialTurnState(Checkpoint) ||
+             (Checkpoint.Phase != TurnPhase::Created &&
+              Checkpoint.Phase != TurnPhase::ReadyToDispatch)) {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Initial turn checkpoint revision is corrupt.");
   }
@@ -760,10 +850,8 @@ CheckpointResult<std::monostate> ParseTurnRecord(
 }
 
 CheckpointResult<std::monostate> ParseScopeRecord(
-    const std::vector<std::string_view>& Fields,
-    CheckpointSnapshot& Snapshot) {
-  if (Fields.size() != 7U || Fields[0] != RecordPrefix ||
-      Fields[2] != "S") {
+    const std::vector<std::string_view>& Fields, CheckpointSnapshot& Snapshot) {
+  if (Fields.size() != 7U || Fields[0] != RecordPrefix || Fields[2] != "S") {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Scope checkpoint record is malformed.");
   }
@@ -776,8 +864,7 @@ CheckpointResult<std::monostate> ParseScopeRecord(
   const auto State = ParseScopeState(Fields[4]);
   const auto UpdatedAt = FromMilliseconds(Fields[5]);
   const auto Revision = ParseUnsigned(Fields[6]);
-  if (!State.has_value() || !UpdatedAt.has_value() ||
-      !Revision.has_value()) {
+  if (!State.has_value() || !UpdatedAt.has_value() || !Revision.has_value()) {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Scope checkpoint fields are corrupt.");
   }
@@ -806,8 +893,8 @@ CheckpointResult<std::monostate> ParseScopeRecord(
   return std::monostate{};
 }
 
-CheckpointResult<std::monostate> ParseRecord(
-    const std::string& Line, CheckpointSnapshot& Snapshot) {
+CheckpointResult<std::monostate> ParseRecord(const std::string& Line,
+                                             CheckpointSnapshot& Snapshot) {
   if (Line.empty() || Line.size() > MaximumRecordBytes) {
     return Error(CheckpointStoreErrorCode::CorruptRecord,
                  "Checkpoint record size is invalid.");
@@ -815,8 +902,7 @@ CheckpointResult<std::monostate> ParseRecord(
   std::vector<std::string_view> Fields;
   const CheckpointResult<std::monostate> ChecksumResult =
       ValidateChecksumAndSplit(Line, Fields);
-  if (const auto* Failure =
-          std::get_if<CheckpointStoreError>(&ChecksumResult);
+  if (const auto* Failure = std::get_if<CheckpointStoreError>(&ChecksumResult);
       Failure != nullptr) {
     return *Failure;
   }
@@ -831,8 +917,8 @@ CheckpointResult<std::monostate> ParseRecord(
                "Checkpoint record kind is unsupported.");
 }
 
-CheckpointResult<std::monostate> AppendLine(
-    const std::filesystem::path& Path, std::string_view Line) {
+CheckpointResult<std::monostate> AppendLine(const std::filesystem::path& Path,
+                                            std::string_view Line) {
   std::error_code DirectoryError;
   if (Path.has_parent_path()) {
     std::filesystem::create_directories(Path.parent_path(), DirectoryError);
@@ -855,33 +941,20 @@ CheckpointResult<std::monostate> AppendLine(
   return std::monostate{};
 }
 
-} // namespace
+}  // namespace
 
 TurnCheckpointStore::TurnCheckpointStore(std::filesystem::path FilePath)
     : Path(std::move(FilePath)) {}
 
 bool TurnCheckpointStore::IsValidIdentifier(
     std::string_view Identifier) noexcept {
-  if (Identifier.empty() ||
-      Identifier.size() > MaximumIdentifierBytes) {
-    return false;
-  }
-  const auto First =
-      static_cast<unsigned char>(Identifier.front());
-  if (!((First >= static_cast<unsigned char>('a') &&
-         First <= static_cast<unsigned char>('z')) ||
-        (First >= static_cast<unsigned char>('A') &&
-         First <= static_cast<unsigned char>('Z')) ||
-        (First >= static_cast<unsigned char>('0') &&
-         First <= static_cast<unsigned char>('9')))) {
-    return false;
-  }
-  for (const char Character : Identifier) {
-    if (!IsContinueCharacter(static_cast<unsigned char>(Character))) {
-      return false;
-    }
-  }
-  return true;
+  return IsOpaqueIdentifier(Identifier, "turn_") ||
+         IsOpaqueIdentifier(Identifier, "request_") ||
+         IsOpaqueIdentifier(Identifier, "scope_") ||
+         IsOpaqueIdentifier(Identifier, "context_") ||
+         IsOpaqueIdentifier(Identifier, "operation_") ||
+         IsOpaqueIdentifier(Identifier, "idem_") ||
+         IsOpaqueIdentifier(Identifier, "action_");
 }
 
 bool TurnCheckpointStore::IsTerminal(TurnPhase Phase) noexcept {
@@ -897,27 +970,27 @@ bool TurnCheckpointStore::ContainsForbiddenContent(
 
 CheckpointResult<std::monostate> TurnCheckpointStore::Append(
     const TurnCheckpoint& Checkpoint) {
-  const CheckpointResult<std::monostate> Validation =
-      ValidateTurn(Checkpoint);
-  if (const auto* Failure =
-          std::get_if<CheckpointStoreError>(&Validation);
+  const CheckpointResult<std::monostate> Validation = ValidateTurn(Checkpoint);
+  if (const auto* Failure = std::get_if<CheckpointStoreError>(&Validation);
       Failure != nullptr) {
     return *Failure;
   }
   const std::lock_guard<std::mutex> Lock(Mutex);
   const CheckpointResult<CheckpointSnapshot> Loaded = LoadUnlocked();
-  if (const auto* Failure =
-          std::get_if<CheckpointStoreError>(&Loaded);
+  if (const auto* Failure = std::get_if<CheckpointStoreError>(&Loaded);
       Failure != nullptr) {
     return *Failure;
   }
-  const CheckpointSnapshot& Snapshot =
-      std::get<CheckpointSnapshot>(Loaded);
+  const CheckpointSnapshot& Snapshot = std::get<CheckpointSnapshot>(Loaded);
   const auto Existing = Snapshot.LatestByTurn.find(Checkpoint.TurnId);
   if (Existing == Snapshot.LatestByTurn.end()) {
     if (Checkpoint.Revision != 1U) {
       return Error(CheckpointStoreErrorCode::InvalidTransition,
                    "A new checkpoint must start at revision one.");
+    }
+    if (!HasValidInitialTurnState(Checkpoint)) {
+      return Error(CheckpointStoreErrorCode::InvalidTransition,
+                   "A new checkpoint must start without pending side effects.");
     }
     if (Checkpoint.Phase != TurnPhase::Created &&
         Checkpoint.Phase != TurnPhase::ReadyToDispatch) {
@@ -934,14 +1007,7 @@ CheckpointResult<std::monostate> TurnCheckpointStore::Append(
       return Error(CheckpointStoreErrorCode::InvalidTransition,
                    "Checkpoint identity or revision is invalid.");
     }
-    if (!StableFieldCompatible(Previous.RequestId, Checkpoint.RequestId) ||
-        !StableFieldCompatible(Previous.ContextReference,
-                               Checkpoint.ContextReference) ||
-        !StableFieldCompatible(Previous.OperationId,
-                               Checkpoint.OperationId) ||
-        !StableFieldCompatible(Previous.IdempotencyKey,
-                               Checkpoint.IdempotencyKey) ||
-        !StableFieldCompatible(Previous.ActionId, Checkpoint.ActionId)) {
+    if (!AreCorrelationFieldsCompatible(Previous, Checkpoint)) {
       return Error(CheckpointStoreErrorCode::InvalidTransition,
                    "Checkpoint correlation identifiers drifted.");
     }
@@ -954,15 +1020,18 @@ CheckpointResult<std::monostate> TurnCheckpointStore::Append(
       return Error(CheckpointStoreErrorCode::InvalidTransition,
                    "Turn phase transition is invalid.");
     }
-    if (!CanAdvanceOperation(Previous.Operation, Checkpoint.Operation)) {
+    if (!CanAdvanceToolState(Previous, Checkpoint)) {
+      return Error(CheckpointStoreErrorCode::InvalidTransition,
+                   "Tool execution state transition is invalid.");
+    }
+    if (!CanAdvanceOperation(Previous, Checkpoint)) {
       return Error(CheckpointStoreErrorCode::InvalidTransition,
                    "Operation state transition is invalid.");
     }
   }
   const CheckpointResult<std::monostate> Persisted =
       AppendLine(Path, EncodeTurn(Checkpoint));
-  if (const auto* Failure =
-          std::get_if<CheckpointStoreError>(&Persisted);
+  if (const auto* Failure = std::get_if<CheckpointStoreError>(&Persisted);
       Failure != nullptr) {
     return *Failure;
   }
@@ -971,24 +1040,19 @@ CheckpointResult<std::monostate> TurnCheckpointStore::Append(
 
 CheckpointResult<std::monostate> TurnCheckpointStore::MarkScope(
     const ScopeCheckpoint& Checkpoint) {
-  const CheckpointResult<std::monostate> Validation =
-      ValidateScope(Checkpoint);
-  if (const auto* Failure =
-          std::get_if<CheckpointStoreError>(&Validation);
+  const CheckpointResult<std::monostate> Validation = ValidateScope(Checkpoint);
+  if (const auto* Failure = std::get_if<CheckpointStoreError>(&Validation);
       Failure != nullptr) {
     return *Failure;
   }
   const std::lock_guard<std::mutex> Lock(Mutex);
   const CheckpointResult<CheckpointSnapshot> Loaded = LoadUnlocked();
-  if (const auto* Failure =
-          std::get_if<CheckpointStoreError>(&Loaded);
+  if (const auto* Failure = std::get_if<CheckpointStoreError>(&Loaded);
       Failure != nullptr) {
     return *Failure;
   }
-  const CheckpointSnapshot& Snapshot =
-      std::get<CheckpointSnapshot>(Loaded);
-  const auto Existing =
-      Snapshot.LatestScopeById.find(Checkpoint.ScopeRef);
+  const CheckpointSnapshot& Snapshot = std::get<CheckpointSnapshot>(Loaded);
+  const auto Existing = Snapshot.LatestScopeById.find(Checkpoint.ScopeRef);
   if (Existing == Snapshot.LatestScopeById.end()) {
     if (Checkpoint.Revision != 1U) {
       return Error(CheckpointStoreErrorCode::InvalidTransition,
@@ -1019,8 +1083,7 @@ CheckpointResult<CheckpointSnapshot> TurnCheckpointStore::Load() const {
   return LoadUnlocked();
 }
 
-CheckpointResult<CheckpointSnapshot> TurnCheckpointStore::LoadUnlocked()
-    const {
+CheckpointResult<CheckpointSnapshot> TurnCheckpointStore::LoadUnlocked() const {
   CheckpointSnapshot Snapshot;
   std::error_code ExistsError;
   const bool Exists = std::filesystem::exists(Path, ExistsError);
@@ -1055,15 +1118,12 @@ CheckpointResult<CheckpointSnapshot> TurnCheckpointStore::LoadUnlocked()
       return Error(CheckpointStoreErrorCode::IoFailure,
                    "Checkpoint file could not be read.");
     }
-    const CheckpointResult<std::monostate> Parsed =
-        ParseRecord(Line, Snapshot);
-    if (const auto* Failure =
-            std::get_if<CheckpointStoreError>(&Parsed);
+    const CheckpointResult<std::monostate> Parsed = ParseRecord(Line, Snapshot);
+    if (const auto* Failure = std::get_if<CheckpointStoreError>(&Parsed);
         Failure != nullptr) {
       return *Failure;
     }
-    if (Snapshot.RecordCount ==
-        std::numeric_limits<std::uint64_t>::max()) {
+    if (Snapshot.RecordCount == std::numeric_limits<std::uint64_t>::max()) {
       return Error(CheckpointStoreErrorCode::CorruptRecord,
                    "Checkpoint record count overflowed.");
     }
@@ -1072,4 +1132,4 @@ CheckpointResult<CheckpointSnapshot> TurnCheckpointStore::LoadUnlocked()
   return Snapshot;
 }
 
-} // namespace EmulativeDialog::Storage
+}  // namespace EmulativeDialog::Storage
