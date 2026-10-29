@@ -2501,9 +2501,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Ready
+    State: Assigned
     TaskSpecChangeRequestId: CR-ED-0112-009
-    TaskSpecReviewStatus: ApprovedPendingMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
     TaskSpecOwnerReviewHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
@@ -2523,10 +2523,10 @@ Tasks:
     CodeReviewHeadCommit: 301e628899fad80be1faad15e3bcc52aa49ce0f5
     CodeReviewerAgentId: /root/worker06_acceptance_audit
     CodeReviewFindingIds: []
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: d47a4a45caa8857e0baec278b56b7b9bd9404817
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
-    AssignedToSlot: ""
-    AssignmentNote: "R8 is a validation-only revision. After its TaskSpec/CR is approved and merged, Coordinator must run WorkflowController assignment validation and merge an assignment-ledger PR before any acceptance build/CTest/coverage. Keep the existing eight-path implementation branch/worktree and baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Then use only the previously absent R8 build directory, preserve all R7 outputs, and do not edit product source during validation."
+    AssignedToSlot: Worker02
+    AssignmentNote: "PR #35 merged the approved R8 validation-only TaskSpec/CR to main at d47a4a45caa8857e0baec278b56b7b9bd9404817. Coordinator validated this assignment against the frozen R8 spec. After this assignment-ledger PR merges, Worker02 may run only the Windows C++20 configure, targeted build, selected CTest, and per-source gcov validation for implementation Head 301e628899fad80be1faad15e3bcc52aa49ce0f5 in the previously absent R8 build directory. Preserve all R7 outputs; do not edit product source during validation. Worker06 is the independent acceptance reviewer. Keep the existing eight-path implementation branch/worktree and product baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc."
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
