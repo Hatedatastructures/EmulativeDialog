@@ -68,8 +68,8 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0147/R7-EndpointGrantAuthority
+    Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/luna03_ed0114_branch_review"

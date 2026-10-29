@@ -2031,7 +2031,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Ready
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0120-005
     CorrectiveToTaskId: ED-0120
@@ -2116,11 +2116,11 @@ Tasks:
       IndependentReviewerDecision: RequestChanges
       IndependentReviewerFindingIds: [ED0147-R5-F001]
       Reason: "Owner and Independent Reviewer found that R5 loaded LastTest.log into TestLogLines but checked checksum/overwrite warnings through an unassigned TestLogText variable. R6 derives TestLogText from the loaded lines before warning detection."
-    BaselineCommit: ""
-    Branch: ""
-    Worktree: ""
-    AssignedToSlot: ""
-    AssignmentNote: "R7 is awaiting fixed-head Owner and independent Reviewer approval and TaskSpec PR merge. Do not create an implementation branch or worktree before that gate. After R7 merges, record the current main BaseCommit and isolated worktree in a separate assignment ledger; verify the assigned stable AgentIds against the current AgentPool. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
+    BaselineCommit: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
+    Branch: Task/ED-0147-CoreEndpointGrantAuthorityR7
+    Worktree: H:/Qbot/EmulativeDialog.ED-0147
+    AssignedToSlot: Worker02
+    AssignmentNote: "R7 TaskSpec PR #39 is merged. Assignment ledger binds Worker02 /root/luna02_ed0148_pr_ready to Base 269379817d7f51082b16ae2d0ded1ccedd2a54b7 on branch Task/ED-0147-CoreEndpointGrantAuthorityR7 and isolated worktree H:/Qbot/EmulativeDialog.ED-0147; Worker04 /root/luna04_ed0144_branch_review remains the fixed independent Reviewer. Product writes start only after this assignment ledger merges. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"

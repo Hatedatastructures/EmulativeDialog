@@ -243,3 +243,10 @@
 - PR #39 merged to `main` by squash at `bc280f05216821984e1bbb750006803832f50b56`; its remote task branch was deleted. Remote branch count returned to 2/4: `main` and `Task/ED-0144-MemorySqliteAdapter`.
 - ED-0147/R7 TaskSpec semantic Head `20ed3b35a30f945d69368a6df89c33b6e7e4102d` was approved by Worker02 Owner and Worker04 independent Reviewer; Worker06 approved the final governance PR Head `551973d72e5bd696af7cfd225560ab2808161f73`.
 - Product TaskSpec is now merged. The closeout candidate records the merge SHA and Proposed → Ready transition; the Controller readiness query already passed with `State=Ready`, exit 0, duration 147 ms, and output at `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R7-TaskSpecCloseout/Reports/TaskReadinessQuery.txt`. No implementation branch/worktree is assigned yet, no C++ product source changed, and P3 EntryGate remains Pending.
+
+## 2026-10-29 ED-0147/R7 implementation assignment candidate
+
+- The current main baseline is 269379817d7f51082b16ae2d0ded1ccedd2a54b7. WorkflowController validate-assignment accepted Owner /root/luna02_ed0148_pr_ready, branch Task/ED-0147-CoreEndpointGrantAuthorityR7, and the frozen validation worktree path H:/Qbot/EmulativeDialog.ED-0147; exit code 0, duration 1008 ms on the assigned candidate; the query and validation outputs are in H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R7-Assignment/Reports/CandidateAssignmentVerification.txt.
+- The TaskSpec is already on main from PR #39 at bc280f05216821984e1bbb750006803832f50b56. The assignment candidate binds the existing six-path WriteSet without changing Goal, ReadSet, dependencies, Acceptance, Validation, Owner, or Reviewer.
+- The isolated implementation worktree does not yet exist. No ED-0147 product C++ has been written; this assignment becomes active only after its governance PR merges.
+- P3 EntryGate remains Pending. Remote branches were main plus open PR #25 at assignment preparation; the four-branch limit remains in effect.
