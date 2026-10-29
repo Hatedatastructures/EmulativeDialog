@@ -53,7 +53,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0112/R6-TurnRecovery
+    CurrentTaskId: ED-0112/R7-TurnRecoveryValidation
     Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
@@ -85,7 +85,7 @@ Slots:
       - ProviderAnthropicMessages
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0148/R4-ConsentMatching
+    CurrentTaskId: ED-0148/R5-ConsentMatchingValidation
     Status: Assigned
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
@@ -180,7 +180,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker05
     AgentId: /root/worker05_ed0144_memory
     ModuleId: Memory
-    State: Active
+    State: Completed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Source/Memory/ConversationMemory.cpp
