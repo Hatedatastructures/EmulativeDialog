@@ -1566,6 +1566,189 @@ ChangeRequests:
     CoordinatorDecisionHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
     PreserveGoalAcceptanceReadSetWriteSetForbiddenSetContractsDependenciesOwnerReviewer: true
     NoProductSourceWriteAuthorizedBeforeMerge: true
+
+  - ChangeRequestId: CR-ED-0120-008
+    TargetTaskId: ED-0120
+    TargetTaskRevision: 3
+    ProposedTaskId: ED-0120
+    ProposedTaskRevision: 4
+    TaskRevisionTransition: {FromRevision: 3, ToRevision: 4}
+    RequestedByRole: NetworkOwner
+    RequestedByAgentId: /root/luna01_ed0112_r8_audit
+    OwnerAgentId: /root/luna01_ed0112_r8_audit
+    ProposedOwnerSlotId: Worker01
+    ProposedOwnerRole: NetworkOwner
+    IndependentReviewerAgentId: /root/luna06_capability_status_audit
+    ProposedReviewerSlotId: Worker06
+    ProposedReviewerRole: IndependentReviewer
+    ReviewerIndependence: Required
+    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    ProposedTaskSpecBaseCommit: a4eeec277c37876ef314aaca4df206f2fb2a8fce
+    ProposedTaskKind: ContractFreeze
+    ProposedEpicId: EP-06
+    ProposedPhase: P2
+    ProposedTitle: 统一 HTTPS transport grant 日志规则并校准合同状态
+    ProposedModuleIds: [NetworkPlatform, Core]
+    ProposedBranch: Task/ED-0120-R4ContractCloseout
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout
+    ProposedTaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build
+    ProposedEvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4
+    Reason: >-
+      ED-0120/R3 froze BaselineCommit at the PR #49 merge commit
+      04e9aac141e3bf2233e556f0fd44e2da4c068b59. The assigned R3 branch was
+      subsequently fast-forwarded to main at a4eeec277c37876ef314aaca4df206f2fb2a8fce.
+      A literal BaselineCommit-to-Head changed-path check therefore counts three
+      already-in-main paths outside the six-path task WriteSet:
+      Workflow/AgentPool.yaml, Workflow/Events/CodexRewrite/P3.jsonl, and
+      Workflow/Plans/P3.yaml. Those paths are inherited main history, not R3
+      task changes; counting them as R3 edits falsely fails AC-5 and makes the
+      unchanged P3 boundary appear violated under AC-8. The old six-path draft
+      must be preserved and migrated to the successor revision only after this
+      CR is accepted and the successor assignment is validated.
+    Scope: >-
+      Create ED-0120/R4 solely to separate immutable task-baseline provenance
+      from the PR changed-path validation base. Preserve the existing Goal, scope,
+      safety/security boundaries, ModuleIds, ReadSet, exact six-path product
+      plus governance WriteSet, ForbiddenSet, dependencies, ContractVersion,
+      shared locks, risk, Owner Worker01/NetworkOwner, Reviewer
+      Worker06/IndependentReviewer, and AC-1 through AC-4 and AC-6 through
+      AC-8. Preserve AC-5's exact six-path requirement, but evaluate it against
+      the exact fixed PR BaseCommit-to-HeadCommit diff so inherited commits
+      already on main are not counted as task edits. Do not change any product
+      API, contract behavior, logging/security rule, wire behavior, implementation
+      scope, or P3 gate.
+    ProposedBaselineCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
+    ProposedPRBaseCommit: a4eeec277c37876ef314aaca4df206f2fb2a8fce
+    ProposedBaselinePolicy: >-
+      Preserve the original R3 TaskSpecMergedToMainCommit and BaselineCommit
+      values in the immutable R3 history. For the successor R4 task record, set
+      TaskSpecMergedToMainCommit to the exact main merge commit containing the
+      accepted R4 TaskSpec, while keeping BaselineCommit fixed at
+      04e9aac141e3bf2233e556f0fd44e2da4c068b59 as the source-provenance baseline.
+      Do not use the R4 TaskSpec merge commit to rebind BaselineCommit. Validate
+      the assigned R4 task using the preserved BaselineCommit. The observed
+      a4eeec277c37876ef314aaca4df206f2fb2a8fce is the main commit at this CR
+      proposal base, not the final product PRBaseCommit. After the R4 TaskSpec
+      merges and before product PR review, IntegrationOwner records the exact
+      current main PRBaseCommit and fast-forwards the task branch to it,
+      preserving the R3 draft until migration is checked.
+    ProposedPRBaseAndValidationDiffPolicy: >-
+      Keep the immutable task BaselineCommit and PRBaseCommit as separate
+      recorded commits. For a product PR, PRBaseCommit must equal the exact
+      GitHub base.sha for base.ref=main at fixed-Head review; record it with
+      HeadCommit. a4eeec277c37876ef314aaca4df206f2fb2a8fce is only the observed
+      main candidate at this CR proposal base. After the R4 TaskSpec merge, bind
+      PRBaseCommit to the exact then-current origin/main commit used as the
+      product PR base; that commit must contain the R4 TaskSpec merge. At fixed
+      product PR review, PRBaseCommit must equal GitHub base.sha for base.ref=main.
+      Freeze that actual Base/Head pair for independent review. AC-5 WriteSet and
+      git diff checks use the GitHub PR three-dot diff PRBaseCommit...HeadCommit,
+      not BaselineCommit...HeadCommit.
+      Require BaselineCommit to be an ancestor of PRBaseCommit and PRBaseCommit
+      to be an ancestor of HeadCommit; if either check fails, stop for
+      IntegrationOwner resolution. Audit and record BaselineCommit...PRBaseCommit
+      as inherited main history, including its exact changed-path list; those
+      paths are not counted as this PR's changed paths. This policy keeps the
+      accepted six-path WriteSet as the sole authorization boundary.
+    ProposedTaskSpecPreservation:
+      PreserveGoal: true
+      PreserveScopeAndSecurityBoundaries: true
+      PreserveModuleIds: true
+      PreserveReadSet: true
+      PreserveWriteSet: true
+      PreserveForbiddenSet: true
+      PreserveDependencies: true
+      PreserveContractVersionAndSharedLocks: true
+      PreserveOwnerAndReviewer: true
+      PreserveAcceptanceIds: [AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8]
+      PreserveRiskAndNoLiveSideEffects: true
+      ChangedAcceptanceEvidence:
+        AcceptanceId: AC-5
+        Description: "No API, C++ source, test, wire behavior, security decision, or contract version changes; paths in the fixed GitHub PR diff from PRBaseCommit to HeadCommit equal the six-path ProductWriteSet union GovernanceWriteSet."
+        Evidence: "GitHub PR base.ref/base.sha/head.sha plus git diff --name-status PRBaseCommit...HeadCommit and exact six-path comparison."
+    ProposedProductWriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+    ProposedGovernanceWriteSet:
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    ProposedWriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    ProposedTaskRevisionHandoff:
+      PreserveCurrentR3Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout
+      PreserveCurrentR3Branch: Task/ED-0120-R3ContractCloseout
+      CurrentR3UncommittedPathCount: 6
+      Rules:
+        - "Do not edit, stage, commit, reset, clean, or remove the current R3 worktree while this proposal is under review."
+        - "After CR acceptance/merge, Coordinator records that exact merge commit as R4 TaskSpecMergedToMainCommit, preserves R3 TaskSpecMergedToMainCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59 in R3 history, keeps R4 BaselineCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59, transitions/supersedes R3 through append-only governance events, recovers and reassigns the same Worker01/Worker06 slots, and obtains AssignmentAccepted for R4 using that preserved baseline."
+        - "Create a fresh R4 branch/worktree from the preserved task baseline. After the R4 TaskSpec merge, IntegrationOwner records the exact current main PRBaseCommit (which includes that merge) and fast-forwards the R4 branch to it before fixed-head path validation. Only then migrate the preserved three product-document drafts and three coordinator-owned governance changes from the R3 candidate, reconcile P2 conflicts as IntegrationOwner, and verify the R4 PR diff against PRBaseCommit. Retain the R3 worktree until migration and path validation pass."
+        - "No R4 TaskStarted, product write, or implementation validation is authorized before the R4 TaskSpec merge and fresh assignment validation."
+    ProposedValidation:
+      Mode: DocumentationAndGovernanceOnly
+      BuildRequired: false
+      RequiredTargets: []
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "The preserved ProductWriteSet contains Markdown ADR/contracts only and no production C++ source or tests."
+        ProductionSources: []
+        MinimumLinePercent: 80
+        ReportDirectory: ""
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r4
+      TaskBaselineBinding: "Preserve R3 TaskSpecMergedToMainCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59 in R3 history; for R4, record the exact R4 TaskSpec merge commit as TaskSpecMergedToMainCommit while keeping BaselineCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59. Controller assignment continues to use BaselineCommit."
+      PRBaseCommitBinding: "The observed pre-CR candidate main commit is a4eeec277c37876ef314aaca4df206f2fb2a8fce. After the R4 TaskSpec merge, bind PRBaseCommit to the exact current main commit that contains that merge and is used as the product PR base. At fixed-head review it must equal GitHub base.sha for base.ref=main; record it with HeadCommit and use it only for PR diff/path validation."
+      PowerShellBinding: "Bind $TASK_BASELINE_COMMIT, $PR_BASE_COMMIT, $HEAD_COMMIT, and $RepositoryRoot once in one PowerShell session. PR_BASE_COMMIT is the exact GitHub base.sha; do not substitute the task baseline or wrap scripts in a second powershell -Command."
+      BaselineAncestryCommand: "git -C $RepositoryRoot merge-base --is-ancestor $TASK_BASELINE_COMMIT $PR_BASE_COMMIT; if ($LASTEXITCODE -ne 0) { throw 'Task baseline is not an ancestor of fixed PR base; stop for integration review' }; git -C $RepositoryRoot merge-base --is-ancestor $PR_BASE_COMMIT $HEAD_COMMIT; if ($LASTEXITCODE -ne 0) { throw 'Fixed PR base is not an ancestor of HeadCommit; stop for integration review' }"
+      InheritedMainAuditCommand: "git -C $RepositoryRoot diff --name-status ($TASK_BASELINE_COMMIT + '...' + $PR_BASE_COMMIT)"
+      DiffCheckCommand: "git -C $RepositoryRoot diff --check ($PR_BASE_COMMIT + '...' + $HEAD_COMMIT)"
+      ChangedPathCommand: "git -C $RepositoryRoot diff --name-only ($PR_BASE_COMMIT + '...' + $HEAD_COMMIT)"
+      ControllerCommands:
+        - "After accepted R4 TaskSpec is materialized: WorkflowController query $RepositoryRoot P2 ED-0120 4"
+        - "After accepted R4 TaskSpec is materialized: WorkflowController validate-assignment $RepositoryRoot P2 ED-0120 4 /root/luna01_ed0112_r8_audit Task/ED-0120-R4ContractCloseout H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R4ContractCloseout $TASK_BASELINE_COMMIT"
+      StaticChecks:
+        - "Before CR acceptance, WorkflowController can parse P2 and query the still-materialized R3 task; it cannot validate proposed R4 until Coordinator materializes the accepted R4 TaskSpec and assignment fields."
+        - "R4 preserves BaselineCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59 as task source lineage; R4 TaskSpecMergedToMainCommit is the exact CR/R4 TaskSpec merge commit and is not substituted for BaselineCommit."
+        - "After the R4 TaskSpec merge, PRBaseCommit is the current main base that contains TaskSpecMergedToMainCommit. At fixed PR Head it equals GitHub base.sha for base.ref=main and is a descendant of BaselineCommit; HeadCommit is a descendant of PRBaseCommit. Any ancestry failure stops review."
+        - "BaselineCommit...PRBaseCommit is separately audited and its complete inherited-main changed-path list is recorded; the three inherited AgentPool/P3 paths are explicitly not R4 task edits."
+        - "Changed paths are computed from PRBaseCommit...HeadCommit and equal exactly the six-path ProposedWriteSet; no path outside that set is allowed."
+        - "git diff --check uses PRBaseCommit...HeadCommit and exits zero."
+        - "P2 JSONL parses with unique EventIds and preserves the identical PRBaseCommit prefix; inherited baseline history is not counted as the PR append set."
+        - "P3 plan/event paths are absent from the fixed PR diff and P3 EntryGate remains Pending; copies already reachable from PRBaseCommit are not treated as R4 changes."
+      LiveSideEffects: Forbidden
+      NotRunReason: "This CR is a TaskSpec proposal. No product worktree is created, no product document is migrated, and no product build/test or external product side effect is run before approval, merge, and fresh R4 assignment."
+    ProposedCompatibilityAndSecurityImpact: >-
+      No product API, protocol, runtime, logging, credential, private-chat-data,
+      endpoint-grant, wire, or external-side-effect behavior changes. This CR
+      preserves the original task-baseline provenance and adds a separate
+      PRBaseCommit plus inherited-main audit for changed-path validation. It
+      preserves all six authorized paths and every product/security boundary.
+    ProposedRollbackPlan: >-
+      If owner/reviewer approval fails or the CR is rejected, do not merge it,
+      do not start R4, and leave the current R3 worktree/branch and all six
+      uncommitted paths intact. If the CR merges but Controller assignment or
+      fixed-base path checks fail, preserve both R3 and R4 artifacts, stop
+      product edits, record the exact failed check, and submit another CR before
+      migrating or deleting any worktree. Never reset, clean, or discard the R3
+      candidate.
+    EvidenceRefs:
+      - Workflow/TaskLifecycle.md#Section=TaskRecordsAndImmutability
+      - Workflow/Plans/P2.yaml#TaskId=ED-0120&TaskRevision=3
+      - Workflow/Plans/P2.yaml#CR-ED-0120-007&Decision=Accepted
+      - Workflow/Plans/P2.yaml#TaskId=ED-0120&TaskRevision=3&TaskSpecMergedToMainCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59
+      - "R3-current-main-validation-snapshot: main=a4eeec277c37876ef314aaca4df206f2fb2a8fce; git diff --name-only 04e9aac141e3bf2233e556f0fd44e2da4c068b59...a4eeec277c37876ef314aaca4df206f2fb2a8fce includes Workflow/AgentPool.yaml, Workflow/CurrentState.md, Workflow/Events/CodexRewrite/P2.jsonl, Workflow/Events/CodexRewrite/P3.jsonl, Workflow/Plans/P2.yaml, Workflow/Plans/P3.yaml. The three out-of-WriteSet paths are already in main."
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout
+      - https://github.com/Hatedatastructures/EmulativeDialog/commit/04e9aac141e3bf2233e556f0fd44e2da4c068b59
+      - https://github.com/Hatedatastructures/EmulativeDialog/commit/a4eeec277c37876ef314aaca4df206f2fb2a8fce
+    NoProductWriteAuthorizedBeforeMerge: true
+
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
