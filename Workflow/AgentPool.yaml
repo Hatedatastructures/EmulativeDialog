@@ -56,8 +56,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0120/R3-GrantLoggingContractFreeze
+    Status: Assigned
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/luna02_ed0148_pr_ready"
@@ -109,8 +109,8 @@ Slots:
     ReasoningEffort: max
     HostSessionRef: "/root/luna06_capability_status_audit"
     ModuleIds: []
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0120/R3-ContractReview
+    Status: Assigned
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。
@@ -204,3 +204,34 @@ TaskScopedModuleAuthorizations:
       - PreserveExactTwoPathTaskWriteSet
       - NoCoreSqliteProviderChannelOrRootCMakeChanges
       - ProposalIdOptionalValuesMustMatchExactly
+  - ChangeRequestId: CR-ED-0120-007
+    TaskId: ED-0120
+    TaskRevision: 3
+    SlotId: Worker01
+    AgentId: /root/luna01_ed0112_r8_audit
+    ModuleId: NetworkPlatform
+    State: Active
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge, AssignmentLedgerMerge]
+    AllowedPaths:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+    Restrictions:
+      - DocumentationAndContractStatusOnly
+      - NoCppSourceOrTestAuthorization
+      - PreserveAcceptedSixPathTaskWriteSet
+      - KeepP3EntryGatePending
+  - ChangeRequestId: CR-ED-0120-007
+    TaskId: ED-0120
+    TaskRevision: 3
+    SlotId: Worker01
+    AgentId: /root/luna01_ed0112_r8_audit
+    ModuleId: Core
+    State: Active
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge, AssignmentLedgerMerge]
+    AllowedPaths:
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+    Restrictions:
+      - DocumentationAndContractStatusOnly
+      - NoCppSourceOrTestAuthorization
+      - PreserveAcceptedSixPathTaskWriteSet
+      - KeepP3EntryGatePending
