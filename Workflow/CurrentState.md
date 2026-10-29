@@ -256,7 +256,8 @@
 
 - 远端 main 基线为 `62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9`。PR #41 已合并，远端当前只有 main 和 ED-0144/R2 的 PR #25 两条分支。
 - ED-0147/R7 已在 `H:/Qbot/EmulativeDialog.ED-0147` 的 `Task/ED-0147-CoreEndpointGrantAuthorityR7` 上写出冻结六路径的真实 C++ 实现、合同、模块依赖和行为测试。产品改动仍在本地未提交；目前尚无 ED-0147 产品 PR。
-- R7 实际验证目录是 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core`。Configure 退出 0；首轮目标构建退出 2（修复测试夹具后重建退出 0）；首轮 CTest 退出 8，10/11 断言通过，并报告 libgcov checksum overwrite；修正 URL 转义断言后的诊断 CTest 退出 0、1/1 通过。此后又加入测试，尚未在该目录运行；覆盖率命令未运行。此目录已消费，旧日志保留，不得用作新验收。
+- R7 实际验证目录是 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R6/Core`。Configure 退出 0；检查点报告首轮目标构建退出 2，但被引用的 `Build.log` 实际写着 `[100%] Built target`，原始失败输出目前不可用，因此首轮退出码和原因标为未核实；`Build-AfterFixtureFix.log` 显示后续构建成功。首轮 CTest 退出 8，10/11 断言通过并报告 libgcov checksum overwrite；修正 URL 转义断言后的诊断 CTest 退出 0、1/1 通过。此后又加入测试，尚未在该目录运行；覆盖率命令未运行。此目录已消费，旧日志保留，不得用作新验收。
 - Worker02 完成了 AC-1 至 AC-6 的静态缺口修复，范围仍限于六路径 WriteSet；这些新增/修复的行为目前尚未编译或测试。AC-7 的 80% 覆盖率门仍未验证。
 - 已提出 `CR-ED-0147-R8-VALIDATION-001`，只将正式验证切到 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core` 并记录 R7 结果。Owner Worker02 与独立 Reviewer Worker04 审核及 PR 合并之前，不得运行 R8 构建、CTest 或覆盖率。
+- 固定头审查发现 R7 的 `Build.log` 与检查点声称的首轮 exit 2 不一致；原始失败输出无法从保留报告中恢复，R8 已把首轮结果改标未核实并追加纠正事件。五条既有 `CommandExecuted` 事件也追加分支/耗时字段纠正；耗时记录为不可得，不从文件时间估算。PR #42 已创建，当前待修正后的新 Head 复审。
 - ED-0147 通过验收、独立评审并冻结合同之前，P3 EntryGate 保持 Pending；真正的异步 C++ AgentRuntime 和生产 Provider/WinHTTP composition 仍未完成。
