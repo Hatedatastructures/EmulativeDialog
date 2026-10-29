@@ -2514,6 +2514,9 @@ Tasks:
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecCoordinatorDecisionHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
     TaskSpecHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
+    PullRequestCreated: true
+    PullRequestNumber: 35
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/35
     ImplementationHeadCommit: 301e628899fad80be1faad15e3bcc52aa49ce0f5
     CodeReviewStatus: ApprovedAtFixedHead
     CodeReviewBaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
