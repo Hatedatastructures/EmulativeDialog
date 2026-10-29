@@ -1151,6 +1151,13 @@ ChangeRequests:
       301e628899fad80be1faad15e3bcc52aa49ce0f5 with a repeated-recovery regression test. R7's R6 build directory
       already contains evidence for the prior Head 94a352f and cannot be reused to validate 301e628. R8 uses a
       unique absent directory while preserving all previous outputs and the existing task acceptance.
+    EvidenceRefs:
+      - Workflow/TaskLifecycle.md#Section=TaskRecordsAndImmutability
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=7
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&PreviousRevision7Evidence
+      - 301e628899fad80be1faad15e3bcc52aa49ce0f5
+      - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice (existing R7 evidence; preserve)"
+      - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/windows-agent-slice (confirmed absent before proposal)"
     ProposedTaskSpecBaseCommit: d55986d78398e07cb8f65aac715f79579c93ce00
     AgentPoolBindingMigrationId: AgentSlotMigration-2026-10-29-LunaMax
     ProposedOwnerSlotId: Worker02
@@ -1166,6 +1173,35 @@ ChangeRequests:
       - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
       - Tests/Contract/Agent/CMakeLists.txt
       - Architecture/Contracts/CoreAgentContract.md
+    ProposedWriteSetPurpose: "Unchanged ED-0112 product implementation WriteSet; it is not the governance PR's modified-file list."
+    GovernanceWriteSet:
+      - Workflow/Plans/P2.yaml
+      - Workflow/AgentPool.yaml
+      - Workflow/CurrentState.md
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/Events/CodexRewrite/P3.jsonl
+    CompatibilityAndSecurityImpact: >-
+      No product API, protocol, runtime, storage, credential, private-chat data, or external-side-effect behavior changes.
+      R8 only selects a new build/report directory and records the user-authorized logical slot bindings; no acceptance
+      build is permitted until the revised TaskSpec and assignment ledger are merged.
+    RollbackPlan: >-
+      If owner/reviewer approval fails, do not merge this proposal or run R8 validation; keep the merged R7 TaskSpec,
+      its R6 build outputs, and the implementation branch unchanged, then revise the CR. If post-approval validation
+      fails, preserve both R7 and R8 evidence, record the failure, and use a new CR/revision and previously absent R9
+      directory; never overwrite or delete prior evidence and never mark the capability complete on a failed run.
+    PreviousReviewAttempts:
+      - BaseCommit: d55986d78398e07cb8f65aac715f79579c93ce00
+        HeadCommit: 1d9c57086fe8cbbcf85327ee79ee3f90d16165d1
+        OwnerDecision: Approve
+        OwnerAgentId: /root/luna02_ed0148_pr_ready
+        IndependentReviewerDecision: RequestChanges
+        IndependentReviewerAgentId: /root/luna06_capability_status_audit
+        FindingIds: [ED0112-R8-CR-F001]
+        Result: Rework
+    FindingDisposition:
+      - FindingId: ED0112-R8-CR-F001
+        Status: AddressedInProposedHead
+        Summary: "Added concrete evidence, exact governance impact paths, compatibility/security impact, and a rollback plan; clarified that ProposedWriteSet is the unchanged product WriteSet."
     OwnerCRDecision: Pending
     IndependentReviewerDecision: Pending
     CoordinatorDecision: Pending
