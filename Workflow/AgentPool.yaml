@@ -109,7 +109,7 @@ Slots:
     ReasoningEffort: max
     HostSessionRef: "/root/luna06_capability_status_audit"
     ModuleIds: []
-    CurrentTaskId: ED-0112/R8-TurnRecoveryValidation
+    CurrentTaskId: ED-0148/R5-ConsentMatchingValidation
     Status: Assigned
 
 AssignmentRules:

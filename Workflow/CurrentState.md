@@ -194,3 +194,10 @@
 - R7 使用的 `ED-0112-R6/windows-agent-slice` 目录已包含旧 Head 证据。协调分支 `Task/ED-0112-R8-ValidationTaskSpec` 正在登记 R8：保持原 Goal、Acceptance、WriteSet、依赖、合同、Owner/Reviewer 槽与代码分支，只切换到此前不存在的 `ED-0112-R8/windows-agent-slice`。在 R8 TaskSpec/CR 与 assignment ledger 合并前禁止运行新鲜验收；旧 R7 证据保留。
 - R8 TaskSpec 最终内容 Head `31117c78f5f0c91e90906ea51990b2e059565c2d` 已由 Owner Worker02 与独立 Reviewer Worker06 Approve；F001 的影响路径、兼容/安全影响和回退方案均已补齐并记录。Coordinator 已接受 CR-ED-0112-009。治理 PR #35 已创建并附加到当前任务，远端分支恢复为 4/4；PR 当前 open/mergeable，尚未合入。R8 构建仍未启动。
 - 六个逻辑工作槽本轮已使用宿主支持的 `gpt-6-luna` / `max` 配置；本地治理候选记录了稳定槽绑定迁移，尚未通过独立审查或合入 main。AgentRuntime 产品代码仍为同步回合；真正异步协程切片与恢复接回启动流程尚未实现。真实 QQ 收发仍未接入；本阶段继续不做微信。
+## 2026-10-29 ED-0112/R8 assignment ledger review candidate
+
+- 当前权威基线为 main=origin/main=d47a4a45caa8857e0baec278b56b7b9bd9404817；PR #35 已合并。assignment-ledger PR #36 已通过 GitHub 插件创建，远端固定范围为 Base d47a4a45caa8857e0baec278b56b7b9bd9404817 → Head b15c41ab273cd7ac733d04a64cc5b9ab762cbda4，状态 Open，尚未合并。远端分支为 4/4：main、PR #34、PR #25、PR #36。
+- R8 readiness query 在 TaskSpec 合并后返回 Ready，退出码 0；Controller validate-assignment 返回 AssignmentAccepted，退出码 0。治理候选把 Worker02 绑定到既有实现分支、工作树与产品基线；不得在 PR #36 合并前运行 R8 build、CTest 或 coverage。
+- ED-0148/R5 已占用 Worker06 的当前审查槽。ED-0112/R8 的固定 Reviewer 仍为 Worker06，但要等其释放 ED-0148/R5 后再接手 R8 审查；不允许在 AgentPool 同时为 Worker06 写两个 CurrentTaskId。未合入候选中的 R8 Worker06 AgentSlotAssigned 事件已从本地修订差异移除，main 的历史事件前缀未改。
+- 本地 assignment-ledger 候选补齐了 TaskReadinessValidated、TaskAssigned 和 PR #36 的 Base/Head 记录。后续治理修订尚未推送到 PR #36；远端 PR 仍是 Base d47a4a4、Head b15c41a，等待 Coordinator 与独立 Reviewer 审阅后再发布后续 Head。
+- 本次只修改治理账本；没有触碰产品 C++、主工作区预存 $deps/ 或运行产品构建/CTest/coverage。
