@@ -194,7 +194,7 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker04_ed0114_review
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     FindingId: ED-0120-R2-F001
     Scope: >-
       Add a Core-owned EndpointGrantAuthority that registers trusted ProviderProfileId to HTTPS destination
@@ -223,7 +223,7 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker04_ed0114_review
-    Decision: Accepted
+    Decision: ProposedAwaitingOwnerAndReviewerReview
     FindingId: ED-0120-R2-F001
     Scope: >-
       Preserve ED-0147's Core endpoint authority goal, six-path WriteSet, dependency ordering, and explicit
@@ -487,7 +487,7 @@ ChangeRequests:
     ProposedTaskRevision: 8
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     OwnerAgentId: /root/luna02_ed0148_pr_ready
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
@@ -539,9 +539,14 @@ ChangeRequests:
       - Workflow/Plans/P3.yaml
       - Workflow/Events/CodexRewrite/P3.jsonl
       - Workflow/CurrentState.md
-    OwnerCRDecision: Pending
-    IndependentReviewerDecision: Pending
-    CoordinatorDecision: Pending
+    ProposedTaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    OwnerCRDecision: Approve
+    OwnerCRDecisionEvidence: "Worker02 approved the validation-only TaskSpec at fixed Base 62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9 / Head 59fa1193d3fc23f9df1ad851b37908f3a29ef27d."
+    IndependentReviewerDecision: Approve
+    IndependentReviewerEvidence: "Worker04 independently approved the validation-only TaskSpec at fixed Base 62fbe87b68863df0c25bcdc80c7f9ceb18c5faf9 / Head 59fa1193d3fc23f9df1ad851b37908f3a29ef27d."
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionEvidence: "Coordinator accepted after both fixed-head TaskSpec approvals; scope remains validation-path-only and P3 EntryGate remains Pending."
+    AcceptedAt: 2026-10-29
     PreserveGoalAcceptanceDependenciesContractsOwnerReviewerAndProductWriteSet: true
     NoProductWriteSetExpansion: true
     R8ValidationRequiresTaskSpecMergeAndAssignmentReadiness: true
@@ -2109,18 +2114,18 @@ Tasks:
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     TaskSpecChangeRequestId: CR-ED-0147-R8-VALIDATION-001
-    TaskSpecReviewStatus: ProposedAwaitingOwnerAndReviewerReview
-    TaskSpecOwnerDecision: Pending
-    TaskSpecOwnerReviewHeadCommit: ""
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewerReviewHeadCommit: ""
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecCoordinatorDecisionHeadCommit: ""
-    TaskSpecHeadCommit: ""
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecOwnerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
+    TaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
     TaskSpecMergedToMainCommit: ""
-    TaskSpecMergePullRequestNumber: ""
-    TaskSpecMergePullRequestUrl: ""
-    TaskSpecMergeMethod: ""
+    TaskSpecMergePullRequestNumber: 42
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/42
+    TaskSpecMergeMethod: squash
     PreviousRevision7Evidence:
       TaskRevision: 7
       ChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
