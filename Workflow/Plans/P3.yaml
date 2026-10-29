@@ -26,7 +26,7 @@ EntryGate:
     - TaskId: ED-0148
       TaskRevision: 5
       ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
-      State: ApprovedAwaitingMainMerge
+      State: ApprovedAndMergedToMain
       Scope: "Same exact ProposalId consent matching behavior and two-path WriteSet as R4; only the fresh validation directory and CoverageCommand compatibility checks change. This does not pass P3 EntryGate."
       DoesNotSatisfyEntryGate: true
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
@@ -2261,7 +2261,7 @@ Tasks:
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
     OwnerRole: MemoryOwner
@@ -2271,7 +2271,7 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecOwnerDecision: Approve
     TaskSpecReviewerDecision: Approve
@@ -2279,12 +2279,12 @@ Tasks:
     TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: 13f4c94f694b4c89c367aa64fa245bad088bca3f
     BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
     Branch: Task/ED-0148-R4ConsentMatchingImpl
     Worktree: H:/Qbot/EmulativeDialog.ED-0148
     AssignedToSlot: Worker05
-    AssignmentNote: "PR #26 merged the approved R4 TaskSpec and consent CR; ED-0113 is merged. Assignment uses main baseline d8e918bd812f55b82babd3ef8df6a9b1b08f1eda. Worker05 may begin the two-path WriteSet only after this separate assignment-ledger PR merges. The scoped pre-gate exception does not pass P3 EntryGate or unblock ED-0114/ED-0144/ED-0145."
+    AssignmentNote: "PR #26 merged the approved R4 TaskSpec; PR #32 merged the validation-only R5 TaskSpec/CR at 13f4c94. Existing two-path implementation branch/worktree remain bound to baseline d8e918bd812f55b82babd3ef8df6a9b1b08f1eda. Worker05 may run only the frozen R5 fresh validation after this assignment-ledger PR merges. The scoped pre-gate exception does not pass P3 EntryGate or unblock ED-0114/ED-0144/ED-0145."
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation

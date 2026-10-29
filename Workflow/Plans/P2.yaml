@@ -2412,9 +2412,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     TaskSpecChangeRequestId: CR-ED-0112-008
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
     TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
@@ -2431,10 +2431,10 @@ Tasks:
     CodeReviewHeadCommit: 94a352f0e57a3e0c5870c2cd3e6a33d18c671c65
     CodeReviewerAgentId: /root/worker06_ed0105_review
     CodeReviewFindingIds: []
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: 13f4c94f694b4c89c367aa64fa245bad088bca3f
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
-    AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR to main; all six dependencies are merged. The exact eight-path implementation assignment is bound to main baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may begin only after this assignment-ledger PR merges; do not reuse or merge the protected R2 worktrees."
+    AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR; PR #32 merged the validation-only R7 TaskSpec/CR at 13f4c94. Existing eight-path implementation branch/worktree remain bound to baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may run only the frozen R7 fresh validation after this assignment-ledger PR merges; do not edit product source during validation or reuse protected R2 worktrees."
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
