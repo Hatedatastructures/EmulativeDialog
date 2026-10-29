@@ -228,3 +228,12 @@
 - ED-0112/R8 validation and independent acceptance review passed. Fresh Windows C++20 configure and targeted build exited 0; selected CTest passed 2/2; coverage is 90.02% for `TurnCheckpointStore.cpp` and 92.39% for `TurnRecoveryCoordinator.cpp`. Detailed logs and hashes remain under `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/Logs/`.
 - The recovery implementation is explicitly partial: checkpoints and no-replay decisions are implemented, while reconnecting recovery to AgentRuntime startup/session state and rebuilding chat history remain open. Do not mark the full Codex capability complete.
 - Remote branches are 2/4: `main` and PR #25 `Task/ED-0144-MemorySqliteAdapter`. Root worktree `?? $deps/` remains untouched. Worker06 was released after acceptance review. Next, register and freeze the asynchronous Agent/Provider/Transport contract, then start the actual C++20 coroutine AgentRuntime slice.
+
+## 2026-10-29 ED-0147/R7 稳定工作槽绑定提案（09:10 UTC 更新）
+
+- 当前 `main` 与 `origin/main` 为 `680eb8dc591174c861e4045d6dd4897e500d77df`。远端变更分支为 2/4：`Task/ED-0144-MemorySqliteAdapter`；开放 PR #25 尚无 GitHub review submission。
+- ED-0147/R6 已冻结但尚未分配。R7 提案把当前 Owner/Reviewer 绑定到 Worker02 `/root/luna02_ed0148_pr_ready` 和 Worker04 `/root/luna04_ed0144_branch_review`，并把活动 AssignmentNote 改为等待 R7 审查/合并。原 R6 审批头和旧 AssignmentNote 作为历史保留；产品 Goal、ReadSet、依赖、Acceptance、验证命令、安全边界和六路径 WriteSet不变。
+- Controller 对 Ready 状态的首次派工只检查 OwnerAgentId 非空等请求字段，不检查 AgentPool；只在任务已为 Assigned 时比较已冻结 OwnerAgentId。R7 不声称 Controller 自动强制槽位匹配；后续 assignment ledger 必须显式核对当前 AgentPool。
+- R7 首个固定 Head `1f42e94df0ed93dc86d6e3edde282e6eb9c0aa81` 和第二个固定 Head `ac17273115aa3f5491b24d6dde9534d8ee3ce556` 的审查发现均已修复。最终 TaskSpec Head `20ed3b35a30f945d69368a6df89c33b6e7e4102d` 已获 Worker02 Owner 与 Worker04 独立 Reviewer APPROVE；CR 已由 Coordinator 接受。当前正在记录审批元数据并做 TaskSpec PR 的固定头治理复核。
+- R7 仍在 Coordinator 隔离工作树 `H:/Qbot/EmulativeDialog.ED-0147-Assignment` 的本地分支 `Task/ED-0147-R7-AgentBindingTaskSpec` 中，等待正式 PR；没有修改产品 C++，也没有派发或创建产品实现工作树。
+- P3 EntryGate 仍 Pending；ED-0147 实际实现与 Windows 验收尚未开始。`LargeScaleProductImplementation` 仍为 `BlockedUnverified`：当前仓库没有 GitHub Actions workflow、main 分支保护或 ruleset 的通过证据。
