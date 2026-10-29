@@ -3042,14 +3042,15 @@ Tasks:
         - Workflow/TaskLifecycle.md
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/HostCoreAgent.yaml
-        - Architecture/Modules/Channels.yaml
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/AsyncModelProviderContract.md
         - Architecture/Contracts/AsyncAgentRuntimeContract.md
-        - Source/Core/IdentityPolicy.h
         - Source/Core/CoreChatService.h
         - Source/Core/CoreChatService.cpp
       OnDemandSet:
+        - Architecture/Modules/Channels.yaml
+        - Architecture/Contracts/ChannelAdapterContract.md
+        - Source/Core/IdentityPolicy.h
         - Workflow/Plans/P3.yaml#TaskId=ED-0114
         - Source/Core/IdentityPolicy.cpp
         - Source/Core/AgentRuntimePort.h
@@ -3089,26 +3090,40 @@ Tasks:
       - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
       - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
     WriteSetRationale:
-      - "CoreChatService.h/.cpp are extended to add ProcessAsync to the existing CoreChatService instance; no parallel Core service or new .h header is introduced."
+      - "CoreChatService.h/.cpp are extended with additive ProcessAsync and a short StateMutex for Core-owned mutable containers; no parallel Core service or new .h header is introduced."
       - "CoreChatService already owns the existing CoreAuthorizedAction construction path and friendship, so CoreAuthorizedAction.h needs no change."
       - "ED-0114 is a required merged dependency before this task is assigned, serializing the overlapping CoreChatService.cpp ownership."
     CoreServiceApiChange: >-
       Add ProcessAsync to the existing CoreChatService.h returning boost::asio::awaitable<CoreChatResult>; accept the inbound
       message by value, AsyncAgentRuntimePort&, Providers::AsyncModelProviderPort&, and an optional std::stop_token. Reuse the
       existing instance Policy, ProviderProfile, ProviderLease, Channel, ChannelLease, ActionIdSource, RecordObserver, dedupe
-      sets, issued-ID sets, and OperationRecords. Keep the existing constructor and synchronous Process signature unchanged.
-      Process and ProcessAsync must call the same identity/route/input/deduplication preflight and final Core action/receipt
-      helpers. Calls on one instance must run and resume on one Asio strand; hold no mutex across co_await.
+      reservations, and issued-ID sets. Keep the existing constructor and synchronous Process signature unchanged.
+      Preserve the existing early stop-token check. For every non-pre-cancelled call, Process and ProcessAsync must share this
+      exact preflight order: Policy identity/route resolution -> scoped deduplication reservation under StateMutex -> inbound
+      text extraction/empty/unsupported validation -> runtime/provider. Never validate text before reserving the key; an empty
+      or unsupported message consumes it, so retry through either entrypoint returns Duplicate just as the current sync path does.
+      Add std::mutex StateMutex to guard every access to CoreChatService-owned ProcessedDeduplicationIds, IssuedActionIds,
+      IssuedOperationIds, IssuedIdempotencyKeys, and any OperationRecords vector access. The reservation remains consumed after
+      the first attempt to preserve no-replay behavior. Each invocation owns its local OperationRecord in its stack/coroutine
+      frame after the agent result; it is not shared between calls. Lock only for in-memory reservation, ID-set, and stored
+      operation-record mutations. Release the mutex before Runtime/Provider calls, ActionIdSource::Next, observer callbacks,
+      Channel.SendAction, and every co_await; observers receive a copied record snapshot after unlock.
+      Add an API comment beside CoreActionIdSource::Next in this existing header: calls for distinct messages may overlap, so
+      Next must be thread-safe and return globally unique action/operation/idempotency identifiers. RecordObserver and injected
+      runtime/provider/channel ports must also support concurrent calls for distinct messages, or callers must otherwise satisfy
+      their existing concurrency contracts. No executor or strand binding is claimed or required. The mutex never spans an
+      awaitable suspension or external side effect.
     SharedLocks: [AsyncModelProviderContractV1, AsyncAgentRuntimeContractV1]
     Acceptance:
       - {AcceptanceId: AC-1, Description: "A real Boost.Asio co_spawn/io_context test enters the additive CoreChatService::ProcessAsync method on the same existing CoreChatService object, uses the Mock Channel inbound fixture, awaits AsyncAgentRuntime, forces awaitable FakeProvider suspend/resume, and receives its canonical terminal.", Evidence: "The ordered trace proves mock inbound -> shared Core preflight -> AsyncAgentRuntime -> async provider lifecycle -> terminal projection -> shared Core action/receipt path -> exact receipt."}
-      - {AcceptanceId: AC-2, Description: "CoreChatService::Process and ProcessAsync call one shared identity/route/input/deduplication preflight using the same Policy and per-instance dedupe state; unknown identities are rejected before either runtime/provider call.", Evidence: "Cross-entry regression tests send the same envelope through sync then async and async then sync on one service instance; the second entry returns Duplicate with zero additional runtime/provider calls and zero additional SendAction calls. Unknown sender and bad route cases assert zero async calls."}
+      - {AcceptanceId: AC-2, Description: "CoreChatService::Process and ProcessAsync use one shared preflight in the frozen order identity/route -> dedupe reservation -> text/input validation -> runtime/provider; the existing pre-cancel check remains unchanged.", Evidence: "Assert unknown identity/route exits before reservation or async calls. Unsupported and empty sync input each consumes its key; a repeated same envelope through ProcessAsync returns Duplicate without async calls. Repeat with async invalid input followed by sync duplicate. Barrier-start mixed sync/async valid duplicates on separate worker threads hold the winner at a fake-runtime gate; exercise both winner orders and assert one reservation, one non-Duplicate result, at most one runtime/provider path, and one SendAction."}
       - {AcceptanceId: AC-3, Description: "Only a valid final answer or supported refusal becomes a Core-created CoreAuthorizedAction through the existing CoreChatService action construction path. Tool handoff, output limit, provider failure, cancellation, invalid event sequence, or UnknownOutcome never sends; no blind retry follows a possibly-sent unknown outcome.", Evidence: "Terminal matrix drives the shared Core completion/action helper and asserts each CoreChatResult plus exact zero-send or one-send behavior."}
       - {AcceptanceId: AC-4, Description: "The existing CoreChatService action and OperationRecord path carries policy/capability versions and exact operation identifiers; MockChannelAdapter returns a receipt for those exact action/operation IDs, and mismatched receipts fail as unknown outcome.", Evidence: "Test verifies one SendAction call, exact receipt IDs/status, operation transitions and no synthesized success or retry."}
       - {AcceptanceId: AC-5, Description: "AsyncAgentRuntime preserves V1 request/event correlation and terminal mapping under the new Async contracts; the existing synchronous Process signature and V1 ports remain source-compatible, with no synchronous wait, std::future::get, thread-per-request, or real transport.", Evidence: "The same standalone target exercises both sync and async entries, and static review confirms the V1 declaration and behavior remain compatible."}
       - {AcceptanceId: AC-6, Description: "Each changed production source AsyncAgentRuntime.cpp and CoreChatService.cpp achieves at least 80 percent unique executable-line coverage.", Evidence: "A fresh Windows gcov JSON v2 report for each exact source is tied to its unique .gcno/.gcda pair and the passing CTest record; the command reports unique executable line numerator/denominator and fails below 80 percent."}
       - {AcceptanceId: AC-7, Description: "All runtime and channel effects remain offline, deterministic, and credential-free; no real QQ adapter, provider, transport, DNS, socket, or external I/O is connected.", Evidence: "Changed-path and test-fixture review confirms only the awaitable FakeProvider and MockChannelAdapter are used; all network and real-channel paths are forbidden."}
-      - {AcceptanceId: AC-8, Description: "All calls on a CoreChatService instance execute and resume on one serialized Boost.Asio strand, protecting its existing per-instance sets and records without holding a lock across co_await.", Evidence: "The vertical-slice test schedules sync/async duplicate submissions through one strand and observes deterministic single-instance deduplication and receipt behavior."}
+      - {AcceptanceId: AC-8, Description: "A short std::mutex StateMutex protects every read/write of CoreChatService per-instance dedupe reservations, issued-ID sets, and any stored OperationRecords; each invocation-local OperationRecord remains private to its sync call or coroutine frame. No mutex is held across co_await or external calls.", Evidence: "Fixed-head source review checks every shared-container access and lock scope. Multithreaded sync/async duplicate tests verify one reservation wins, the loser returns Duplicate, and at most one provider/runtime path and exactly one SendAction occur without executor/strand binding."}
+      - {AcceptanceId: AC-9, Description: "Two different valid envelopes may enter sync Process and coroutine ProcessAsync concurrently on one CoreChatService instance; the API documents that CoreActionIdSource::Next is thread-safe and produces unique identifiers.", Evidence: "A barrier-start test uses an atomic thread-safe ID source, a synchronized RecordObserver, and a thread-safe MockChannelAdapter fixture. Assert two completed results, distinct ActionId/OperationId/IdempotencyKey triples, and exact per-message correlation among observed OperationRecords, SendAction arguments, and scripted ChannelReceipts with no lost or cross-matched receipt."}
     Validation:
       ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows
