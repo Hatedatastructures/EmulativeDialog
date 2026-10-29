@@ -2031,7 +2031,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Ready
     Phase: P3
     ChangeRequestId: CR-ED-0120-005
     CorrectiveToTaskId: ED-0120
@@ -2044,7 +2044,7 @@ Tasks:
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     TaskSpecChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
-    TaskSpecReviewStatus: ApprovedPendingMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
     TaskSpecReviewerDecision: Approve
@@ -2052,7 +2052,10 @@ Tasks:
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecCoordinatorDecisionHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
     TaskSpecHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: bc280f05216821984e1bbb750006803832f50b56
+    TaskSpecMergePullRequestNumber: 39
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/39
+    TaskSpecMergeMethod: squash
     PreviousRevision6Evidence:
       TaskRevision: 6
       ChangeRequestId: CR-ED-0120-005
