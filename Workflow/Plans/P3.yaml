@@ -2855,3 +2855,394 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, CTX-001, CTX-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0144]}
+
+  - TaskId: ED-0149
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
+    TaskKind: IntegrationTask
+    State: Proposed
+    BlockedBy: >-
+      TaskSpec candidate only. Fixed-head Owner/Reviewer review of this governance candidate is allowed while P3
+      EntryGate is Pending; that review and merge grant no implementation authority. Do not assign or implement
+      until this TaskSpec is independently approved and merged, P3 EntryGate is Passed, ED-0007/ED-0015/ED-0131
+      are complete, and a separate assignment ledger is accepted by WorkflowController validate-assignment.
+    Phase: P3
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
+    Goal: >-
+      冻结不破坏 V1 同步 API 的 C++20 Boost.Asio awaitable ModelProvider 与 AgentRuntime 公共合同，并新增独立
+      .hpp 声明与隔离编译合同目标。Provider fake 必须使用 awaitable。该任务不实现真实 Provider adapter、
+      网络 I/O 或产品回合行为。
+    OutOfScope:
+      - 修改 V1 同步 ModelProviderPort、AgentRuntimePort 或 AgentRuntime::RunTurn
+      - 新增 AsyncHttpTransport、修改 HttpTransportPort 或实现真实网络 I/O
+      - 实现 OpenAI Responses、Chat Completions 或 Anthropic Messages Provider adapter
+      - 修改根 CMakeLists.txt、CMakePresets.json 或 Tests/Contract/Agent/CMakeLists.txt
+      - QQ、微信、外部账户、真实凭据或外网请求
+    DependsOn: [ED-0007, ED-0015, ED-0131]
+    ContractVersion:
+      - Architecture/Contracts/AsyncModelProviderContract.md V1 (proposed)
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1 (proposed)
+      - Architecture/Contracts/ModelProviderContract.md V1.2
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Boost.Asio 1.92.0 at afdfa32505af73e3d208144b3f623f0096cb62b6
+    ModuleIds: [Core, AgentRuntime, ModelProviderPort]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Modules/Providers.yaml
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/CoreAgentContract.md
+        - Source/Agent/AgentRuntime.h
+        - Source/Providers/Contracts/ModelProviderPort.h
+      OnDemandSet:
+        - Workflow/Plans/P3.yaml
+        - Source/Core/AgentRuntimePort.h
+        - Source/Core/CoreChatService.h
+        - CMake/BoostAsioDependency.cmake
+        - CMake/BoostAsioCoroutineProbe.cpp
+        - CMakeLists.txt
+        - Tests/Contract/Agent/CMakeLists.txt
+        - Tests/Contract/Providers/Contracts/FakeProvider.h
+      ForbiddenSet:
+        - Source/Agent/AgentRuntime.cpp
+        - Source/Platform/Network/
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Channels/
+        - CMakePresets.json
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 18
+      ExpansionReasonRequired: false
+    WriteSet:
+      - Architecture/Contracts/AsyncModelProviderContract.md
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md
+      - Source/Providers/Contracts/AsyncModelProviderPort.hpp
+      - Source/Core/AsyncAgentRuntimePort.hpp
+      - Source/Agent/AsyncAgentRuntime.hpp
+      - Tests/Contract/Agent/AsyncApiCompileContract/CMakeLists.txt
+      - Tests/Contract/Agent/AsyncApiCompileContract/AsyncApiCompileContract.cpp
+    SharedLocks: [AsyncModelProviderContractV1, AsyncAgentRuntimeContractV1, BoostAsioDependency]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "AsyncModelProviderPort exposes GetCapabilitiesAsync, ValidateProfileAsync, StreamTurnAsync, and HealthCheckAsync using boost::asio::awaitable and existing ModelProvider V1 profile/result/request/event types; AsyncAgentRuntimePort exposes RunTurnAsync returning awaitable<AgentRunResult>. New API uses sibling .hpp files and preserves all synchronous V1 declarations and behavior.", Evidence: "Both versioned contracts and the three public .hpp declarations are reviewed and merged together; old V1 headers are byte-for-byte unchanged in the task diff."}
+      - {AcceptanceId: AC-2, Description: "Async API contract specifies borrowed argument and CredentialLease lifetimes through awaitable completion, serial nonterminal EventSink delivery on the associated executor, monotonically sequenced events, exactly one returned terminal, no callbacks after completion, std::stop_token cancellation, and UnknownOutcome when the remote request may have been sent.", Evidence: "Independent fixed-head review checks each lifecycle and compatibility rule against the declared signatures and existing V1 terminal/event types."}
+      - {AcceptanceId: AC-3, Description: "The isolated compile-contract source defines an awaitable AsyncFakeProvider using only canonical in-memory fixtures; it compiles a co_await consumer against the new interfaces without any network or AsyncHttpTransport type.", Evidence: "Windows C++20 compile-contract executable builds and its single CTest passes; source diff contains no real adapter, transport, or socket call."}
+      - {AcceptanceId: AC-4, Description: "The standalone target uses the pinned EmulativeDialogBoostAsio interface and verify target without editing root CMake or the shared Agent test CMake.", Evidence: "Fresh configure/build/CTest pass; target dependency and exact changed paths are inspected."}
+      - {AcceptanceId: AC-5, Description: "Existing synchronous ModelProviderPort and AgentRuntimePort callers remain source-compatible.", Evidence: "V1 declarations are unchanged and the standalone compile contract includes the existing V1 headers."}
+    Validation:
+      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/Worktree
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/CompileContract
+      DependencyCache:
+        BaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
+        BoostSourceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource
+        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+        UpdatesDisconnected: true
+        PreflightRecheckRequired: true
+      Coverage: {Required: false, NotApplicable: true, NotApplicableReason: "This task freezes declarations and compiles an in-memory contract fake; it adds no production implementation source."}
+      RequiredBuildTargets: [AsyncApiCompileContractTests]
+      RequiredCTestTests: [Agent.AsyncApiCompileContract]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/CompileContract'
+        $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies'
+        $BoostSource = Join-Path $BoostCache 'EmulativeDialogBoostAsioSource'
+        if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
+        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        if (-not (Test-Path -LiteralPath $BoostSource -PathType Container)) { throw "Pinned Boost source cache is missing: $BoostSource" }
+        $ActualCommit = & git -C $BoostSource rev-parse HEAD
+        if ($LASTEXITCODE -ne 0 -or ($ActualCommit -join '').Trim() -ne 'afdfa32505af73e3d208144b3f623f0096cb62b6') { throw "Pinned Boost source commit check failed: $BoostSource" }
+        foreach ($RequiredPath in @('libs/asio/include/boost/asio.hpp', 'libs/config/include/boost/version.hpp', 'libs/json/include/boost/json.hpp', 'LICENSE_1_0.txt')) { if (-not (Test-Path -LiteralPath (Join-Path $BoostSource $RequiredPath))) { throw "Pinned Boost source is incomplete: $RequiredPath" } }
+        Write-Output 'FRESH_BUILD_AND_PINNED_BOOST_PREFLIGHT_OK=1'
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/Worktree/Tests/Contract/Agent/AsyncApiCompileContract -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/CompileContract -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/CompileContract --target AsyncApiCompileContractTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/CompileContract --output-on-failure --no-tests=error -R '^Agent\\.AsyncApiCompileContract$'"
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen seven-path WriteSet."
+        - "All configure source paths are derived from ExpectedAssignedWorktreePath under the central .build tree; the main workspace is never used as a source tree."
+        - "Source/Agent/AgentRuntime.h, Source/Core/AgentRuntimePort.h, and Source/Providers/Contracts/ModelProviderPort.h are unchanged."
+        - "No real provider, network, AsyncHttpTransport, socket, root CMake, or shared Agent CMake path is changed."
+        - "The standalone compile target links EmulativeDialogBoostAsio and depends on EmulativeDialogBoostAsioVerify; the pinned source cache commit is rechecked and external updates remain disconnected."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The async fake is in-memory and the compile-contract target performs no provider or channel I/O."
+    RiskLevel: Medium
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0150]}
+
+  - TaskId: ED-0150
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 实现异步 AgentRuntime 到 Mock Channel 回执的 C++ 纵向切片
+    TaskKind: CapabilitySlice
+    State: Proposed
+    BlockedBy: >-
+      TaskSpec candidate only. Fixed-head Owner/Reviewer review of this governance candidate is allowed while P3
+      EntryGate is Pending; that review and merge grant no implementation authority. Do not assign or implement
+      until this TaskSpec is independently approved and merged, P3 EntryGate is Passed, ED-0114 is complete and
+      merged, ED-0146/ED-0147 satisfy the gate, ED-0149 is merged, and a separate assignment ledger is accepted
+      by WorkflowController validate-assignment.
+    Phase: P3
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
+    Goal: >-
+      完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
+      IdentityPolicy 身份/路由检查 -> co_await AsyncAgentRuntime -> awaitable FakeProvider -> 该 CoreChatService
+      现有授权/OperationRecord/Mock Channel SendAction 路径 -> 精确匹配的 Mock ChannelReceipt。CoreChatService
+      新增 ProcessAsync 入口但保留同步 Process API；两者复用同一 Core 实例状态与共享前置校验/结束派发辅助逻辑。
+      未知身份必须在调用 Agent/Provider 之前拒绝；只有合法最终回复可成为 CoreAuthorizedAction。使用冻结的
+      AsyncModelProvider/AsyncAgentRuntime 合同和 Boost.Asio，不得用同步阻塞包装 awaitable，也不得新增第二套
+      Core 身份、去重或授权实现。
+    OutOfScope:
+      - 真实 HTTP、AsyncHttpTransport、WinHTTP、DNS 或任何外网请求
+      - OpenAI Responses、Chat Completions、Anthropic Messages 的生产 adapter
+      - QQ 登录/发送、微信或任何真实 Channel
+      - Shell、任意文件、任意网络、主机控制或通用 MCP 工具
+      - 新建 AsyncCoreChatService 或复制 Core 身份、去重、授权、OperationRecord、Channel 回执逻辑
+      - 修改 CoreAuthorizedAction.h、增加 friend 入口或绕过 CoreChatService 现有授权构造路径
+      - 修改根 CMake、CMakePresets、V1 同步 ModelProviderPort/AgentRuntimePort API 或同步 Process 签名/行为
+    DependsOn: [ED-0114, ED-0146, ED-0147, ED-0149]
+    ContractVersion:
+      - Architecture/Contracts/AsyncModelProviderContract.md V1
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/ModelProviderContract.md V1.2
+      - Architecture/Contracts/ChannelAdapterContract.md V1
+    ModuleIds: [Core, AgentRuntime, ChannelAdapterPort]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Contracts/CoreAgentContract.md
+        - Architecture/Contracts/AsyncModelProviderContract.md
+        - Architecture/Contracts/AsyncAgentRuntimeContract.md
+        - Source/Core/CoreChatService.h
+        - Source/Core/CoreChatService.cpp
+      OnDemandSet:
+        - Architecture/Modules/Channels.yaml
+        - Architecture/Contracts/ChannelAdapterContract.md
+        - Source/Core/IdentityPolicy.h
+        - Workflow/Plans/P3.yaml#TaskId=ED-0114
+        - Source/Core/IdentityPolicy.cpp
+        - Source/Core/AgentRuntimePort.h
+        - Source/Core/CoreAuthorizedAction.h
+        - Source/Core/OperationRecord.h
+        - Source/Core/OperationRecord.cpp
+        - Source/Agent/AsyncAgentRuntime.hpp
+        - Source/Providers/Contracts/AsyncModelProviderPort.hpp
+        - Source/Channels/Contracts/ChannelAdapterPort.h
+        - Tests/Contract/Channels/Contracts/MockChannelAdapter.h
+        - Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp
+        - Tests/Contract/Agent/AgentRuntimeVerticalSliceTests.cpp
+        - CMake/BoostAsioDependency.cmake
+        - CMake/BoostAsioCoroutineProbe.cpp
+      ForbiddenSet:
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Platform/Network/
+        - Source/Channels/QQ/
+        - Source/Channels/WeChat/
+        - Source/Core/AsyncCoreChatService.hpp
+        - Source/Core/AsyncCoreChatService.cpp
+        - Source/Agent/AgentRuntime.h
+        - Source/Agent/AgentRuntime.cpp
+        - Source/Providers/Contracts/ModelProviderPort.h
+        - CMakeLists.txt
+        - CMakePresets.json
+        - Tests/Contract/Agent/CMakeLists.txt
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 20
+      ExpansionReasonRequired: false
+    WriteSet:
+      - Source/Agent/AsyncAgentRuntime.cpp
+      - Source/Core/CoreChatService.h
+      - Source/Core/CoreChatService.cpp
+      - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
+      - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
+    WriteSetRationale:
+      - "CoreChatService.h/.cpp are extended with additive ProcessAsync and a short StateMutex for Core-owned mutable containers; no parallel Core service or new .h header is introduced."
+      - "CoreChatService already owns the existing CoreAuthorizedAction construction path and friendship, so CoreAuthorizedAction.h needs no change."
+      - "ED-0114 is a required merged dependency before this task is assigned, serializing the overlapping CoreChatService.cpp ownership."
+    CoreServiceApiChange: >-
+      Add ProcessAsync to the existing CoreChatService.h returning boost::asio::awaitable<CoreChatResult>; accept the inbound
+      message by value, AsyncAgentRuntimePort&, Providers::AsyncModelProviderPort&, and an optional std::stop_token. Reuse the
+      existing instance Policy, ProviderProfile, ProviderLease, Channel, ChannelLease, ActionIdSource, RecordObserver, dedupe
+      reservations, and issued-ID sets. Keep the existing constructor and synchronous Process signature unchanged.
+      Preserve the existing early stop-token check. For every non-pre-cancelled call, Process and ProcessAsync must share this
+      exact preflight order: Policy identity/route resolution -> scoped deduplication reservation under StateMutex -> inbound
+      text extraction/empty/unsupported validation -> runtime/provider. Never validate text before reserving the key; an empty
+      or unsupported message consumes it, so retry through either entrypoint returns Duplicate just as the current sync path does.
+      Add std::mutex StateMutex to guard every access to CoreChatService-owned ProcessedDeduplicationIds, IssuedActionIds,
+      IssuedOperationIds, IssuedIdempotencyKeys, and any OperationRecords vector access. The reservation remains consumed after
+      the first attempt to preserve no-replay behavior. Each invocation owns its local OperationRecord in its stack/coroutine
+      frame after the agent result; it is not shared between calls. Lock only for in-memory reservation, ID-set, and stored
+      operation-record mutations. Release the mutex before Runtime/Provider calls, ActionIdSource::Next, observer callbacks,
+      Channel.SendAction, and every co_await; observers receive a copied record snapshot after unlock.
+      Add an API comment beside CoreActionIdSource::Next in this existing header: calls for distinct messages may overlap, so
+      Next must be thread-safe and return globally unique action/operation/idempotency identifiers. RecordObserver and injected
+      runtime/provider/channel ports must also support concurrent calls for distinct messages, or callers must otherwise satisfy
+      their existing concurrency contracts. No executor or strand binding is claimed or required. The mutex never spans an
+      awaitable suspension or external side effect.
+    SharedLocks: [AsyncModelProviderContractV1, AsyncAgentRuntimeContractV1]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "A real Boost.Asio co_spawn/io_context test enters the additive CoreChatService::ProcessAsync method on the same existing CoreChatService object, uses the Mock Channel inbound fixture, awaits AsyncAgentRuntime, forces awaitable FakeProvider suspend/resume, and receives its canonical terminal.", Evidence: "The ordered trace proves mock inbound -> shared Core preflight -> AsyncAgentRuntime -> async provider lifecycle -> terminal projection -> shared Core action/receipt path -> exact receipt."}
+      - {AcceptanceId: AC-2, Description: "CoreChatService::Process and ProcessAsync use one shared preflight in the frozen order identity/route -> dedupe reservation -> text/input validation -> runtime/provider; the existing pre-cancel check remains unchanged.", Evidence: "Assert unknown identity/route exits before reservation or async calls. Unsupported and empty sync input each consumes its key; a repeated same envelope through ProcessAsync returns Duplicate without async calls. Repeat with async invalid input followed by sync duplicate. Barrier-start mixed sync/async valid duplicates on separate worker threads hold the winner at a fake-runtime gate; exercise both winner orders and assert one reservation, one non-Duplicate result, at most one runtime/provider path, and one SendAction."}
+      - {AcceptanceId: AC-3, Description: "Only a valid final answer or supported refusal becomes a Core-created CoreAuthorizedAction through the existing CoreChatService action construction path. Tool handoff, output limit, provider failure, cancellation, invalid event sequence, or UnknownOutcome never sends; no blind retry follows a possibly-sent unknown outcome.", Evidence: "Terminal matrix drives the shared Core completion/action helper and asserts each CoreChatResult plus exact zero-send or one-send behavior."}
+      - {AcceptanceId: AC-4, Description: "The existing CoreChatService action and OperationRecord path carries policy/capability versions and exact operation identifiers; MockChannelAdapter returns a receipt for those exact action/operation IDs, and mismatched receipts fail as unknown outcome.", Evidence: "Test verifies one SendAction call, exact receipt IDs/status, operation transitions and no synthesized success or retry."}
+      - {AcceptanceId: AC-5, Description: "AsyncAgentRuntime preserves V1 request/event correlation and terminal mapping under the new Async contracts; the existing synchronous Process signature and V1 ports remain source-compatible, with no synchronous wait, std::future::get, thread-per-request, or real transport.", Evidence: "The same standalone target exercises both sync and async entries, and static review confirms the V1 declaration and behavior remain compatible."}
+      - {AcceptanceId: AC-6, Description: "Each changed production source AsyncAgentRuntime.cpp and CoreChatService.cpp achieves at least 80 percent unique executable-line coverage.", Evidence: "A fresh Windows gcov JSON v2 report for each exact source is tied to its unique .gcno/.gcda pair and the passing CTest record; the command reports unique executable line numerator/denominator and fails below 80 percent."}
+      - {AcceptanceId: AC-7, Description: "All runtime and channel effects remain offline, deterministic, and credential-free; no real QQ adapter, provider, transport, DNS, socket, or external I/O is connected.", Evidence: "Changed-path and test-fixture review confirms only the awaitable FakeProvider and MockChannelAdapter are used; all network and real-channel paths are forbidden."}
+      - {AcceptanceId: AC-8, Description: "A short std::mutex StateMutex protects every read/write of CoreChatService per-instance dedupe reservations, issued-ID sets, and any stored OperationRecords; each invocation-local OperationRecord remains private to its sync call or coroutine frame. No mutex is held across co_await or external calls.", Evidence: "Fixed-head source review checks every shared-container access and lock scope. Multithreaded sync/async duplicate tests verify one reservation wins, the loser returns Duplicate, and at most one provider/runtime path and exactly one SendAction occur without executor/strand binding."}
+      - {AcceptanceId: AC-9, Description: "Two different valid envelopes may enter sync Process and coroutine ProcessAsync concurrently on one CoreChatService instance; the API documents that CoreActionIdSource::Next is thread-safe and produces unique identifiers.", Evidence: "A barrier-start test uses an atomic thread-safe ID source, a synchronized RecordObserver, and a thread-safe MockChannelAdapter fixture. Assert two completed results, distinct ActionId/OperationId/IdempotencyKey triples, and exact per-message correlation among observed OperationRecords, SendAction arguments, and scripted ChannelReceipts with no lost or cross-matched receipt."}
+    Validation:
+      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows
+      CommandLogDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows/Logs
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Agent/AsyncAgentRuntime.cpp, Source/Core/CoreChatService.cpp]
+        MinimumLinePercent: 80
+        Metric: UniqueExecutableSourceLines
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows/Reports
+        ReportFormat: gcov JSON v2
+        FreshDirectoryRequired: true
+      RequiredBuildTargets: [AsyncRuntimeVerticalSliceTests]
+      RequiredCTestTests: [Agent.AsyncRuntimeVerticalSlice]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows'
+        $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies'
+        $BoostSource = Join-Path $BoostCache 'EmulativeDialogBoostAsioSource'
+        if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
+        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        if (-not (Test-Path -LiteralPath $BoostSource -PathType Container)) { throw "Pinned Boost source cache is missing: $BoostSource" }
+        $ActualCommit = & git -C $BoostSource rev-parse HEAD
+        if ($LASTEXITCODE -ne 0 -or ($ActualCommit -join '').Trim() -ne 'afdfa32505af73e3d208144b3f623f0096cb62b6') { throw "Pinned Boost source commit check failed: $BoostSource" }
+        foreach ($RequiredPath in @('libs/asio/include/boost/asio.hpp', 'libs/config/include/boost/version.hpp', 'libs/json/include/boost/json.hpp', 'LICENSE_1_0.txt')) { if (-not (Test-Path -LiteralPath (Join-Path $BoostSource $RequiredPath))) { throw "Pinned Boost source is incomplete: $RequiredPath" } }
+        Write-Output 'FRESH_BUILD_AND_PINNED_BOOST_PREFLIGHT_OK=1'
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows/Reports -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows --target AsyncRuntimeVerticalSliceTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows --output-on-failure --no-tests=error -R '^Agent\\.AsyncRuntimeVerticalSlice$'"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows'
+        $Report = Join-Path $Build 'Reports'
+        $Logs = Join-Path $Build 'Logs'
+        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+        $CTestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+        $Sources = @('Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')
+        if (-not (Test-Path -LiteralPath $CTestLog -PathType Leaf)) { throw "Missing fresh CTest log: $CTestLog" }
+        $CTestText = [System.IO.File]::ReadAllText($CTestLog)
+        $TestHeaders = [System.Text.RegularExpressions.Regex]::Matches($CTestText, '(?m)^1/1 Testing: Agent\.AsyncRuntimeVerticalSlice$')
+        $PassMarkers = [System.Text.RegularExpressions.Regex]::Matches($CTestText, '(?m)^Test Passed\.$')
+        if ($TestHeaders.Count -ne 1 -or $PassMarkers.Count -ne 1) { throw 'CTest log does not contain exactly one matching test block and one pass marker' }
+        $HeaderText = '1/1 Testing: Agent.AsyncRuntimeVerticalSlice'
+        $HeaderIndex = $CTestText.IndexOf($HeaderText, [System.StringComparison]::Ordinal)
+        $HeaderEnd = $HeaderIndex + $HeaderText.Length
+        $PassIndex = $CTestText.IndexOf('Test Passed.', $HeaderEnd, [System.StringComparison]::Ordinal)
+        $NextTestIndex = $CTestText.IndexOf('Testing:', $HeaderEnd, [System.StringComparison]::Ordinal)
+        if ($PassIndex -lt $HeaderEnd -or ($NextTestIndex -ge 0 -and $NextTestIndex -lt $PassIndex)) { throw 'The passing marker is not inside the exact required CTest block' }
+        if ($CTestText -match '(?i)(libgcov|profiling error|checksum mismatch|overwrit|profile count data mismatch|cannot open notes file)') { throw 'CTest output contains a gcov checksum, overwrite, or profiling warning' }
+        $TestInfo = Get-Item -LiteralPath $CTestLog
+        $CoverageLog = Join-Path $Logs 'CoverageCommand.log'
+        if (-not (Test-Path -LiteralPath $Report -PathType Container)) { throw "Missing report directory: $Report" }
+        foreach ($RelativeSource in $Sources) {
+          $Source = [System.IO.Path]::GetFullPath((Join-Path $Worktree $RelativeSource))
+          $GcnoName = [System.IO.Path]::GetFileName($Source) + '.gcno'
+          $GcnoMatches = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter $GcnoName)
+          if ($GcnoMatches.Count -ne 1) { throw "Expected exactly one notes file for $RelativeSource, found $($GcnoMatches.Count)" }
+          $Gcno = $GcnoMatches[0]
+          $Gcda = [System.IO.Path]::ChangeExtension($Gcno.FullName, '.gcda')
+          if (-not (Test-Path -LiteralPath $Gcda -PathType Leaf)) { throw "Missing matching coverage data file: $Gcda" }
+          $GcdaInfo = Get-Item -LiteralPath $Gcda
+          if ($GcdaInfo.Length -le 0) { throw "Coverage data file is empty: $Gcda" }
+          if ($TestInfo.LastWriteTimeUtc -lt $GcdaInfo.LastWriteTimeUtc) { throw "Required CTest record is older than its paired gcda file: $RelativeSource" }
+          Push-Location $Report
+          try {
+            $GcovOutput = & $Gcov --json-format --branch-counts --preserve-paths -o $Gcno.FullName $Source 2>&1
+            $GcovExit = $LASTEXITCODE
+            $GcovText = $GcovOutput -join [Environment]::NewLine
+            $GcovText | Add-Content -LiteralPath $CoverageLog
+            if ($GcovExit -ne 0) { throw "gcov failed for $RelativeSource with exit $GcovExit" }
+            if ($GcovText -match '(?i)(warning|error|libgcov|checksum|overwrit|cannot open notes file)') { throw "gcov reported a warning or error for ${RelativeSource}: $GcovText" }
+          } finally { Pop-Location }
+        }
+        $Backslash = [string][char]92
+        foreach ($RelativeSource in $Sources) {
+          $Source = [System.IO.Path]::GetFullPath((Join-Path $Worktree $RelativeSource))
+          $Expected = $Source.Replace($Backslash, '/').ToLowerInvariant()
+          $MatchesForSource = @()
+          foreach ($JsonFile in @(Get-ChildItem -LiteralPath $Report -Filter '*.gcov.json.gz')) {
+            $CoverageStream = [System.IO.File]::OpenRead($JsonFile.FullName)
+            try {
+              $Zip = [System.IO.Compression.GzipStream]::new($CoverageStream, [System.IO.Compression.CompressionMode]::Decompress)
+              try {
+                $Reader = [System.IO.StreamReader]::new($Zip)
+                try { $Document = ConvertFrom-Json -InputObject $Reader.ReadToEnd() -ErrorAction Stop } finally { $Reader.Dispose() }
+              } finally { $Zip.Dispose() }
+            } finally { $CoverageStream.Dispose() }
+            if ([string]$Document.format_version -notmatch '^2(?:\.0)?$') { throw "Unexpected gcov JSON format in $($JsonFile.FullName): $($Document.format_version)" }
+            foreach ($File in $Document.files) {
+              $Actual = ([System.IO.Path]::GetFullPath([string]$File.file)).Replace($Backslash, '/').ToLowerInvariant()
+              if ($Actual -eq $Expected) { $MatchesForSource += [PSCustomObject]@{ JsonFile = $JsonFile.FullName; File = $File; Document = $Document } }
+            }
+          }
+          if ($MatchesForSource.Count -ne 1) { throw "Expected exactly one gcov files[].file record for $RelativeSource, found $($MatchesForSource.Count)" }
+          $UniqueLines = @($MatchesForSource[0].File.lines | Group-Object { [int]$_.line_number })
+          $Total = $UniqueLines.Count
+          $Covered = 0
+          foreach ($LineGroup in $UniqueLines) { if (@($LineGroup.Group | Where-Object { [long]$_.count -gt 0 }).Count -gt 0) { $Covered++ } }
+          if ($Total -eq 0 -or (100.0 * $Covered / $Total) -lt 80.0) { throw "Coverage below 80 percent for $RelativeSource ($Covered/$Total)" }
+          Write-Output "SOURCE=$RelativeSource COVERED=$Covered TOTAL=$Total PERCENT=$([Math]::Round(100*$Covered/$Total,2)) FORMAT=$($MatchesForSource[0].Document.format_version) GCC=$($MatchesForSource[0].Document.gcc_version) REPORT=$($MatchesForSource[0].JsonFile)"
+        }
+      StaticChecks:
+        - "git diff --check BaseCommit HEAD"
+        - "Changed paths exactly equal the frozen five-path WriteSet."
+        - "P3 EntryGate is Passed and ED-0114 is complete/merged before assignment; WorkflowController validate-assignment accepts the exact task revision."
+        - "CoreChatService::Process and ProcessAsync use one shared Core preflight and the same per-instance policy/dedup/action/operation/receipt state; no duplicate AsyncCoreChatService exists."
+        - "ED-0149 public async headers/contracts are consumed without editing them or any V1 synchronous interface."
+        - "The test uses only an awaitable FakeProvider and MockChannelAdapter; no real provider, channel, network or transport path is connected."
+        - "Both gcov JSON v2 reports identify the exact source once, use unique paired .gcno/.gcda files newer than the passing named CTest block, meet 80 percent, and contain no libgcov checksum/overwrite warnings."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The vertical slice uses an offline awaitable FakeProvider and deterministic MockChannelAdapter only."
+    RiskLevel: High
+    RiskOwnerRole: CoreOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
