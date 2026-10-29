@@ -362,8 +362,8 @@
 ## 2026-10-29 ED-0120/R5 合同修订 PR #60
 
 - Worker01 在隔离分支 Task/ED-0120-R5ContractCloseout 完成产品文档提交 cdedb461973388778fba48e2c68518ab631a3209。该创建时 Head 的三条产品路径曾获 Worker06 内部 APPROVE；该批准不覆盖后续六路径 Head。
-- GitHub PR #60 当前固定审查快照为 Base main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 / Head fcde46da62469e6120d8e3db6232770d4466c454，6 个文件、Open、mergeable。PR URL: https://github.com/Hatedatastructures/EmulativeDialog/pull/60
-- Worker06 对该最终六路径 Head 的内部固定头审查返回 CHANGES_REQUESTED：F001 指出当前状态/Checkpoint 未从创建快照更新为最终六路径候选；F002 指出缺少精确 ancestry、diff 和 JSONL 验收命令的结构化事件与输出日志。产品合同披露规则、TransportRequestId 边界及 API/wire 语义通过；未提交 GitHub 原生 review。
-- Validation-012 至 Validation-016 记录了两项祖先关系、`git diff --check`、精确六路径比较和 JSONL 审计；Validation-015 当时核对 402 行旧前缀及 411 行唯一有效事件。Validation-017 的六项最终检查均退出码 0；当时 417 行 JSONL 审计通过，六条命令事件追加后为 423 行。Validation-018 和 Validation-019 的 `git diff --check` 均退出码 0；对应事件追加后当前共 425 行。
-- Worker06 对 `79f94a4...` → `fcde46d...` 的固定头审查指出 F001/F002。Coordinator 已在当前工作树修正状态/Checkpoint，并补齐六项结构化验收命令事件；WorkflowController 查询返回 Rework、退出码 0。修正尚未提交和推送，下一步是提交、推送并请 Worker06 复审新 Head。
+- GitHub PR #60 仍以 main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 为 Base，包含六路径范围。Coordinator 的 F001/F002 修正提交 d3af87814a8636299c749bdb950cd11f6da01052 已推送；创建后与当前的确切 Head 以 GitHub PR 元数据为准，审查前不在状态文档中复用旧 SHA。PR URL: https://github.com/Hatedatastructures/EmulativeDialog/pull/60
+- Worker06 对前一六路径 Head `fcde46da62469e6120d8e3db6232770d4466c454` 的内部固定头审查返回 CHANGES_REQUESTED：F001 指出当前状态/Checkpoint 未从创建快照更新为最终六路径候选；F002 指出缺少精确 ancestry、diff 和 JSONL 验收命令的结构化事件与输出日志。Coordinator 已修正这两项并推送 d3af878；新 Head 的独立复审仍待完成。产品合同披露规则、TransportRequestId 边界及 API/wire 语义通过；未提交 GitHub 原生 review。
+- Validation-012 至 Validation-016 记录了两项祖先关系、`git diff --check`、精确六路径比较和 JSONL 审计；Validation-015 当时核对 402 行旧前缀及 411 行唯一有效事件。Validation-017 的六项最终检查均退出码 0；当时 417 行 JSONL 审计通过，六条命令事件追加后为 423 行。Validation-018/019 的 `git diff --check` 均退出码 0，随后总计 425 行；Validation-020 记录纠错提交 d3af878 的推送，P2 JSONL 为 426 行。Validation-021 复核六路径、diff、Controller 和 JSONL 均通过，四条命令事件追加后共 430 行。
+- Worker06 对 `79f94a4...` → `fcde46d...` 的固定头审查指出 F001/F002。Coordinator 已在 d3af878 中修正状态/Checkpoint 并补齐六项结构化验收命令事件；WorkflowController 查询返回 Rework、退出码 0。Validation-021 对推送后的候选做了最终静态复核，P2 JSONL 追加记录后共 430 行。纠错提交已推送到 PR #60，下一步由 Worker06 对 GitHub 当前 Head 固定复审。
 - 此文档任务没有 C++ 产品源码改动，也不通过 P3；P3 EntryGate 仍为 Pending。
