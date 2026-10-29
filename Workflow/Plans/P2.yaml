@@ -3724,10 +3724,10 @@ Tasks:
     RevisionTransition: {FromRevision: 4, ToRevision: 5}
     ReexecutionOfTaskRevision: 4
     TaskSpecProposalBaseCommit: 1d88b4e16fca891155b80b9189a1e4f947e840df
-    TaskSpecPullRequestNumber: ""
+    TaskSpecPullRequestNumber: 58
     TaskSpecMergeStatus: AwaitingTaskSpecPR
     TaskSpecMergedToMainCommit: ""
-    TaskSpecHeadCommit: ""
+    TaskSpecHeadCommit: 76a827e30df6a043a0d84ffa874e0942c8f4e7c1
     PRBaseCommitBindingStatus: UnboundUntilActualProductPrMetadataVerified
     PRBaseCommit: ""
     SourceLineageCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
