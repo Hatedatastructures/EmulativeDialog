@@ -201,3 +201,9 @@
 - ED-0148/R5 已占用 Worker06 的当前审查槽。ED-0112/R8 的固定 Reviewer 仍为 Worker06，但要等其释放 ED-0148/R5 后再接手 R8 审查；不允许在 AgentPool 同时为 Worker06 写两个 CurrentTaskId。未合入候选中的 R8 Worker06 AgentSlotAssigned 事件已从本地修订差异移除，main 的历史事件前缀未改。
 - 本地 assignment-ledger 候选补齐了 TaskReadinessValidated、TaskAssigned 和 PR #36 的 Base/Head 记录。后续治理修订尚未推送到 PR #36；远端 PR 仍是 Base d47a4a4、Head b15c41a，等待 Coordinator 与独立 Reviewer 审阅后再发布后续 Head。
 - 本次只修改治理账本；没有触碰产品 C++、主工作区预存 $deps/ 或运行产品构建/CTest/coverage。
+
+## 2026-10-29 ED-0112/R8 reviewer-slot correction
+
+- 更正上一条未合入候选快照：P3 ED-0148/R5 虽在 TaskSpec 中列出 Worker06 为 ReviewerSlot，但该 revision 没有 Worker06 的 AgentSlotAssigned 事件；main d47 的 AgentPool 中 Worker06 为 Active 且 CurrentTaskId 为空。不得把 reviewer 字段推断成活动槽位占用。
+- ED-0112/R8 由 Worker02 执行新鲜验收；Worker06 仍是 TaskSpec 冻结的独立 Reviewer，但保持 Active/空 CurrentTaskId，待 build、CTest 和 coverage 完成后由 Coordinator 再正式分配审查槽。P2 已追加对旧候选 Reviewer 状态推断的 ProjectStateCorrection 事件。
+- PR #36 仍为 Open，Base 为 d47a4a45caa8857e0baec278b56b7b9bd9404817；精确最新 Head 以 GitHub PR 页面为准。远端分支上限仍为 4/4。R8 产品构建、CTest 和 coverage 尚未运行，仍须等 assignment-ledger PR 合并。
