@@ -1,6 +1,6 @@
 # Core Endpoint Grant Contract V1
 
-Status: ED-0147/R9 freeze candidate for CoreEndpointGrantContract V1; frozen only after independent approval and merge of PR #46.
+Status: This ED-0120/R5 disclosure-policy revision remains a freeze candidate until its own exact fixed-head independent approval and merge. PR #46 at fixed Base `b037f2b8dfce76f504213b4f6e46d1faf15424ed` / Head `3a9f00aff097c4a23a655eaea1093c35096c67b0` (merged as `5364581858c8299884e87e00730748b86fb43346` after internal Worker04/Worker06 approvals) is prior ED-0147/R9 authority-implementation/baseline evidence, not approval of this R5 text; this does not change ED-0147 task state or the P3 gate.
 
 ## Scope and ownership
 
@@ -69,17 +69,24 @@ sink.
 
 All profile revocation, grant insertion, and validation use one synchronized
 registry. Concurrent issuance never overwrites an existing ID. Grant IDs and
-profile endpoints are not written by this module to logs, events, diagnostics,
-or persistence. The authority has no logging, event, or persistence dependency.
-The returned grant ID is a bearer capability and callers must keep it out of
-logs and user-visible output.
+profile endpoints are not written by this module to logs, events, telemetry,
+diagnostics, persistence, command output, or user-visible output. The authority
+has no logging, event, telemetry, or persistence dependency.
 
-The Windows transport ADR currently has a separate diagnostic allowance for
-recording grant IDs. That cross-layer policy conflicts with ED-0147/R7 AC-6 and
-is not changed by this six-path task. This authority and contract preserve the
-stricter no-disclosure rule; the coordinator must resolve the transport rule
-through a separately reviewed change before a production composition relies
-on it.
+`EndpointGrantId` is a bearer capability. It may be held only in the local
+in-memory authorization/resolver flow; Core, Transport, adapters, and callers
+must never disclose it in logs, structured events, telemetry, diagnostics,
+persistent records, command output, user-visible output, exception text, or
+crash reports, and must never send it to the remote endpoint. `TransportRequestId`
+is a separate local correlation identifier for transport diagnostics and events;
+it must not be placed in remote headers, query parameters, or body content, and
+must never substitute for the grant during authorization. Local correlation uses
+`TransportRequestId` rather than `EndpointGrantId`.
+
+ADR-0003 and HttpTransportContract V1 use this same no-disclosure rule. The
+former diagnostic allowance for recording grant IDs is superseded by the
+ED-0120/R5 correction; there is no transport-layer exception. This documentation
+revision does not alter the V1 API or wire behavior.
 
 ## Verification boundary
 

@@ -1,6 +1,6 @@
 # HTTP Transport 合同 V1
 
-状态：冻结候选（ED-0120/R2）。本任务冻结三种 Provider 共用的出站 HTTPS 流式 Port 与 V1 语义；不实现 WinHTTP 传输代码（ED-0121），不定义任何 Provider wire schema。
+状态：冻结候选（ED-0120/R5）。当前 V1 文本须经本修订的固定头独立评审并合并后才视为冻结；不实现 WinHTTP 传输代码（ED-0121），不定义任何 Provider wire schema。
 
 ## 职责与依赖方向
 
@@ -21,8 +21,8 @@
 
 | 字段 | 语义 |
 |---|---|
-| `TransportRequestId` | Core/Adapter 生成的本地关联 ID；只用于诊断与事件关联，不发给远端。 |
-| `EndpointGrantId` | Core endpoint policy 签发的不可伪造引用。`Stream` 校验必须与此 grant 和请求 destination 一起完成。`Missing`、`Expired`、`DestinationMismatch` 全部只映射为 `EndpointNotGranted`，不向调用方区分原因。 |
+| `TransportRequestId` | Core/Adapter 生成的本地关联 ID；只用于本地日志、事件、telemetry、diagnostics 相关性，绝不放入远端请求的 header、query 或 body，也不以其他方式发送给远端。它不是授权引用，不得替代 `EndpointGrantId`。 |
+| `EndpointGrantId` | Core endpoint policy 签发的 bearer capability。只在本地内存中的 `TransportRequest` 与 resolver 校验流程中使用；不得进入日志、事件、telemetry、diagnostics、持久化记录、命令输出或用户可见输出，也不得发送给远端。`Stream` 校验必须与此 grant 和请求 destination 一起完成。`Missing`、`Expired`、`DestinationMismatch` 全部只映射为 `EndpointNotGranted`，不向调用方区分原因。 |
 | `TransportMethod` | V1 只有 `Post`；新增动词需要合同修订。 |
 | `HttpsDestination` | 由 grant 解析出的 host（DNS 名或 IP 字面量，不含 scheme/userinfo）、port 与绝对 path+query。redirect 不改变该字段。 |
 | `Headers` | 有界 header 列表。**协议/profile allowlist 由 Adapter 负责**：Transport 看不到 profile，无法也不得判断某个 provider 专属 header 是否被授权。Transport 只负责拒绝 CR/LF 注入、大小/条数超限与 hop-by-hop header；`Host` 与 `Content-Length` 属 Transport 所有，Adapter 不得设置，Transport 依据 `HttpsDestination` 与 `BodyUtf8` 生成并忽略传入值。敏感值不得进入终态、事件或日志。 |
@@ -81,7 +81,7 @@
 - header 责任划分：Adapter 负责只写入本协议/profile allowlist 允许的 header；Transport 看不到 profile，只负责拒绝名称或值中的 CR/LF、超过字节/条数上限，以及禁用 hop-by-hop header（`Connection`、`Keep-Alive`、`Proxy-Connection`、`Proxy-Authorization`、`TE`、`Trailer`、`Transfer-Encoding`、`Upgrade`，大小写不敏感）并返回 `InvalidRequest`/`HeaderLimitExceeded`。`Host` 与 `Content-Length` 是 framing header：Adapter 不得设置，Transport 必须依据 `HttpsDestination.Host`（含已登记端口）与 `BodyUtf8.size()` 自行生成，并忽略任何 Adapter 传入值；Port 以 `IsAdapterForbiddenHeader` 暴露这一 Adapter 禁用集合。
 - 压缩：V1 不支持压缩。Transport 不设置 `Accept-Encoding`、不协商压缩、不自行解压，响应 body 字节原样交给 Adapter；任何非 `identity` 的 `Content-Encoding`（例如被中间层强制 gzip）都返回 `InvalidHttpResponse`，不得把压缩字节当 SSE 交付。
 - `Retry-After`：Transport 把 delta-seconds 与 HTTP-date 两种合法形式统一归一化为相对当前响应的秒数；值非法/不可解析时置空，超过实现登记的合理上限时截断到该上限。归一化结果只是 allowlisted 元数据，是否重试由 Core/ProviderOutcomePolicy 决定。
-- 脱敏：终态、事件、日志与任务报告不得包含 Authorization、API key、cookie、完整 URL、请求/响应正文或 Location 完整值。
+- 脱敏：终态、事件、日志、telemetry、diagnostics、持久化记录、命令输出、用户可见输出与任务报告不得包含 `EndpointGrantId`、Authorization、API key、cookie、完整 URL、请求/响应正文或 Location 完整值。本地需要关联单次传输时使用 `TransportRequestId`；它不得被序列化进发送给 Provider 的任何内容。
 
 ## 健康检查
 
