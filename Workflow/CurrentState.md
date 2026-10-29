@@ -423,3 +423,10 @@
 - 十项精确依赖均经 Windows WorkflowController 查询返回 State=Merged（exit 0）；P1/P2 gates Passed，两份 P3 合同 Frozen，ED-0147/R9 已经独立 TaskClosed。详细查询输出见 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-PostMergeReadiness-20261030.log。
 - ED-0151/R3 assignment candidate 绑定 baseline 554ba46146eeada94b2863a97c2b5b96e1260b51、分支 Task/ED-0151-P3GateCloseout、本隔离 worktree 和 Coordinator Owner；Worker04 为独立 Reviewer。候选 validate-assignment 返回 AssignmentAccepted（exit 0），但它发生在 assignment ledger PR 合并前，不是 post-merge 接受。
 - 下一步是独立审查并合并 assignment ledger PR；合并后在当前 main 重跑 query 和 validate-assignment，成功后才追加 TaskStarted 并开始 H1 GateDecisionReview。P3 EntryGate 仍为 Pending，无 P3EntryGatePassed 事件；本任务没有授权产品 C++ 写入，Codex 重写仍未完成。
+
+## 2026-10-30 PR #66 固定头复审更正
+
+- Worker04 对 PR #66 固定头提出 REQUEST_CHANGES：三条验证尝试的 OccurredAt 顺序与描述冲突。原始 attempt log 只保留 Attempt 1/2/3 顺序，没有每次运行的 UTC 时间。
+- 已按事件只追加规则保留原事件，并追加三条 Correction，明确原 OccurredAt 不可信、准确执行时间未记录，attempt log 的 1→2→3 顺序为唯一可用顺序。更正事件分别引用原 EventId；未猜测或补造时间。
+- 本次更正不改变验证结果、任务状态或 P3 门状态；P3 仍 Pending，无 TaskStarted 或 P3EntryGatePassed。PR #66 新 Head 需要 Worker04 固定头复审。
+- 同次复验脚本的首次运行因检查了不存在的 EntryGateState 字段而失败；P3 计划的真实字段是 EntryGate.State，现场值为 Pending。此为检查器假设错误，不是验收失败；记录见 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-PR66ChronologyCorrectionValidatorAttempt-20261030.log。已改为按真实字段校验后重跑。- 修正后的 PR #66 候选复验通过：预追加快照 257 条事件，追加验证事件后 258 条均为有效 JSON、EventId 唯一；242 条主线事件前缀完整；P2 blob 未变；无门禁通过或 R3 TaskStarted；Controller 查询为 Assigned、候选 validate-assignment 为 AssignmentAccepted、过期 R2 查询被拒绝。日志：H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-PR66ChronologyCorrectionValidation-20261030.log；CommandExecuted EventId faa09821-fc99-44a3-b68b-b67821f13b08。
