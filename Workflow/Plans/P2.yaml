@@ -3728,6 +3728,10 @@ Tasks:
     TaskSpecMergeStatus: AwaitingTaskSpecPR
     TaskSpecMergedToMainCommit: ""
     TaskSpecHeadCommit: 76a827e30df6a043a0d84ffa874e0942c8f4e7c1
+    TaskSpecHeadCommitScope: PullRequestCreationSnapshot
+    TaskSpecLastObservedReviewHeadCommit: 6a9ebfaa38dad86b133da4ec71521229a1578717
+    TaskSpecLastObservedReviewHeadObservedAt: "2026-10-29T20:23:37Z"
+    TaskSpecLastObservedReviewHeadSource: "GitHub PR #58 base/head metadata"
     PRBaseCommitBindingStatus: UnboundUntilActualProductPrMetadataVerified
     PRBaseCommit: ""
     SourceLineageCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59

@@ -336,9 +336,17 @@
 - The TaskSpec proposal PR will write only the P2 plan, P2 event shard, and CurrentState. The eventual R5 product task WriteSet remains the six separately declared paths: three ADR/contract documents plus those three governance paths. The separate AssignmentLedger remains required to release/check Worker01/Worker06 slot occupancy and bind/freeze the assignment-time baseline before Ready.
 - P3 EntryGate remains Pending; ED-0149/R1 and ED-0150/R1 remain Proposed. This governance work does not implement or authorize AgentRuntime C++ behavior.
 
-## 2026-10-30 ED-0120/R5 TaskSpec PR #58 Open (recorded at 2026-10-29T20:14:47 UTC)
+## 2026-10-30 ED-0120/R5 TaskSpec PR #58 Open (snapshot recorded at 2026-10-29T20:14:08Z)
 
 - GitHub PR #58 was created at `2026-10-29T20:06:53Z`. Its current metadata confirms state `Open`, base `main` at `1d88b4e16fca891155b80b9189a1e4f947e840df`, and head `Task/ED-0120-R5TaskSpec` at `76a827e30df6a043a0d84ffa874e0942c8f4e7c1`.
 - P2 records `TaskSpecPullRequestNumber: 58` and `TaskSpecHeadCommit: 76a827e30df6a043a0d84ffa874e0942c8f4e7c1`; the earlier `TaskSpecProposalRecorded` event and the 04:02 +08:00 snapshot above remain unchanged historical records.
 - ED-0120/R5 remains `Proposed` and unassigned: no assignment baseline or assignment ledger, no `TaskStarted`, and no product-write authorization. `TaskSpecMergeStatus` remains awaiting the TaskSpec PR; `PRBaseCommit` stays empty because it is reserved for verified metadata of the future product PR.
 - This records only PR tracking. It does not change the R5 TaskSpec goal, acceptance, dependencies, or six-path task WriteSet, and does not authorize product-document edits.
+
+## 2026-10-30 ED-0120/R5 PR #58 review-head snapshot (2026-10-29T20:23:37Z)
+
+- At `2026-10-29T20:23:37Z`, GitHub metadata showed PR #58 Open, base `main` at `1d88b4e16fca891155b80b9189a1e4f947e840df`, and last-observed review head `6a9ebfaa38dad86b133da4ec71521229a1578717`.
+- The PR-created head remains `76a827e30df6a043a0d84ffa874e0942c8f4e7c1`; `TaskSpecHeadCommit` and the `PRCreated` event are explicitly creation-time snapshots. The separate last-observed review head is recorded in P2.yaml and the appended `PRHeadUpdated` event.
+- A later append-only correction supersedes the earlier `RecordedAt` correction: it retains the original `20:14:08Z` time and changes only the date-time separator to `T`; the earlier `20:14:47Z` value had no supporting timestamp evidence.
+- This snapshot predates the bookkeeping commit that records it. It is historical evidence, not a promise that GitHub's live head will remain unchanged; fixed-head reviewers must read `base.sha` and `head.sha` from GitHub PR metadata when they begin review.
+- ED-0120/R5 remains `Proposed` and unassigned, with no assignment baseline, no `TaskStarted`, and no product-write authorization. Product `PRBaseCommit` remains empty and P3 EntryGate remains Pending.
