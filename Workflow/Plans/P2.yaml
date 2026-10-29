@@ -1031,10 +1031,18 @@ ChangeRequests:
     ProposedTaskRevision: 6
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 456b2172f88460e6eb4ebd02f5c8c450cc44ca96
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: 456b2172f88460e6eb4ebd02f5c8c450cc44ca96
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 456b2172f88460e6eb4ebd02f5c8c450cc44ca96
+    AcceptedAt: 2026-10-29
     FindingIds: [ED0112-R5-STATIC-BASE-01]
     Findings:
       - FindingId: ED0112-R5-STATIC-BASE-01
@@ -1064,7 +1072,8 @@ ChangeRequests:
     PreserveGoalAcceptanceDependenciesContractsReadWriteAndForbiddenSets: true
     PreserveOwnerReviewerAndAssignment: true
     ProductSourceWriteSetChanged: false
-    ApprovalRequiredBeforeRevision6: true
+    ApprovalRequiredBeforeRevision6: false
+    AcceptedTaskRevision: 6
     ProposedImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
     ProposedBaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     EvidenceRefs:
@@ -2357,22 +2366,23 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0112
-    TaskRevision: 5
+    TaskRevision: 6
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
     State: Assigned
-    TaskSpecChangeRequestId: CR-ED-0112-006
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecOwnerDecision: Approve
+    TaskSpecChangeRequestId: CR-ED-0112-007
+    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
+    TaskSpecOwnerDecision: Pending
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
-    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecReviewerDecision: Approve
+    TaskSpecOwnerReviewHeadCommit: ""
+    TaskSpecReviewerDecision: Pending
     TaskSpecReviewerAgentId: /root/worker06_ed0105_review
-    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecCoordinatorDecision: Accepted
-    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    TaskSpecReviewerReviewHeadCommit: ""
+    TaskSpecIndependentReviewerDecision: Pending
+    TaskSpecCoordinatorDecision: Pending
+    TaskSpecCoordinatorDecisionHeadCommit: ""
+    TaskSpecMergedToMainCommit: ""
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
     AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR to main; all six dependencies are merged. The exact eight-path implementation assignment is bound to main baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may begin only after this assignment-ledger PR merges; do not reuse or merge the protected R2 worktrees."
@@ -2453,9 +2463,42 @@ Tasks:
       FindingIds: [ED0112-R4-REPLAY-01]
       Disposition: SupersededBeforeImplementation
       Reason: "The checkpoint metadata confused its three-file commit delta with the eight-path task replay set; no R4 implementation assignment or product source change was authorized."
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
-    TaskSpecOwnerDecision: Pending
-    TaskSpecIndependentReviewerDecision: Pending
+    PreviousRevision5Evidence:
+      TaskRevision: 5
+      TaskSpecChangeRequestId: CR-ED-0112-006
+      TaskSpecHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+      TaskSpecReviewStatusRecordedValues:
+        - {Value: ApprovedAndMergedToMain, Provenance: "R5 Owner/Reviewer approvals and PR #26 merge"}
+        - {Value: AwaitingOwnerAndIndependentReviewerReview, Provenance: "Stale duplicate mapping value; retained as historical evidence"}
+      AuthoritativeTaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecReviewStatusCorrectionEventId: 3c6a7a8b-a9a1-4d0d-a113-22d0e4c50001
+      TaskSpecOwnerDecisionRecordedValues:
+        - {Value: Approve, ReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997}
+        - {Value: Pending, Provenance: "Stale duplicate mapping value; retained as historical evidence"}
+      AuthoritativeTaskSpecOwnerDecision: Approve
+      TaskSpecOwnerDecisionCorrectionEventId: 55f0a9f1-7a19-4c20-b099-26b4c9500001
+      TaskSpecReviewerDecisionRecordedValues:
+        - {Field: TaskSpecReviewerDecision, Value: Approve, ReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997}
+        - {Field: TaskSpecIndependentReviewerDecision, Value: Pending, Provenance: "Stale conflicting reviewer metadata; retained as historical evidence"}
+      AuthoritativeIndependentReviewerDecision: Approve
+      TaskSpecReviewerDecisionCorrectionEventId: 55f0a9f1-7a19-4c20-b099-26b4c9500002
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+      TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+      BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+      AssignedToSlot: Worker02
+      Branch: Task/ED-0112-R5TurnRecovery
+      Worktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+      ImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
+      CodeReviewStatus: RequestChanges
+      CodeReviewerAgentId: /root/worker06_ed0105_review
+      CodeReviewFindingIds: [ED0112-R5-STATIC-BASE-01]
+      ValidationEvidence:
+        TargetedCTest: {ExitCode: 0, Passed: 2, Total: 2}
+        TurnCheckpointStoreCoverage: {Covered: 737, Total: 822, Percent: 89.66, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
+        TurnRecoveryCoordinatorCoverage: {Covered: 173, Total: 189, Percent: 91.53, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
+      Disposition: SupersededByAcceptedValidationOnlyRevision
+      Reason: "R6 changes only the two stale StaticChecks bases under CR-ED-0112-007. The assigned implementation Base, Owner, Reviewer, branch, worktree, source behavior and eight-path WriteSet remain unchanged."
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2611,8 +2654,8 @@ Tasks:
         }
       ContractFixtures: ["Synthetic restart checkpoints, exact scoped ContextReference, revoked scope, deleted record, and unknown action outcome; no message rehydration or runtime dispatch is claimed."]
       StaticChecks:
-        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 461735e50657bdc8ace070b46db3682cfb03460f HEAD"
-        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 461735e50657bdc8ace070b46db3682cfb03460f HEAD; exact sorted set must equal WriteSet"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 0b666e655e75f7fdc7074a405cb2b2a35975a6fc HEAD"
+        - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 0b666e655e75f7fdc7074a405cb2b2a35975a6fc HEAD; exact sorted set must equal WriteSet"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
         - "Run CoverageCommand and retain its per-source numerator, denominator, exclusions, percentage, GCC version, and JSON format output in the task evidence."

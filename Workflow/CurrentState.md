@@ -163,3 +163,10 @@
 - ED-0148 的预门例外已更新为已合入，同时保留 `DoesNotSatisfyEntryGate: true` 与不解锁 ED-0114/ED-0144/ED-0145 的限制。P3 EntryGate 仍为 Pending，仅待 ED-0147/R6 的 Core grant authority 实现、固定头审查、Windows 验证与合同冻结；ED-0146/R6 的合入不等于 Provider/WinHTTP 生产组合已接线。
 - P2 追加了 ED-0146 `TaskMerged` 与 Worker01/03/04 `AgentSlotRecovered` 事件；P3 追加 ED-0147 就绪验证与上述 RuleDeviation。各事件含 merge SHA、查询命令或槽位释放证据。此次是账本回填，没有修改产品 C++、接口或持久化行为。
 - ED-0112/R5 作者提交 `19691cb10c32d5081d6c0e18fafb5d7322971779`；Windows 定向构建和 CTest 2/2 通过，`TurnCheckpointStore.cpp` 覆盖率 89.66%，`TurnRecoveryCoordinator.cpp` 为 91.53%。Worker06 正在对固定 Base `0b666e…` → Head `19691cb…` 做独立只读复核，尚未推送或创建实现 PR，因此 Codex Agent 重写仍未完成。
+
+## 2026-10-29 ED-0112/R6 validation-only revision
+
+- CR-ED-0112-007 已在固定治理 Base `b04f407403c12ad13e47e4aea8ad092a9dbba321` → Head `456b2172f88460e6eb4ebd02f5c8c450cc44ca96` 上获得 Worker02 Owner 与 Worker06 Independent Reviewer 的 Approve；Coordinator 已接受。CR 仅改两条 StaticChecks 比较基线，不变更 Goal、Acceptance、Dependencies、ContractVersion、ReadSet、WriteSet、ForbiddenSet、Owner、Reviewer、branch、worktree 或产品源代码。
+- P2 当前生成 ED-0112/R6 TaskSpec 候选：任务仍 Assigned 到 Worker02，保持原实现 Base `0b666e655e75f7fdc7074a405cb2b2a35975a6fc`、分支和 worktree；R6 的 Owner/Reviewer/Coordinator TaskSpec 决策目前 Pending，等待对 R6 版本本身的固定头审查。R5 原始冲突值保留在 `PreviousRevision5Evidence`。追加式更正分别记录 R5 `TaskSpecReviewStatus`、`TaskSpecOwnerDecision` 与独立 Reviewer 状态；没有改写 R5 原记录。
+- Windows 静态验收日志 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5-MajorFix9/windows-agent-slice/Reports/CR-ED-0112-007-StaticChecks.txt` 记录了 Base `0b666e...` → Head `19691cb...`：`git diff --check` 退出 0，实际路径 8/8 与 WriteSet 完全相同；合并前旧基线会得到 16 条路径。日志只覆盖静态检查，不表示本次重跑 C++ 构建、CTest 或覆盖率。
+- ED-0112 的既有 C++ Windows 构建、CTest 2/2 与 89.66%/91.53% 覆盖率证据仍对应原实现 Head `19691cb...`。代码分支尚未推送或创建 PR；须先完成 R6 TaskSpec 固定头复审与治理 PR，然后 Worker06 对实现代码按获批 R6 再审，才提交实现 PR。远端分支仍 3/4；根工作区 `$deps/` 未触碰。
