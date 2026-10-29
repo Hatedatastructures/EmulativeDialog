@@ -3718,7 +3718,7 @@ Tasks:
     EpicId: EP-06
     Title: 统一 HTTPS transport grant 日志规则并校准合同状态
     TaskKind: ContractFreeze
-    State: Assigned
+    State: Active
     Phase: P2
     ChangeRequestId: CR-ED-0120-009
     RevisionTransition: {FromRevision: 4, ToRevision: 5}
@@ -3736,8 +3736,12 @@ Tasks:
     TaskSpecApprovedHeadCommit: 958d3712b69439849cf5df80632743267c94c04a
     TaskSpecMergedAt: '2026-10-29T20:30:04Z'
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/58
-    PRBaseCommitBindingStatus: UnboundUntilActualProductPrMetadataVerified
-    PRBaseCommit: ""
+    PRBaseCommitBindingStatus: VerifiedFromActualGitHubPRMetadata
+    PRBaseCommit: 79f94a4fa9c9dd41a4ad8187e878683f9c9808c7
+    ProductPullRequestNumber: 60
+    ProductPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/60
+    ProductPullRequestCreatedAt: "2026-10-29T20:59:22Z"
+    ProductPullRequestCreatedHeadCommit: cdedb461973388778fba48e2c68518ab631a3209
     SourceLineageCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
     BaselineCommit: 52865b14a2342423244acefedf6117131897d9ba
     AssignmentBaseCommit: 52865b14a2342423244acefedf6117131897d9ba
@@ -3750,6 +3754,7 @@ Tasks:
     ReviewerIndependence: Required
     OwnerAssignmentEventId: 08688324-8851-4b18-aacd-0fe135fc792d
     ReviewerAssignmentEventId: 8c645b28-cbee-46e0-bef4-bc2f7298c783
+    TaskStartedEventId: 8a3b9588-89b0-4363-ae05-850f81407cc1
     AssignedAt: "2026-10-29T20:38:13.5564153+00:00"
     Branch: Task/ED-0120-R5ContractCloseout
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout
@@ -3886,7 +3891,7 @@ Tasks:
         - "P2 JSONL is append-only, parses line by line, and all EventId values are unique; its baseline rows are unchanged."
         - "P3 EntryGate remains Pending; P3 plan and event paths are not in this TaskSpec PR's actual changed path set."
       LiveSideEffects: Forbidden
-      NotRunReason: "This is the separate R5 AssignmentLedger PR. The task is Assigned in the candidate record but the assignment is not effective until PR #59 merges and post-merge Controller query/validate-assignment succeeds. No product document, build, test, credential, provider, or channel operation is authorized before TaskStarted."
+      NotRunReason: "This documentation-only task does not require C++ build, CTest, or coverage. Post-merge assignment was accepted and TaskStarted was recorded; Worker01 may now update only the frozen three-path ProductWriteSet. Credentials, providers, and channels are not invoked."
     RiskLevel: High
     RiskOwnerRole: NetworkOwner
     Risk: "EndpointGrantId is a bearer capability. Allowing it into diagnostics can enable replay or unauthorized endpoint use if logs are exposed. Incorrect contract labels could falsely suggest P3 is unblocked."
@@ -3904,7 +3909,7 @@ Tasks:
       - Workflow/Events/CodexRewrite/P2.jsonl#EventId=d504fa38-5a42-4c68-a4ac-940bc1568bb3
       - https://github.com/Hatedatastructures/EmulativeDialog/pull/57
       - https://github.com/Hatedatastructures/EmulativeDialog/commit/1d88b4e16fca891155b80b9189a1e4f947e840df
-    Checkpoint: {LastCompletedAcceptance: "PR #58 merged the approved R5 TaskSpec to main at 52865b14a2342423244acefedf6117131897d9ba; candidate Ready and Assigned Controller query/assignment checks passed", CurrentFindingOrFailure: "PR #59 is an open AssignmentLedger candidate; the assignment is not effective before PR merge and post-merge Controller validation, and no product write is authorized", TriedApproaches: ["R4 remains Blocked after AC-7 ordering finding; historical timestamps were preserved"], NextAction: "Obtain independent fixed-head review and merge PR #59; then rerun Controller query and validate-assignment on main, and create the product worktree/TaskStarted only after AssignmentAccepted", OpenMessageIds: [], LastValidationResult: "Pre-merge candidate query and validate-assignment passed; post-merge validation remains pending"}
+    Checkpoint: {LastCompletedAcceptance: "Worker01 committed the three product documents as cdedb461973388778fba48e2c68518ab631a3209; internal Worker06 review approved Base 79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 / Head cdedb461973388778fba48e2c68518ab631a3209; GitHub PR #60 was created with verified base main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7", CurrentFindingOrFailure: "PR #60 creation head contains the three product paths only; AC-5 requires the exact three product plus three governance paths. The three governance paths are being added by Coordinator; the prior fixed-head review must be repeated after the final PR head is pushed. P3 remains Pending", TriedApproaches: ["R4 remains Blocked after AC-7 ordering finding; historical timestamps were preserved", "The initial three-path PR #60 review is not final because the frozen acceptance requires six changed paths"], NextAction: "Record PR #60 creation metadata, commit the three Coordinator-owned governance paths within the exact six-path WriteSet, verify the GitHub three-dot diff and JSONL invariants, push the new head, then obtain a fresh Worker06 fixed-head review", OpenMessageIds: [], LastValidationResult: "Initial PR #60 metadata confirmed base main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7, creation head cdedb461973388778fba48e2c68518ab631a3209, Open, mergeable=true, three changed product paths; fixed Base..Head git diff --check passed"}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0120
