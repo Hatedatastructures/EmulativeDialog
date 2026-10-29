@@ -375,3 +375,9 @@
 - ADR-0003 保持 Accepted；HttpTransportContract V1 与 CoreEndpointGrantContract V1 根据同一固定头的独立批准及 PR #60 合并证据更新为 Frozen。P3 EntryGate 保持 Pending，ED-0147 的任务状态未改变。
 - 此收尾提交只更新授权的三份合同/ADR状态与三条 P2 生命周期治理路径；没有修改 P3、AgentPool、C++ 源码、测试或 CMake，也未运行 C++ build/CTest/coverage。
 - Validation-024 最终核验退出码 0，实测耗时 756.416 ms；验证精确六路径、`git diff --check`、P2 JSONL 430 行基线前缀/438 个唯一事件、R3/R4 Checkpoint 历史未变、P3 文件未改且 EntryGate 仍 Pending、三份 ADR/合同状态和 WorkflowController `State=Merged`。日志位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5LifecycleCloseout.build/WorkflowControllerEvidence/ED-0120/r5/Validation-024-20261029T214428Z.log`，并引用于 P2 事件账本。
+
+## 2026-10-30 ED-0120/R5 Worker06 账本发现修正（记录于 2026-10-29T21:53:02Z）
+
+- Worker06 对 Base 8c9791e1bddf787fc703cac43aedd70d37a81bcd → Head 187273901356553725cd4f4052bcc78bd79ac135 提出的 finding ED-0120-R5LC-I1 已解决。P2 计划保留 Validation-024 历史，并将 Validation-025 标为此前最新验证；该命令运行时读取 **438 行/438 个唯一事件**，追加自身 CommandExecuted 记录后为 **439 行/439 个唯一事件**。
+- Validation-026 是这次修正后的完整验证：finding 解决事件追加后，命令运行时为 **440 行/440 个唯一事件**；追加 Validation-026 的 CommandExecuted 事件后为 **441 行/441 个唯一事件**。验证命令退出码 0，日志路径见 P2.jsonl EventId=a9afe24b-8add-4a1d-abc7-5e5abaff2d9e。P2 的 FinalScopeValidationEventId 指向 Validation-026，P3 EntryGate 仍为 Pending。
+- 此次仅更新 ED-0120/R5 账本与状态摘要；PR #60 合并事实和合同状态不变，不修改 P3、AgentPool 或 C++ 源码/测试/CMake。

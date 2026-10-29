@@ -3759,7 +3759,13 @@ Tasks:
     TaskClosedEventId: 9f6930b0-9214-497c-b23b-77c31cc92011
     ValidationCommandEventId: 213b7f14-e0eb-461d-a4c4-bcc0069835ac
     PostCloseoutValidationEventId: 1edda28c-5ba1-450c-b23b-a632f1506d0c
-    FinalScopeValidationEventId: 140d3d1c-f4e5-4812-8e8f-7dda28b8152a
+    Validation025EventId: 01e0de9c-f23c-4946-a2f2-2a6da70a9b8d
+    Validation025CommandRuntimeRows: 438
+    Validation025CommandRuntimeUniqueEventIds: 438
+    Validation025RowsAfterEventAppend: 439
+    Validation025UniqueIdsAfterEventAppend: 439
+    ReviewFindingResolvedEventId: 47e38444-f340-4260-b84d-05ff0b9e267f
+    FinalScopeValidationEventId: a9afe24b-8add-4a1d-abc7-5e5abaff2d9e
     SourceLineageCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
     BaselineCommit: 52865b14a2342423244acefedf6117131897d9ba
     AssignmentBaseCommit: 52865b14a2342423244acefedf6117131897d9ba
@@ -3927,7 +3933,7 @@ Tasks:
       - Workflow/Events/CodexRewrite/P2.jsonl#EventId=d504fa38-5a42-4c68-a4ac-940bc1568bb3
       - https://github.com/Hatedatastructures/EmulativeDialog/pull/57
       - https://github.com/Hatedatastructures/EmulativeDialog/commit/1d88b4e16fca891155b80b9189a1e4f947e840df
-    Checkpoint: {LastCompletedAcceptance: "AC-1 through AC-8 are supported by PR #60 fixed Base 79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 / Head f4c3203061c9ff5680fbc407695ad31d8805453e, Worker06 internal fixed-head APPROVE, and squash merge f4c21b67591548b33a09f9c3b03d4c03ce2e5f28", CurrentFindingOrFailure: "None. F001/F002 are resolved; native GitHub review submissions=0 is preserved. P3 EntryGate remains Pending", TriedApproaches: ["The earlier fcde46d fixed-head RequestChanges remains in history; final review applies to f4c3203", "PR creation-time Head cdedb461 remains historical; approval is bound to f4c3203"], NextAction: "No further R5 work; a separate P3 gate-closeout task must independently evaluate its prerequisites", OpenMessageIds: [], LastValidationResult: "Validation-024 is the final post-correction static/Controller evidence; R3/R4 checkpoint history was restored from Base before this validation. Documentation/governance only; no C++ build or tests apply"}
+    Checkpoint: {LastCompletedAcceptance: "AC-1 through AC-8 are supported by PR #60 fixed Base 79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 / Head f4c3203061c9ff5680fbc407695ad31d8805453e, Worker06 internal fixed-head APPROVE, and squash merge f4c21b67591548b33a09f9c3b03d4c03ce2e5f28", CurrentFindingOrFailure: "ED-0120-R5LC-I1 is resolved: Validation-025 runtime and post-append row counts are distinguished below; P3 EntryGate remains Pending", TriedApproaches: ["Validation-024 remains in history; Validation-025 is recorded as 438 rows at command start and 439 after its own event was appended"], NextAction: "No further R5 contract work; a separate P3 gate-closeout task must independently evaluate its prerequisites", OpenMessageIds: [], LastValidationResult: "Validation-026 is the post-finding final scope check: it reads 440 P2 JSONL rows/440 unique IDs, then appends its CommandExecuted record for 441/441; see the linked Validation-026 log"}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0120
