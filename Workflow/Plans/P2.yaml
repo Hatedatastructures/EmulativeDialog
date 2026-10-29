@@ -1025,6 +1025,45 @@ ChangeRequests:
     EvidenceRefs:
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
       - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=4
+  - ChangeRequestId: CR-ED-0112-007
+    TargetTaskId: ED-0112
+    TargetTaskRevision: 5
+    ProposedTaskRevision: 6
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    FindingIds: [ED0112-R5-STATIC-BASE-01]
+    Scope: >-
+      Change only the two ED-0112/R5 Validation.StaticChecks comparison bases from the pre-merge TaskSpec review base
+      461735e50657bdc8ace070b46db3682cfb03460f to the assigned implementation BaselineCommit
+      0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Comparing the assigned branch with 461735 includes eight inherited
+      Workflow paths integrated by PRs #26-#28; comparing BaselineCommit to Head yields exactly the frozen eight-path
+      WriteSet. Preserve Goal, Acceptance, Dependencies, ContractVersion, ReadSet, WriteSet, ForbiddenSet, Owner,
+      Reviewer, branch, worktree, product source behavior, and all build/coverage commands. This is validation-only;
+      no additional product write is authorized.
+    Reason: >-
+      Worker06's fixed Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc to Head
+      19691cb10c32d5081d6c0e18fafb5d7322971779 review found the C++ diff exactly matches the eight-path WriteSet,
+      but the frozen StaticChecks still use 461735e50657bdc8ace070b46db3682cfb03460f, which predates the approved
+      TaskSpec and assignment ledger merges. The stale comparison returns 16 inherited-plus-task paths and cannot
+      pass the exact WriteSet check. The assigned BaseCommit comparison returns the intended eight paths.
+    ProposedStaticChecks:
+      - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --check 0b666e655e75f7fdc7074a405cb2b2a35975a6fc 19691cb10c32d5081d6c0e18fafb5d7322971779"
+      - "git -C H:/Qbot/EmulativeDialog.ED-0112-R5 diff --name-only 0b666e655e75f7fdc7074a405cb2b2a35975a6fc 19691cb10c32d5081d6c0e18fafb5d7322971779; exact sorted set must equal WriteSet"
+    PreserveGoalAcceptanceDependenciesContractsReadWriteAndForbiddenSets: true
+    PreserveOwnerReviewerAndAssignment: true
+    ProductSourceWriteSetChanged: false
+    ApprovalRequiredBeforeRevision6: true
+    ProposedImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
+    ProposedBaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#TaskId=ED-0112&TaskRevision=5
+      - Workflow/TaskLifecycle.md#Section=TaskRecordsAndImmutability
+      - 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+      - 19691cb10c32d5081d6c0e18fafb5d7322971779
 
 ParallelGroups:
   - GroupId: FirstProductSlice
