@@ -173,6 +173,6 @@
 
 ## 2026-10-29 ED-0148/R4 implementation assignment
 
-- PR #30 已把 ED-0148/R4 已合入的 consent TaskSpec/CR 状态纠正为 Ready；其依赖 ED-0113 已通过 PR #23 合入。Coordinator 已在独立 assignment worktree 记录 Worker05、精确两路径授权、实现分支 `Task/ED-0148-R4ConsentMatchingImpl`、worktree `H:/Qbot/EmulativeDialog.ED-0148` 和基线 `d8e918bd812f55b82babd3ef8df6a9b1b08f1eda`。WorkflowController `create-worktree` 和 `validate-assignment` 均退出 0，新的产品 worktree 当前干净。
+- PR #30 已把 ED-0148/R4 已合入的 consent TaskSpec/CR 状态纠正为 Ready；其依赖 ED-0113 已通过 PR #23 合入。Controller 的 `create-worktree`、`context` 与 `validate-assignment` 均有退出码 0 的命令记录及追加式修正事件，详见 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4-Assignment/Reports/Controller-Assignment-Validation.txt`。产品 worktree `H:/Qbot/EmulativeDialog.ED-0148` 分支和基线与派工一致，当前干净。
 - Worker05 只能在 assignment-ledger PR 合入后开始 C++ 写入；构建输出使用 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory`。P3 EntryGate 仍 Pending，ED-0148 的 scoped exception 不解锁 ED-0114、ED-0144 或 ED-0145。
 - Worker06 是独立 Reviewer；本候选只有 Workflow 账本变化，尚未开始 Memory 产品源码修改或 C++ 验收。
