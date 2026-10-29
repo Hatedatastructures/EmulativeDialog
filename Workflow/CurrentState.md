@@ -327,3 +327,26 @@
 - The corrected candidate separates R5's three product paths, three governance paths, six-path task union, five-path PR proposal set, and four-path future assignment-ledger set. P3 paths in PR #57 only register merged PR #56 and correct the stale PendingReason; P3 EntryGate remains Pending. Security disclosure exclusions explicitly retain telemetry.
 - AC-1 through AC-4, AC-6, and AC-8 semantics remain unchanged; only AC-5/AC-7 evidence sequencing is revised. Assignment baseline is frozen before Proposed→Ready and then consumed unchanged by WorkflowController. Worker01/Worker06 R4 slot release and R5 reassignment remain for a separate assignment ledger.
 - This remains governance-only. No R5 TaskSpec, product contract write, or AgentRuntime C++ implementation is authorized by PR #57.
+
+## 2026-10-30 ED-0120/R5 TaskSpec candidate started (04:02 +08:00)
+
+- PR #57 merged by squash to `main` at `1d88b4e16fca891155b80b9189a1e4f947e840df` after Worker01 Owner Accept and Worker06 independent Approve at fixed Base `fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e` / Head `a175deb848253284998daac28fe3c5d9afcee927`. The review decisions are internal fixed-head evidence; GitHub native review submission count was 0. Coordinator accepted CR-ED-0120-009 for R5 TaskSpec proposal only.
+- ED-0120/R4 remains `Blocked`; its historical TaskStarted/AssignmentAccepted ordering and candidate-only PRBaseCommit remain unchanged. R3/R4 drafts, worktrees, and patches are preserved.
+- At this snapshot, the ED-0120/R5 (TaskRevision 5) TaskSpec candidate is local on branch `Task/ED-0120-R5TaskSpec`, isolated worktree `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5TaskSpec`, based at `1d88b4e`. WorkflowController query returns `State=Proposed`, exit 0. No assignment, BaselineCommit, PRBaseCommit, TaskStarted, product write, or TaskSpec PR has been created yet.
+- The TaskSpec proposal PR will write only the P2 plan, P2 event shard, and CurrentState. The eventual R5 product task WriteSet remains the six separately declared paths: three ADR/contract documents plus those three governance paths. The separate AssignmentLedger remains required to release/check Worker01/Worker06 slot occupancy and bind/freeze the assignment-time baseline before Ready.
+- P3 EntryGate remains Pending; ED-0149/R1 and ED-0150/R1 remain Proposed. This governance work does not implement or authorize AgentRuntime C++ behavior.
+
+## 2026-10-30 ED-0120/R5 TaskSpec PR #58 Open (snapshot recorded at 2026-10-29T20:14:08Z)
+
+- GitHub PR #58 was created at `2026-10-29T20:06:53Z`. Its current metadata confirms state `Open`, base `main` at `1d88b4e16fca891155b80b9189a1e4f947e840df`, and head `Task/ED-0120-R5TaskSpec` at `76a827e30df6a043a0d84ffa874e0942c8f4e7c1`.
+- P2 records `TaskSpecPullRequestNumber: 58` and `TaskSpecHeadCommit: 76a827e30df6a043a0d84ffa874e0942c8f4e7c1`; the earlier `TaskSpecProposalRecorded` event and the 04:02 +08:00 snapshot above remain unchanged historical records.
+- ED-0120/R5 remains `Proposed` and unassigned: no assignment baseline or assignment ledger, no `TaskStarted`, and no product-write authorization. `TaskSpecMergeStatus` remains awaiting the TaskSpec PR; `PRBaseCommit` stays empty because it is reserved for verified metadata of the future product PR.
+- This records only PR tracking. It does not change the R5 TaskSpec goal, acceptance, dependencies, or six-path task WriteSet, and does not authorize product-document edits.
+
+## 2026-10-30 ED-0120/R5 PR #58 review-head snapshot (2026-10-29T20:23:37Z)
+
+- At `2026-10-29T20:23:37Z`, GitHub metadata showed PR #58 Open, base `main` at `1d88b4e16fca891155b80b9189a1e4f947e840df`, and last-observed review head `6a9ebfaa38dad86b133da4ec71521229a1578717`.
+- The PR-created head remains `76a827e30df6a043a0d84ffa874e0942c8f4e7c1`; `TaskSpecHeadCommit` and the `PRCreated` event are explicitly creation-time snapshots. The separate last-observed review head is recorded in P2.yaml and the appended `PRHeadUpdated` event.
+- A later append-only correction supersedes the earlier `RecordedAt` correction: it retains the original `20:14:08Z` time and changes only the date-time separator to `T`; the earlier `20:14:47Z` value had no supporting timestamp evidence.
+- This snapshot predates the bookkeeping commit that records it. It is historical evidence, not a promise that GitHub's live head will remain unchanged; fixed-head reviewers must read `base.sha` and `head.sha` from GitHub PR metadata when they begin review.
+- ED-0120/R5 remains `Proposed` and unassigned, with no assignment baseline, no `TaskStarted`, and no product-write authorization. Product `PRBaseCommit` remains empty and P3 EntryGate remains Pending.
