@@ -2057,7 +2057,7 @@ Tasks:
       OwnerAgentId: /root/worker02_ed0114_owner
       ReviewerAgentId: /root/worker04_ed0114_review
       State: Ready
-      AssignmentNote: "The exact R6 TaskSpec was approved and merged at b43ebd954cffb358645cfe173e832aa3b6a3110e; no implementation branch or worktree was created before the stable-slot migration superseded R6."
+      AssignmentNote: "Not assignable until ED-0146/R6 and this exact R6 TaskSpec are approved and merged; keep P3 EntryGate Pending until both required tasks pass and bind the then-current main BaseCommit and isolated worktree at assignment."
       Disposition: SupersededBeforeAssignmentByRevision7
       NoImplementationBranchOrWorktreeCreated: true
     PreviousRevision1:
