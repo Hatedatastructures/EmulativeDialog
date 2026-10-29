@@ -187,10 +187,10 @@
 - main 已有同步 C++ AgentRuntime 回合循环，以及离线 QQ Mock → Core 策略 → AgentRuntime → FakeProvider → Mock 回执纵向切片。异步协程生命周期、恢复到 AgentRuntime 启动的接线和其余 Codex Keep/Redesign 能力仍未完成。ED-0149 异步合同与 ED-0150 真正挂起的 Provider 纵向切片仍只是候选任务，不能报告 Codex 重写完成。
 - 下一步：合入两项任务的 assignment-ledger PR；并行运行 ED-0112/R7 与 ED-0148/R5 新鲜构建、CTest 和覆盖率；完成对应产品代码固定头审查并建立实现 PR。随后登记异步 AgentRuntime 合同与实际协程纵向切片任务。
 
-## 2026-10-29 ED-0112 修复与分支名额续作（06:40 UTC）
+## 2026-10-29 ED-0112 修复与分支名额续作（06:43 UTC）
 
 - 权威代码基线为 `main=origin/main=d55986d78398e07cb8f65aac715f79579c93ce00`。远端分支当前为 3/4：`main`、PR #25 ED-0144/R2、PR #34 ED-0112/R7。PR #20 ED-0114/R2 已关闭且未合并；远端 Head `a23f252268d32a8b7315797f74a2562b72772d2c` 已归档于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/BranchArchive/ED-0114-PR20-a23f252-remote-head.bundle`，bundle 验证完整。`H:/Qbot/EmulativeDialog.ED-0114-R2` 的 10 个未提交源码修改原样保留，没有清理或重置。
 - ED-0112 作者已在原八路径 WriteSet 提交修复 Head `301e628899fad80be1faad15e3bcc52aa49ce0f5`；Worker06 对固定 Base `0b666e655e75f7fdc7074a405cb2b2a35975a6fc` → Head `301e628…` 独立静态复审通过，覆盖 Sending 中已成功 operation 连续恢复不丢结果且不重放。PR #34 远端仍指向旧 Head `94a352f…`；新 Head 尚无 build、CTest、coverage 验收。
 - R7 使用的 `ED-0112-R6/windows-agent-slice` 目录已包含旧 Head 证据。协调分支 `Task/ED-0112-R8-ValidationTaskSpec` 正在登记 R8：保持原 Goal、Acceptance、WriteSet、依赖、合同、Owner/Reviewer 槽与代码分支，只切换到此前不存在的 `ED-0112-R8/windows-agent-slice`。在 R8 TaskSpec/CR 与 assignment ledger 合并前禁止运行新鲜验收；旧 R7 证据保留。
-- R8 TaskSpec 固定 Head `1d9c57086fe8cbbcf85327ee79ee3f90d16165d1` 的 Owner Worker02 已 Approve；独立 Reviewer Worker06 提出 F001，要求 CR 明确 governance 影响路径、兼容/安全影响和回退方案。该 finding 已记录并在新候选中补齐；修订后 Head 需重新固定审查，当前无 R8 PR，也未开始 R8 构建。
+- R8 TaskSpec 最终内容 Head `31117c78f5f0c91e90906ea51990b2e059565c2d` 已由 Owner Worker02 与独立 Reviewer Worker06 Approve；F001 的影响路径、兼容/安全影响和回退方案均已补齐并记录。Coordinator 已接受 CR-ED-0112-009。治理 PR 分支 Head 随后追加审查事件，尚未推送；当前无 R8 PR，也未开始 R8 构建。
 - 六个逻辑工作槽本轮已使用宿主支持的 `gpt-6-luna` / `max` 配置；本地治理候选记录了稳定槽绑定迁移，尚未通过独立审查或合入 main。AgentRuntime 产品代码仍为同步回合；真正异步协程切片与恢复接回启动流程尚未实现。真实 QQ 收发仍未接入；本阶段继续不做微信。

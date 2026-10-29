@@ -834,7 +834,7 @@ ChangeRequests:
     ProposedTaskRevision: 3
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    Decision: Accepted
     Scope: >-
       Preserve ED-0112 Goal, dependencies, ContractVersion, Acceptance, privacy/no-replay rules, risk, and logical
       module intent. Materialize the already accepted .hpp/CMakeLists and CoreAgentContract WriteSet changes as exactly
@@ -1200,11 +1200,17 @@ ChangeRequests:
         Result: Rework
     FindingDisposition:
       - FindingId: ED0112-R8-CR-F001
-        Status: AddressedInProposedHead
+        Status: Resolved
+        ResolutionHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
         Summary: "Added concrete evidence, exact governance impact paths, compatibility/security impact, and a rollback plan; clarified that ProposedWriteSet is the unchanged product WriteSet."
-    OwnerCRDecision: Pending
-    IndependentReviewerDecision: Pending
-    CoordinatorDecision: Pending
+    ReviewAttempts:
+      - {BaseCommit: d55986d78398e07cb8f65aac715f79579c93ce00, HeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d, OwnerDecision: Approve, OwnerAgentId: /root/luna02_ed0148_pr_ready, IndependentReviewerDecision: Approve, IndependentReviewerAgentId: /root/luna06_capability_status_audit, FindingIds: [], Result: Approved}
+    OwnerCRDecision: Approve
+    OwnerCRReviewHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
+    IndependentReviewerDecision: Approve
+    IndependentReviewerReviewHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
     PreserveGoalAcceptanceReadSetWriteSetForbiddenSetContractsDependenciesOwnerReviewer: true
     NoProductSourceWriteAuthorizedBeforeMerge: true
 ParallelGroups:
@@ -2497,17 +2503,17 @@ Tasks:
     TaskKind: IntegrationTask
     State: Ready
     TaskSpecChangeRequestId: CR-ED-0112-009
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
-    TaskSpecOwnerDecision: Pending
+    TaskSpecReviewStatus: ApprovedPendingMerge
+    TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
-    TaskSpecOwnerReviewHeadCommit: ""
-    TaskSpecReviewerDecision: Pending
+    TaskSpecOwnerReviewHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
+    TaskSpecReviewerDecision: Approve
     TaskSpecReviewerAgentId: /root/luna06_capability_status_audit
-    TaskSpecReviewerReviewHeadCommit: ""
-    TaskSpecIndependentReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecCoordinatorDecisionHeadCommit: ""
-    TaskSpecHeadCommit: ""
+    TaskSpecReviewerReviewHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
+    TaskSpecIndependentReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
+    TaskSpecHeadCommit: 31117c78f5f0c91e90906ea51990b2e059565c2d
     ImplementationHeadCommit: 301e628899fad80be1faad15e3bcc52aa49ce0f5
     CodeReviewStatus: ApprovedAtFixedHead
     CodeReviewBaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
