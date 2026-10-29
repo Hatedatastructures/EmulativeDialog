@@ -2501,7 +2501,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Review
+    State: Merged
     TaskSpecChangeRequestId: CR-ED-0112-009
     TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
@@ -2526,9 +2526,19 @@ Tasks:
     TaskSpecMergedToMainCommit: d47a4a45caa8857e0baec278b56b7b9bd9404817
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
-    AssignmentNote: "PR #36 merged into main at bc1899fd6524bd6f71121e23f545782796d4cab3. Worker02 completed R8 acceptance validation for product Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and Head 301e628899fad80be1faad15e3bcc52aa49ce0f5; see ValidationEvidence and TaskValidationCompleted. Worker02 was released after validation. Worker06 is assigned ED-0112/R8-TurnRecoveryAcceptanceReview for the independent fixed-head evidence review. AcceptanceReviewStatus remains Pending; do not mark Verified or Merged. Worker02 command-level DurationMs was not recorded in the supplied logs and remains pending without estimates. Preserve the original Goal, Acceptance, Validation commands, product WriteSet, branch, worktree, and baseline."
+    AssignmentNote: "PR #36 merged the R8 TaskSpec assignment record. Worker02 completed fresh R8 validation for product Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and Head 301e628899fad80be1faad15e3bcc52aa49ce0f5. Worker06 approved the fixed-head acceptance review. Product PR #34 was squash-merged to main at de5e0c1854c5eb013e6f97228172ebe99cf1ab12 and its remote task branch was deleted. Worker02 command-level DurationMs was not recorded; no estimate is used. This task is Merged/PartialOnly: AgentRuntime startup/session recovery remains a separate unregistered follow-up."
     AcceptanceValidationStatus: Completed
-    AcceptanceReviewStatus: Pending
+    AcceptanceReviewStatus: Approved
+    AcceptanceReviewDecision: Approve
+    AcceptanceReviewAgentId: /root/luna06_capability_status_audit
+    AcceptanceReviewBaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+    AcceptanceReviewHeadCommit: 301e628899fad80be1faad15e3bcc52aa49ce0f5
+    ImplementationPullRequestNumber: 34
+    ImplementationPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/34
+    ImplementationMergeCommit: de5e0c1854c5eb013e6f97228172ebe99cf1ab12
+    ImplementationMergeMethod: squash
+    ImplementationMergedAt: "2026-10-29T08:25:35Z"
+    ImplementationRemoteBranchDeleted: true
     ValidationEvidence:
       EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8
       SummaryPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/Logs/ValidationSummary.txt

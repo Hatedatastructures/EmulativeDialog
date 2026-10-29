@@ -221,3 +221,10 @@
 - Worker02's supplied logs do not contain full command DurationMs values. This is marked pending in P2 and the validation event; no estimates are used. TargetedCTest.log only provides test-level 0.72s/1.03s and 1.78s total test time.
 - Worker02 was recovered after validation; Worker06 is explicitly assigned `ED-0112/R8-TurnRecoveryAcceptanceReview`. P2 State is Review and AcceptanceReviewStatus is Pending; no TaskVerified or TaskMerged event has been emitted.
 - PR #34 remains Open against base `main` at remote Head `301e628899fad80be1faad15e3bcc52aa49ce0f5`. Worker06 fixed-head R8 acceptance review remains Pending; do not merge PR #34 until that review passes.
+
+## 2026-10-29 ED-0112 merge and R8 acceptance closeout (08:33 UTC)
+
+- Current `main` is `de5e0c1854c5eb013e6f97228172ebe99cf1ab12`. PR #34 merged by squash after Worker06 approved the fixed product Base `0b666e655e75f7fdc7074a405cb2b2a35975a6fc` → Head `301e628899fad80be1faad15e3bcc52aa49ce0f5` review. Its remote task branch was deleted. PR #37 assignment/governance record is merged at `6c48d2a350d2827507b1a6126819a19037a19ba9`.
+- ED-0112/R8 validation and independent acceptance review passed. Fresh Windows C++20 configure and targeted build exited 0; selected CTest passed 2/2; coverage is 90.02% for `TurnCheckpointStore.cpp` and 92.39% for `TurnRecoveryCoordinator.cpp`. Detailed logs and hashes remain under `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/Logs/`.
+- The recovery implementation is explicitly partial: checkpoints and no-replay decisions are implemented, while reconnecting recovery to AgentRuntime startup/session state and rebuilding chat history remain open. Do not mark the full Codex capability complete.
+- Remote branches are 2/4: `main` and PR #25 `Task/ED-0144-MemorySqliteAdapter`. Root worktree `?? $deps/` remains untouched. Worker06 was released after acceptance review. Next, register and freeze the asynchronous Agent/Provider/Transport contract, then start the actual C++20 coroutine AgentRuntime slice.
