@@ -237,3 +237,9 @@
 - R7 首个固定 Head `1f42e94df0ed93dc86d6e3edde282e6eb9c0aa81` 和第二个固定 Head `ac17273115aa3f5491b24d6dde9534d8ee3ce556` 的审查发现均已修复。最终 TaskSpec Head `20ed3b35a30f945d69368a6df89c33b6e7e4102d` 已获 Worker02 Owner 与 Worker04 独立 Reviewer APPROVE；CR 已由 Coordinator 接受。当前正在记录审批元数据并做 TaskSpec PR 的固定头治理复核。
 - R7 仍在 Coordinator 隔离工作树 `H:/Qbot/EmulativeDialog.ED-0147-Assignment` 的本地分支 `Task/ED-0147-R7-AgentBindingTaskSpec` 中，等待正式 PR；没有修改产品 C++，也没有派发或创建产品实现工作树。
 - P3 EntryGate 仍 Pending；ED-0147 实际实现与 Windows 验收尚未开始。`LargeScaleProductImplementation` 仍为 `BlockedUnverified`：当前仓库没有 GitHub Actions workflow、main 分支保护或 ruleset 的通过证据。
+
+## 2026-10-29 ED-0147/R7 TaskSpec PR merged (09:27 UTC)
+
+- PR #39 merged to `main` by squash at `bc280f05216821984e1bbb750006803832f50b56`; its remote task branch was deleted. Remote branch count returned to 2/4: `main` and `Task/ED-0144-MemorySqliteAdapter`.
+- ED-0147/R7 TaskSpec semantic Head `20ed3b35a30f945d69368a6df89c33b6e7e4102d` was approved by Worker02 Owner and Worker04 independent Reviewer; Worker06 approved the final governance PR Head `551973d72e5bd696af7cfd225560ab2808161f73`.
+- Product TaskSpec is now merged. No implementation branch/worktree is assigned yet, no C++ product source changed, and P3 EntryGate remains Pending. A closeout candidate records the merge SHA and Proposed → Ready transition before the next Controller readiness check.
