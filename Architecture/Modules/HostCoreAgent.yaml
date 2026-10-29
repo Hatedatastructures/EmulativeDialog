@@ -30,10 +30,12 @@ Modules:
       - Tests/Contract/Core/
     ContractRefs:
       - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
       - Architecture/Contracts/ModelProviderContract.md
       - Architecture/Contracts/ChannelAdapterContract.md
     DependsOn:
       - WindowsPlatform
+      - NetworkPlatform
       - Storage
       - ModelProviderPort
       - ChannelAdapterPort
