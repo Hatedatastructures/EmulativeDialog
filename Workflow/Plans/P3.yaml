@@ -550,6 +550,62 @@ ChangeRequests:
     PreserveGoalAcceptanceDependenciesContractsOwnerReviewerAndProductWriteSet: true
     NoProductWriteSetExpansion: true
     R8ValidationRequiresTaskSpecMergeAndAssignmentReadiness: true
+  - ChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
+    TargetTaskId: ED-0147
+    TargetTaskRevision: 8
+    ProposedTaskRevision: 9
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Proposed
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve ED-0147's Goal, Acceptance, six-path product WriteSet, dependencies, contracts, Owner, Reviewer,
+      security boundary, product BaseCommit, implementation branch and worktree. Change only the formal
+      validation directory from the consumed R8/Core path to the unique ED-0147-R9/Core path and replace
+      the brittle CMakeCache regex checks with exact line comparisons using ReadAllLines: the home-directory
+      entry must match the frozen source directory; the compiler entry must have exactly one FILEPATH or
+      STRING form and its value must match the frozen g++.exe path. After this TaskSpec is approved and
+      merged, update the assignment ledger, pass WorkflowController validate-assignment, and only then run
+      the fresh R9 validation. Product source paths and acceptance semantics do not change.
+    Reason: >-
+      R8 preflight, configure, targeted build, targeted CTest (1/1 test, 13/13 assertions), GCC version,
+      and gcov version all passed. The frozen CoverageCommand exited 1 before invoking gcov because its
+      CMakeCache expression did not accept the actual CRLF line ending and the compiler cache entry was
+      CMAKE_CXX_COMPILER:STRING rather than FILEPATH. No gcov JSON or coverage percentage was generated.
+      A new build directory is required to preserve R8 evidence and avoid stale coverage artifacts.
+    Impact: >-
+      No C++ API, product behavior, data format, dependency, contract version, Acceptance, or implementation
+      WriteSet change. R8 evidence remains retained. ED-0147 and P3 EntryGate remain incomplete until fresh
+      R9 validation, independent review, and contract-freeze gates pass.
+    Rollback: >-
+      If either fixed-head TaskSpec review rejects R9, do not reuse or edit the consumed R8 build directory.
+      Preserve the product worktree and all R8 logs; correct the TaskSpec through a new ChangeRequest before
+      using any other validation path.
+    ProposedTaskSpecBaseCommit: c110dcd88d6eda625b10f24c99e2dc761ec32278
+    ProposedOwnerSlotId: Worker02
+    ProposedReviewerSlotId: Worker04
+    ProposedProductBaselineCommit: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
+    ProposedBranch: Task/ED-0147-CoreEndpointGrantAuthorityR7
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0147
+    ProposedProductWriteSet:
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Architecture/Modules/HostCoreAgent.yaml
+      - Source/Core/EndpointGrantAuthority.hpp
+      - Source/Core/EndpointGrantAuthority.cpp
+      - Tests/Contract/Core/CMakeLists.txt
+      - Tests/Contract/Core/EndpointGrantAuthorityTests.cpp
+    ProposedGovernanceWriteSet:
+      - Workflow/Plans/P3.yaml
+      - Workflow/Events/CodexRewrite/P3.jsonl
+      - Workflow/CurrentState.md
+    ProposedTaskSpecHeadCommit: ""
+    OwnerCRDecision: Pending
+    IndependentReviewerDecision: Pending
+    CoordinatorDecision: Pending
+    PreserveGoalAcceptanceDependenciesContractsOwnerReviewerAndProductWriteSet: true
+    NoProductSourceWriteAuthorized: true
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
@@ -2097,13 +2153,13 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0147
-    TaskRevision: 8
+    TaskRevision: 9
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Proposed
     Phase: P3
-    ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
+    ChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
     OwnerRole: CoreOwner
@@ -2113,19 +2169,66 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
-    TaskSpecChangeRequestId: CR-ED-0147-R8-VALIDATION-001
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecOwnerDecision: Approve
-    TaskSpecOwnerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
-    TaskSpecReviewerDecision: Approve
-    TaskSpecReviewerReviewHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
-    TaskSpecCoordinatorDecision: Accepted
-    TaskSpecCoordinatorDecisionHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
-    TaskSpecHeadCommit: 59fa1193d3fc23f9df1ad851b37908f3a29ef27d
-    TaskSpecMergedToMainCommit: 791f5763c8018ee1b4d9d53a7f3ee55d13e37bad
-    TaskSpecMergePullRequestNumber: 42
-    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/42
+    TaskSpecChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
+    TaskSpecReviewStatus: Proposed
+    TaskSpecOwnerDecision: Pending
+    TaskSpecOwnerReviewHeadCommit: ""
+    TaskSpecReviewerDecision: Pending
+    TaskSpecReviewerReviewHeadCommit: ""
+    TaskSpecCoordinatorDecision: Pending
+    TaskSpecCoordinatorDecisionHeadCommit: ""
+    TaskSpecHeadCommit: ""
+    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergePullRequestNumber: ""
+    TaskSpecMergePullRequestUrl: ""
     TaskSpecMergeMethod: squash
+    PreviousRevision8Evidence:
+      TaskRevision: 8
+      ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
+      State: Assigned
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecOwnerDecision: Approve
+      TaskSpecReviewerDecision: Approve
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecHeadCommit: 4aa60bf2064fc5ff690fe827f59d4f5350dbd069
+      TaskSpecMergedToMainCommit: 791f5763c8018ee1b4d9d53a7f3ee55d13e37bad
+      TaskSpecMergePullRequestNumber: 42
+      TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/42
+      AssignmentLedgerMergePullRequestNumber: 43
+      AssignmentLedgerMergedToMainCommit: c110dcd88d6eda625b10f24c99e2dc761ec32278
+      AssignmentValidationExitCode: 0
+      AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8-Assignment/Controller-ValidateAssignment.txt
+      AssignmentNote: "R8 assignment bound Worker02, the existing six-path implementation, and the original product baseline. Controller returned AssignmentAccepted. Fresh R8 configure, build and targeted CTest passed; coverage stopped before gcov because the frozen CMakeCache precondition rejected actual CRLF and CMAKE_CXX_COMPILER:STRING formatting. No JSON report or coverage percentage was produced. R9 changes only the fresh validation directory and cache-entry comparison, and requires a new assignment-ledger update and Controller validation after merge."
+      ImplementationHeadCommitAtValidation: 269379817d7f51082b16ae2d0ded1ccedd2a54b7
+      ValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core
+      FreshBuildPreflightExitCode: 0
+      ConfigureExitCode: 0
+      ConfigureDurationMs: 2108
+      TargetBuildExitCode: 0
+      TargetBuildDurationMs: 3904
+      TargetCTestExitCode: 0
+      TargetCTestDurationMs: 430
+      TargetCTestPassed: 1
+      TargetCTestTotal: 1
+      TargetAssertionsPassed: 13
+      TargetAssertionsTotal: 13
+      GccVersionExitCode: 0
+      GcovVersionExitCode: 0
+      CoverageCommandExitCode: 1
+      CoverageCommandDurationMs: 324
+      CoverageAcceptance: NotMet
+      CoverageFailure: "CMakeCache validation failed before gcov ran: the frozen regex rejected CMAKE_HOME_DIRECTORY CRLF and only allowed CMAKE_CXX_COMPILER:FILEPATH, while CMake emitted STRING. No gcov JSON and no percentage were generated."
+      EvidenceFiles:
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/FreshBuildPreflight.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/Configure.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/TargetBuild.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/TargetCTest.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/GccVersion.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/GcovVersion.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/CoverageCommand.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports/CoverageCommandDiagnosis.log
+      Disposition: SupersededByValidationOnlyRevision
+      Reason: "R8's coverage precondition failed on actual CMakeCache text before gcov execution. Preserve all R8 reports and use only a fresh R9 build path after R9 TaskSpec approval, merge, assignment-ledger update, and Controller validation."
     PreviousRevision7Evidence:
       TaskRevision: 7
       ChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
@@ -2246,7 +2349,7 @@ Tasks:
     Branch: Task/ED-0147-CoreEndpointGrantAuthorityR7
     Worktree: H:/Qbot/EmulativeDialog.ED-0147
     AssignedToSlot: Worker02
-    AssignmentNote: "R8 TaskSpec PR #42 was squash-merged to main at 791f5763c8018ee1b4d9d53a7f3ee55d13e37bad. This assignment ledger binds Worker02 /root/luna02_ed0148_pr_ready to the existing product branch Task/ED-0147-CoreEndpointGrantAuthorityR7, worktree H:/Qbot/EmulativeDialog.ED-0147, and frozen product baseline 269379817d7f51082b16ae2d0ded1ccedd2a54b7; Worker04 /root/luna04_ed0144_branch_review remains the independent Reviewer. The existing six-path product diff predates R8 approval and has no paths outside the frozen WriteSet. Do not run R8 validation until this assignment ledger merges and WorkflowController validate-assignment accepts it; then use only the fresh ED-0147-R8/Core path. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
+    AssignmentNote: "R8 TaskSpec PR #42 and the R8 assignment ledger PR #43 are merged. Worker02 ran the authorized fresh R8 verification: preflight, configure, target build, targeted CTest (1/1, 13/13 assertions), GCC and gcov version checks passed. CoverageCommand exited 1 before gcov because its CMakeCache checks rejected CRLF and CMAKE_CXX_COMPILER:STRING; coverage is unmeasured. R9 proposes only a fresh ED-0147-R9/Core directory and exact line-based cache checks. Do not run R9 until this TaskSpec and its updated assignment ledger merge and WorkflowController validate-assignment accepts; keep P3 EntryGate Pending."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
@@ -2308,12 +2411,12 @@ Tasks:
       - {AcceptanceId: AC-6, Description: "The registry is safe for concurrent Core requests; grant IDs are never written to logs, events, diagnostics, or persistence.", Evidence: "Deterministic multi-threaded issue/validate/revoke tests produce unique IDs and preserve fail-closed lookup; static review finds no token logging or persistence."}
       - {AcceptanceId: AC-7, Description: "EndpointGrantAuthority.cpp has at least 80 percent unique executable-line coverage.", Evidence: "CoverageCommand matches the exact EndpointGrantAuthority.cpp files[].file record and binds coverage data to its exact .gcno/.gcda pair and named CTest record; it records tool versions and fails below 80 percent."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core
       Coverage:
         Required: true
         ProductionSources: [Source/Core/EndpointGrantAuthority.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
       RequiredBuildTargets: [EndpointGrantAuthorityTests]
@@ -2325,19 +2428,19 @@ Tasks:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core --target EndpointGrantAuthorityTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core --target EndpointGrantAuthorityTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core --output-on-failure --no-tests=error -R '^Core\\.EndpointGrantAuthority$'"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0147'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R8/Core'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core'
         $ReportRoot = Join-Path $Build 'Reports'
         $Source = Join-Path $Worktree 'Source/Core/EndpointGrantAuthority.cpp'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
@@ -2376,10 +2479,25 @@ Tasks:
           if ((Get-Item -LiteralPath $Data).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) { throw 'gcda predates gcno; rebuild and rerun CTest' }
           $Cache = Join-Path $Build 'CMakeCache.txt'
           if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
-          $CacheText = [System.IO.File]::ReadAllText($Cache)
-          if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0147/Tests/Contract/Core$') { throw 'CMAKE_HOME_DIRECTORY does not match ED-0147 Core tests' }
-          if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:FILEPATH=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
-          $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+          $CacheLines = [System.IO.File]::ReadAllLines($Cache)
+          $HomePrefix = 'CMAKE_HOME_DIRECTORY:INTERNAL='
+          $HomeLines = @($CacheLines | Where-Object { $_.StartsWith($HomePrefix, [System.StringComparison]::Ordinal) })
+          if ($HomeLines.Count -ne 1) { throw "Expected one CMAKE_HOME_DIRECTORY cache entry; found $($HomeLines.Count)" }
+          $ExpectedHomeLine = 'CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog.ED-0147/Tests/Contract/Core'
+          if (-not [string]::Equals([string]$HomeLines[0], $ExpectedHomeLine, [System.StringComparison]::Ordinal)) { throw 'CMAKE_HOME_DIRECTORY does not match ED-0147 Core tests' }
+
+          $CompilerPrefix = 'CMAKE_CXX_COMPILER:'
+          $CompilerLines = @($CacheLines | Where-Object { $_.StartsWith($CompilerPrefix, [System.StringComparison]::Ordinal) })
+          if ($CompilerLines.Count -ne 1) { throw "Expected one CMAKE_CXX_COMPILER cache entry; found $($CompilerLines.Count)" }
+          $CompilerLine = [string]$CompilerLines[0]
+          $FilePathCompilerPrefix = 'CMAKE_CXX_COMPILER:FILEPATH='
+          $StringCompilerPrefix = 'CMAKE_CXX_COMPILER:STRING='
+          if ($CompilerLine.StartsWith($FilePathCompilerPrefix, [System.StringComparison]::Ordinal)) {
+            $CompilerValue = $CompilerLine.Substring($FilePathCompilerPrefix.Length)
+          } elseif ($CompilerLine.StartsWith($StringCompilerPrefix, [System.StringComparison]::Ordinal)) {
+            $CompilerValue = $CompilerLine.Substring($StringCompilerPrefix.Length)
+          } else { throw 'CMAKE_CXX_COMPILER cache entry has an unsupported type' }
+          if (-not [string]::Equals($CompilerValue, 'C:/msys64/ucrt64/bin/g++.exe', [System.StringComparison]::Ordinal)) { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }          $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
           if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw 'Missing CTest LastTest.log' }
           $TestLogInfo = Get-Item -LiteralPath $TestLog
           $TestLogLines = [System.IO.File]::ReadAllLines($TestLog)
