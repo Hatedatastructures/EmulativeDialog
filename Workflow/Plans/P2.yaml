@@ -153,7 +153,16 @@ ChangeRequests:
     ProposedReviewerSlotId: Worker06
     ProposedReviewerRole: IndependentReviewer
     ProposedReviewerIndependence: Required
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 2bb000ce45dd69f3fc7eb0b368dc8421ff022455
+    OwnerReviewFindingIds: []
+    IndependentReviewDecision: Approve
+    IndependentReviewHeadCommit: 2bb000ce45dd69f3fc7eb0b368dc8421ff022455
+    IndependentReviewFindingIds: []
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionAgentId: /root
+    CoordinatorDecisionHeadCommit: 2bb000ce45dd69f3fc7eb0b368dc8421ff022455
     ProposedTaskSpecBaseCommit: 5364581858c8299884e87e00730748b86fb43346
     ProposedTaskKind: ContractFreeze
     ProposedEpicId: EP-06
