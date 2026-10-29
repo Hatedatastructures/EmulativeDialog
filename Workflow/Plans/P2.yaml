@@ -1084,11 +1084,12 @@ ChangeRequests:
 
   - ChangeRequestId: CR-ED-0112-008
     TargetTaskId: ED-0112
+
     TargetTaskRevision: 6
     ProposedTaskRevision: 7
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    Decision: Accepted
     OwnerAgentId: /root/worker02_ed0114_owner
     IndependentReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
@@ -1118,9 +1119,9 @@ ChangeRequests:
       - Tests/Contract/Agent/CMakeLists.txt
       - Architecture/Contracts/CoreAgentContract.md
     OwnerCRDecision: Approve
-    OwnerCRDecisionEvidence: "Worker02 approved CR-ED-0112-008 scope; TaskSpec review remains pending."
-    IndependentReviewerDecision: Pending
-    CoordinatorDecision: Pending
+    OwnerCRDecisionEvidence: "Worker02 approved CR scope; Worker06 independently approved the TaskSpec at the fixed Head."
+    IndependentReviewerDecision: Approve
+    CoordinatorDecision: Accepted
     PreserveGoalAcceptanceWriteSetContractsDependenciesOwnerReviewer: true
     NoProductSourceWriteAuthorizedBeforeMerge: true
 ParallelGroups:
@@ -2413,17 +2414,17 @@ Tasks:
     TaskKind: IntegrationTask
     State: Proposed
     TaskSpecChangeRequestId: CR-ED-0112-008
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
-    TaskSpecOwnerDecision: Pending
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
-    TaskSpecOwnerReviewHeadCommit: ""
-    TaskSpecReviewerDecision: Pending
+    TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecReviewerDecision: Approve
     TaskSpecReviewerAgentId: /root/worker06_ed0105_review
-    TaskSpecReviewerReviewHeadCommit: ""
-    TaskSpecIndependentReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecCoordinatorDecisionHeadCommit: ""
-    TaskSpecHeadCommit: ""
+    TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecIndependentReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     ImplementationHeadCommit: 94a352f0e57a3e0c5870c2cd3e6a33d18c671c65
     CodeReviewStatus: ApprovedAtFixedHead
     CodeReviewBaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc

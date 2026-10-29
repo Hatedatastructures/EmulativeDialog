@@ -26,7 +26,7 @@ EntryGate:
     - TaskId: ED-0148
       TaskRevision: 5
       ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
-      State: ProposedAwaitingTaskSpecReview
+      State: ApprovedAwaitingMainMerge
       Scope: "Same exact ProposalId consent matching behavior and two-path WriteSet as R4; only the fresh validation directory and CoverageCommand compatibility checks change. This does not pass P3 EntryGate."
       DoesNotSatisfyEntryGate: true
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
@@ -390,7 +390,7 @@ ChangeRequests:
     ProposedTaskRevision: 5
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndIndependentReviewerReview
+    Decision: Accepted
     OwnerAgentId: /root/worker05_ed0144_memory
     IndependentReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
@@ -415,9 +415,9 @@ ChangeRequests:
       - Source/Memory/ConversationMemory.cpp
       - Tests/Contract/Memory/ConversationMemoryTests.cpp
     OwnerCRDecision: Approve
-    OwnerCRDecisionEvidence: "Worker05 approved the CR scope; TaskSpec review remains pending."
-    IndependentReviewerDecision: Pending
-    CoordinatorDecision: Pending
+    OwnerCRDecisionEvidence: "Worker05 approved CR scope; Worker06 independently approved the TaskSpec at the fixed Head."
+    IndependentReviewerDecision: Approve
+    CoordinatorDecision: Accepted
     PreserveGoalAcceptanceDependenciesContractWriteSetOwnerReviewer: true
     NoAdditionalProductSourceWriteAuthorizedBeforeMerge: true
 ParallelGroups:
@@ -2271,14 +2271,14 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: AwaitingOwnerAndIndependentReviewerReview
-    TaskSpecHeadCommit: ""
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecOwnerReviewHeadCommit: ""
-    TaskSpecReviewerReviewHeadCommit: ""
-    TaskSpecCoordinatorDecisionHeadCommit: ""
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecOwnerDecision: Approve
+    TaskSpecReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecMergedToMainCommit: ""
     BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
     Branch: Task/ED-0148-R4ConsentMatchingImpl
