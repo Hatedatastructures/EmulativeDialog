@@ -194,3 +194,22 @@
 - R7 使用的 `ED-0112-R6/windows-agent-slice` 目录已包含旧 Head 证据。协调分支 `Task/ED-0112-R8-ValidationTaskSpec` 正在登记 R8：保持原 Goal、Acceptance、WriteSet、依赖、合同、Owner/Reviewer 槽与代码分支，只切换到此前不存在的 `ED-0112-R8/windows-agent-slice`。在 R8 TaskSpec/CR 与 assignment ledger 合并前禁止运行新鲜验收；旧 R7 证据保留。
 - R8 TaskSpec 最终内容 Head `31117c78f5f0c91e90906ea51990b2e059565c2d` 已由 Owner Worker02 与独立 Reviewer Worker06 Approve；F001 的影响路径、兼容/安全影响和回退方案均已补齐并记录。Coordinator 已接受 CR-ED-0112-009。治理 PR #35 已创建并附加到当前任务，远端分支恢复为 4/4；PR 当前 open/mergeable，尚未合入。R8 构建仍未启动。
 - 六个逻辑工作槽本轮已使用宿主支持的 `gpt-6-luna` / `max` 配置；本地治理候选记录了稳定槽绑定迁移，尚未通过独立审查或合入 main。AgentRuntime 产品代码仍为同步回合；真正异步协程切片与恢复接回启动流程尚未实现。真实 QQ 收发仍未接入；本阶段继续不做微信。
+## 2026-10-29 ED-0112/R8 assignment ledger review candidate
+
+- 当前权威基线为 main=origin/main=d47a4a45caa8857e0baec278b56b7b9bd9404817；PR #35 已合并。assignment-ledger PR #36 已通过 GitHub 插件创建，远端固定范围为 Base d47a4a45caa8857e0baec278b56b7b9bd9404817 → Head b15c41ab273cd7ac733d04a64cc5b9ab762cbda4，状态 Open，尚未合并。远端分支为 4/4：main、PR #34、PR #25、PR #36。
+- R8 readiness query 在 TaskSpec 合并后返回 Ready，退出码 0；Controller validate-assignment 返回 AssignmentAccepted，退出码 0。治理候选把 Worker02 绑定到既有实现分支、工作树与产品基线；不得在 PR #36 合并前运行 R8 build、CTest 或 coverage。
+- ED-0148/R5 已占用 Worker06 的当前审查槽。ED-0112/R8 的固定 Reviewer 仍为 Worker06，但要等其释放 ED-0148/R5 后再接手 R8 审查；不允许在 AgentPool 同时为 Worker06 写两个 CurrentTaskId。未合入候选中的 R8 Worker06 AgentSlotAssigned 事件已从本地修订差异移除，main 的历史事件前缀未改。
+- 本地 assignment-ledger 候选补齐了 TaskReadinessValidated、TaskAssigned 和 PR #36 的 Base/Head 记录。后续治理修订尚未推送到 PR #36；远端 PR 仍是 Base d47a4a4、Head b15c41a，等待 Coordinator 与独立 Reviewer 审阅后再发布后续 Head。
+- 本次只修改治理账本；没有触碰产品 C++、主工作区预存 $deps/ 或运行产品构建/CTest/coverage。
+
+## 2026-10-29 ED-0112/R8 reviewer-slot correction
+
+- 更正上一条未合入候选快照：P3 ED-0148/R5 虽在 TaskSpec 中列出 Worker06 为 ReviewerSlot，但该 revision 没有 Worker06 的 AgentSlotAssigned 事件；main d47 的 AgentPool 中 Worker06 为 Active 且 CurrentTaskId 为空。不得把 reviewer 字段推断成活动槽位占用。
+- ED-0112/R8 由 Worker02 执行新鲜验收；Worker06 仍是 TaskSpec 冻结的独立 Reviewer，保持 Active/空 CurrentTaskId，待产品验收完成后由 Coordinator 再显式分配审查槽。P2 保留首个未合入候选中的 AgentSlotAssigned 事件 6c423f48-1343-44bc-9120-e4e726853c5f，并在其后追加 ProjectStateCorrection，标明该本地候选分配在 PR #36 合并前未生效；纠错事件覆盖其中关于活动槽位的推断。
+- PR #36 仍为 Open，Base 为 d47a4a45caa8857e0baec278b56b7b9bd9404817；精确最新 Head 以 GitHub PR 页面为准。远端分支上限仍为 4/4。R8 产品构建、CTest 和 coverage 尚未运行，仍须等 assignment-ledger PR 合并。
+
+## 2026-10-29 ED-0112/R8 F002 command evidence correction
+
+- Worker03 fixed-head review found P2 CommandExecuted events c084ce4a-ed65-4c69-8ce1-18ef2d6ae227 and 7977f8e0-046a-47ab-897f-619316fa3543 omitted required DurationMs and OutputFile. Both original events remain unchanged; P2 now appends one ProjectStateCorrection per event with measured rerun results, OutputSummary, and evidence references.
+- Re-ran WorkflowController query (exit 0, 198 ms) and validate-assignment (exit 0, 1821 ms). Sanitized output files: ED-0112-R8-F002-Query-20261029-072654.log and ED-0112-R8-F002-ValidateAssignment-20261029-072654.log under H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/AssignmentEvidence/.
+- PR #36 remains open and unmerged; Base remains d47a4a45caa8857e0baec278b56b7b9bd9404817. The fixed Head is the latest pushed commit on Task/ED-0112-R8-AssignmentLedger; read its exact SHA from PR #36. Remote branch count remains capped at four. Product build, CTest, and coverage are not part of this governance correction.
