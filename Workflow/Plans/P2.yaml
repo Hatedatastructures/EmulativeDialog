@@ -2372,7 +2372,7 @@ Tasks:
     TaskKind: IntegrationTask
     State: Assigned
     TaskSpecChangeRequestId: CR-ED-0112-007
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
     TaskSpecOwnerReviewHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
@@ -2384,7 +2384,7 @@ Tasks:
     TaskSpecCoordinatorDecisionHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
     TaskSpecHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
     ImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
     AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR to main; all six dependencies are merged. The exact eight-path implementation assignment is bound to main baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may begin only after this assignment-ledger PR merges; do not reuse or merge the protected R2 worktrees."

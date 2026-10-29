@@ -85,8 +85,8 @@ Slots:
       - ProviderAnthropicMessages
       - Memory
       - ContextSelector
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0148/R4-ConsentMatching
+    Status: Assigned
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
     AgentId: "/root/p1_par001_luna"
@@ -174,3 +174,18 @@ TaskScopedModuleAuthorizations:
     Restrictions:
       - TestConsumersOnly
       - NoProviderProductionWireBehaviorChanges
+  - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+    TaskId: ED-0148
+    TaskRevision: 4
+    SlotId: Worker05
+    AgentId: /root/worker05_ed0144_memory
+    ModuleId: Memory
+    State: Active
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Source/Memory/ConversationMemory.cpp
+      - Tests/Contract/Memory/ConversationMemoryTests.cpp
+    Restrictions:
+      - PreserveExactTwoPathTaskWriteSet
+      - NoCoreSqliteProviderChannelOrRootCMakeChanges
+      - ProposalIdOptionalValuesMustMatchExactly
