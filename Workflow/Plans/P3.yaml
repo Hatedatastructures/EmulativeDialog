@@ -23,6 +23,13 @@ EntryGate:
       DoesNotSatisfyEntryGate: true
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 
+    - TaskId: ED-0148
+      TaskRevision: 5
+      ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
+      State: ApprovedAwaitingMainMerge
+      Scope: "Same exact ProposalId consent matching behavior and two-path WriteSet as R4; only the fresh validation directory and CoverageCommand compatibility checks change. This does not pass P3 EntryGate."
+      DoesNotSatisfyEntryGate: true
+      DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
   AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148]
@@ -377,6 +384,42 @@ ChangeRequests:
     RequiresP3EntryGateToRemainPending: true
     DoesNotAuthorizeImplementationByItself: true
 
+  - ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
+    TargetTaskId: ED-0148
+    TargetTaskRevision: 4
+    ProposedTaskRevision: 5
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    OwnerAgentId: /root/worker05_ed0144_memory
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve Goal, Acceptance, dependencies, contract, exact two-path WriteSet, Owner, Reviewer, code branch,
+      worktree and product behavior. Move only ED-0148 fresh configure/build/CTest/gcov evidence to the unique
+      H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory path. Normalize CMakeCache CRLF
+      before line checks, and accept CMAKE_CXX_COMPILER cache type STRING or FILEPATH only when the value exactly
+      matches C:/msys64/ucrt64/bin/g++.exe. Preserve all R4 output and treat R4 coverage diagnostics as non-acceptance.
+      This revision authorizes validation only after approval and merge; no additional product-source edits are authorized.
+    Reason: >-
+      R4 native configure, targeted build and CTest passed, but the frozen CoverageCommand exited 1 because its
+      cache checks did not normalize CRLF and assumed CMAKE_CXX_COMPILER was FILEPATH although CMake emitted STRING.
+      A corrected diagnostic measured 414/463 executable lines (89.42 percent), but it is not formal acceptance.
+      The new R5 build directory was confirmed absent and the old R4 artifacts must remain preserved.
+    ProposedTaskSpecBaseCommit: cfff0c69b3cd5fb5d1a87e868b1b4e959edde3ae
+    ProposedOwnerSlotId: Worker05
+    ProposedReviewerSlotId: Worker06
+    ProposedBranch: Task/ED-0148-R4ConsentMatchingImpl
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0148
+    ProposedWriteSet:
+      - Source/Memory/ConversationMemory.cpp
+      - Tests/Contract/Memory/ConversationMemoryTests.cpp
+    OwnerCRDecision: Approve
+    OwnerCRDecisionEvidence: "Worker05 approved CR scope; Worker06 independently approved the TaskSpec at the fixed Head."
+    IndependentReviewerDecision: Approve
+    CoordinatorDecision: Accepted
+    PreserveGoalAcceptanceDependenciesContractWriteSetOwnerReviewer: true
+    NoAdditionalProductSourceWriteAuthorizedBeforeMerge: true
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
@@ -2214,13 +2257,13 @@ Tasks:
     OpenIntegrationGap: "No production Provider/WinHTTP composition call site exists on main. ED-0147 does not close this gap; do not claim real Provider requests use Core grants until a separately reviewed composition task passes."
 
   - TaskId: ED-0148
-    TaskRevision: 4
+    TaskRevision: 5
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Proposed
     Phase: P3
-    ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+    ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
     OwnerAgentId: /root/worker05_ed0144_memory
@@ -2228,14 +2271,15 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/worker06_ed0105_review
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecOwnerDecision: Approve
     TaskSpecReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
-    TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
-    TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+    TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecMergedToMainCommit: ""
     BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
     Branch: Task/ED-0148-R4ConsentMatchingImpl
     Worktree: H:/Qbot/EmulativeDialog.ED-0148
@@ -2267,6 +2311,23 @@ Tasks:
       IndependentReviewerDecision: RequestChanges
       IndependentReviewerFindingIds: [ED0148-R3-I1]
       Reason: "The cited local JSON root data_file differs from its files[].file worktree source and cannot be used as this task's source identity. R4 relies on exact files[].file plus a fresh exact .gcno/paired .gcda and current CTest evidence."
+    PreviousRevision4Evidence:
+      TaskRevision: 4
+      ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecOwnerDecision: Approve
+      TaskSpecReviewerDecision: Approve
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+      BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
+      Branch: Task/ED-0148-R4ConsentMatchingImpl
+      Worktree: H:/Qbot/EmulativeDialog.ED-0148
+      ImplementationHeadCommit: c6f7bbe30700745126cec2b1205b76272404db6a
+      ValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory
+      FormalCoverageCommandExitCode: 1
+      DiagnosticCoverage: {Covered: 414, Executable: 463, Percent: 89.42, Acceptance: NotMet}
+      Disposition: SupersededByValidationOnlyRevision
+      Reason: "R4 targeted configure/build/CTest passed, but its frozen CoverageCommand failed on CMakeCache CRLF and compiler cache type; the diagnostic coverage is not formal acceptance."
     Goal: "让 grant、request 和 record 的 optional ProposalId 必须完全相等，避免未绑定具体提议的 consent 写入、召回或恢复提议绑定记忆。"
     OutOfScope: ["修改 Core consent 签发策略", "修改 MemoryContract V1 或 public API", "修改 SQLite schema/adapter", "Provider、Channel、真实网络或微信行为"]
     DependsOn: [ED-0113]
@@ -2311,12 +2372,12 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "The same mismatch is rejected for Recall, Group shared-reader recall, and RestoreBackup.", Evidence: "Tests preseed unbound-consent records carrying ProposalId and prove no recall, no Group exposure, and no backup resurrection; exact matching cases remain recallable/restorable."}
       - {AcceptanceId: AC-4, Description: "Changed production Memory source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 for ConversationMemory.cpp records unique executable-line numerator/denominator, compiler and gcov version."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory
       Coverage:
         Required: true
         ProductionSources: [Source/Memory/ConversationMemory.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
       RequiredBuildTargets: [ConversationMemoryTests]
@@ -2328,19 +2389,19 @@ Tasks:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0148/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory --target ConversationMemoryTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory --output-on-failure --no-tests=error -R ConversationMemoryTests"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0148/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory --target ConversationMemoryTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory --output-on-failure --no-tests=error -R ConversationMemoryTests"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0148'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R4/Memory'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory'
         $Reports = Join-Path $Build 'Reports'
         $Source = Join-Path $Worktree 'Source/Memory/ConversationMemory.cpp'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
@@ -2369,10 +2430,10 @@ Tasks:
           if (-not (Test-Path -LiteralPath $Build -PathType Container)) { throw "Missing task build directory: $Build" }
           $Cache = Join-Path $Build 'CMakeCache.txt'
           if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
-          $CacheText = [System.IO.File]::ReadAllText($Cache)
+          $CacheText = [System.IO.File]::ReadAllText($Cache).Replace(([string][char]13 + [string][char]10), [string][char]10).Replace([string][char]13, [string][char]10)
           if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogConversationMemoryContract$') { throw 'Wrong CMake project in task build directory' }
           if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0148/Tests/Contract/Memory$') { throw 'CMake source directory does not match ED-0148' }
-          if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:FILEPATH=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
+          if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
           if ($CacheText -notmatch '(?m)^CMAKE_CXX_FLAGS:STRING=.*--coverage') { throw 'CMAKE_CXX_FLAGS is missing --coverage' }
           if ($CacheText -notmatch '(?m)^CMAKE_EXE_LINKER_FLAGS:STRING=.*--coverage') { throw 'CMAKE_EXE_LINKER_FLAGS is missing --coverage' }
 

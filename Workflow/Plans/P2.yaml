@@ -1082,6 +1082,48 @@ ChangeRequests:
       - 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
       - 19691cb10c32d5081d6c0e18fafb5d7322971779
 
+  - ChangeRequestId: CR-ED-0112-008
+    TargetTaskId: ED-0112
+
+    TargetTaskRevision: 6
+    ProposedTaskRevision: 7
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: Accepted
+    OwnerAgentId: /root/worker02_ed0114_owner
+    IndependentReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve ED-0112 Goal, Acceptance, eight-path WriteSet, contracts, dependencies, risk, no-replay semantics,
+      Owner, Reviewer, code branch and worktree. Change only FreshBuildPreflight, TaskBuildDirectory, Coverage.ReportDirectory,
+      every targeted build command path and CoverageCommand-derived artifact path from the existing
+      ED-0112-R5/windows-agent-slice directory to the new, previously absent
+      H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice directory.
+      Preserve all existing R5 build and report artifacts. Do not authorize product-source changes in this CR.
+    Reason: >-
+      The repaired source Head 94a352f has independent code-review approval, but previous test/coverage evidence
+      predates that repaired Head and cannot establish acceptance. A unique fresh R6 build path avoids reusing the
+      existing R5 artifacts while enabling the frozen Windows C++20 build, CTest and gcov JSON v2 checks.
+    ProposedTaskSpecBaseCommit: cfff0c69b3cd5fb5d1a87e868b1b4e959edde3ae
+    ProposedOwnerSlotId: Worker02
+    ProposedReviewerSlotId: Worker06
+    ProposedBranch: Task/ED-0112-R5TurnRecovery
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0112-R5
+    ProposedWriteSet:
+      - Source/Storage/TurnCheckpointStore.hpp
+      - Source/Storage/TurnCheckpointStore.cpp
+      - Source/Core/TurnRecoveryCoordinator.hpp
+      - Source/Core/TurnRecoveryCoordinator.cpp
+      - Tests/Contract/Storage/TurnCheckpointStoreTests.cpp
+      - Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp
+      - Tests/Contract/Agent/CMakeLists.txt
+      - Architecture/Contracts/CoreAgentContract.md
+    OwnerCRDecision: Approve
+    OwnerCRDecisionEvidence: "Worker02 approved CR scope; Worker06 independently approved the TaskSpec at the fixed Head."
+    IndependentReviewerDecision: Approve
+    CoordinatorDecision: Accepted
+    PreserveGoalAcceptanceWriteSetContractsDependenciesOwnerReviewer: true
+    NoProductSourceWriteAuthorizedBeforeMerge: true
 ParallelGroups:
   - GroupId: FirstProductSlice
     TaskIds: [ED-0109, ED-0125, ED-0101, ED-0124]
@@ -2366,25 +2408,30 @@ Tasks:
     Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: [ED-0112]}
   - TaskId: ED-0112
-    TaskRevision: 6
+    TaskRevision: 7
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Assigned
-    TaskSpecChangeRequestId: CR-ED-0112-007
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    State: Proposed
+    TaskSpecChangeRequestId: CR-ED-0112-008
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
     TaskSpecOwnerDecision: Approve
     TaskSpecOwnerAgentId: /root/worker02_ed0114_owner
-    TaskSpecOwnerReviewHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
+    TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecReviewerDecision: Approve
     TaskSpecReviewerAgentId: /root/worker06_ed0105_review
-    TaskSpecReviewerReviewHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
+    TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
     TaskSpecIndependentReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
-    TaskSpecCoordinatorDecisionHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
-    TaskSpecHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
-    ImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
-    TaskSpecMergedToMainCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
+    TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+    ImplementationHeadCommit: 94a352f0e57a3e0c5870c2cd3e6a33d18c671c65
+    CodeReviewStatus: ApprovedAtFixedHead
+    CodeReviewBaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+    CodeReviewHeadCommit: 94a352f0e57a3e0c5870c2cd3e6a33d18c671c65
+    CodeReviewerAgentId: /root/worker06_ed0105_review
+    CodeReviewFindingIds: []
+    TaskSpecMergedToMainCommit: ""
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
     AssignmentNote: "PR #26 merged the approved R5 TaskSpec and CR to main; all six dependencies are merged. The exact eight-path implementation assignment is bound to main baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc. Worker02 may begin only after this assignment-ledger PR merges; do not reuse or merge the protected R2 worktrees."
@@ -2501,6 +2548,22 @@ Tasks:
         TurnRecoveryCoordinatorCoverage: {Covered: 173, Total: 189, Percent: 91.53, Format: "gcov JSON v2", Toolchain: "GCC/gcov 16.1.0"}
       Disposition: SupersededByAcceptedValidationOnlyRevision
       Reason: "R6 changes only the two stale StaticChecks bases under CR-ED-0112-007. The assigned implementation Base, Owner, Reviewer, branch, worktree, source behavior and eight-path WriteSet remain unchanged."
+    PreviousRevision6Evidence:
+      TaskRevision: 6
+      TaskSpecChangeRequestId: CR-ED-0112-007
+      TaskSpecHeadCommit: 4ec9abbb68b763c88cce73f3647e6ff987f3f951
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecOwnerDecision: Approve
+      TaskSpecReviewerDecision: Approve
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecMergedToMainCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
+      OriginalImplementationHeadCommit: 19691cb10c32d5081d6c0e18fafb5d7322971779
+      ReworkHeadCommit: 94a352f0e57a3e0c5870c2cd3e6a33d18c671c65
+      ReworkCodeReview: {BaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc, HeadCommit: 94a352f0e57a3e0c5870c2cd3e6a33d18c671c65, Decision: Approve, Reviewer: /root/worker06_ed0105_review}
+      ValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice
+      PriorValidationEvidence: "R5-era targeted CTest 2/2 and source coverage 89.66/91.53 percent are diagnostic only for R6; no fresh post-rework validation."
+      Disposition: SupersededByValidationOnlyRevision
+      Reason: "R7 changes only the fresh validation path and CoverageCommand checks after CR approval; the repaired fixed-head C++ behavior remains on the same eight-path WriteSet."
     Phase: P2
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -2554,10 +2617,10 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "Logs and checkpoints contain no secrets, raw private bodies, or prompt dumps.", Evidence: "Synthetic secret/body sentinel scan over persisted fixture and redacted event output."}
       - {AcceptanceId: AC-4, Description: "Changed production modules meet at least 80 percent line coverage.", Evidence: "Fresh per-module gcov reports."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       Coverage:
@@ -2565,23 +2628,23 @@ Tasks:
         ProductionSources: [Source/Storage/TurnCheckpointStore.cpp, Source/Core/TurnRecoveryCoordinator.cpp]
         MinimumLinePercent: 80
         ReportFormat: gcov JSON v2
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice/Reports
         FreshDirectoryRequired: true
       RequiredBuildTargets: [TurnCheckpointStoreTests, TurnRecoveryCoordinatorTests, TurnCheckpointStoreCoverageReport, TurnRecoveryCoordinatorCoverageReport]
       RequiredCTestTests: [Storage.TurnCheckpointStore, Core.TurnRecoveryCoordinator]
       TargetedBuild:
         - >-
-          I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0112-R5 -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice/Reports -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON
+          I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0112-R5 -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice/Reports -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON
         - >-
-          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --target TurnCheckpointStoreTests TurnRecoveryCoordinatorTests --parallel 4
+          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice --target TurnCheckpointStoreTests TurnRecoveryCoordinatorTests --parallel 4
         - >-
-          I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --output-on-failure --no-tests=error -R '^(Storage\.TurnCheckpointStore|Core\.TurnRecoveryCoordinator)$'
+          I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice --output-on-failure --no-tests=error -R '^(Storage\.TurnCheckpointStore|Core\.TurnRecoveryCoordinator)$'
         - >-
-          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice --target TurnCheckpointStoreCoverageReport TurnRecoveryCoordinatorCoverageReport --parallel 4
+          I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice --target TurnCheckpointStoreCoverageReport TurnRecoveryCoordinatorCoverageReport --parallel 4
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0112-R5'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R5/windows-agent-slice'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R6/windows-agent-slice'
         $ReportRoot = Join-Path $Build 'Reports'
         $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
         $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
