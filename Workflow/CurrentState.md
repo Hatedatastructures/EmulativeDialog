@@ -361,7 +361,9 @@
 
 ## 2026-10-29 ED-0120/R5 合同修订 PR #60
 
-- Worker01 在隔离分支 Task/ED-0120-R5ContractCloseout 完成一笔产品文档提交 cdedb461973388778fba48e2c68518ab631a3209，差异只含三份 ADR/合同。Worker06 对固定 Base 79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 → Head cdedb461973388778fba48e2c68518ab631a3209 的三文件产品范围给出内部 APPROVE；未提交 GitHub 原生 review。
-- GitHub PR #60 已创建并验证为 Open、mergeable，创建时 base 为 main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7、head 为 cdedb461973388778fba48e2c68518ab631a3209，创建快照为三条产品路径。PR URL: https://github.com/Hatedatastructures/EmulativeDialog/pull/60
-- AC-5 要求最终 PR diff 包含三条产品路径和三条 Coordinator 治理路径。Coordinator 正在把 Workflow/Plans/P2.yaml、Workflow/Events/CodexRewrite/P2.jsonl 和本文件纳入同一任务 PR；该变更会推进 PR head，旧固定头 APPROVE 不可沿用，须由 Worker06 对最终 Base/Head 重新审查。
-- 此任务只修正文档披露规则，不包含 C++ 实现或构建证据，也不通过 P3。P3 EntryGate 仍为 Pending。
+- Worker01 在隔离分支 Task/ED-0120-R5ContractCloseout 完成产品文档提交 cdedb461973388778fba48e2c68518ab631a3209。该创建时 Head 的三条产品路径曾获 Worker06 内部 APPROVE；该批准不覆盖后续六路径 Head。
+- GitHub PR #60 当前固定审查快照为 Base main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 / Head fcde46da62469e6120d8e3db6232770d4466c454，6 个文件、Open、mergeable。PR URL: https://github.com/Hatedatastructures/EmulativeDialog/pull/60
+- Worker06 对该最终六路径 Head 的内部固定头审查返回 CHANGES_REQUESTED：F001 指出当前状态/Checkpoint 未从创建快照更新为最终六路径候选；F002 指出缺少精确 ancestry、diff 和 JSONL 验收命令的结构化事件与输出日志。产品合同披露规则、TransportRequestId 边界及 API/wire 语义通过；未提交 GitHub 原生 review。
+- Validation-012 至 Validation-016 记录了两项祖先关系、`git diff --check`、精确六路径比较和 JSONL 审计；Validation-015 当时核对 402 行旧前缀及 411 行唯一有效事件。Validation-017 的六项最终检查均退出码 0；当时 417 行 JSONL 审计通过，六条命令事件追加后为 423 行。Validation-018 和 Validation-019 的 `git diff --check` 均退出码 0；对应事件追加后当前共 425 行。
+- Worker06 对 `79f94a4...` → `fcde46d...` 的固定头审查指出 F001/F002。Coordinator 已在当前工作树修正状态/Checkpoint，并补齐六项结构化验收命令事件；WorkflowController 查询返回 Rework、退出码 0。修正尚未提交和推送，下一步是提交、推送并请 Worker06 复审新 Head。
+- 此文档任务没有 C++ 产品源码改动，也不通过 P3；P3 EntryGate 仍为 Pending。

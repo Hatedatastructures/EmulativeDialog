@@ -3718,7 +3718,7 @@ Tasks:
     EpicId: EP-06
     Title: 统一 HTTPS transport grant 日志规则并校准合同状态
     TaskKind: ContractFreeze
-    State: Active
+    State: Rework
     Phase: P2
     ChangeRequestId: CR-ED-0120-009
     RevisionTransition: {FromRevision: 4, ToRevision: 5}
@@ -3891,7 +3891,7 @@ Tasks:
         - "P2 JSONL is append-only, parses line by line, and all EventId values are unique; its baseline rows are unchanged."
         - "P3 EntryGate remains Pending; P3 plan and event paths are not in this TaskSpec PR's actual changed path set."
       LiveSideEffects: Forbidden
-      NotRunReason: "This documentation-only task does not require C++ build, CTest, or coverage. Post-merge assignment was accepted and TaskStarted was recorded; Worker01 may now update only the frozen three-path ProductWriteSet. Credentials, providers, and channels are not invoked."
+      NotRunReason: "This documentation-only task does not require C++ build, CTest, or coverage. Worker01 completed the frozen three-path ProductWriteSet. Coordinator corrected review findings in the three governance paths; credentials, providers, and channels are not invoked."
     RiskLevel: High
     RiskOwnerRole: NetworkOwner
     Risk: "EndpointGrantId is a bearer capability. Allowing it into diagnostics can enable replay or unauthorized endpoint use if logs are exposed. Incorrect contract labels could falsely suggest P3 is unblocked."
@@ -3909,7 +3909,7 @@ Tasks:
       - Workflow/Events/CodexRewrite/P2.jsonl#EventId=d504fa38-5a42-4c68-a4ac-940bc1568bb3
       - https://github.com/Hatedatastructures/EmulativeDialog/pull/57
       - https://github.com/Hatedatastructures/EmulativeDialog/commit/1d88b4e16fca891155b80b9189a1e4f947e840df
-    Checkpoint: {LastCompletedAcceptance: "Worker01 committed the three product documents as cdedb461973388778fba48e2c68518ab631a3209; internal Worker06 review approved Base 79f94a4fa9c9dd41a4ad8187e878683f9c9808c7 / Head cdedb461973388778fba48e2c68518ab631a3209; GitHub PR #60 was created with verified base main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7", CurrentFindingOrFailure: "PR #60 creation head contains the three product paths only; AC-5 requires the exact three product plus three governance paths. The three governance paths are being added by Coordinator; the prior fixed-head review must be repeated after the final PR head is pushed. P3 remains Pending", TriedApproaches: ["R4 remains Blocked after AC-7 ordering finding; historical timestamps were preserved", "The initial three-path PR #60 review is not final because the frozen acceptance requires six changed paths"], NextAction: "Record PR #60 creation metadata, commit the three Coordinator-owned governance paths within the exact six-path WriteSet, verify the GitHub three-dot diff and JSONL invariants, push the new head, then obtain a fresh Worker06 fixed-head review", OpenMessageIds: [], LastValidationResult: "Initial PR #60 metadata confirmed base main@79f94a4fa9c9dd41a4ad8187e878683f9c9808c7, creation head cdedb461973388778fba48e2c68518ab631a3209, Open, mergeable=true, three changed product paths; fixed Base..Head git diff --check passed"}
+    Checkpoint: {LastCompletedAcceptance: "Validation-017 reran all six fixed-base static checks against the corrected six-path working-tree candidate; all exited 0, and the six CommandExecuted records were appended with unique IDs. Validation-018 and Validation-019 git diff --check also exited 0", CurrentFindingOrFailure: "F001/F002 corrections are recorded and validated in the worktree but remain unverified by Worker06 on the new PR Head. P3 remains Pending", TriedApproaches: ["The initial three-path PR #60 review at cdedb461 was superseded by the six-path coordinator update", "The fcde46d fixed-head review is recorded as RequestChanges; the PRCreated event correctly preserves its creation-time snapshot"], NextAction: "Commit and push the three Coordinator-owned governance paths, refresh PR #60 metadata/body, and request Worker06 fixed-head review", OpenMessageIds: [], LastValidationResult: "Validation-017 verified BaselineCommit→PRBaseCommit and PRBaseCommit→fcde46d ancestry, git diff --check, exact six paths, WorkflowController ED-0120/R5 query (Rework), and P2 JSONL (402-line prefix, 417 lines before appending six validation records). The post-append audit passed at 423 parseable unique events. Validation-018 and Validation-019 git diff --check exited 0; their structured records brought the current JSONL to 425 rows. Logs: Validation-017 through Validation-019 under H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r5"}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0120
