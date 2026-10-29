@@ -68,8 +68,8 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0112/R8-TurnRecoveryValidation
-    Status: Assigned
+    CurrentTaskId: ""
+    Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/luna03_ed0114_branch_review"
@@ -109,8 +109,8 @@ Slots:
     ReasoningEffort: max
     HostSessionRef: "/root/luna06_capability_status_audit"
     ModuleIds: []
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0112/R8-TurnRecoveryAcceptanceReview
+    Status: Assigned
 
 AssignmentRules:
   - 每个活动任务必须且只能属于一个 OwnerSlotId。

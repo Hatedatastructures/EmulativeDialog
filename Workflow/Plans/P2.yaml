@@ -2501,7 +2501,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现中断回合恢复与未知副作用状态隔离
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Review
     TaskSpecChangeRequestId: CR-ED-0112-009
     TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: Approve
@@ -2526,7 +2526,25 @@ Tasks:
     TaskSpecMergedToMainCommit: d47a4a45caa8857e0baec278b56b7b9bd9404817
     BaselineCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
     AssignedToSlot: Worker02
-    AssignmentNote: "PR #35 merged the approved R8 validation-only TaskSpec/CR to main at d47a4a45caa8857e0baec278b56b7b9bd9404817. Coordinator validated this assignment against the frozen R8 spec. After assignment-ledger PR #36 merges, Worker02 may run only the Windows C++20 configure, targeted build, selected CTest, and per-source gcov validation for implementation Head 301e628899fad80be1faad15e3bcc52aa49ce0f5 in the previously absent R8 build directory. Preserve all R7 outputs; do not edit product source during validation. Worker06 remains the frozen independent acceptance reviewer but is not actively assigned yet; after validation evidence is complete, Coordinator will assign Worker06 to review the fixed head. Keep Worker06 CurrentTaskId empty until that review assignment. Keep the existing eight-path implementation branch/worktree and product baseline 0b666e655e75f7fdc7074a405cb2b2a35975a6fc."
+    AssignmentNote: "PR #36 merged into main at bc1899fd6524bd6f71121e23f545782796d4cab3. Worker02 completed R8 acceptance validation for product Base 0b666e655e75f7fdc7074a405cb2b2a35975a6fc and Head 301e628899fad80be1faad15e3bcc52aa49ce0f5; see ValidationEvidence and TaskValidationCompleted. Worker02 was released after validation. Worker06 is assigned ED-0112/R8-TurnRecoveryAcceptanceReview for the independent fixed-head evidence review. AcceptanceReviewStatus remains Pending; do not mark Verified or Merged. Worker02 command-level DurationMs was not recorded in the supplied logs and remains pending without estimates. Preserve the original Goal, Acceptance, Validation commands, product WriteSet, branch, worktree, and baseline."
+    AcceptanceValidationStatus: Completed
+    AcceptanceReviewStatus: Pending
+    ValidationEvidence:
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8
+      SummaryPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0112-R8/Logs/ValidationSummary.txt
+      ProductBaseCommit: 0b666e655e75f7fdc7074a405cb2b2a35975a6fc
+      ProductHeadCommit: 301e628899fad80be1faad15e3bcc52aa49ce0f5
+      ConfigureExitCode: 0
+      TargetedBuildExitCode: 0
+      SelectedCTest: {Passed: 2, Total: 2, ExitCode: 0}
+      CoverageTargetsBuildExitCode: 0
+      CoverageCommandExitCode: 0
+      StaticChecksExitCode: 0
+      WorkerCommandDurationStatus: NotRecorded
+      WorkerCommandDurationNote: "Worker02 logs have no full command DurationMs; do not infer from CTest per-test timings."
+      Coverage:
+        - {Source: Source/Storage/TurnCheckpointStore.cpp, Covered: 740, Total: 822, Percent: 90.02, Report: windows-agent-slice/Reports/TurnCheckpointStore.gcov.json.gz, SHA256: 05040FF0FBC6898F404B4259ED4D739172019F8E7F9C7A371E6BBCDFD9FADEB0}
+        - {Source: Source/Core/TurnRecoveryCoordinator.cpp, Covered: 182, Total: 197, Percent: 92.39, Report: windows-agent-slice/Reports/TurnRecoveryCoordinator.gcov.json.gz, SHA256: 4946EDF8D8EF54FC95AA21EA281BBDCF04E60463C7D2CE1CF463E6C92472E843}
     DependencyChangeRequest:
       ChangeRequestId: CR-ED-0112-DEPS-001
       Decision: Accepted
