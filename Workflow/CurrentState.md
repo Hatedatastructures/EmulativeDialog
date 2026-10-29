@@ -396,3 +396,14 @@
 - Coordinator 在 `origin/main@bdbf292a51f7ba1e7ee569be6e05e2965f8a18b6` 上重查十项精确依赖，10/10 Controller 查询均退出码 0 且为 Merged；P1/P2 门通过、两份 P3 合同 Frozen、ED-0147/R9 已 Merged/Closed。完整输出见 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-R2AssignmentLedger.build/Readiness/ED0151-R2-Readiness-20261029T2232Z.log`。
 - ED-0151/R2 已按其独立 TaskSpec 绑定基线 `bdbf292a51f7ba1e7ee569be6e05e2965f8a18b6`、Owner `/root`、Reviewer Worker04、分支 `Task/ED-0151-P3GateCloseout` 与独立工作树 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Worktree`；TaskSpec merge 与 readiness 事件已追加。
 - 当前只记录为 Assigned。任务尚未开始；必须先在合并后的任务工作树取得 `WorkflowController validate-assignment` 接受，再追加 TaskStarted 或写 P3 门状态。P3 EntryGate 仍为 Pending；过期 PendingReason 只在获准的 ED-0151 门评估中更正。
+
+## 2026-10-30 ED-0151/R2 P3 Gate evaluation started
+
+- PR #64 merged to main as 3c48d918fb227303ea527de767660b0446caef8a; the assignment ledger branch was retired after merge.
+- The assigned worktree passed post-merge WorkflowController validate-assignment with AssignmentAccepted; all ten pinned dependency queries returned State=Merged (exit 0). Evidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R2-PostMergeAssignmentAndDependencyValidation-20261029T2246Z.log.
+- ED-0151/R2 is Active. P3 EntryGate remains Pending while AC-1 through AC-8 are checked; no product code is authorized by this gate-closeout task.
+## 2026-10-30 ED-0151/R2 P3 EntryGate Closeout Blocker
+
+- ED-0151/R2 started only after post-merge assignment validation succeeded. Exact dependency queries and AC-1 through AC-3 evidence are recorded in the P3 event shard and .build validation logs.
+- Worker04 found a fixed-head ordering cycle in AC-5/AC-6: the actual reviewer decision/time and the pass EventId cannot be written to the same immutable Head after that reviewer decision. ED-0151/R2 is Blocked pending proposed CR-ED-0151-003; P3 EntryGate remains Pending and no P3EntryGatePassed event was appended.
+- The proposed correction separates an H1 evidence decision review from H2 finalization and final PR review. It preserves the existing gate criteria, dependencies, owner/reviewer, four-path WriteSet, and no-product-code boundary.

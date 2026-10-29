@@ -641,6 +641,45 @@ ChangeRequests:
     PreserveFailClosedGateBehavior: true
     NoProductWriteOrP3GateTransitionAuthorized: true
     AcceptedAt: 2026-10-30
+  - ChangeRequestId: CR-ED-0151-003
+    TargetTaskId: ED-0151
+    TargetTaskRevision: 2
+    ProposedTaskRevision: 3
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerRole: Coordinator
+    OwnerAgentId: /root
+    OwnerDecision: Approve
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    IndependentReviewerDecision: Pending
+    ReviewerIndependence: Required
+    CoordinatorDecision: Pending
+    Decision: Proposed
+    Scope: >-
+      Preserve the P3 gate goal, AC-1 through AC-4 evidence requirements, exact dependencies, owner, independent reviewer,
+      four-path WriteSet, fail-closed behavior, and governance-only boundary. Clarify only AC-5/AC-6 and their
+      StaticChecks/events: H1 is the GateDecisionReview candidate; P3 remains Pending and no pass event exists.
+      ReviewerDecision and EvaluatedAtUtc in the final P3 record mean the actual H1 gate-evidence decision and time.
+      After H1 approval, H2 records that decision with the exact H1 Base/Head and appends the single
+      P3EntryGatePassed event. H2 then receives a separate FinalPRReview on its fixed PR Base/Head, checking the
+      recorded H1 result, pass event, cross-file states, JSONL and WriteSet. The H2 review result is retained in PR
+      review metadata/ReviewBundle outside H2; it is not written back into the reviewed H2 files.
+    Reason: >-
+      Worker04 found that R2 requires the review decision, actual review time, and the EvaluationEventId of an event
+      that cannot be appended until after AC-5 succeeds. Recording those values after review changes the fixed Head and
+      invalidates the approval. The change request adds a two-stage review/finalization sequence without changing the
+      gate evidence, pass conditions, failure behavior, dependencies, or product scope.
+    AffectedAcceptanceIds: [AC-5, AC-6]
+    EvidenceRefs:
+      - Workflow/Plans/P3.yaml#TaskId=ED-0151&TaskRevision=2
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R2-AC5-AC6-CycleFinding.md
+    PreserveGoalDependenciesOwnerReviewerAndFourPathWriteSet: true
+    NoP3GatePassOrProductWriteAuthorizedByThisProposal: true
+    ProposedFixedHeadReviewBaseCommit: 3c48d918fb227303ea527de767660b0446caef8a
+    ProposedFixedHeadReviewHeadCommit: ""
+    IndependentReviewerReviewBaseCommit: ""
+    IndependentReviewerReviewHeadCommit: ""
+    AcceptedAt: ""
 ParallelGroups:
   - GroupId: DurableMemory
     TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
@@ -3372,7 +3411,7 @@ Tasks:
     EpicId: EP-06
     Title: 独立核验并关闭 P3 EntryGate
     TaskKind: Governance
-    State: Assigned
+    State: Blocked
     Phase: P3
     OwnerRole: Coordinator
     OwnerSlotId: Coordinator
@@ -3663,4 +3702,11 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Checkpoint:
+      LastCompletedAcceptance: "Post-merge assignment validation accepted; exact dependency queries and AC-1 through AC-3 evidence checked; normalized AC-4/AC-6 invariants passed locally."
+      CurrentFindingOrFailure: "Worker04 found a fixed-head cycle in R2 AC-5/AC-6: writing the actual reviewer decision/time and the referenced pass EventId after review changes the reviewed Head. P3 remains Pending; no P3EntryGatePassed event exists."
+      TriedApproaches: ["No gate state was written; the accepted R2 wording cannot be completed without changing a reviewed Head."]
+      NextAction: "Submit CR-ED-0151-003 to separate H1 evidence review from H2 finalization and final PR review; do not emit a pass event before H1 approval."
+      LastValidationResult: "Post-merge AssignmentAccepted; 10/10 pinned dependency queries State=Merged; AC-1 through AC-3 evidence audit passed; final fixed-head gate review is blocked by this TaskSpec finding."
+      OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
