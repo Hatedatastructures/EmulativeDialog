@@ -367,3 +367,11 @@
 - Validation-012 至 Validation-016 记录了两项祖先关系、`git diff --check`、精确六路径比较和 JSONL 审计；Validation-015 当时核对 402 行旧前缀及 411 行唯一有效事件。Validation-017 的六项最终检查均退出码 0；当时 417 行 JSONL 审计通过，六条命令事件追加后为 423 行。Validation-018/019 的 `git diff --check` 均退出码 0，随后总计 425 行；Validation-020 记录纠错提交 d3af878 的推送，P2 JSONL 为 426 行。Validation-021 复核六路径、diff、Controller 和 JSONL 均通过，四条命令事件追加后共 430 行。
 - Worker06 对 `79f94a4...` → `fcde46d...` 的固定头审查指出 F001/F002。Coordinator 已在 d3af878 中修正状态/Checkpoint 并补齐六项结构化验收命令事件；WorkflowController 查询返回 Rework、退出码 0。Validation-021 对推送后的候选做了最终静态复核，P2 JSONL 追加记录后共 430 行。纠错提交已推送到 PR #60，下一步由 Worker06 对 GitHub 当前 Head 固定复审。
 - 此文档任务没有 C++ 产品源码改动，也不通过 P3；P3 EntryGate 仍为 Pending。
+
+## 2026-10-30 ED-0120/R5 合同修订已合并并完成生命周期收尾（记录于 2026-10-29T21:44:34Z）
+
+- GitHub PR #60 已 squash merge 到 main：Base `79f94a4fa9c9dd41a4ad8187e878683f9c9808c7`，最终固定审查 Head `f4c3203061c9ff5680fbc407695ad31d8805453e`，merge commit `f4c21b67591548b33a09f9c3b03d4c03ce2e5f28`，合并时间 `2026-10-29T21:23:00Z`。PR 描述记录 Worker06 对该精确 Base/Head 的内部固定头 APPROVE；GitHub 原生 review submissions 为 0，未把内部批准描述成原生 GitHub review。
+- PR #60 的六路径变更满足 ED-0120/R5 WriteSet。F001/F002 已在最终 Head 的审查记录中关闭。任务状态从 Rework 更新为 Merged，关联 PR final head、Worker06 审查证据、merge commit 和 P2 JSONL 关闭事件。
+- ADR-0003 保持 Accepted；HttpTransportContract V1 与 CoreEndpointGrantContract V1 根据同一固定头的独立批准及 PR #60 合并证据更新为 Frozen。P3 EntryGate 保持 Pending，ED-0147 的任务状态未改变。
+- 此收尾提交只更新授权的三份合同/ADR状态与三条 P2 生命周期治理路径；没有修改 P3、AgentPool、C++ 源码、测试或 CMake，也未运行 C++ build/CTest/coverage。
+- Validation-024 最终核验退出码 0，实测耗时 756.416 ms；验证精确六路径、`git diff --check`、P2 JSONL 430 行基线前缀/438 个唯一事件、R3/R4 Checkpoint 历史未变、P3 文件未改且 EntryGate 仍 Pending、三份 ADR/合同状态和 WorkflowController `State=Merged`。日志位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5LifecycleCloseout.build/WorkflowControllerEvidence/ED-0120/r5/Validation-024-20261029T214428Z.log`，并引用于 P2 事件账本。

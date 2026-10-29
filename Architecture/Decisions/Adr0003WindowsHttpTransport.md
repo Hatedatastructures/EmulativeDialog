@@ -1,6 +1,6 @@
 # ADR-0003：Windows 原生 HTTPS Provider Transport 采用 WinHTTP + 系统 Schannel 信任
 
-状态：Accepted（2026-10-28，ED-0120/R2；独立评审通过后随 HttpTransportContract V1 一起生效）。
+状态：Accepted（2026-10-28，ED-0120/R2；独立评审通过后随 HttpTransportContract V1 一起生效）。ED-0120/R5 保留该 ADR 的其余已接受决策，并经 Worker06 对 PR #60 固定 Base `79f94a4fa9c9dd41a4ad8187e878683f9c9808c7` / Head `f4c3203061c9ff5680fbc407695ad31d8805453e` 独立批准后随合并提交 `f4c21b67591548b33a09f9c3b03d4c03ce2e5f28` 生效；P3 EntryGate 仍为 Pending。
 
 ## 背景
 
