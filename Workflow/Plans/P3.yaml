@@ -556,7 +556,7 @@ ChangeRequests:
     ProposedTaskRevision: 9
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
+    Decision: Accepted
     OwnerAgentId: /root/luna02_ed0148_pr_ready
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
@@ -600,10 +600,14 @@ ChangeRequests:
       - Workflow/Plans/P3.yaml
       - Workflow/Events/CodexRewrite/P3.jsonl
       - Workflow/CurrentState.md
-    ProposedTaskSpecHeadCommit: ""
-    OwnerCRDecision: Pending
-    IndependentReviewerDecision: Pending
-    CoordinatorDecision: Pending
+    ProposedTaskSpecHeadCommit: 84918ea6f67622d999fc5499e7238ce9dc009866
+    OwnerCRDecision: Approve
+    OwnerCRDecisionEvidence: "Worker02 approved fixed semantic Head 84918ea6f67622d999fc5499e7238ce9dc009866 at Base c110dcd88d6eda625b10f24c99e2dc761ec32278."
+    IndependentReviewerDecision: Approve
+    IndependentReviewerEvidence: "Worker04 independently approved fixed semantic Head 84918ea6f67622d999fc5499e7238ce9dc009866 at Base c110dcd88d6eda625b10f24c99e2dc761ec32278."
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionEvidence: "Coordinator accepted after Owner, Independent Reviewer and Governance Reviewer approval at the fixed semantic Head."
+    AcceptedAt: 2026-10-29
     PreserveGoalAcceptanceDependenciesContractsOwnerReviewerAndProductWriteSet: true
     NoProductSourceWriteAuthorized: true
 ParallelGroups:
@@ -2157,7 +2161,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core-owned endpoint grant authority
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
     CorrectiveToTaskId: ED-0120
@@ -2170,18 +2174,22 @@ Tasks:
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     TaskSpecChangeRequestId: CR-ED-0147-R9-COVERAGE-CACHE-001
-    TaskSpecReviewStatus: Proposed
-    TaskSpecOwnerDecision: Pending
-    TaskSpecOwnerReviewHeadCommit: ""
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewerReviewHeadCommit: ""
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecCoordinatorDecisionHeadCommit: ""
-    TaskSpecHeadCommit: ""
-    TaskSpecMergedToMainCommit: ""
-    TaskSpecMergePullRequestNumber: ""
-    TaskSpecMergePullRequestUrl: ""
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecision: Approve
+    TaskSpecOwnerReviewHeadCommit: 84918ea6f67622d999fc5499e7238ce9dc009866
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerReviewHeadCommit: 84918ea6f67622d999fc5499e7238ce9dc009866
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 84918ea6f67622d999fc5499e7238ce9dc009866
+    TaskSpecHeadCommit: 84918ea6f67622d999fc5499e7238ce9dc009866
+    TaskSpecFinalPullRequestHeadCommit: 84918ea6f67622d999fc5499e7238ce9dc009866
+    TaskSpecMergedToMainCommit: faed1f26cf726435f41dcd59b6b8ba842c565579
+    TaskSpecMergePullRequestNumber: 44
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/44
     TaskSpecMergeMethod: squash
+    AssignmentLedgerPullRequestNumber: 45
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/45
+    AssignmentLedgerPullRequestCreatedHeadCommit: bcca45b49e1228bf11ad55c51364a379513a9780
     PreviousRevision8Evidence:
       TaskRevision: 8
       ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
@@ -2358,7 +2366,8 @@ Tasks:
     Branch: Task/ED-0147-CoreEndpointGrantAuthorityR7
     Worktree: H:/Qbot/EmulativeDialog.ED-0147
     AssignedToSlot: Worker02
-    AssignmentNote: "R8 TaskSpec PR #42 and the R8 assignment ledger PR #43 are merged. Worker02 ran the authorized fresh R8 verification: preflight, configure, target build, targeted CTest (1/1, 13/13 assertions), GCC and gcov version checks passed. CoverageCommand exited 1 before gcov because its CMakeCache checks rejected CRLF and CMAKE_CXX_COMPILER:STRING; coverage is unmeasured. R9 proposes only a fresh ED-0147-R9/Core directory and exact line-based cache checks. Do not run R9 until this TaskSpec and its updated assignment ledger merge and WorkflowController validate-assignment accepts; keep P3 EntryGate Pending."
+    AssignmentEventId: 4d0563be-33e1-402f-9e6a-66774ad75e2f
+    AssignmentNote: "R9 TaskSpec PR #44 was approved at fixed Head 84918ea6f67622d999fc5499e7238ce9dc009866 and merged to main at faed1f26cf726435f41dcd59b6b8ba842c565579. This assignment binds Worker02 /root/luna02_ed0148_pr_ready to existing product branch Task/ED-0147-CoreEndpointGrantAuthorityR7, worktree H:/Qbot/EmulativeDialog.ED-0147, and frozen product baseline 269379817d7f51082b16ae2d0ded1ccedd2a54b7; Worker04 /root/luna04_ed0144_branch_review remains the independent product Reviewer. R8 configure/build/CTest passed, but coverage is unmeasured because the old precondition stopped before gcov. Run no R9 validation until this assignment ledger merges and WorkflowController validate-assignment accepts; keep P3 EntryGate Pending."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
