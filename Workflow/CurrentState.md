@@ -1,6 +1,6 @@
 # 当前状态
 
-日期：2026-10-28
+日期：2026-10-29
 
 ## 仓库与分支
 
@@ -289,3 +289,11 @@
 - assignment-ledger PR 合并并通过 WorkflowController validate-assignment 前，不运行 R9 configure/build/CTest/coverage。R8 编译和定向测试通过，但覆盖率没有测得。
 - P3 EntryGate 仍 Pending；异步 C++ AgentRuntime、Provider/WinHTTP 生产接线和真实 QQ Adapter 仍未完成。
 - 远端目前 3/4 个分支：main、PR #25、PR #45。PR #25 的 Memory TTL 备份恢复问题仍阻塞。
+
+## 2026-10-29 ED-0147/R9 合并事实与验收证据补录（15:01 UTC）
+
+- PR #45 ED-0147/R9 assignment ledger 固定 Head `395899c57596cac55b92e631abca906796a8fd03`，于 `2026-10-29T12:16:42Z` squash 合并为 `b037f2b8dfce76f504213b4f6e46d1faf15424ed`。PR #46 以该 merge commit 为 Base，固定 Head `3a9f00aff097c4a23a655eaea1093c35096c67b0`，于 `2026-10-29T12:47:14Z` squash 合并为 P3 产品基线 `5364581858c8299884e87e00730748b86fb43346`。
+- PR #46 记录 WorkflowController `validate-assignment` 返回 `AssignmentAccepted`、Windows C++20 configure 与定向构建退出码 0、`Core.EndpointGrantAuthority` CTest 1/1 与断言 13/13、gcov JSON v2 277/292（94.86%）。assignment 报告、CTest 日志与 coverage 报告在对应中央 `.build` 路径均可读取；Worker06 实际解析 coverage 报告为 GCC/gcov 16.1.0。configure/build 原始 stdout 未留存，退出码来自 PR #46 正文记录。
+- PR #46 正文记录 Worker04 与 Worker06 对 Base→Head 的内部固定头 APPROVE、0 findings；GitHub 插件的 native review submissions 查询返回 0。账本保留两者为不同证据来源。
+- ED-0147/R9 仍保持 `State: Assigned`，没有写入 TaskClosed/终态 Merged。P3 EntryGate 仍 `Pending`：ADR-0003 允许诊断日志记录 EndpointGrantId，CoreEndpointGrantContract V1 AC-6 禁止 grant IDs 进入日志、事件、诊断或持久化；HttpTransportContract V1 仍待合同修订与冻结。生产 Provider/WinHTTP composition 仍未接线。
+- WorkflowController `query` 均退出 0：ED-0147/R9=`Assigned`；ED-0149/R1=`Proposed` 且 Owner/Branch 为空；ED-0150/R1=`Proposed` 且 Owner/Branch 为空。ED-0149 仍需 P3 EntryGate Passed、TaskSpec 审批合并、ED-0007/ED-0015/ED-0131 完成及独立 assignment ledger；ED-0150 另依赖 ED-0114 与 ED-0149，不得在当前 Gate Pending 时实施。
