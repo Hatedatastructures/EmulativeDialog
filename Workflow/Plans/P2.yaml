@@ -147,8 +147,8 @@ ChangeRequests:
     RequestedByAgentId: /root
     OwnerAgentId: /root/luna01_ed0112_r8_audit
     ProposedOwnerSlotId: Worker01
-    ProposedOwnerRole: ContractOwner
-    ProposedOwnerAuthorization: "Upon CR acceptance, Coordinator grants Worker01 task-scoped ownership of the three listed contract documents only; this grants no C++ source or test write permission."
+    ProposedOwnerRole: NetworkOwner
+    ProposedOwnerAuthorization: "Upon CR acceptance, Coordinator assigns Worker01 the registered NetworkOwner role for these three documentation paths only and serializes the CrossModuleContractVersions lock; this grants no C++ source or test write permission."
     IndependentReviewerAgentId: /root/luna06_capability_status_audit
     ProposedReviewerSlotId: Worker06
     ProposedReviewerRole: IndependentReviewer
@@ -163,9 +163,9 @@ ChangeRequests:
     ProposedContextModuleId: NetworkPlatform
     ProposedAdditionalModuleIds: [Core]
     ProposedBaselinePolicy: "After the approved TaskSpec is merged, bind BaselineCommit to that exact main commit before assignment; do not start from this proposal base."
-    ProposedBranch: Task/ED-0120-R3-ContractCloseout
-    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout
-    ProposedEvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Validation
+    ProposedBranch: Task/ED-0120-R3ContractCloseout
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout
+    ProposedEvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Validation
     ProposedGoal: >-
       Correct the cross-document status and disclosure conflict among ADR-0003,
       HttpTransportContract V1, and CoreEndpointGrantContract V1. Treat
@@ -273,24 +273,25 @@ ChangeRequests:
         ProductionSources: []
         MinimumLinePercent: 80
         ReportDirectory: ""
-      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Validation
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Validation
       BaseCommitBinding: "Exact main commit containing the accepted ED-0120/R3 TaskSpec; record this value before assignment."
       HeadCommitBinding: "Exact implementation PR HeadCommit fixed for independent review."
+      CommandVariableBinding: "Run Commands in one PowerShell session after setting $BASE_COMMIT to the exact TaskSpecMergedToMainCommit and $HEAD_COMMIT to the fixed implementation PR HeadCommit; neither is a process-wide environment variable and neither may remain unset."
       CommandEvidenceRule: "For each executed command, append a CommandExecuted event with measured DurationMs, exit code, redacted output summary, and OutputFile under EvidenceDirectory; never estimate duration or include a grant ID."
       Commands:
-        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout diff --check $BASE_COMMIT $HEAD_COMMIT"
-        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout diff --name-only $BASE_COMMIT $HEAD_COMMIT"
-        - "rg -n 'Status:|状态：|TransportRequestId|EndpointGrantId|日志|diagnostic' H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Architecture/Decisions/Adr0003WindowsHttpTransport.md H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Architecture/Contracts/HttpTransportContract.md H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Architecture/Contracts/CoreEndpointGrantContract.md"
+        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout diff --check $BASE_COMMIT $HEAD_COMMIT"
+        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout diff --name-only $BASE_COMMIT $HEAD_COMMIT"
+        - "rg -n 'Status:|状态：|TransportRequestId|EndpointGrantId|日志|diagnostic' H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Architecture/Decisions/Adr0003WindowsHttpTransport.md H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Architecture/Contracts/HttpTransportContract.md H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Architecture/Contracts/CoreEndpointGrantContract.md"
         - >-
           powershell -NoProfile -Command "$events = @(Get-Content -LiteralPath
-          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Workflow/Events/CodexRewrite/P2.jsonl' |
+          'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Workflow/Events/CodexRewrite/P2.jsonl' |
           Where-Object { $_.Trim().Length -gt 0 } | ForEach-Object {
           ConvertFrom-Json -InputObject $_ -ErrorAction Stop }); if (($events.EventId |
           Sort-Object -Unique).Count -ne $events.Count) { throw 'Duplicate EventId' }"
-        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout diff --unified=0 $BASE_COMMIT $HEAD_COMMIT -- Workflow/Events/CodexRewrite/P2.jsonl"
-        - "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe query H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout P2 ED-0120 3"
-        - "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout P2 ED-0120 3 /root/luna01_ed0112_r8_audit Task/ED-0120-R3-ContractCloseout H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout $BASE_COMMIT"
-        - "rg -n '^EntryGate:|^  State: Pending$|^  PendingReason:' H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3-ContractCloseout/Workflow/Plans/P3.yaml"
+        - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout diff --unified=0 $BASE_COMMIT $HEAD_COMMIT -- Workflow/Events/CodexRewrite/P2.jsonl"
+        - "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe query H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout P2 ED-0120 3"
+        - "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout P2 ED-0120 3 /root/luna01_ed0112_r8_audit Task/ED-0120-R3ContractCloseout H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout $BASE_COMMIT"
+        - "rg -n '^EntryGate:|^  State: Pending$|^  PendingReason:' H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout/Workflow/Plans/P3.yaml"
       StaticChecks:
         - "Changed paths exactly equal the six-path union of ProductWriteSet and GovernanceWriteSet."
         - "P2 YAML parses and WorkflowController query returns ED-0120/R3 after Coordinator materializes the approved CR into the active TaskSpec."
@@ -300,7 +301,7 @@ ChangeRequests:
       LiveSideEffects: Forbidden
       NotRunReason: "Documentation and governance validation only; no network, credentials, product build, or C++ tests."
     ProposedRiskLevel: High
-    ProposedRiskOwnerRole: ContractOwner
+    ProposedRiskOwnerRole: NetworkOwner
     ProposedRisk: >-
       EndpointGrantId is a bearer capability. Allowing it into diagnostics can
       enable replay or unauthorized endpoint use if logs are exposed. Incorrect
