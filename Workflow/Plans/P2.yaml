@@ -3718,25 +3718,29 @@ Tasks:
     EpicId: EP-06
     Title: 统一 HTTPS transport grant 日志规则并校准合同状态
     TaskKind: ContractFreeze
-    State: Proposed
+    State: Assigned
     Phase: P2
     ChangeRequestId: CR-ED-0120-009
     RevisionTransition: {FromRevision: 4, ToRevision: 5}
     ReexecutionOfTaskRevision: 4
     TaskSpecProposalBaseCommit: 1d88b4e16fca891155b80b9189a1e4f947e840df
     TaskSpecPullRequestNumber: 58
-    TaskSpecMergeStatus: AwaitingTaskSpecPR
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergeStatus: Merged
+    TaskSpecMergedToMainCommit: 52865b14a2342423244acefedf6117131897d9ba
     TaskSpecHeadCommit: 76a827e30df6a043a0d84ffa874e0942c8f4e7c1
     TaskSpecHeadCommitScope: PullRequestCreationSnapshot
     TaskSpecLastObservedReviewHeadCommit: 6a9ebfaa38dad86b133da4ec71521229a1578717
     TaskSpecLastObservedReviewHeadObservedAt: "2026-10-29T20:23:37Z"
     TaskSpecLastObservedReviewHeadSource: "GitHub PR #58 base/head metadata"
+    TaskSpecApprovedBaseCommit: 1d88b4e16fca891155b80b9189a1e4f947e840df
+    TaskSpecApprovedHeadCommit: 958d3712b69439849cf5df80632743267c94c04a
+    TaskSpecMergedAt: '2026-10-29T20:30:04Z'
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/58
     PRBaseCommitBindingStatus: UnboundUntilActualProductPrMetadataVerified
     PRBaseCommit: ""
     SourceLineageCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
-    BaselineCommit: ""
-    AssignmentBaseCommit: ""
+    BaselineCommit: 52865b14a2342423244acefedf6117131897d9ba
+    AssignmentBaseCommit: 52865b14a2342423244acefedf6117131897d9ba
     OwnerRole: NetworkOwner
     OwnerSlotId: Worker01
     OwnerAgentId: /root/luna01_ed0112_r8_audit
@@ -3744,11 +3748,11 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/luna06_capability_status_audit
     ReviewerIndependence: Required
-    OwnerAssignmentEventId: ""
-    ReviewerAssignmentEventId: ""
-    AssignedAt: ""
-    Branch: ""
-    Worktree: ""
+    OwnerAssignmentEventId: 08688324-8851-4b18-aacd-0fe135fc792d
+    ReviewerAssignmentEventId: 8c645b28-cbee-46e0-bef4-bc2f7298c783
+    AssignedAt: "2026-10-29T20:38:13.5564153+00:00"
+    Branch: Task/ED-0120-R5ContractCloseout
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout
     ProposedBranch: Task/ED-0120-R5ContractCloseout
     ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout
     TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R5ContractCloseout.build
@@ -3882,7 +3886,7 @@ Tasks:
         - "P2 JSONL is append-only, parses line by line, and all EventId values are unique; its baseline rows are unchanged."
         - "P3 EntryGate remains Pending; P3 plan and event paths are not in this TaskSpec PR's actual changed path set."
       LiveSideEffects: Forbidden
-      NotRunReason: "This is a TaskSpec/governance PR only; the R5 product task remains Proposed and no product document, build, test, credential, provider, or channel operation is authorized before a separate accepted AssignmentLedger and TaskStarted."
+      NotRunReason: "This is the separate R5 AssignmentLedger PR. The task is Assigned in the candidate record but the assignment is not effective until PR #59 merges and post-merge Controller query/validate-assignment succeeds. No product document, build, test, credential, provider, or channel operation is authorized before TaskStarted."
     RiskLevel: High
     RiskOwnerRole: NetworkOwner
     Risk: "EndpointGrantId is a bearer capability. Allowing it into diagnostics can enable replay or unauthorized endpoint use if logs are exposed. Incorrect contract labels could falsely suggest P3 is unblocked."
@@ -3900,7 +3904,7 @@ Tasks:
       - Workflow/Events/CodexRewrite/P2.jsonl#EventId=d504fa38-5a42-4c68-a4ac-940bc1568bb3
       - https://github.com/Hatedatastructures/EmulativeDialog/pull/57
       - https://github.com/Hatedatastructures/EmulativeDialog/commit/1d88b4e16fca891155b80b9189a1e4f947e840df
-    Checkpoint: {LastCompletedAcceptance: "CR-ED-0120-009 accepted at fixed Base fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e / Head a175deb848253284998daac28fe3c5d9afcee927 and PR #57 merged to main at 1d88b4e16fca891155b80b9189a1e4f947e840df", CurrentFindingOrFailure: "No product write is authorized; R5 TaskSpec and subsequent separate AssignmentLedger still require review and merge", TriedApproaches: ["R4 remains Blocked after AC-7 ordering finding; historical timestamps were preserved"], NextAction: "Review and merge the exact R5 TaskSpec proposal, then create and independently review a separate assignment ledger before any R5 TaskStarted or product document edit", OpenMessageIds: [], LastValidationResult: "TaskSpec proposal only; implementation is not Assigned or Active"}
+    Checkpoint: {LastCompletedAcceptance: "PR #58 merged the approved R5 TaskSpec to main at 52865b14a2342423244acefedf6117131897d9ba; candidate Ready and Assigned Controller query/assignment checks passed", CurrentFindingOrFailure: "PR #59 is an open AssignmentLedger candidate; the assignment is not effective before PR merge and post-merge Controller validation, and no product write is authorized", TriedApproaches: ["R4 remains Blocked after AC-7 ordering finding; historical timestamps were preserved"], NextAction: "Obtain independent fixed-head review and merge PR #59; then rerun Controller query and validate-assignment on main, and create the product worktree/TaskStarted only after AssignmentAccepted", OpenMessageIds: [], LastValidationResult: "Pre-merge candidate query and validate-assignment passed; post-merge validation remains pending"}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0120
