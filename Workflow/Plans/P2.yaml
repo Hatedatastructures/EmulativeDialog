@@ -259,6 +259,17 @@ ChangeRequests:
       while CoreEndpointGrantContract V1 prohibits logging grant IDs because
       they are bearer capabilities. HttpTransportContract V1 already defines
       TransportRequestId as a local diagnostic/event correlation ID and says
+      sensitive values must not enter terminal results, events, or logs. The
+      same P2 task record still marks HttpTransportContract V1 as
+      PendingCorrectiveRevision, while the contract itself says freeze
+      candidate. R3 aligns these records without changing behavior. The P3
+      EntryGate remains independently controlled and must not be inferred
+      from this documentation correction.
+    Reason: >-
+      ADR-0003 currently permits diagnostic logging of an endpoint grant ID,
+      while CoreEndpointGrantContract V1 prohibits logging grant IDs because
+      they are bearer capabilities. HttpTransportContract V1 already defines
+      TransportRequestId as a local diagnostic/event correlation ID and says
       sensitive values must not enter terminal results, events, or logs.
       The same P2 task record still marks HttpTransportContract V1 as
       PendingCorrectiveRevision, while the contract itself says freeze
@@ -3336,6 +3347,248 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, CTX-001], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+  - TaskId: ED-0120
+    TaskRevision: 3
+    EpicId: EP-06
+    Title: 统一 HTTPS transport grant 日志规则并校准合同状态
+    TaskKind: ContractFreeze
+    State: Assigned
+    Phase: P2
+    ChangeRequestId: CR-ED-0120-007
+    TaskSpecMergedToMainCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
+    TaskSpecPullRequestNumber: 49
+    TaskSpecHeadCommit: 4c3862cab400841742ff3c456ff23dfdda53147f
+    OwnerAssignmentEventId: a42eb1cf-4051-443e-ba3c-9c68e8b22f75
+    ReviewerAssignmentEventId: d9a43510-b95a-4409-be26-bc5f1a582461
+    BaselineCommit: 04e9aac141e3bf2233e556f0fd44e2da4c068b59
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/luna01_ed0112_r8_audit"
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/luna06_capability_status_audit"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-29"
+    AssignedAt: "2026-10-29"
+    Branch: Task/ED-0120-R3ContractCloseout
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout
+    TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build
+    EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3
+    AssignmentNote: "CR-ED-0120-007 and TaskSpec PR #49 are accepted and merged. PR #49 merge commit 04e9aac141e3bf2233e556f0fd44e2da4c068b59 is the frozen BaselineCommit. Worker01 and Worker06 were both rechecked Active with empty CurrentTaskId before assignment. The task branch is not yet recreated; Controller validate-assignment and create-worktree must pass before TaskStarted or any document write."
+    PreMergeAssignmentValidation:
+      Query: {ExitCode: 0, DurationMs: 213.784, OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3/Validation-002-2532898246388.log}
+      ValidateAssignment: {ExitCode: 0, DurationMs: 849.441, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=3", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3/Validation-003-2533359316172.log}
+      FinalCandidateQuery: {ExitCode: 0, DurationMs: 228.27, OutputSummary: "TaskId=ED-0120; TaskRevision=3; State=Assigned; OwnerAgentId=/root/luna01_ed0112_r8_audit; BaselineCommit=04e9aac141e3bf2233e556f0fd44e2da4c068b59", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3/Validation-004-2536411475328.log}
+      FinalCandidateValidateAssignment: {ExitCode: 0, DurationMs: 846.471, OutputSummary: "AssignmentAccepted TaskId=ED-0120 TaskRevision=3", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3/Validation-005-2536597132720.log}
+      InitialQueryCorrection: {ExitCode: 1, DurationMs: 218.514, OutputSummary: "Stale TaskRevision; query must use the frozen revision", Cause: "WorkflowController resolves the first TaskId record. The active R3 record was after historical R2." , Correction: "Moved the active R3 record before historical R2 without changing Goal, dependencies, contracts, Acceptance, or WriteSet.", OutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3/Validation-001-2531627298748.log}
+      Status: CandidateOnly; assignment-ledger merge and post-merge revalidation are still required
+    ModuleIds: [NetworkPlatform, Core]
+    Goal: >-
+      Correct the cross-document status and disclosure conflict among ADR-0003,
+      HttpTransportContract V1, and CoreEndpointGrantContract V1. Treat
+      EndpointGrantId as a bearer capability that is never logged; use the
+      local TransportRequestId for transport diagnostic/event correlation.
+      Preserve the existing API and transport semantics, and keep the P3
+      EntryGate Pending until a separate independent gate closeout.
+    Scope: >-
+      Create ED-0120/R3 as a documentation and contract-status correction.
+      Keep the ADR decision Accepted and its Windows TLS, proxy, redirect,
+      timeout, cancellation, and unknown-outcome decisions unchanged. Replace
+      the ADR clause that permits logging an endpoint grant ID with the
+      uniform no-disclosure rule. State consistently in HttpTransportContract
+      V1 and CoreEndpointGrantContract V1 that EndpointGrantId is an opaque
+      bearer capability and must not appear in logs, events, telemetry,
+      diagnostics, persisted records, command output, or user-visible output;
+      use TransportRequestId only for transport-level request correlation.
+      Set each contract status only when its exact independent review and
+      merge evidence supports that status. Do not change C++ API, wire
+      behavior, security decisions, contract version, implementation, or tests.
+      Do not edit the P3 plan or P3 event shard.
+    OutOfScope: ["C++ API/implementation", "Tests", "Wire behavior", "Security decision", "Contract version", "P3 plan/events or EntryGate transition"]
+    DependsOn: [ED-0006, ED-0007, ED-0008, ED-0146]
+    ContractVersion: "HttpTransportContract V1; CoreEndpointGrantContract V1; no version bump"
+    Context:
+      ModuleId: NetworkPlatform
+      AdditionalModuleIds: [Core]
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/TaskLifecycle.md
+        - Workflow/Plans/P2.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Platform.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Standards/SecurityAndPrivacy.md
+        - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Contracts/CoreEndpointGrantContract.md
+      OnDemandSet:
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/Events/CodexRewrite/P2.jsonl
+        - Workflow/Plans/P3.yaml
+        - Workflow/AgentPool.yaml
+        - Tools/WorkflowController/WorkflowController.cpp
+      ForbiddenSet:
+        - Workflow/Events/CodexRewrite/P3.jsonl
+        - Source/
+        - Tests/
+        - CMakeLists.txt
+        - CMake/
+        - Architecture/Contracts/ModelProviderContract.md
+      DocumentedForbiddenReadSet:
+        - Workflow/Events/CodexRewrite/P3.jsonl
+        - Source/
+        - Tests/
+        - CMakeLists.txt
+        - CMake/
+        - Architecture/Contracts/ModelProviderContract.md
+      ForbiddenSetBinding: "Materialize only ProposedForbiddenWriteSet into active ForbiddenSet. Validate positive WriteSet first, then reject any changed path matching ForbiddenSet. ForbiddenSet does not filter AssembleReadSetContext."
+      ContextSetInvariant: "ProposedForbiddenReadSet and ProposedForbiddenWriteSet are disjoint from ReadSet and OnDemandSet. ProposedForbiddenReadSet is documentation-only. TaskIndex.yaml, P3.yaml, AgentPool.yaml, and WorkflowController.cpp remain available to their declared read-only context and are not in active ForbiddenSet. The six-path WriteSet is the only positive write authorization."
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Workflow/Plans/P2.yaml
+      - Workflow/Events/CodexRewrite/P2.jsonl
+      - Workflow/CurrentState.md
+    SharedLocks: [HttpTransportContractV1, CoreEndpointGrantContractV1, Adr0003WindowsHttpTransport, CrossModuleContractVersions]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "ADR-0003 remains Accepted and its decision history is preserved; the diagnostic logging clause no longer permits EndpointGrantId disclosure.", Evidence: "Fixed-head review of the ADR diff."}
+      - {AcceptanceId: AC-2, Description: "HttpTransportContract V1 and CoreEndpointGrantContract V1 consistently define EndpointGrantId as a bearer capability that is excluded from logs, events, telemetry, diagnostics, persistence, command output, and user-visible output.", Evidence: "Fixed-head review of both contract diffs."}
+      - {AcceptanceId: AC-3, Description: "TransportRequestId remains the local transport-level correlation identifier and is never sent to the remote endpoint; no grant ID is substituted for it.", Evidence: "Fixed-head review of the correlation clauses."}
+      - {AcceptanceId: AC-4, Description: "Contract status labels are supported by exact fixed-head independent review and merge evidence. Mark HttpTransportContract V1 Frozen only after ED-0120/R3 is independently approved and merged; mark CoreEndpointGrantContract V1 Frozen only if its own recorded approval and merge prerequisites are verified. Missing evidence leaves the relevant status as a candidate and records a blocker.", Evidence: "Exact approval and merge commit records for each contract status."}
+      - {AcceptanceId: AC-5, Description: "No API, C++ source, test, wire behavior, security decision, or contract version changes; changed paths equal ProductWriteSet union GovernanceWriteSet.", Evidence: "Base-to-Head changed-path list and diff review."}
+      - {AcceptanceId: AC-6, Description: "Treat PR #46 at fixed Head 3a9f00aff097c4a23a655eaea1093c35096c67b0, its Worker04/Worker06 approvals, and its Windows acceptance as read-only evidence for the authority implementation; do not change ED-0147 Task.State from Assigned or infer that ED-0147 is closed or P3 EntryGate passed.", Evidence: "Pinned PR #46 metadata, review record, and recorded Windows acceptance."}
+      - {AcceptanceId: AC-7, Description: "Do not assign or recreate the implementation branch until the exact governance PR is confirmed merged to main. Before deletion, git ls-remote must show either no exact ref or exactly one ref whose OID equals the merged PR head.sha; only the matching existing ref authorizes the authenticated, non-force git push origin --delete Task/ED-0120-R3ContractCloseout command. A mismatch or lookup error stops without deletion. After deletion or an already-absent precheck, confirm absence through both GitHub branch listing across all pages and git ls-remote; record the GitHub connector response as an EvidenceRef and each executed shell command's command text, redacted output summary, measured duration, and exit code. Then archive the clean local proposal branch with its commit preserved before releasing its worktree.", Evidence: "PR merge metadata, pre/post remote-ref checks, GitHub branch query, command records, and preserved archive branch."}
+      - {AcceptanceId: AC-8, Description: "P3 EntryGate and P3 event history remain untouched and Pending. This task does not emit a P3 gate-passed event; a separately registered and independently reviewed gate-closeout task is required.", Evidence: "P3 plan/event paths absent from the diff; gate state remains Pending."}
+    P3GateEffect: DoesNotSatisfyEntryGate
+    P3StateAfterTask: Pending
+    RequiresSeparateIndependentP3GateCloseout: true
+    Validation:
+      Mode: DocumentationAndGovernanceOnly
+      BuildRequired: false
+      RequiredTargets: []
+      Coverage:
+        Required: false
+        NotApplicable: true
+        NotApplicableReason: "The task changes only documentation and governance paths; no production C++ source or tests are in the WriteSet."
+        ProductionSources: []
+        MinimumLinePercent: 80
+        ReportDirectory: ""
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build
+      EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout.build/WorkflowControllerEvidence/ED-0120/r3
+      ControllerEvidencePathPattern: "WorkflowControllerEvidence/ED-0120/r3/Validation-<command-index>-<steady-clock>.log"
+      BaseCommitBinding: "Exact main commit containing the accepted TaskSpec: 04e9aac141e3bf2233e556f0fd44e2da4c068b59."
+      HeadCommitBinding: "Exact implementation PR HeadCommit fixed for independent review."
+      PowerShellBinding: "Set $BASE_COMMIT to TaskSpecMergedToMainCommit, $HEAD_COMMIT to the fixed PR HeadCommit, and $RepositoryRoot to the assigned implementation worktree in one PowerShell session. Run manual checks directly in that session; do not wrap them in a second powershell -Command."
+      CommandEvidenceRule: "For each executed command, append CommandExecuted with measured DurationMs, exit code, redacted summary, and OutputFile under EvidenceDirectory; never estimate duration or include grant IDs."
+      ControllerCommands:
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' query $RepositoryRoot P2 ED-0120 3"
+        - "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' validate-assignment $RepositoryRoot P2 ED-0120 3 '/root/luna01_ed0112_r8_audit' 'Task/ED-0120-R3ContractCloseout' 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0120-R3ContractCloseout' $BASE_COMMIT"
+      CreateWorktreeCommand: "& 'H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe' create-worktree 'H:/Qbot/EmulativeDialog' P2 ED-0120 3"
+      ManualStaticChecks:
+        - "git -C $RepositoryRoot diff --check $BASE_COMMIT $HEAD_COMMIT"
+        - "git -C $RepositoryRoot diff --name-only $BASE_COMMIT $HEAD_COMMIT"
+        - "Before deletion, verify the remote exact-ref result is either empty or one line matching refs/heads/Task/ED-0120-R3ContractCloseout and the exact merged PR head.sha; do not delete on lookup error or mismatch."
+        - "After deletion or an already-absent precheck, git -C $RepositoryRoot ls-remote --heads origin refs/heads/Task/ED-0120-R3ContractCloseout must exit 0 with no output, and GitHub plugin branch listing across all pages must have no exact branch-name match."
+        - "rg -n 'Status:|状态：|TransportRequestId|EndpointGrantId|日志|diagnostic' (Join-Path $RepositoryRoot 'Architecture/Decisions/Adr0003WindowsHttpTransport.md') (Join-Path $RepositoryRoot 'Architecture/Contracts/HttpTransportContract.md') (Join-Path $RepositoryRoot 'Architecture/Contracts/CoreEndpointGrantContract.md')"
+        - "git -C $RepositoryRoot diff --unified=0 $BASE_COMMIT $HEAD_COMMIT -- Workflow/Events/CodexRewrite/P2.jsonl"
+        - "rg -n '^EntryGate:|^  State: Pending$|^  PendingReason:' Workflow/Plans/P3.yaml"
+      ManualPowerShellScript:
+        ScriptId: ValidateP2EventJsonl
+        Execution: "Run this body directly in the already-bound PowerShell session; do not invoke powershell -Command around it. The script's own $events and $_ variables are evaluated only by the script itself."
+        Body: |-
+          $ErrorActionPreference = 'Stop'
+          $events = @(Get-Content -LiteralPath (Join-Path $RepositoryRoot 'Workflow/Events/CodexRewrite/P2.jsonl') |
+            Where-Object { $_.Trim().Length -gt 0 } |
+            ForEach-Object { ConvertFrom-Json -InputObject $_ -ErrorAction Stop })
+          if ((@($events.EventId | Sort-Object -Unique).Count) -ne $events.Count) {
+            throw 'Duplicate EventId'
+          }
+          $baseRows = @(git -C $RepositoryRoot show ($BASE_COMMIT + ':Workflow/Events/CodexRewrite/P2.jsonl') |
+            Where-Object { $_.Trim().Length -gt 0 })
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Unable to read the P2 JSONL at BASE_COMMIT'
+          }
+          $headRows = @(Get-Content -LiteralPath (Join-Path $RepositoryRoot 'Workflow/Events/CodexRewrite/P2.jsonl') |
+            Where-Object { $_.Trim().Length -gt 0 })
+          if ($headRows.Count -lt $baseRows.Count) {
+            throw 'P2 event history is shorter than its baseline prefix'
+          }
+          for ($index = 0; $index -lt $baseRows.Count; $index++) {
+            if ($headRows[$index] -cne $baseRows[$index]) {
+              throw "P2 event history prefix changed at row $($index + 1)"
+            }
+          }
+      StaticChecks:
+        - "Changed paths exactly equal the six-path union of ProductWriteSet and GovernanceWriteSet."
+        - "P2 YAML parses and WorkflowController query resolves ED-0120/R3 after Coordinator materializes the accepted CR."
+        - "P2 JSONL parses, EventIds are unique, and every baseline row remains an identical prefix."
+        - "ProposedForbiddenReadSet is documentation-only, disjoint from ReadSet and OnDemandSet, and does not act as a Controller read filter."
+        - "The materialized TaskSpec ForbiddenSet equals ProposedForbiddenWriteSet and has no path overlap with ReadSet or OnDemandSet; the exact six-path WriteSet remains the only positive write authorization."
+        - "ProposedDependencies contains ED-0006/ED-0007/ED-0008/ED-0146 and excludes ED-0147; PR #46 is pinned as read-only evidence at fixed Head 3a9f00aff097c4a23a655eaea1093c35096c67b0 and merge 5364581858c8299884e87e00730748b86fb43346, without marking ED-0147 Merged or P3 EntryGate Passed."
+        - "Before any deletion, the exact governance PR is confirmed merged and pre-delete ls-remote is either absent or returns exactly the expected ref at the PR head.sha; any mismatch/error prevents deletion. Only the exact ref may be deleted with authenticated non-force git push origin --delete after merge. After deletion or an absent precheck, both GitHub all-page branch listing and ls-remote confirm absence before local branch/worktree reuse."
+        - "P3 EntryGate remains Pending; P3 plan/events remain outside the WriteSet."
+        - "Every contract status claim cites a fixed BaseCommit/HeadCommit review and merge record; no review status is inferred from a PR merge alone."
+      LiveSideEffects: Forbidden
+      PostMergeCoordinatorHandoff: "No remote branch deletion is part of this task's validation. The separate same-branch handoff may perform only the explicitly authorized exact-ref retirement after the merged-PR and SHA-match gates, using the configured Git credential helper; no product/provider/channel live side effect is authorized."
+      NotRunReason: "Documentation and governance validation only; no remote branch deletion, product live side effect, product build, or C++ test is run as task validation. The separately gated post-merge handoff is recorded only when it actually occurs."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    Risk: "EndpointGrantId is a bearer capability. Allowing it into diagnostics can enable replay or unauthorized endpoint use if logs are exposed. Incorrect freeze labels can also make P3 appear unblocked without evidence."
+    Rollback: "Preserve the no-grant-ID-disclosure rule on rollback. If independent approval/merge evidence for a status is missing, revert only that unsupported status label to a candidate state, retain the historical decision and evidence, and keep P3 Pending."
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    EvidenceRefs:
+      - Workflow/Plans/P2.yaml#CR-ED-0120-007&Decision=Accepted
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/49
+      - https://github.com/Hatedatastructures/EmulativeDialog/commit/04e9aac141e3bf2233e556f0fd44e2da4c068b59
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/46#head=3a9f00aff097c4a23a655eaea1093c35096c67b0
+      - https://github.com/Hatedatastructures/EmulativeDialog/commit/5364581858c8299884e87e00730748b86fb43346
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core/EndpointGrantAuthorityTests.exe
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core/Testing/Temporary/LastTest.log
+      - Workflow/Plans/P2.yaml#TaskId=ED-0146&TaskRevision=6&State=Merged
+      - Workflow/Plans/P3.yaml#EntryGate.State=Pending
+    ReadOnlyEvidencePrerequisites:
+      ED0147TaskStateAtEvidenceSnapshot: Assigned
+      EvidenceSnapshotMainCommit: 5364581858c8299884e87e00730748b86fb43346
+      ED0147AuthorityImplementation:
+        PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/46
+        PullRequestState: Merged
+        PullRequestBaseCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+        FixedHeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+        MergeCommit: 5364581858c8299884e87e00730748b86fb43346
+        MergedAtUtc: "2026-10-29T12:47:14Z"
+        IndependentReview:
+          BaseCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+          HeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+          Worker04: Approve
+          Worker06: Approve
+          EvidenceSource: "PR #46 description records fixed-head reviews; GitHub native review list returned no submissions."
+        WindowsAcceptance:
+          ConfigureExitCode: 0
+          BuildTarget: EndpointGrantAuthorityTests
+          BuildExitCode: 0
+          CTestName: Core.EndpointGrantAuthority
+          CTestPassed: 1
+          CTestTotal: 1
+          FixtureCasesPassed: 13
+          FixtureCasesTotal: 13
+          GcovVersion: "GCC/gcov 16.1.0"
+          CoverageSource: Source/Core/EndpointGrantAuthority.cpp
+          CoverageCoveredLines: 277
+          CoverageExecutableLines: 292
+          CoveragePercent: 94.86
+        NotClosedByThisEvidence: "This establishes authority implementation and reported acceptance only. It does not close ED-0147 Task.State or pass P3 EntryGate."
+    Checkpoint: {LastCompletedAcceptance: "TaskSpec accepted and merged; clean proposal worktree archived; candidate Controller query and validate-assignment accepted", CurrentFindingOrFailure: "Initial Controller query selected historical R2 because R2 preceded R3; fixed by placing active R3 first. Post-merge revalidation and implementation worktree creation remain pending.", TriedApproaches: ["Controller query before revision ordering correction: exit 1, Stale TaskRevision"], NextAction: "Complete fixed-head assignment-ledger review and merge; then rerun Controller validation on main state, create the isolated implementation worktree, and record TaskStarted before document changes", OpenMessageIds: [], LastValidationResult: "Candidate preflight query 0 / validate-assignment 0; final post-merge validation pending"}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P2.jsonl, FollowUpTaskIds: []}
+
   - TaskId: ED-0120
     TaskRevision: 2
     EpicId: EP-06
