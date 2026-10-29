@@ -201,6 +201,15 @@ TurnRecoveryCoordinator::Recover(std::string_view ScopeRef) {
       Disposition = RecoveryDisposition::SkippedInactiveScope;
     } else if (const auto Terminal =
                    TerminalDisposition(Checkpoint.Phase);
+               Terminal.has_value() &&
+               *Terminal != RecoveryDisposition::OutcomeUnknown &&
+               HasUnsafeDispatch(Checkpoint)) {
+      return RecoveryError{
+          .Code = RecoveryErrorCode::StoreFailure,
+          .SanitizedDescription =
+              "Determinate terminal checkpoint contains an unresolved dispatch."};
+    } else if (const auto Terminal =
+                   TerminalDisposition(Checkpoint.Phase);
                Terminal.has_value()) {
       Disposition = *Terminal;
     } else if (HasDefiniteOperationOutcome(Checkpoint)) {

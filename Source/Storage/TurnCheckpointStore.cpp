@@ -485,6 +485,18 @@ CheckpointResult<std::monostate> ValidateTurn(
     return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
                  "Unknown outcomes must preserve safe recovery context.");
   }
+  const bool HasPendingDispatch =
+      Checkpoint.ToolState == ToolExecutionState::Dispatched ||
+      Checkpoint.Operation == OperationState::Dispatched;
+  const bool HasDeterminateTerminal =
+      Checkpoint.Phase == TurnPhase::Completed ||
+      Checkpoint.Phase == TurnPhase::Cancelled ||
+      Checkpoint.Phase == TurnPhase::Failed ||
+      Checkpoint.Phase == TurnPhase::Unsupported;
+  if (HasDeterminateTerminal && HasPendingDispatch) {
+    return Error(CheckpointStoreErrorCode::InvalidCheckpoint,
+                 "A pending dispatch cannot have a determinate terminal state.");
+  }
   if (Checkpoint.UnknownSideEffect &&
       (Checkpoint.Phase == TurnPhase::Completed ||
        Checkpoint.Phase == TurnPhase::Cancelled ||

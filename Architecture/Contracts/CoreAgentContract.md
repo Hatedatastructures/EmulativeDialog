@@ -61,6 +61,8 @@ OperationState 为 `Prepared`、`Authorized`、`Dispatched`、`Succeeded`、`Rej
 
 AgentTurn 的终态集合固定为 `Completed`、`Cancelled`、`Failed`、`Unsupported`、`OutcomeUnknown`。恢复记录必须保留重启时的原始 phase、tool execution state 和 operation state；恢复决策不得把五个终态折叠成单一的 `AlreadyTerminal` 结果。
 
+持久化记录不得把 `Completed`、`Cancelled`、`Failed` 或 `Unsupported` 与仍处于 `Dispatched` 的 tool execution 或 operation 状态组合。dispatch 后缺少确定结果/回执时必须记录为 `OutcomeUnknown`；无法验证该不变量的 checkpoint 必须 fail closed，不能生成确定终态决策或重放。
+
 ProviderRequest 的 `ResponseCompleted` 表示该模型响应结束，不等于 AgentTurn `Completed`。带工具提案的响应由 Core 授权后续跑；最终答复只有成功发送回执后才算完成。状态记录关联 `AgentTurnId`、`RequestId`、`OperationId`、`ProviderProfileId` 和可用的 `ChannelReceiptId`。
 
 ProviderRequest 的 `ResponseOutputLimited` 不得执行未完成的工具参数。AgentRuntime 只能在 Core 批准 ContextSelector 重新压缩/预算后，使用新 RequestId 发起有界续跑；若预算耗尽则 AgentTurn 以稳定 `OutputLimitReached` 错误结束。`ResponseFailed` 仅按 profile 明列的安全 retry policy 处理；`ResponseCancelled` 在无未决副作用时转 `Cancelled`；`ResponseOutcomeUnknown` 转 AgentTurn `OutcomeUnknown`，不重新生成或派发工具。

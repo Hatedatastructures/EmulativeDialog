@@ -287,6 +287,42 @@ void TestRevisionIdentityAndTerminalRules() {
   RemoveIfExists(Path);
 }
 
+void TestDeterminateTerminalRejectsPendingDispatches() {
+  const std::vector<TurnPhase> TerminalPhases{
+      TurnPhase::Completed,
+      TurnPhase::Cancelled,
+      TurnPhase::Failed,
+      TurnPhase::Unsupported,
+  };
+  std::uint64_t Case = 0;
+  for (const TurnPhase Phase : TerminalPhases) {
+    for (const bool OperationDispatch : {false, true}) {
+      const auto Path = TempPath(
+          "terminal-pending-dispatch-" + std::to_string(Case++));
+      RemoveIfExists(Path);
+      TurnCheckpointStore Store(Path);
+      TurnCheckpoint Checkpoint = MakeTurn(
+          "turn-terminal-pending-" + std::to_string(Case));
+      Checkpoint.RequestId = "request-terminal-pending";
+      Checkpoint.Phase = Phase;
+      if (OperationDispatch) {
+        Checkpoint.Operation = OperationState::Dispatched;
+        Checkpoint.OperationId = "operation-pending";
+        Checkpoint.IdempotencyKey = "idempotency-pending";
+        Checkpoint.ActionId = "action-pending";
+      } else {
+        Checkpoint.ToolState = ToolExecutionState::Dispatched;
+      }
+
+      const CheckpointStoreError Error =
+          ExpectError(Store.Append(Checkpoint));
+      Expect(Error.Code == CheckpointStoreErrorCode::InvalidCheckpoint);
+      Expect(std::get<CheckpointSnapshot>(Store.Load()).RecordCount == 0);
+      RemoveIfExists(Path);
+    }
+  }
+}
+
 void TestScopeMarkersAndTombstoneMonotonicity() {
   const auto Path = TempPath("scope");
   RemoveIfExists(Path);
@@ -800,6 +836,7 @@ void TestChecksummedLogRejectsRecordsAfterTerminal() {
 int main() {
   TestRoundTripRestartAndIdempotentAppend();
   TestRevisionIdentityAndTerminalRules();
+  TestDeterminateTerminalRejectsPendingDispatches();
   TestScopeMarkersAndTombstoneMonotonicity();
   TestValidationRejectsUnsafeInputs();
   TestCorruptTruncatedAndUnsupportedRecordsFailClosed();

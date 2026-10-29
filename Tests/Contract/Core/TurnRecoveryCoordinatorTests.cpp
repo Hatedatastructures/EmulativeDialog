@@ -50,6 +50,51 @@ void RemoveIfExists(const std::filesystem::path& Path) {
   std::filesystem::remove_all(Path, Error);
 }
 
+void WriteAll(const std::filesystem::path& Path, std::string_view Text) {
+  std::ofstream Output(Path, std::ios::binary | std::ios::trunc);
+  Expect(Output.good());
+  Output.write(Text.data(), static_cast<std::streamsize>(Text.size()));
+  Output.flush();
+  Expect(Output.good());
+}
+
+std::uint64_t Fnv1a(std::string_view Text) {
+  std::uint64_t Value = 14695981039346656037ULL;
+  for (const char Character : Text) {
+    Value ^= static_cast<unsigned char>(Character);
+    Value *= 1099511628211ULL;
+  }
+  return Value;
+}
+
+std::string CompleteRecord(std::string Payload) {
+  static constexpr char Digits[] = "0123456789abcdef";
+  std::string Checksum(16, '0');
+  const std::uint64_t Value = Fnv1a(Payload);
+  for (std::size_t Index = 0; Index < Checksum.size(); ++Index) {
+    const std::size_t Shift = (Checksum.size() - 1U - Index) * 4U;
+    Checksum[Index] = Digits[(Value >> Shift) & 0x0FU];
+  }
+  Payload.append("|").append(Checksum).append("\n");
+  return Payload;
+}
+
+std::string PendingDispatchRecord(std::string_view Phase,
+                                  bool OperationDispatch) {
+  std::string Payload(
+      "EDCP|2|T|turn-terminal-pending|request-pending|scope-pending|"
+      "context-pending|");
+  Payload.append(Phase).append("|");
+  if (OperationDispatch) {
+    Payload.append("NotRequested|0|Dispatched|operation-pending|"
+                   "idempotency-pending|action-pending|");
+  } else {
+    Payload.append("Dispatched|0|None||||");
+  }
+  Payload.append("1700000000000|1");
+  return CompleteRecord(std::move(Payload));
+}
+
 TurnCheckpoint MakeTurn(std::string TurnId, std::string ScopeRef,
                         TurnPhase Phase = TurnPhase::Created) {
   return TurnCheckpoint{
@@ -355,6 +400,32 @@ void TestTerminalStatesRemainTerminal() {
          RecoveryDisposition::Unsupported);
   Expect(UnsupportedDecision.OriginalPhase == TurnPhase::Unsupported);
   RemoveIfExists(Path);
+}
+
+void TestRecoveryRejectsDeterminateTerminalsWithPendingDispatches() {
+  const std::vector<std::string_view> TerminalPhases{
+      "Completed", "Cancelled", "Failed", "Unsupported"};
+  std::uint64_t Case = 0;
+  for (const std::string_view Phase : TerminalPhases) {
+    for (const bool OperationDispatch : {false, true}) {
+      const auto Path = TempPath(
+          "terminal-pending-dispatch-" + std::to_string(Case++));
+      RemoveIfExists(Path);
+      WriteAll(Path, PendingDispatchRecord(Phase, OperationDispatch));
+
+      TurnCheckpointStore Store(Path);
+      std::vector<RecoveryEvent> Events;
+      TurnRecoveryCoordinator Coordinator(
+          Store, [&Events](const RecoveryEvent& Event) {
+            Events.push_back(Event);
+          });
+      const RecoveryError Error =
+          ExpectError(Coordinator.Recover("scope-pending"));
+      Expect(Error.Code == RecoveryErrorCode::StoreFailure);
+      Expect(Events.empty());
+      RemoveIfExists(Path);
+    }
+  }
 }
 
 void TestInactiveScopesAreSkippedWithoutAppend() {
@@ -682,6 +753,7 @@ int main() {
   TestToolAndStreamStatesAreNeverReplayed();
   TestExplicitUnknownSideEffectIsolatedBeforeDispatch();
   TestTerminalStatesRemainTerminal();
+  TestRecoveryRejectsDeterminateTerminalsWithPendingDispatches();
   TestInactiveScopesAreSkippedWithoutAppend();
   TestScopeFilteringAndEventOrdering();
   TestEventSinkFailureIsReportedWithoutDispatch();
