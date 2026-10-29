@@ -13,7 +13,7 @@ EntryGate:
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
   State: Pending
-  PendingReason: ED-0146/R6 is merged as PR #29 at b04f407403c12ad13e47e4aea8ad092a9dbba321 and enforces the shared Port grant entry. P3 remains Pending until ED-0147/R6 implements Core-owned profile-bound grant authority, passes fixed-head review and Windows verification, and the required contracts freeze. Neither task establishes production Provider/WinHTTP composition wiring.
+  PendingReason: ED-0146/R6 (PR #29, merged as b04f407403c12ad13e47e4aea8ad092a9dbba321) and ED-0147/R9 (PR #46, merged as 5364581858c8299884e87e00730748b86fb43346) are merged; R9 validation and fixed-head review evidence are recorded. P3 remains Pending because HttpTransportContract V1 remains a freeze candidate and ADR-0003 permits EndpointGrantId in diagnostic logs while CoreEndpointGrantContract V1 AC-6 prohibits grant IDs in logs, events, diagnostics, and persistence. Await the separately reviewed ED-0120/R3 contract revision and required contract freeze. Neither task establishes production Provider/WinHTTP composition wiring.
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4
@@ -2190,6 +2190,50 @@ Tasks:
     AssignmentLedgerPullRequestNumber: 45
     AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/45
     AssignmentLedgerPullRequestCreatedHeadCommit: bcca45b49e1228bf11ad55c51364a379513a9780
+    AssignmentLedgerPullRequestFinalHeadCommit: 395899c57596cac55b92e631abca906796a8fd03
+    AssignmentLedgerMergedToMainCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+    AssignmentLedgerMergedAt: "2026-10-29T12:16:42Z"
+    AssignmentValidationCommand: "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9-Assignment P3 ED-0147 9 /root/luna02_ed0148_pr_ready Task/ED-0147-CoreEndpointGrantAuthorityR7 H:/Qbot/EmulativeDialog.ED-0147 269379817d7f51082b16ae2d0ded1ccedd2a54b7"
+    AssignmentValidationExitCode: 0
+    AssignmentValidationReport: "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Assignment/Controller-ValidateAssignment.txt"
+    ImplementationPullRequestNumber: 46
+    ImplementationPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/46
+    ImplementationPullRequestBaseCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+    ImplementationPullRequestHeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+    ImplementationPullRequestMergeCommit: 5364581858c8299884e87e00730748b86fb43346
+    ImplementationPullRequestMergedAt: "2026-10-29T12:47:14Z"
+    ImplementationPullRequestMergeMethod: squash
+    ImplementationAcceptanceEvidence:
+      EvidenceSource: "PR #46 body; local assignment, CTest, and coverage artifacts verified by Worker06; configure/build stdout not retained per PR #47 closeout record."
+      ConfigureExitCode: 0
+      ConfigureStdoutRetained: false
+      TargetBuild: EndpointGrantAuthorityTests
+      TargetBuildExitCode: 0
+      TargetBuildStdoutRetained: false
+      TargetCTestName: Core.EndpointGrantAuthority
+      TargetCTestExitCode: 0
+      TargetCTestPassed: 1
+      TargetCTestTotal: 1
+      TargetAssertionsPassed: 13
+      TargetAssertionsTotal: 13
+      TargetCTestLog: "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core/Testing/Temporary/LastTest.log"
+      TargetCTestArtifactLocallyVerified: true
+      CoverageSource: Source/Core/EndpointGrantAuthority.cpp
+      CoverageLineCount: 277
+      CoverageExecutableLineCount: 292
+      CoveragePercent: 94.86
+      CoverageFormat: "gcov JSON v2; GCC/gcov 16.1.0"
+      CoverageReport: "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0147-R9/Core/Reports/Run-b7e2aa5fbba64ec09fdd26593f5f869c/EndpointGrantAuthority##H~#Qbot#EmulativeDialog.ED-0147#Source#Core#EndpointGrantAuthority.gcov.json.gz"
+      CoverageArtifactLocallyParsed: true
+    ImplementationReviewEvidence:
+      FixedHeadBaseCommit: b037f2b8dfce76f504213b4f6e46d1faf15424ed
+      FixedHeadCommit: 3a9f00aff097c4a23a655eaea1093c35096c67b0
+      Worker04InternalDecision: APPROVE
+      Worker06InternalDecision: APPROVE
+      InternalDecisionSource: "PR #46 body"
+      NativeGitHubReviewSubmissionCount: 0
+      NativeReviewCountSource: "GitHub plugin list_pull_request_reviews"
+      FindingsReportedInPRBody: 0
     PreviousRevision8Evidence:
       TaskRevision: 8
       ChangeRequestId: CR-ED-0147-R8-VALIDATION-001
@@ -2367,7 +2411,7 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.ED-0147
     AssignedToSlot: Worker02
     AssignmentEventId: 4d0563be-33e1-402f-9e6a-66774ad75e2f
-    AssignmentNote: "R9 TaskSpec PR #44 was approved at fixed Head 84918ea6f67622d999fc5499e7238ce9dc009866 and merged to main at faed1f26cf726435f41dcd59b6b8ba842c565579. This assignment binds Worker02 /root/luna02_ed0148_pr_ready to existing product branch Task/ED-0147-CoreEndpointGrantAuthorityR7, worktree H:/Qbot/EmulativeDialog.ED-0147, and frozen product baseline 269379817d7f51082b16ae2d0ded1ccedd2a54b7; Worker04 /root/luna04_ed0144_branch_review remains the independent product Reviewer. R8 configure/build/CTest passed, but coverage is unmeasured because the old precondition stopped before gcov. Run no R9 validation until this assignment ledger merges and WorkflowController validate-assignment accepts; keep P3 EntryGate Pending."
+    AssignmentNote: "R9 assignment ledger PR #45 merged at b037f2b8dfce76f504213b4f6e46d1faf15424ed; WorkflowController validate-assignment returned AssignmentAccepted. Product PR #46 merged at 5364581858c8299884e87e00730748b86fb43346 and its Windows validation evidence is recorded below. Keep ED-0147 nonterminal and P3 EntryGate Pending until the EndpointGrantId diagnostic logging conflict is resolved and the required contracts freeze."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
