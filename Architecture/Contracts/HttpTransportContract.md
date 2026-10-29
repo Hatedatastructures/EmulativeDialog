@@ -1,6 +1,6 @@
 # HTTP Transport 合同 V1
 
-状态：冻结候选（ED-0120/R5）。当前 V1 文本须经本修订的固定头独立评审并合并后才视为冻结；不实现 WinHTTP 传输代码（ED-0121），不定义任何 Provider wire schema。
+状态：Frozen（ED-0120/R5）。Worker06 对 PR #60 固定 Base `79f94a4fa9c9dd41a4ad8187e878683f9c9808c7` / Head `f4c3203061c9ff5680fbc407695ad31d8805453e` 独立批准；该 PR 已于 `2026-10-29T21:23:00Z` squash merge 为 `f4c21b67591548b33a09f9c3b03d4c03ce2e5f28`。本状态只确认文档合同冻结，不实现 WinHTTP 传输代码（ED-0121），也不定义任何 Provider wire schema。
 
 ## 职责与依赖方向
 

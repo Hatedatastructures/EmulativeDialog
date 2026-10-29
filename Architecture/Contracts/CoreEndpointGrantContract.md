@@ -1,6 +1,6 @@
 # Core Endpoint Grant Contract V1
 
-Status: This ED-0120/R5 disclosure-policy revision remains a freeze candidate until its own exact fixed-head independent approval and merge. PR #46 at fixed Base `b037f2b8dfce76f504213b4f6e46d1faf15424ed` / Head `3a9f00aff097c4a23a655eaea1093c35096c67b0` (merged as `5364581858c8299884e87e00730748b86fb43346` after internal Worker04/Worker06 approvals) is prior ED-0147/R9 authority-implementation/baseline evidence, not approval of this R5 text; this does not change ED-0147 task state or the P3 gate.
+Status: Frozen (ED-0120/R5). Worker06 independently approved this contract's exact PR #60 fixed Base `79f94a4fa9c9dd41a4ad8187e878683f9c9808c7` / Head `f4c3203061c9ff5680fbc407695ad31d8805453e`; that PR merged by squash at `2026-10-29T21:23:00Z` as `f4c21b67591548b33a09f9c3b03d4c03ce2e5f28`. PR #46 at fixed Base `b037f2b8dfce76f504213b4f6e46d1faf15424ed` / Head `3a9f00aff097c4a23a655eaea1093c35096c67b0` (merged as `5364581858c8299884e87e00730748b86fb43346` after internal Worker04/Worker06 approvals) remains prior ED-0147/R9 authority-implementation/baseline evidence, not the approval for this R5 text; this does not change ED-0147 task state or the P3 gate.
 
 ## Scope and ownership
 
