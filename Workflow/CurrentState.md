@@ -154,3 +154,12 @@
 - 派工基线固定为 `0b666e655e75f7fdc7074a405cb2b2a35975a6fc`，owner Worker02；WorkflowController `create-worktree` 与 `validate-assignment` 均 exit 0，实际建立分支 `Task/ED-0112-R5TurnRecovery` 和隔离 worktree `H:/Qbot/EmulativeDialog.ED-0112-R5`。assignment PR 合并前不开始产品写入。
 - R5 必须只按八路径 WriteSet 重放已完成的恢复实现；不得合并 stacked 祖先或复用旧 R2 worktree。旧 dirty/stacked worktree保持保护。
 - 远端分支名额在新 PR 创建前为 3/4；ED-0146/R6 继续在其独立 worktree 实现。ED-0112/R5 不会覆盖或合并 ED-0146 写集。
+
+## 2026-10-29 P2/P3 合并与就绪状态回填（11:36 +08:00）
+
+- GitHub 插件确认 PR #26、#27、#28、#29 均已合入。当前 `main` 与 `origin/main` 为 `b04f407403c12ad13e47e4aea8ad092a9dbba321`；远端分支为 `main`、PR #20、PR #25，共 3/4。
+- P2 ED-0146/R6 已按 PR #29（Head `66a5772`，Merge `b04f407`）回填为 `Merged`；WorkflowController 查询退出 0。Worker03 的任务和四项 CR-ED-0120-006 写权限已关闭。Worker01、Worker04 对 PR #27/#28 的固定头治理审查已随合并释放；六槽注册表现有身份保持不变。
+- PR #26 中已审定的 ED-0147/R6 与 ED-0148/R4 TaskSpec/CR 均记录为 `ApprovedAndMergedToMain`、`Ready`，合并 SHA 为 `b43ebd...`。WorkflowController 对 P3 两项查询均退出 0。尚未分配 owner；BaselineCommit、Branch、Worktree 和 AssignedToSlot 保持空值。`RD-P3-BASELINE-AT-ASSIGNMENT-001` 临时说明 TaskLifecycle §25 与 §40 的基线时点冲突：派工前不伪造基线，分配时重读 main 并绑定。
+- ED-0148 的预门例外已更新为已合入，同时保留 `DoesNotSatisfyEntryGate: true` 与不解锁 ED-0114/ED-0144/ED-0145 的限制。P3 EntryGate 仍为 Pending，仅待 ED-0147/R6 的 Core grant authority 实现、固定头审查、Windows 验证与合同冻结；ED-0146/R6 的合入不等于 Provider/WinHTTP 生产组合已接线。
+- P2 追加了 ED-0146 `TaskMerged` 与 Worker01/03/04 `AgentSlotRecovered` 事件；P3 追加 ED-0147 就绪验证与上述 RuleDeviation。各事件含 merge SHA、查询命令或槽位释放证据。此次是账本回填，没有修改产品 C++、接口或持久化行为。
+- ED-0112/R5 作者提交 `19691cb10c32d5081d6c0e18fafb5d7322971779`；Windows 定向构建和 CTest 2/2 通过，`TurnCheckpointStore.cpp` 覆盖率 89.66%，`TurnRecoveryCoordinator.cpp` 为 91.53%。Worker06 正在对固定 Base `0b666e…` → Head `19691cb…` 做独立只读复核，尚未推送或创建实现 PR，因此 Codex Agent 重写仍未完成。

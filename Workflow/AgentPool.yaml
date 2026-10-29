@@ -41,8 +41,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0146/R6-AssignmentLedgerReview
-    Status: Assigned
+    CurrentTaskId: ""
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/p1_code001_luna"
@@ -63,8 +63,8 @@ Slots:
     HostSessionRef: "/root/worker03_ed0114_validation"
     ModuleIds:
       - ProviderOpenAIResponses
-    CurrentTaskId: ED-0146/R6-HttpTransportGrantGuard
-    Status: Assigned
+    CurrentTaskId: ""
+    Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
     AgentId: "/root/p2_validation_luna"
@@ -73,8 +73,8 @@ Slots:
     HostSessionRef: "/root/worker04_ed0114_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ED-0112/R5-AssignmentLedgerReview
-    Status: Assigned
+    CurrentTaskId: ""
+    Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderAndMemoryOwner
     AgentId: "/root/p3_validation_luna"
@@ -127,7 +127,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: NetworkPlatform
-    State: Active
+    State: Completed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Architecture/Contracts/HttpTransportContract.md
@@ -147,7 +147,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: ProviderOpenAIResponses
-    State: Active
+    State: Completed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Tests/Contract/Providers/OpenAIResponses/OpenAIResponsesProviderTests.cpp
@@ -157,7 +157,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: ProviderOpenAIChatCompletions
-    State: Active
+    State: Completed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Tests/Contract/Providers/OpenAIChatCompletions/ChatCompletionsProviderTests.cpp
@@ -167,7 +167,7 @@ TaskScopedModuleAuthorizations:
     SlotId: Worker03
     AgentId: /root/worker03_ed0114_validation
     ModuleId: ProviderAnthropicMessages
-    State: Active
+    State: Completed
     EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
     AllowedPaths:
       - Tests/Contract/Providers/AnthropicMessages/AnthropicMessagesProviderTests.cpp

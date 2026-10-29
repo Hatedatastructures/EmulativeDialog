@@ -3550,7 +3550,7 @@ Tasks:
     EpicId: EP-06
     Title: 强制 HTTPS Transport Port 使用不可绕过的 endpoint grant 校验入口
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P2
     CorrectiveToTaskId: ED-0120
     CorrectiveFindingId: ED-0120-R2-F001
@@ -3575,6 +3575,15 @@ Tasks:
     Worktree: H:\Qbot\EmulativeDialog.ED-0146
     AssignedToSlot: Worker03
     AssignmentNote: "PR #26 merged to main at b43ebd954cffb358645cfe173e832aa3b6a3110e; CR-ED-0120-006 and the exact R6 TaskSpec have Owner, independent Reviewer, and Coordinator approval; all five dependencies are Merged. Worker03 is assigned on the b43 product baseline in the isolated worktree. Keep P3 EntryGate Pending until ED-0146 and ED-0147 pass implementation, review, and Windows verification."
+    PullRequestCreated: true
+    PullRequestNumber: 29
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/29
+    ReviewBaseCommit: 7723b52e5a77689a35aade10a6af9cdd400430fe
+    ReviewHeadCommit: 66a57729c2d4ca675c583857811f8023e0af75eb
+    ReviewStatus: Approved
+    MergeCommit: b04f407403c12ad13e47e4aea8ad092a9dbba321
+    MergedAt: 2026-10-28T20:13:02Z
+    MergeMethod: squash
     PreviousRevision2:
       TaskRevision: 2
       Disposition: SupersededBeforeImplementation
