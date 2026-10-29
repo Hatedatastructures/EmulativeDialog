@@ -427,7 +427,7 @@ ChangeRequests:
     ProposedTaskRevision: 7
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     OwnerAgentId: /root/luna02_ed0148_pr_ready
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
@@ -471,6 +471,13 @@ ChangeRequests:
       - Workflow/Plans/P3.yaml#TaskId=ED-0147&TaskRevision=6
       - Tools/WorkflowController/WorkflowController.cpp#ValidateAssignment
       - 680eb8dc591174c861e4045d6dd4897e500d77df
+    OwnerReviewDecision: Approve
+    OwnerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    IndependentReviewerDecision: Approve
+    IndependentReviewerHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    AcceptedAt: 2026-10-29
     PreserveGoalReadSetWriteSetDependenciesAcceptanceContractAndSlots: true
     NoProductSourceWriteAuthorized: true
 ParallelGroups:
@@ -2037,11 +2044,14 @@ Tasks:
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     TaskSpecChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
-    TaskSpecReviewStatus: ProposedAwaitingFixedHeadReview
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecHeadCommit: ""
+    TaskSpecReviewStatus: ApprovedPendingMerge
+    TaskSpecOwnerDecision: Approve
+    TaskSpecOwnerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerReviewHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
+    TaskSpecHeadCommit: 20ed3b35a30f945d69368a6df89c33b6e7e4102d
     TaskSpecMergedToMainCommit: ""
     PreviousRevision6Evidence:
       TaskRevision: 6
