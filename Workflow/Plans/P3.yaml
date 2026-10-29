@@ -434,17 +434,21 @@ ChangeRequests:
     Scope: >-
       Preserve ED-0147's Core endpoint-authority behavior, Goal, ReadSet, six-path product WriteSet,
       dependencies, Acceptance, validation commands, security boundary, OwnerSlot Worker02, and
-      ReviewerSlot Worker04. Update only OwnerAgentId and ReviewerAgentId to the current AgentPool
-      bindings authorized by AgentSlotMigration-2026-10-29-LunaMax. Do not assign a branch, worktree,
-      or BaseCommit in this TaskSpec review PR; bind those only in the later assignment ledger after
-      this TaskSpec revision merges. No product source write is authorized by this CR.
+      ReviewerSlot Worker04. Update the current OwnerAgentId, ReviewerAgentId, and AssignmentNote to
+      the current stable-slot bindings and review/merge gate; preserve the prior R6 review heads and
+      AssignmentNote under PreviousRevision6Evidence. Do not assign a branch, worktree, or BaseCommit
+      in this TaskSpec review PR; bind those only in the later assignment ledger after this TaskSpec
+      revision merges. No product source write is authorized by this CR.
     Reason: >-
-      ED-0147/R6 was approved before the user-authorized stable-slot migration. WorkflowController's
-      assignment validator requires the assigned owner AgentId to exactly match the frozen TaskSpec;
-      the R6 identity /root/worker02_ed0114_owner is no longer the active Worker02 binding, and the R6
-      reviewer /root/worker04_ed0114_review is no longer the active Worker04 binding. Updating these
-      two identities makes the task assignment and independent review auditable against the current
-      Worker02 and Worker04 slots without changing either logical role or any product scope.
+      ED-0147/R6 was approved before the user-authorized stable-slot migration, and its active
+      AssignmentNote still refers to the R6 review/assignment gate. The R6 owner identity
+      /root/worker02_ed0114_owner and reviewer identity /root/worker04_ed0114_review are not the
+      current Worker02 and Worker04 AgentPool bindings. WorkflowController validates a Ready-to-
+      Assigned request for a non-empty owner identity, but does not compare that initial request to
+      AgentPool; its exact Task.OwnerAgentId comparison applies only when validating a task already
+      in Assigned state. R7 records the authorized stable-slot identities and correct active note;
+      the later assignment ledger must independently verify the selected identities against the
+      current AgentPool. This CR does not claim that the existing Controller enforces slot binding.
     Impact: >-
       No C++ API, runtime behavior, data format, dependency, build target, or test changes. The fixed
       reviewer remains a different stable slot from the author. Product validation remains gated on a
@@ -2047,9 +2051,13 @@ Tasks:
       TaskSpecReviewerDecision: Approve
       TaskSpecCoordinatorDecision: Accepted
       TaskSpecMergedToMainCommit: b43ebd954cffb358645cfe173e832aa3b6a3110e
+      TaskSpecOwnerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+      TaskSpecReviewerReviewHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
+      TaskSpecCoordinatorDecisionHeadCommit: 0f1fc9ffa78dda61b36c28e66fadad43aebc8997
       OwnerAgentId: /root/worker02_ed0114_owner
       ReviewerAgentId: /root/worker04_ed0114_review
       State: Ready
+      AssignmentNote: "The exact R6 TaskSpec was approved and merged at b43ebd954cffb358645cfe173e832aa3b6a3110e; no implementation branch or worktree was created before the stable-slot migration superseded R6."
       Disposition: SupersededBeforeAssignmentByRevision7
       NoImplementationBranchOrWorktreeCreated: true
     PreviousRevision1:
@@ -2099,7 +2107,7 @@ Tasks:
     Branch: ""
     Worktree: ""
     AssignedToSlot: ""
-    AssignmentNote: "Not assignable until ED-0146/R6 and this exact R6 TaskSpec are approved and merged; keep P3 EntryGate Pending until both required tasks pass and bind the then-current main BaseCommit and isolated worktree at assignment."
+    AssignmentNote: "R7 is awaiting fixed-head Owner and independent Reviewer approval and TaskSpec PR merge. Do not create an implementation branch or worktree before that gate. After R7 merges, record the current main BaseCommit and isolated worktree in a separate assignment ledger; verify the assigned stable AgentIds against the current AgentPool. Keep P3 EntryGate Pending until ED-0146/R6 and ED-0147 implementation, independent review, Windows verification, and required contract freeze all pass."
     Goal: "实现 Core-owned EndpointGrantAuthority：仅从 Core 配置边界提供的不可变 profile 快照建立注册表；仅按 ProviderProfileId 签发 256-bit CNG 随机 registry-backed bearer grant，并校验绑定的 HTTPS destination、五分钟有效期和撤销状态。不得声称现有产品 Provider/WinHTTP composition 已接线。"
     OutOfScope:
       - "修改三种 Provider 的生产 wire protocol 或构造 API"
