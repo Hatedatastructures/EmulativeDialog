@@ -337,18 +337,14 @@ ChangeRequests:
       - CMake/
       - Architecture/Contracts/ModelProviderContract.md
     ProposedForbiddenWriteSet:
-      - Workflow/Plans/P3.yaml
       - Workflow/Events/CodexRewrite/P3.jsonl
-      - Workflow/TaskIndex.yaml
-      - Workflow/AgentPool.yaml
       - Source/
       - Tests/
       - CMakeLists.txt
       - CMake/
       - Architecture/Contracts/ModelProviderContract.md
-      - Tools/WorkflowController/
-    ProposedControllerForbiddenSetBinding: "Materialize ProposedForbiddenWriteSet into the active TaskSpec ForbiddenSet. WorkflowController uses ForbiddenSet to reject changed paths; it is not the task's read-denial list."
-    ProposedContextSetInvariant: "ProposedForbiddenReadSet is disjoint from ProposedReadSet and ProposedOnDemandSet. TaskIndex.yaml, P3.yaml, and AgentPool.yaml remain available for their declared read-only context; their write protection comes from ProposedForbiddenWriteSet and the exact six-path WriteSet."
+    ProposedControllerForbiddenSetBinding: "Materialize only ProposedForbiddenWriteSet into the active TaskSpec ForbiddenSet. Controller validates changed paths against the exact positive WriteSet first, then rejects any matching ForbiddenSet path; ForbiddenSet does not filter AssembleReadSetContext. Keep the materialized ForbiddenSet disjoint from ReadSet and OnDemandSet."
+    ProposedContextSetInvariant: "Both ProposedForbiddenReadSet and ProposedForbiddenWriteSet are disjoint from ProposedReadSet and ProposedOnDemandSet. ProposedForbiddenReadSet is a documented context policy only and is not a Controller read filter. TaskIndex.yaml, P3.yaml, AgentPool.yaml, and Tools/WorkflowController/WorkflowController.cpp remain available to their declared read-only context and are not in the materialized ForbiddenSet. The exact six-path WriteSet is the only positive write authorization; any changed path outside it is rejected even if absent from ForbiddenSet."
     ProposedAcceptance:
       - "ADR-0003 remains Accepted and its decision history is preserved; the diagnostic logging clause no longer permits EndpointGrantId disclosure."
       - "HttpTransportContract V1 and CoreEndpointGrantContract V1 consistently define EndpointGrantId as a bearer capability that is excluded from logs, events, telemetry, diagnostics, persistence, command output, and user-visible output."
@@ -420,7 +416,8 @@ ChangeRequests:
         - "Changed paths exactly equal the six-path union of ProductWriteSet and GovernanceWriteSet."
         - "P2 YAML parses and WorkflowController query resolves ED-0120/R3 after Coordinator materializes the accepted CR."
         - "P2 JSONL parses, EventIds are unique, and every baseline row remains an identical prefix."
-        - "ProposedForbiddenReadSet has no path overlap with ReadSet or OnDemandSet; Controller ForbiddenSet is bound only to ProposedForbiddenWriteSet."
+        - "ProposedForbiddenReadSet is documentation-only, disjoint from ReadSet and OnDemandSet, and does not act as a Controller read filter."
+        - "The materialized TaskSpec ForbiddenSet equals ProposedForbiddenWriteSet and has no path overlap with ReadSet or OnDemandSet; the exact six-path WriteSet remains the only positive write authorization."
         - "ProposedDependencies contains ED-0006/ED-0007/ED-0008/ED-0146 and excludes ED-0147; PR #46 is pinned as read-only evidence at fixed Head 3a9f00aff097c4a23a655eaea1093c35096c67b0 and merge 5364581858c8299884e87e00730748b86fb43346, without marking ED-0147 Merged or P3 EntryGate Passed."
         - "The exact Task branch is absent from origin after confirmed governance-PR merge; remote deletion is never attempted before merge, and local branch/worktree reuse occurs only after the `ls-remote` absence check."
         - "P3 EntryGate remains Pending; P3 plan/events remain outside the WriteSet."
