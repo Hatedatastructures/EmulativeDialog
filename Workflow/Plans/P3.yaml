@@ -2996,7 +2996,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     BlockedBy: >-
       TaskSpec candidate only. Fixed-head Owner/Reviewer review of this governance candidate is allowed while P3
       EntryGate is Pending; that review and merge grant no implementation authority. Do not assign or implement
@@ -3023,8 +3023,25 @@ Tasks:
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/56
     TaskSpecMergeMethod: squash
     TaskSpecMergedAt: "2026-10-29T19:10:33Z"
-    TaskSpecStatusNote: "PR #56 merged the reviewed TaskSpec corrections only. Task State remains Proposed while P3 EntryGate is Pending; this record grants no implementation authority."
-    BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
+    TaskSpecStatusNote: "PR #56 merged the reviewed TaskSpec corrections only. P3 EntryGate passed on main through PR #67; the assignment authorizes only the seven-path async contract and compile-contract scope, not AgentRuntime behavior."
+    BaselineCommit: 72fa92d441aa2807137a46cd9152ee4fa72f1124
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
+    Branch: Task/ED-0149-AsyncProviderAgentRuntimeContract
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/Worktree
+    AssignedToSlot: Worker02
+    AssignmentEventId: edc9d551-8fc8-4441-8018-9a9148504cf8
+    TaskReadinessValidatedEventId: 4c5df217-6ee8-46ce-9093-ad64689e2feb
+    TaskAssignedEventId: edc9d551-8fc8-4441-8018-9a9148504cf8
+    OwnerSlotAssignedEventId: e1a11652-25e4-422f-802e-93385dddcafe
+    PullRequestCreated: true
+    PullRequestNumber: 69
+    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/69
+    PullRequestCreatedAtUtc: "2026-10-30T01:23:04Z"
+    PullRequestBaseCommit: 72fa92d441aa2807137a46cd9152ee4fa72f1124
+    PullRequestCreatedHeadCommit: ff67ed12c2e413c79f0969d4fbc629c9ce72b733
+    PullRequestCreatedEventId: 0b3ca43e-2c4d-439a-be76-a55ff55d52cf
+    AssignmentNote: "P3 EntryGate Passed; ED-0007/R1, ED-0015/R3, and ED-0131/R2 are Merged. Controller accepted the exact Worker02 assignment on main baseline 72fa92d441aa2807137a46cd9152ee4fa72f1124. Worker04 is the fixed independent Reviewer. Only the seven frozen contract/compile-contract paths are authorized; no async Runtime behavior is implemented here."
     Goal: >-
       冻结不破坏 V1 同步 API 的 C++20 Boost.Asio awaitable ModelProvider 与 AgentRuntime 公共合同，并新增独立
       .hpp 声明与隔离编译合同目标。Provider fake 必须使用 awaitable。该任务不实现真实 Provider adapter、

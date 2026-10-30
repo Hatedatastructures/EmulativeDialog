@@ -465,3 +465,13 @@
 - 远端分支已清理为 2 条：main 和仍开放的 ED-0144 PR #25 分支。ED-0151 合并分支已删除，满足最多 4 条远端分支限制。
 - LargeScaleProductImplementation 仍是 BlockedUnverified；CodexAgentRewrite 仍是 Incomplete。P3 通过不代表异步 AgentRuntime 或整体重写完成。当前尚无可授权的异步 AgentRuntime C++ 实现任务；先补正式 Required Checks 与 main 分支保护，再按 ED-0114/ED-0149/ED-0150 依赖推进。
 - 本次只完成合并后治理收尾，没有改动产品 C++ 源码；产品构建与 CTest 未运行。
+
+## 2026-10-30 ED-0149/R1 assignment ledger candidate
+
+- Main baseline is 72fa92d441aa2807137a46cd9152ee4fa72f1124 after PR #68 merged. P3 EntryGate is Passed; the LargeScaleProductImplementation gate remains BlockedUnverified.
+- ED-0149/R1 TaskSpec PR #56 is merged; Controller confirms ED-0007/R1, ED-0015/R3, and ED-0131/R2 are Merged. The candidate binds Worker02 /root/luna02_ed0148_pr_ready to Task/ED-0149-AsyncProviderAgentRuntimeContract and H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1/Worktree at 72fa92d441aa2807137a46cd9152ee4fa72f1124, with Worker04 /root/luna04_ed0144_branch_review as independent Reviewer.
+- Candidate Controller query and validate-assignment both exited 0; validation returned AssignmentAccepted. Evidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1-AssignmentLedger/Logs/FinalAssignmentValidation.log and Workflow/Events/CodexRewrite/P3.jsonl assignment/readiness events.
+- PR #69 is open at base main 72fa92d441aa2807137a46cd9152ee4fa72f1124; the original creation-time head is retained in the PRCreated event and P3 task record. Each fixed-head review uses the live GitHub PR head recorded in its review evidence. The assignment is not effective until merge and post-merge Controller validation. It authorizes only the frozen ED-0149 contract and compile-contract scope. No C++ product code or async AgentRuntime behavior has been changed or started.
+- Remote branch count after opening PR #69 is 3/4. The root workspace remains untouched.
+- Worker04's fixed-head review of Base 72fa92d441aa2807137a46cd9152ee4fa72f1124 → Head d01eda9321d5385e3b47f5d9580cd247167f005d returned CHANGES_REQUESTED with F001-F003. The missing Worker02 slot event and PR creation timestamp discrepancy are now recorded append-only; CurrentState no longer embeds a mutable current PR head. Independent re-review is pending. Review bundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0149-R1-AssignmentLedger/Worker04-FixedHeadReview-PR69-20261030.md.
+- The original static assignment-ledger validation passed before PR creation. Final post-review validation and its exact output are recorded in H:\Qbot\EmulativeDialog.integration-port-contract.build\ED-0149-R1-AssignmentLedger\Logs\FinalAudit.log, including the four-path diff, P3 prefix/event integrity, unchanged P2/TaskIndex, Controller binding, and `git diff --check`.
