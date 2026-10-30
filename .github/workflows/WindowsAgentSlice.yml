@@ -36,43 +36,35 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-make
 
-      - name: Prioritize UCRT64 toolchain
-        run: |
-          $ucrtBin = 'C:\msys64\ucrt64\bin'
-          if (-not (Test-Path -LiteralPath $ucrtBin -PathType Container)) {
-            throw "UCRT64 binary directory is missing: $ucrtBin"
-          }
-          if (-not $env:GITHUB_PATH) {
-            throw 'GITHUB_PATH is missing; cannot prioritize UCRT64 for later steps.'
-          }
-          $env:PATH = "$ucrtBin;$env:PATH"
-          Add-Content -LiteralPath $env:GITHUB_PATH -Value $ucrtBin -Encoding utf8
-          Write-Output "UCRT64_BIN=$ucrtBin"
-
       - name: Verify Windows C++20 toolchain
         run: |
           cmake --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-          $compiler = (Get-Command g++ -ErrorAction Stop).Source
-          $expectedCompiler = 'C:\msys64\ucrt64\bin\g++.exe'
-          if ([System.IO.Path]::GetFullPath($compiler) -ne $expectedCompiler) {
-            throw "Unexpected C++ compiler: $compiler"
+          $compiler = 'C:\msys64\ucrt64\bin\g++.exe'
+          $make = 'C:\msys64\ucrt64\bin\mingw32-make.exe'
+          foreach ($tool in @($compiler, $make)) {
+            if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+              throw "Required UCRT64 tool is missing: $tool"
+            }
           }
-          g++ --version
+          & $compiler --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-          $make = 'C:\msys64\ucrt64\bin\mingw32-make.exe'
-          if (-not (Test-Path -LiteralPath $make -PathType Leaf)) {
-            throw "Preset make program is missing: $make"
-          }
           & $make --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Configure Windows agent slice
         run: |
           $dependencyCache = Join-Path $env:RUNNER_TEMP 'EmulativeDialog\Dependencies'
-          cmake --preset windows-agent-slice "-DFETCHCONTENT_BASE_DIR=$dependencyCache"
+          $compiler = 'C:\msys64\ucrt64\bin\g++.exe'
+          $make = 'C:\msys64\ucrt64\bin\mingw32-make.exe'
+          $configureArgs = @(
+            "-DCMAKE_CXX_COMPILER=$compiler"
+            "-DCMAKE_MAKE_PROGRAM=$make"
+            "-DFETCHCONTENT_BASE_DIR=$dependencyCache"
+          )
+          cmake --preset windows-agent-slice @configureArgs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build Windows agent slice
