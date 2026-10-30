@@ -564,3 +564,9 @@
 - 该 PR 不含异步 AgentRuntime 回合循环。主线已有异步合同和接口，但 Source/Agent/AsyncAgentRuntime.cpp、CoreChatService::ProcessAsync 及 FakeProvider 到 Mock receipt 异步行为仍未实现。
 - ED-0114/R5 在本次 Coordinator closeout 中记录为 Merged，并释放 Worker02；ED-0150/R2 在 Owner、独立 Reviewer 固定头批准及 Coordinator 接受 CR 前保持 Proposed。之后仍需单独的当前 main assignment ledger 和合并后的 WorkflowController validate-assignment=AssignmentAccepted，产品写入才获授权。
 - ED-0150 的产品目标仍为五路径 C++20 coroutine 纵向切片：同一个 CoreChatService 实例的身份/策略检查、异步 AgentRuntime、awaitable FakeProvider 与匹配的 Mock Channel receipt。当前没有产品写入授权。
+
+## 2026-10-30 ED-0150/R2 assignment candidate
+
+- PR #83 merged to main at cfecf3c18e18be4c9a217a452c376e7f5e921d30. Worker02's Owner approval and Worker04's independent fixed-head review are recorded; the Coordinator accepts the dependency-status CR in this assignment candidate.
+- The candidate binds Worker02 to branch Task/ED-0150-AsyncRuntimeVerticalSlice, worktree H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree, and assignment baseline cfecf3c18e18be4c9a217a452c376e7f5e921d30. Its product WriteSet remains the five frozen ED-0150/R2 paths.
+- Product writes remain unauthorized until the assignment PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted. No ED-0150 product source or test files have been changed.

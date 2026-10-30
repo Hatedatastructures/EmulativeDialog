@@ -3823,14 +3823,21 @@ Tasks:
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 到 Mock Channel 回执的 C++ 纵向切片
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Assigned
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    Branch: Task/ED-0150-AsyncRuntimeVerticalSlice
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree
+    AssignmentBaseCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+    AssignmentNote: >-
+      Coordinator assignment candidate after merged PR #83 and accepted R2 CR. Worker02 may begin
+      product writes only after this assignment PR merges and post-merge WorkflowController
+      validate-assignment returns AssignmentAccepted.
     BlockedBy: >-
-      ED-0150/R1 was approved and merged by PR #56. P3 EntryGate is Passed; ED-0146/R6,
-      ED-0147/R9, ED-0149/R2 and ED-0114/R5 product PR #82 are merged. This PR candidate
-      records ED-0114/R5 closeout and Worker02 slot recovery. ED-0150/R2 remains Proposed
-      until the independent Reviewer approves this fixed-head CR and the Coordinator accepts it.
-      After acceptance, a separate assignment ledger must bind Worker02 on then-current main,
-      merge, and pass post-merge WorkflowController validate-assignment before product writes.
+      PR #83 merged as cfecf3c18e18be4c9a217a452c376e7f5e921d30 after fixed-head Owner and Reviewer approval;
+      CR-ED-0150-R2-DEPENDENCY-STATUS-001 is accepted in this assignment candidate. All four direct
+      product dependencies are merged and the P3 EntryGate is Passed. The candidate binds Worker02
+      on the current main baseline; no product write is authorized until this assignment ledger merges
+      and post-merge WorkflowController validate-assignment returns AssignmentAccepted.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3838,32 +3845,53 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    TaskSpecReviewStatus: OwnerApprovedPendingIndependentReviewR2
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: APPROVE
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
     TaskSpecOwnerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
-    TaskSpecOwnerReviewHeadCommit: 3769c7b3248881f37269b474001d06b465b389c0
-    TaskSpecOwnerDecisionAtUtc: '2026-10-30T12:36:02Z'
-    TaskSpecReviewerDecision: Pending
+    TaskSpecOwnerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+    TaskSpecOwnerDecisionAtUtc: '2026-10-30T12:39:00Z'
+    TaskSpecOwnerDecisionEventId: cc235010-66f0-46d6-9cd4-19626e6eaa81
+    TaskSpecReviewerDecision: APPROVE
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewSource: PR83FixedHeadOwnerApprovedAwaitingIndependentReview
+    TaskSpecReviewerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+    TaskSpecReviewerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R2-TaskSpec/Worker04-FixedHeadReview-PR83-60b9e60-Final-20261030.md
+    TaskSpecReviewerReviewBundleSha256: BB6D9386D8EE8EB01809A82AEC7A48CDF179C17EEFACAEDBB1A02C1378AE8258
+    TaskSpecReviewSource: PR83FixedHeadReview
+    TaskSpecHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+    TaskSpecFinalPullRequestHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+    TaskSpecMergedToMainCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+    TaskSpecMergePullRequestNumber: 83
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/83
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: '2026-10-30T12:42:41Z'
     GitHubNativeReviewSubmissionCount: 0
-    TaskSpecStatusNote: "R2 corrects stale dependency facts and records ED-0114/R5 PR #82 closeout. Worker02 OwnerDecision=APPROVE is recorded; ED-0150 remains Proposed pending Worker04 fixed-head review and Coordinator CR acceptance. Product writes still require a separate current-main assignment ledger and post-merge Controller acceptance."
+    TaskSpecStatusNote: "PR #83 merged after Worker02 Owner and Worker04 fixed-head approval. The Coordinator accepts the dependency-status CR here. ED-0150 is assigned to Worker02; product writes remain gated on this assignment PR merge and post-merge Controller validation."
     Revision2ChangeRequest:
       ChangeRequestId: CR-ED-0150-R2-DEPENDENCY-STATUS-001
       TargetTaskRevision: 1
       ProposedTaskRevision: 2
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: OwnerApprovedAwaitingIndependentReview
+      Decision: Accepted
       OwnerDecision: APPROVE
       OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
-      OwnerDecisionAtUtc: '2026-10-30T12:36:02Z'
+      OwnerDecisionAtUtc: '2026-10-30T12:39:00Z'
       OwnerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
-      OwnerReviewHeadCommit: 3769c7b3248881f37269b474001d06b465b389c0
-      OwnerDecisionEventId: 20dc5ba2-164c-4a90-88ed-d0c9fdff05ce
-      IndependentReviewerDecision: PendingFixedHeadReview
-      CoordinatorDecision: Pending
+      OwnerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+      OwnerDecisionEventId: cc235010-66f0-46d6-9cd4-19626e6eaa81
+      IndependentReviewerDecision: APPROVE
+      IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+      IndependentReviewerBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+      IndependentReviewerHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+      IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R2-TaskSpec/Worker04-FixedHeadReview-PR83-60b9e60-Final-20261030.md
+      IndependentReviewerReviewBundleSha256: BB6D9386D8EE8EB01809A82AEC7A48CDF179C17EEFACAEDBB1A02C1378AE8258
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionAtUtc: '2026-10-30T12:48:58Z'
+      CoordinatorDecisionScope: "Accept dependency-status correction only; product writes remain gated by current-main assignment and post-merge Controller validation."
+      ChangeRequestAcceptedEventId: 833baad2-4ced-4c43-8f98-9162a2cf121d
       Scope: >-
         Preserve the ED-0150 product Goal, OutOfScope, DependsOn list, ContractVersion, ModuleIds,
         ReadSet, OnDemandSet, ForbiddenSet, exact five-path WriteSet, Acceptance, Validation, RiskLevel,
@@ -3897,8 +3925,14 @@ Tasks:
       IndependentReviewerSlotId: Worker04
       IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
       ReviewerMustInspectFixedBaseHead: true
-      R2ReviewStatus: OwnerApprovedAwaitingIndependentReviewerAndCoordinator
-    BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
+      R2ReviewStatus: AcceptedAndMergedToMain
+    BaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+    ChangeRequestAcceptedEventId: 833baad2-4ced-4c43-8f98-9162a2cf121d
+    TaskReadinessValidatedEventId: 2b36859d-b57a-451e-a79e-87bf9812fe19
+    AssignmentValidationEventId: bfd41947-19bc-4798-ad1c-2baee355d2ec
+    ControllerQueryEventId: 775dfefc-0166-4c85-851b-b1d361da520c
+    TaskAssignedEventId: 2720c2eb-ed1f-4baf-ac65-02421e0a50f3
+    AgentSlotAssignedEventId: 5091e40d-cf1f-4805-8ce4-9e1be1886eff
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
       IdentityPolicy 身份/路由检查 -> co_await AsyncAgentRuntime -> awaitable FakeProvider -> 该 CoreChatService
