@@ -69,7 +69,7 @@ Slots:
       - Core
       - ChannelAdapterPort
     CurrentTaskId: "ED-0149/R2-AsyncProviderAgentContract"
-    Status: Assigned
+    Status: Active
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/luna03_ed0114_branch_review"
