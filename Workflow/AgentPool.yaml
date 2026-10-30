@@ -56,7 +56,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0154/R1
+    CurrentTaskId: ""
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -68,8 +68,8 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0114/R5-UsageBudgetIntegration
+    Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
     AgentId: "/root/luna03_ed0114_branch_review"

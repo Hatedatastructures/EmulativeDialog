@@ -1424,12 +1424,12 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     ReadinessStatusNote: >-
-      R5 is a proposed TaskSpec revision only. It preserves the 17-path product WriteSet and acceptance
-      but relocates all validation/build outputs into the central .build root and binds the registered
-      Worker02/Worker04 identities. No implementation assignment or product write is authorized yet.
-    ProposedBranch: Task/ED-0114-R5-UsageBudgetIntegration
+      R5 TaskSpec merged through PR #78. Coordinator assignment is staged on the current main baseline;
+      implementation begins only after this assignment-ledger PR merges and post-merge Controller
+      validation succeeds. The exact 17-path product WriteSet remains unchanged.
+    ProposedBranch: Task/ED-0114-UsageBudgetIntegration
     ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Worktree
     PreviousRevision4:
       TaskRevision: 4
@@ -1478,11 +1478,30 @@ Tasks:
       ProposedTaskRevision: 5
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: ProposedAwaitingOwnerAndReviewerReview
+      Decision: Accepted
       OwnerAgentId: /root/luna02_ed0148_pr_ready
-      OwnerDecision: Pending
+      OwnerDecision: APPROVE
+      OwnerDecisionAtUtc: "2026-10-30T10:51:32Z"
+      OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Owner-CR-ED0114-R4-BUILDROOT-001-3d47441-20261030.md
+      OwnerReviewBundleSha256: 3E4A16DB686DF27CB2FEC76AFA9943AAADBC33FF29E916672D4DD2D360A75AC3
+      OwnerReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+      OwnerReviewedHeadCommit: 3d47441c884494b896d07d025605c3f61bd6e930
       IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
-      IndependentReviewerDecision: Pending
+      IndependentReviewerDecision: APPROVE
+      IndependentReviewerDecisionAtUtc: "2026-10-30T10:54:55Z"
+      IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-CR-ED0114-R4-BUILDROOT-001-3d47441-20261030.md
+      IndependentReviewerReviewBundleSha256: A4219BC054FC8E6C8C8A14FD5D4FAFF7EAFC972D9E976C02FB39959BA16254FB
+      IndependentReviewerReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+      IndependentReviewerReviewedHeadCommit: 3d47441c884494b896d07d025605c3f61bd6e930
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionAtUtc: "2026-10-30T10:55:41Z"
+      CoordinatorDecisionScope: 'CR-ED-0114-R4-BUILDROOT-001 only; no product C++ scope or write authorization.'
+      DecisionEventId: d74279ef-863c-4d20-93a0-794bd0a2b717
+      DecisionSequenceNote: >-
+        PR #78 merged the TaskSpec while this embedded CR record still showed Pending. The task remained Proposed
+        and no product write or assignment was effective. Owner and independent Reviewer have now separately
+        approved this exact CR fixed Base/Head, and Coordinator acceptance is recorded before PR #80 can activate.
       Scope: >-
         Preserve Goal, WriteSet, Acceptance, dependencies, ContractVersion, OwnerRole/OwnerSlotId,
         ReviewerRole/ReviewerSlotId, RiskLevel, and product behavior. Update validation paths to use the
@@ -1601,9 +1620,70 @@ Tasks:
       PreserveGoalAcceptanceDependenciesContractsOwnerReviewer: true
       PreserveWriteSetPathCount: 17
       AcceptedAt: 2026-10-28
-    BaselineCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
-    AssignedWorktree: ""
-    AssignedBranch: ""
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecHeadCommit: 3d47441c884494b896d07d025605c3f61bd6e930
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecCoordinatorDecision: ACCEPTED
+    TaskSpecMergePullRequestNumber: 78
+    TaskSpecMergedToMainCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Owner-FixedHeadReview-ED0114-R5-3d47441-20261030.md
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-FixedHeadReview-ED0114-R5-3d47441-20261030.md
+    ValidationRangeChangeRequest:
+      ChangeRequestId: CR-ED-0114-R5-VALIDATION-RANGE-001
+      Decision: Accepted
+      Scope: >-
+        Preserve the product Goal, Acceptance, dependencies, contracts, and exact 17-path WriteSet.
+        Record GitHub's PR base.sha and head.sha, then use the three-dot merge-base diff for the
+        product WriteSet and whitespace checks. Verify BaselineCommit is an ancestor of PRBaseCommit
+        and audit BaselineCommit..PRBaseCommit inherited governance paths separately.
+      OwnerAgentId: /root/luna02_ed0148_pr_ready
+      OwnerDecision: APPROVE
+      OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-ValidationRangeCR/Worker02-Owner-CR-ED0114-R5-ValidationRange-20261030.md
+      OwnerReviewBundleSha256: 21695DDCFD2D1A445B00AC911C67BD949B303BBD403E05FA7534A34E541DCEFB
+      IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+      IndependentReviewerDecision: APPROVE_SCOPE
+      IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-ValidationRangeCR/Worker04-CR-ED0114-R5-ValidationRange-20261030.md
+      IndependentReviewerReviewBundleSha256: D8FFFAFD8FAD77E56CFDAD4AF76179A820D69D0FDDB85DDABD92C941E00834FD
+      FixedHeadReviewRequired: true
+      CoordinatorDecision: ACCEPTED
+      CoordinatorDecisionAgentId: /root
+      AcceptedAtUtc: "2026-10-30T10:32:32Z"
+      CoordinatorDecisionEventId: 858db6ef-0ad2-4e12-a15c-bda6c19ec72d
+    BaselineCommit: 734998470e7561052794ea189cd83a8f0cbb5371
+    AssignedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Worktree
+    AssignedBranch: Task/ED-0114-UsageBudgetIntegration
+    ReadinessEventId: 2cb89b4e-f08c-45a8-b721-028dde6b0fdf
+    AssignmentValidationEventId: e3c5c7ac-0469-47e7-92f3-b181593e35bf
+    AssignmentEventId: d15e76e3-f804-4226-88e9-7bc49a317369
+    AssignmentNote: >-
+      Effective only after the assignment-ledger PR merges and post-merge WorkflowController
+      validate-assignment succeeds. The product worktree is clean and based on BaselineCommit;
+      Worker02 must not modify product paths before that gate.
+    AssignmentLedgerPullRequestNumber: 80
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/80
+    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-30T10:37:52Z"
+    AssignmentLedgerPullRequestBaseCommit: 734998470e7561052794ea189cd83a8f0cbb5371
+    AssignmentLedgerPullRequestCreatedHeadCommit: ec7852c6abbf0c8fd5100256700d72a8e7399dae
+    AssignmentLedgerPullRequestState: Open
+    AssignmentLedgerPRCreatedEventId: c1df8cd1-424f-4cf1-97a6-97c5bfbbca77
+    AssignmentLedgerReviewRounds:
+      - ReviewedBaseCommit: 734998470e7561052794ea189cd83a8f0cbb5371
+        ReviewedHeadCommit: 072b965320a2bf384c970bdeba6e45de27fc697f
+        ReviewerSlotId: Worker06
+        ReviewerAgentId: /root/luna06_capability_status_audit
+        Decision: CHANGES_REQUESTED
+        FindingIds: [ED0114-R5-ASSIGN-W06-F001]
+        ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-Assignment/Worker06-FixedHeadReview-PR80-072b965-20261030.md
+        ReviewBundleSha256: 159F728A9610F846023806010E9EED90133D49F58691C58339ADFC3864F7E4EE
+      - ReviewedBaseCommit: 734998470e7561052794ea189cd83a8f0cbb5371
+        ReviewedHeadCommit: 072b965320a2bf384c970bdeba6e45de27fc697f
+        ReviewerSlotId: Worker04
+        ReviewerAgentId: /root/luna04_ed0144_branch_review
+        Decision: CHANGES_REQUESTED
+        FindingIds: [ED0114-R5-ASSIGN-W04-F001, ED0114-R5-ASSIGN-W04-F002]
+        ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-Assignment/Worker04-FixedHeadReview-PR80-072b965-20261030.md
+        ReviewBundleSha256: 3FA46092EA6CF9CB6F495B7E326E5DB36B77FBB78AF4450CBDC6432CBCB2A978
     PullRequestCreated: false
     ReviewStatus: NotStarted
     Phase: P3
@@ -1615,8 +1695,8 @@ Tasks:
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0114-UsageBudgetIntegration
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Worktree
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -1683,8 +1763,9 @@ Tasks:
         - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows --target ED0114CoverageReport --parallel 4"
       ContractFixtures: ["Synthetic absent/partial/final/Unavailable protocol usage; missing usage fail-closed; output-limit/incomplete tool arguments never execute; no continuation without Core authorization; Core turn exit clears ledger state; existing Core policy/action contract cases remain green."]
       StaticChecks:
-        - "git diff --check BaseCommit HEAD"
-        - "Changed paths exactly equal the frozen WriteSet"
+        - "git diff --check PRBaseCommit...PRHeadCommit, using GitHub's three-dot merge-base comparison"
+        - "git diff --name-only PRBaseCommit...PRHeadCommit exactly equals the frozen WriteSet"
+        - "BaselineCommit is an ancestor of PRBaseCommit; separately audit BaselineCommit..PRBaseCommit inherited governance paths and exclude them from the product WriteSet comparison"
         - "Every RequiredTargets entry is registered by the task CMake project and builds; every RequiredCTestTests entry appears in ctest -N and passes. The coverage report is a build target invoked only after those tests, not a CTest name."
         - "Every production and test object is compiled with --coverage; every required test target is linked with --coverage"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
@@ -2345,7 +2426,7 @@ Tasks:
     EpicId: EP-06
     Title: 配置 Windows Agent Slice 必需检查
     TaskKind: Build
-    State: Active
+    State: Merged
     Phase: P3
     OwnerRole: BuildAndWorkflowOwner
     OwnerSlotId: Worker01
@@ -2380,12 +2461,19 @@ Tasks:
     PullRequestCreatedAtUtc: "2026-10-30T09:29:11Z"
     PullRequestBaseCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
     PullRequestCreatedHeadCommit: 6fa67103ecfc585953487d52bf93c64bd8493a79
-    PullRequestHeadCommit: 2e974e9c6021429474d3a5a891ba5ad28207a77a
-    PullRequestState: Open
+    PullRequestHeadCommit: ec93d07046396da7ebd3ca8a174c4eead4585d3a
+    PullRequestState: Merged
     PullRequestMergeable: true
     PullRequestCreatedEventId: e7fe3d4f-b359-476a-8b7d-2c299f01a544
     PullRequestHeadUpdatedEventId: 051a8f35-6921-4711-a073-0af57a181d84
-    SuccessfulWindowsCheckRunIds: [41036622569, 41036617262]
+    PullRequestMergedEventId: 2e552b30-e5f3-49c1-b802-3335f1624076
+    PullRequestMergeCommit: 734998470e7561052794ea189cd83a8f0cbb5371
+    PullRequestMergedAtUtc: "2026-10-30T10:18:15Z"
+    TaskClosedEventId: ff7267f1-af45-4f39-8bb3-bbcfb3c61803
+    OwnerSlotRecoveredEventId: 236db3b7-e81e-4b40-bbbd-80a2a5f4d1e0
+    FinalReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0154-WindowsRequiredChecks/Worker06-FixedHeadReview-PR79-ec93d070-20261030.md
+    FinalReviewBundleSha256: CFFD507ADCEEDA90E07272B585C879C7264B6ABD9DAE6E80A24AA75E337B03E5
+    SuccessfulWindowsCheckRunIds: [41038850833, 41038842056]
     Context:
       ModuleId: RootBuildAndDependencies
       AlwaysLoad: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml]
@@ -2433,14 +2521,14 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "AC-1 through AC-3 passed on Head 2e974e9: PR and push Windows Actions runs both configured, built, and passed both CTest cases (2/2); main protection now requires WindowsAgentSlice / Build and Test."
-      CurrentFindingOrFailure: "Worker06 final fixed-head review and metadata-updated Head CI rerun remain pending. This task adds no product C++ behavior."
+      LastCompletedAcceptance: "AC-1 through AC-4 passed on fixed Head ec93d07; Worker06 independently approved the exact Base/Head, both Windows Actions runs passed configure/build and CTest 2/2, and PR #79 merged to main@7349984."
+      CurrentFindingOrFailure: "None for ED-0154/R1. The task was CI/branch-protection support only and added no product C++ behavior."
       TriedApproaches:
         - "The runner initially selected a non-UCRT64 compiler; the workflow now resolves the compiler from the pinned setup action's install-root output."
         - "The existing WorkflowController contract test requires a historical fixture at H:/Qbot/EmulativeDialog; the workflow checks out its frozen commit and maps the runner workspace to that path."
-      NextAction: "Push the coordinator lifecycle metadata update, wait for the new Head's required Windows check, obtain Worker06 fixed-head approval, then merge PR #79 and verify branch cleanup."
+      NextAction: "Closed after PR #79 merged and its remote task branch was deleted; the separate ED-0114/R5 product implementation is now being assigned."
       OpenMessageIds: []
-      LastValidationResult: "Head 2e974e9c6021429474d3a5a891ba5ad28207a77a passed PR run 41036622569 and push run 41036617262; both completed with Windows configure/build success and 2/2 CTest cases. AC-4 awaits final independent review."
+      LastValidationResult: "Final Head ec93d07046396da7ebd3ca8a174c4eead4585d3a passed PR run 41038850833 and push run 41038842056; each built all three preset targets and passed WorkflowController.Contract plus AgentRuntime.VerticalSlice (2/2). Worker06 APPROVE; squash merge 734998470e7561052794ea189cd83a8f0cbb5371; remote task branch deleted."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0145
