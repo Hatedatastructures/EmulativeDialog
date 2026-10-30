@@ -20,8 +20,48 @@ set(AGENT_RUNTIME_VERTICAL_TEST "${CMAKE_CURRENT_LIST_DIR}/AgentRuntimeVerticalS
 set(CORE_SOURCES
     "${PROJECT_ROOT}/Source/Core/IdentityPolicy.cpp"
     "${PROJECT_ROOT}/Source/Core/OperationRecord.cpp"
-    "${PROJECT_ROOT}/Source/Core/CoreChatService.cpp"
     "${PROJECT_ROOT}/Tests/Contract/Providers/Contracts/FakeProvider.cpp")
+
+set(CORE_CHAT_SERVICE_SOURCE
+    "${PROJECT_ROOT}/Source/Core/CoreChatService.cpp")
+add_library(CoreChatServiceObject OBJECT "${CORE_CHAT_SERVICE_SOURCE}")
+target_include_directories(CoreChatServiceObject PUBLIC "${PROJECT_ROOT}")
+target_link_libraries(CoreChatServiceObject PUBLIC EmulativeDialogBoostAsio)
+add_dependencies(CoreChatServiceObject EmulativeDialogBoostAsioVerify)
+target_compile_options(CoreChatServiceObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+set(OUTPUT_BUDGET_CONTROLLER_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp")
+add_library(OutputBudgetControllerObject OBJECT
+    "${OUTPUT_BUDGET_CONTROLLER_SOURCE}")
+target_include_directories(OutputBudgetControllerObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(OutputBudgetControllerObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+set(OPENAI_RESPONSES_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp")
+set(OPENAI_CHAT_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp")
+set(ANTHROPIC_USAGE_SOURCE
+    "${PROJECT_ROOT}/Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp")
+add_library(OpenAIResponsesUsageObject OBJECT "${OPENAI_RESPONSES_USAGE_SOURCE}")
+add_library(OpenAIChatUsageObject OBJECT "${OPENAI_CHAT_USAGE_SOURCE}")
+add_library(AnthropicUsageObject OBJECT "${ANTHROPIC_USAGE_SOURCE}")
+foreach(USAGE_OBJECT
+        OpenAIResponsesUsageObject OpenAIChatUsageObject AnthropicUsageObject)
+  target_include_directories(${USAGE_OBJECT} PUBLIC "${PROJECT_ROOT}")
+  target_compile_options(${USAGE_OBJECT} PRIVATE
+      -Wall -Wextra -Wpedantic -Werror)
+endforeach()
+
+set(TOOL_CALL_COORDINATOR_SOURCE
+    "${PROJECT_ROOT}/Source/Agent/ToolCallCoordinator.cpp")
+add_library(ToolCallCoordinatorObject OBJECT
+    "${TOOL_CALL_COORDINATOR_SOURCE}")
+target_include_directories(ToolCallCoordinatorObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(ToolCallCoordinatorObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
 
 file(MAKE_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}")
 
@@ -38,7 +78,8 @@ add_executable(AgentRuntimeContractTests
 target_include_directories(AgentRuntimeContractTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(AgentRuntimeContractTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
-target_link_libraries(AgentRuntimeContractTests PRIVATE AgentRuntimeObject)
+target_link_libraries(AgentRuntimeContractTests PRIVATE
+    AgentRuntimeObject CoreChatServiceObject OutputBudgetControllerObject)
 
 add_executable(AgentRuntimeVerticalSliceTests
     ${CORE_SOURCES}
@@ -47,7 +88,8 @@ add_executable(AgentRuntimeVerticalSliceTests
 target_include_directories(AgentRuntimeVerticalSliceTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(AgentRuntimeVerticalSliceTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
-target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE AgentRuntimeObject)
+target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE
+    AgentRuntimeObject CoreChatServiceObject OutputBudgetControllerObject)
 
 add_test(NAME AgentRuntime.Contract COMMAND AgentRuntimeContractTests)
 add_test(NAME AgentRuntime.VerticalSlice COMMAND AgentRuntimeVerticalSliceTests)
@@ -102,14 +144,67 @@ add_test(NAME Agent.EventProjector COMMAND AgentEventProjectorTests)
 
 add_executable(ToolCallRoundTripTests
     "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
-    "${PROJECT_ROOT}/Source/Agent/ToolCallCoordinator.cpp"
     "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/ToolCallRoundTripTests.cpp")
 target_include_directories(ToolCallRoundTripTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(ToolCallRoundTripTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(ToolCallRoundTripTests PRIVATE
+    ToolCallCoordinatorObject OutputBudgetControllerObject)
 
 add_test(NAME Agent.ToolCallRoundTrip COMMAND ToolCallRoundTripTests)
+
+set(TURN_CHECKPOINT_STORE_SOURCE
+    "${PROJECT_ROOT}/Source/Storage/TurnCheckpointStore.cpp")
+set(TURN_RECOVERY_COORDINATOR_SOURCE
+    "${PROJECT_ROOT}/Source/Core/TurnRecoveryCoordinator.cpp")
+
+add_library(TurnCheckpointStoreObject OBJECT
+    "${TURN_CHECKPOINT_STORE_SOURCE}")
+target_include_directories(TurnCheckpointStoreObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(TurnCheckpointStoreObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_library(TurnRecoveryCoordinatorObject OBJECT
+    "${TURN_RECOVERY_COORDINATOR_SOURCE}")
+target_include_directories(TurnRecoveryCoordinatorObject PUBLIC "${PROJECT_ROOT}")
+target_compile_options(TurnRecoveryCoordinatorObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
+add_executable(TurnCheckpointStoreTests
+    "${PROJECT_ROOT}/Tests/Contract/Storage/TurnCheckpointStoreTests.cpp")
+target_include_directories(TurnCheckpointStoreTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(TurnCheckpointStoreTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(TurnCheckpointStoreTests
+    PRIVATE TurnCheckpointStoreObject Threads::Threads)
+add_test(NAME Storage.TurnCheckpointStore
+         COMMAND TurnCheckpointStoreTests)
+
+add_executable(TurnRecoveryCoordinatorTests
+    "${PROJECT_ROOT}/Tests/Contract/Core/TurnRecoveryCoordinatorTests.cpp")
+target_include_directories(TurnRecoveryCoordinatorTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(TurnRecoveryCoordinatorTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(TurnRecoveryCoordinatorTests
+    PRIVATE TurnCheckpointStoreObject TurnRecoveryCoordinatorObject)
+add_test(NAME Core.TurnRecoveryCoordinator
+         COMMAND TurnRecoveryCoordinatorTests)
+
+set(TURN_CHECKPOINT_TEST_DATA
+    "${AGENT_RUNTIME_REPORT_DIR}/TestData/TurnCheckpoint")
+set(TURN_RECOVERY_TEST_DATA
+    "${AGENT_RUNTIME_REPORT_DIR}/TestData/TurnRecovery")
+file(MAKE_DIRECTORY "${TURN_CHECKPOINT_TEST_DATA}"
+     "${TURN_RECOVERY_TEST_DATA}")
+set_tests_properties(Storage.TurnCheckpointStore PROPERTIES
+    RUN_SERIAL TRUE
+    ENVIRONMENT
+      "TEMP=${TURN_CHECKPOINT_TEST_DATA};TMP=${TURN_CHECKPOINT_TEST_DATA}")
+set_tests_properties(Core.TurnRecoveryCoordinator PROPERTIES
+    RUN_SERIAL TRUE
+    ENVIRONMENT
+      "TEMP=${TURN_RECOVERY_TEST_DATA};TMP=${TURN_RECOVERY_TEST_DATA}")
 
 add_custom_target(AgentRuntimeCoverageReport
     COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
@@ -188,3 +283,89 @@ add_custom_target(ProviderOutcomePolicyCoverageReport
     COMMENT "Generating ProviderOutcomePolicy.cpp gcov JSON v2 and text reports")
 add_dependencies(ProviderOutcomePolicyCoverageReport
                  ProviderOutcomePolicyTests)
+
+add_custom_target(TurnCheckpointStoreCoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:TurnCheckpointStoreObject>"
+            "${TURN_CHECKPOINT_STORE_SOURCE}"
+    WORKING_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating TurnCheckpointStore.cpp gcov JSON v2 coverage")
+add_dependencies(TurnCheckpointStoreCoverageReport
+    TurnCheckpointStoreTests)
+
+add_custom_target(TurnRecoveryCoordinatorCoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:TurnRecoveryCoordinatorObject>"
+            "${TURN_RECOVERY_COORDINATOR_SOURCE}"
+    WORKING_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating TurnRecoveryCoordinator.cpp gcov JSON v2 coverage")
+add_dependencies(TurnRecoveryCoordinatorCoverageReport
+    TurnRecoveryCoordinatorTests)
+
+add_executable(OutputBudgetControllerTests
+    "${CMAKE_CURRENT_LIST_DIR}/OutputBudgetControllerTests.cpp")
+target_include_directories(OutputBudgetControllerTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(OutputBudgetControllerTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(OutputBudgetControllerTests PRIVATE
+    OutputBudgetControllerObject)
+add_test(NAME Agent.OutputBudgetController COMMAND OutputBudgetControllerTests)
+
+add_executable(UsageNormalizationTests
+    "${CMAKE_CURRENT_LIST_DIR}/UsageNormalizationTests.cpp")
+target_include_directories(UsageNormalizationTests PRIVATE "${PROJECT_ROOT}")
+target_compile_options(UsageNormalizationTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(UsageNormalizationTests PRIVATE
+    OpenAIResponsesUsageObject OpenAIChatUsageObject AnthropicUsageObject)
+add_test(NAME Providers.UsageNormalization COMMAND UsageNormalizationTests)
+
+add_executable(CorePolicyAndActionContractTests
+    "${PROJECT_ROOT}/Source/Core/IdentityPolicy.cpp"
+    "${PROJECT_ROOT}/Source/Core/OperationRecord.cpp"
+    "${PROJECT_ROOT}/Tests/Contract/Core/CorePolicyAndActionContractTests.cpp")
+target_include_directories(CorePolicyAndActionContractTests PRIVATE
+    "${PROJECT_ROOT}")
+target_compile_options(CorePolicyAndActionContractTests PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+target_link_libraries(CorePolicyAndActionContractTests PRIVATE
+    CoreChatServiceObject OutputBudgetControllerObject)
+add_test(NAME Core.PolicyAndAction COMMAND CorePolicyAndActionContractTests)
+
+add_custom_target(ED0114CoverageReport
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:CoreChatServiceObject>"
+            "${CORE_CHAT_SERVICE_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:AgentRuntimeObject>"
+            "${AGENT_RUNTIME_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:OutputBudgetControllerObject>"
+            "${OUTPUT_BUDGET_CONTROLLER_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:ToolCallCoordinatorObject>"
+            "${TOOL_CALL_COORDINATOR_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:OpenAIResponsesUsageObject>"
+            "${OPENAI_RESPONSES_USAGE_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:OpenAIChatUsageObject>"
+            "${OPENAI_CHAT_USAGE_SOURCE}"
+    COMMAND "${GCOV_EXECUTABLE}" --json-format --branch-counts
+            -o "$<TARGET_OBJECTS:AnthropicUsageObject>"
+            "${ANTHROPIC_USAGE_SOURCE}"
+    WORKING_DIRECTORY "${AGENT_RUNTIME_REPORT_DIR}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+    COMMENT "Generating ED-0114 per-source gcov JSON v2 coverage")
+add_dependencies(ED0114CoverageReport
+    CorePolicyAndActionContractTests
+    AgentRuntimeContractTests
+    AgentRuntimeVerticalSliceTests
+    ToolCallRoundTripTests
+    OutputBudgetControllerTests
+    UsageNormalizationTests)

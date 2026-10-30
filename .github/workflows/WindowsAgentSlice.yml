@@ -1,0 +1,153 @@
+name: WindowsAgentSlice
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - "Task/**"
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: WindowsAgentSlice / Build and Test
+    runs-on: windows-2022
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Checkout frozen WorkflowController fixture
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: 5d8618036a559388bbaefa277a9d3288450e927e
+          path: ci-fixtures/Qbot/EmulativeDialog.ED-0014-R9
+          persist-credentials: false
+
+      - name: Set up UCRT64 MinGW
+        id: msys2
+        uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-make
+
+      - name: Verify Windows C++20 toolchain
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          cmake --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $ucrtBin -PathType Container)) {
+            throw "UCRT64 binary directory is missing: $ucrtBin"
+          }
+          foreach ($tool in @($compiler, $make)) {
+            if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
+              throw "Required UCRT64 tool is missing: $tool"
+            }
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
+          & $compiler --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          & $make --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Configure Windows agent slice
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $dependencyCache = Join-Path $env:RUNNER_TEMP 'EmulativeDialog\Dependencies'
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf) -or -not (Test-Path -LiteralPath $make -PathType Leaf)) {
+            throw "Required UCRT64 tools are missing under $ucrtBin"
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
+          $configureArgs = @(
+            "-DCMAKE_CXX_COMPILER=$compiler"
+            "-DCMAKE_MAKE_PROGRAM=$make"
+            "-DFETCHCONTENT_BASE_DIR=$dependencyCache"
+          )
+          cmake --preset windows-agent-slice @configureArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Windows agent slice
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf) -or -not (Test-Path -LiteralPath $make -PathType Leaf)) {
+            throw "Required UCRT64 tools are missing under $ucrtBin"
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
+          cmake --build --preset windows-agent-slice --parallel 4
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run Windows agent slice tests
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf) -or -not (Test-Path -LiteralPath $make -PathType Leaf)) {
+            throw "Required UCRT64 tools are missing under $ucrtBin"
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
+
+          $existingHDrive = Get-PSDrive -Name H -ErrorAction SilentlyContinue
+          if ($null -ne $existingHDrive) {
+            throw "Refusing to replace existing H: drive mapping rooted at $($existingHDrive.Root)"
+          }
+          $fixtureRoot = Join-Path $env:GITHUB_WORKSPACE 'ci-fixtures'
+          $substExe = Join-Path $env:SystemRoot 'System32\subst.exe'
+          if (-not (Test-Path -LiteralPath $substExe -PathType Leaf)) {
+            throw "Windows subst utility is missing: $substExe"
+          }
+          & $substExe 'H:' $fixtureRoot
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $fixtureRepo = 'H:\Qbot\EmulativeDialog.ED-0014-R9'
+          if (-not (Test-Path -LiteralPath (Join-Path $fixtureRepo '.git'))) {
+            throw "Frozen WorkflowController Git fixture is missing: $fixtureRepo\.git"
+          }
+          $fixtureHead = (git -C $fixtureRepo rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $expectedFixtureHead = '5d8618036a559388bbaefa277a9d3288450e927e'
+          if ($fixtureHead -ne $expectedFixtureHead) {
+            throw "Unexpected WorkflowController fixture HEAD: $fixtureHead"
+          }
+
+          ctest --preset windows-agent-slice --no-tests=error --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

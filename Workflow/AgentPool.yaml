@@ -28,71 +28,86 @@ LifecyclePolicy:
     - HostSessionIsUnavailableAndRecoveryWasAttempted
     - UserOrCoordinatorExplicitlyClosesTheSlot
 
+BindingMigrations:
+  - MigrationId: AgentSlotMigration-2026-10-29-LunaMax
+    AuthorizedBy: User
+    EffectiveAt: "2026-10-29T06:27:50Z"
+    Reason: "The user explicitly requested six stable subagents using gpt-6-luna with max reasoning. The logical Worker01-Worker06 roles remain unchanged; only their session bindings and model requests are updated."
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    Slots:
+      - {SlotId: Worker01, PreviousAgentId: "/root/p1_trace_events_luna", CurrentAgentId: "/root/luna01_ed0112_r8_audit"}
+      - {SlotId: Worker02, PreviousAgentId: "/root/p1_code001_luna", CurrentAgentId: "/root/luna02_ed0148_pr_ready"}
+      - {SlotId: Worker03, PreviousAgentId: "/root/p1_gov004_luna", CurrentAgentId: "/root/luna03_ed0114_branch_review"}
+      - {SlotId: Worker04, PreviousAgentId: "/root/p2_validation_luna", CurrentAgentId: "/root/luna04_ed0144_branch_review"}
+      - {SlotId: Worker05, PreviousAgentId: "/root/p3_validation_luna", CurrentAgentId: "/root/luna05_async_runtime_taskroute"}
+      - {SlotId: Worker06, PreviousAgentId: "/root/p1_par001_luna", CurrentAgentId: "/root/luna06_capability_status_audit"}
+
 Slots:
   # Existing AgentIds remain the stable identities. A replacement binding must
   # be recorded as an explicit, auditable slot migration rather than silently
   # rewriting the registry.
   - SlotId: Worker01
     RoleFamily: BuildAndWorkflowOwner
-    AgentId: "/root/p1_trace_events_luna"
-    ModelRequest: InheritCoordinator
-    ReasoningEffort: InheritCoordinator
-    HostSessionRef: "/root/worker01_ed0105_owner"
+    AgentId: "/root/luna01_ed0112_r8_audit"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    HostSessionRef: "/root/luna01_ed0112_r8_audit"
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0156/R1-BoostWinApiClosure
+    Status: Assigned
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
-    AgentId: "/root/p1_code001_luna"
-    ModelRequest: InheritCoordinator
-    ReasoningEffort: InheritCoordinator
-    HostSessionRef: "/root/worker02_ed0114_owner"
+    AgentId: "/root/luna02_ed0148_pr_ready"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    HostSessionRef: "/root/luna02_ed0148_pr_ready"
     ModuleIds:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0112/R6-TurnRecovery
+    CurrentTaskId: ED-0150/R4-CoverageValidation
     Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
-    AgentId: "/root/p1_gov004_luna"
-    ModelRequest: InheritCoordinator
-    ReasoningEffort: InheritCoordinator
-    HostSessionRef: "/root/worker03_ed0114_validation"
+    AgentId: "/root/luna03_ed0114_branch_review"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    HostSessionRef: "/root/luna03_ed0114_branch_review"
     ModuleIds:
       - ProviderOpenAIResponses
     CurrentTaskId: ""
     Status: Active
   - SlotId: Worker04
     RoleFamily: ChatCompletionsProviderOwner
-    AgentId: "/root/p2_validation_luna"
-    ModelRequest: InheritCoordinator
-    ReasoningEffort: InheritCoordinator
-    HostSessionRef: "/root/worker04_ed0114_review"
+    AgentId: "/root/luna04_ed0144_branch_review"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    HostSessionRef: "/root/luna04_ed0144_branch_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
     CurrentTaskId: ""
     Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderAndMemoryOwner
-    AgentId: "/root/p3_validation_luna"
-    ModelRequest: InheritCoordinator
-    ReasoningEffort: InheritCoordinator
-    HostSessionRef: "/root/worker05_ed0144_memory"
+    AgentId: "/root/luna05_async_runtime_taskroute"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    HostSessionRef: "/root/luna05_async_runtime_taskroute"
     ModuleIds:
       - ProviderAnthropicMessages
       - Memory
       - ContextSelector
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0148/R6-ConsentMatchingValidation
+    Status: Assigned
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
-    AgentId: "/root/p1_par001_luna"
-    ModelRequest: InheritCoordinator
-    ReasoningEffort: InheritCoordinator
-    HostSessionRef: "/root/worker06_ed0105_review"
+    AgentId: "/root/luna06_capability_status_audit"
+    ModelRequest: gpt-6-luna
+    ReasoningEffort: max
+    HostSessionRef: "/root/luna06_capability_status_audit"
     ModuleIds: []
     CurrentTaskId: ""
     Status: Active
@@ -174,3 +189,49 @@ TaskScopedModuleAuthorizations:
     Restrictions:
       - TestConsumersOnly
       - NoProviderProductionWireBehaviorChanges
+  - ChangeRequestId: CR-ED-0144-R3-CONSENT-001
+    TaskId: ED-0148
+    TaskRevision: 4
+    SlotId: Worker05
+    AgentId: /root/worker05_ed0144_memory
+    ModuleId: Memory
+    State: Completed
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge]
+    AllowedPaths:
+      - Source/Memory/ConversationMemory.cpp
+      - Tests/Contract/Memory/ConversationMemoryTests.cpp
+    Restrictions:
+      - PreserveExactTwoPathTaskWriteSet
+      - NoCoreSqliteProviderChannelOrRootCMakeChanges
+      - ProposalIdOptionalValuesMustMatchExactly
+  - ChangeRequestId: CR-ED-0120-007
+    TaskId: ED-0120
+    TaskRevision: 3
+    SlotId: Worker01
+    AgentId: /root/luna01_ed0112_r8_audit
+    ModuleId: NetworkPlatform
+    State: Active
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge, AssignmentLedgerMerge]
+    AllowedPaths:
+      - Architecture/Decisions/Adr0003WindowsHttpTransport.md
+      - Architecture/Contracts/HttpTransportContract.md
+    Restrictions:
+      - DocumentationAndContractStatusOnly
+      - NoCppSourceOrTestAuthorization
+      - PreserveAcceptedSixPathTaskWriteSet
+      - KeepP3EntryGatePending
+  - ChangeRequestId: CR-ED-0120-007
+    TaskId: ED-0120
+    TaskRevision: 3
+    SlotId: Worker01
+    AgentId: /root/luna01_ed0112_r8_audit
+    ModuleId: Core
+    State: Active
+    EffectiveOnlyAfter: [OwnerApproval, IndependentReviewerApproval, ChangeRequestApproval, MainMerge, AssignmentLedgerMerge]
+    AllowedPaths:
+      - Architecture/Contracts/CoreEndpointGrantContract.md
+    Restrictions:
+      - DocumentationAndContractStatusOnly
+      - NoCppSourceOrTestAuthorization
+      - PreserveAcceptedSixPathTaskWriteSet
+      - KeepP3EntryGatePending
