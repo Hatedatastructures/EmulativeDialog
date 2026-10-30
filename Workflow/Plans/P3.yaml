@@ -3042,6 +3042,190 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0144]}
 
   - TaskId: ED-0149
+    TaskRevision: 2
+    EpicId: EP-06
+    Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
+    TaskKind: IntegrationTask
+    State: Assigned
+    SupersedesTaskRevision: 1
+    ChangeRequestId: CR-ED-0149-R1-VALIDATION-001
+    ChangeRequestAcceptedEventId: 7d778fe9-65dd-48b8-91ef-6a84d6347b5d
+    ProposedBranch: Task/ED-0149-AsyncProviderAgentRuntimeContractR2
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
+    AssignmentBaseCommit: 4a41e200fe324a0ff9811e3afd599436d671e700
+    AssignmentLedgerPullRequestNumber: 73
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/73
+    AssignmentLedgerPullRequestBaseCommit: 4a41e200fe324a0ff9811e3afd599436d671e700
+    AssignmentLedgerPullRequestCreatedHeadCommit: 534f292cc2fc4cdb4770a33823a64620fcc6602e
+    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-30T02:50:52Z"
+    AssignmentLedgerPullRequestCreatedEventId: 76638fc0-5744-45f7-bf73-42599d27c8d2
+    Branch: Task/ED-0149-AsyncProviderAgentRuntimeContractR2
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
+    AssignedToSlot: Worker02
+    AssignmentEventId: 13a5d0ae-8582-40df-a386-60a234275b5f
+    TaskReadinessValidatedEventId: 5e27a16b-a477-487a-be7a-8f3bf6da7477
+    TaskAssignedEventId: 13a5d0ae-8582-40df-a386-60a234275b5f
+    OwnerSlotRecoveredEventId: 19d0c87a-4622-4607-b3f6-8cff207d1824
+    OwnerSlotAssignedEventId: ea1906ef-adff-4782-ba95-630899450928
+    WorktreeCreatedEventId: 2d2e9b61-a102-478a-ae03-e76d9966dd29
+    WorktreeVerifiedEventId: 68a217c3-d152-40f3-9871-a919a492448d
+    AssignmentNote: "Assignment candidate is effective only after its ledger PR merges and post-merge Controller validation succeeds; no product TaskStarted yet."
+    BlockedBy: >-
+      Assignment candidate only. It becomes effective after the assignment-ledger PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted. Do not add TaskStarted or product files before that result.
+    Phase: P3
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewSource: InternalFixedHeadReview
+    GitHubNativeReviewSubmissionCount: 0
+    TaskSpecProposalPullRequestNumber: 72
+    TaskSpecProposalPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/72
+    TaskSpecProposalPullRequestBaseCommit: dee5af660d2067465e1ef184ba6793479eb2018e
+    TaskSpecProposalPullRequestCreatedHeadCommit: 93e2909b0297ed2f543044f94df396bf9978897c
+    TaskSpecProposalPullRequestCreatedAtUtc: "2026-10-30T02:30:36Z"
+    TaskSpecProposalPullRequestCreatedEventId: a2762e7c-d6a5-4272-a112-fa156c1e59f1
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewerReviewBaseCommit: dee5af660d2067465e1ef184ba6793479eb2018e
+    TaskSpecReviewerReviewHeadCommit: ca568d06f55ba5b0ba22ae7023ad097ba47f6506
+    TaskSpecReviewSource: InternalFixedHeadReview
+    TaskSpecOwnerReviewAgentId: /root/luna02_ed0148_pr_ready
+    TaskSpecOwnerReviewDecision: Approve
+    TaskSpecOwnerReviewBaseCommit: dee5af660d2067465e1ef184ba6793479eb2018e
+    TaskSpecOwnerReviewHeadCommit: ca568d06f55ba5b0ba22ae7023ad097ba47f6506
+    TaskSpecHeadCommit: ca568d06f55ba5b0ba22ae7023ad097ba47f6506
+    TaskSpecFinalPullRequestHeadCommit: ca568d06f55ba5b0ba22ae7023ad097ba47f6506
+    TaskSpecMergedToMainCommit: 4a41e200fe324a0ff9811e3afd599436d671e700
+    TaskSpecMergePullRequestNumber: 72
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/72
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: "2026-10-30T02:36:01Z"
+    TaskSpecStatusNote: "PR #72 merged TaskSpec R2 after fixed-head Owner/Reviewer approvals; R2 is Ready but remains unassigned until the separate assignment ledger passes post-merge validation."
+    BaselineCommit: 72fa92d441aa2807137a46cd9152ee4fa72f1124
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
+    Goal: >-
+      冻结不破坏 V1 同步 API 的 C++20 Boost.Asio awaitable ModelProvider 与 AgentRuntime 公共合同，并新增独立
+      .hpp 声明与隔离编译合同目标。Provider fake 必须使用 awaitable。该任务不实现真实 Provider adapter、
+      网络 I/O 或产品回合行为。
+    OutOfScope:
+      - 修改 V1 同步 ModelProviderPort、AgentRuntimePort 或 AgentRuntime::RunTurn
+      - 新增 AsyncHttpTransport、修改 HttpTransportPort 或实现真实网络 I/O
+      - 实现 OpenAI Responses、Chat Completions 或 Anthropic Messages Provider adapter
+      - 修改根 CMakeLists.txt、CMakePresets.json 或 Tests/Contract/Agent/CMakeLists.txt
+      - QQ、微信、外部账户、真实凭据或外网请求
+    DependsOn: [ED-0007, ED-0015, ED-0131]
+    ContractVersion:
+      - Architecture/Contracts/AsyncModelProviderContract.md V1 (proposed)
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1 (proposed)
+      - Architecture/Contracts/ModelProviderContract.md V1.2
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Boost.Asio 1.92.0 at afdfa32505af73e3d208144b3f623f0096cb62b6
+    ModuleIds: [Core, AgentRuntime, ModelProviderPort]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Modules/Providers.yaml
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/CoreAgentContract.md
+        - Source/Agent/AgentRuntime.h
+        - Source/Providers/Contracts/ModelProviderPort.h
+      OnDemandSet:
+        - Workflow/Plans/P3.yaml
+        - Source/Core/AgentRuntimePort.h
+        - Source/Core/CoreChatService.h
+        - CMake/BoostAsioDependency.cmake
+        - CMake/BoostAsioCoroutineProbe.cpp
+        - CMakeLists.txt
+        - Tests/Contract/Agent/CMakeLists.txt
+        - Tests/Contract/Providers/Contracts/FakeProvider.h
+      ForbiddenSet:
+        - Source/Agent/AgentRuntime.cpp
+        - Source/Platform/Network/
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Channels/
+        - CMakePresets.json
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: false
+    WriteSet:
+      - Architecture/Contracts/AsyncModelProviderContract.md
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md
+      - Source/Providers/Contracts/AsyncModelProviderPort.hpp
+      - Source/Core/AsyncAgentRuntimePort.hpp
+      - Source/Agent/AsyncAgentRuntime.hpp
+      - Tests/Contract/Agent/AsyncApiCompileContract/CMakeLists.txt
+      - Tests/Contract/Agent/AsyncApiCompileContract/AsyncApiCompileContract.cpp
+    SharedLocks: [AsyncModelProviderContractV1, AsyncAgentRuntimeContractV1, BoostAsioDependency]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "AsyncModelProviderPort exposes GetCapabilitiesAsync, ValidateProfileAsync, StreamTurnAsync, and HealthCheckAsync using boost::asio::awaitable and existing ModelProvider V1 profile/result/request/event types; AsyncAgentRuntimePort exposes RunTurnAsync returning awaitable<AgentRunResult>. New API uses sibling .hpp files and preserves all synchronous V1 declarations and behavior.", Evidence: "Both versioned contracts and the three public .hpp declarations are reviewed and merged together; old V1 headers are byte-for-byte unchanged in the task diff."}
+      - {AcceptanceId: AC-2, Description: "Async API contract specifies borrowed argument and CredentialLease lifetimes through awaitable completion, serial nonterminal EventSink delivery on the associated executor, monotonically sequenced events, exactly one returned terminal, no callbacks after completion, std::stop_token cancellation, and UnknownOutcome when the remote request may have been sent.", Evidence: "Independent fixed-head review checks each lifecycle and compatibility rule against the declared signatures and existing V1 terminal/event types."}
+      - {AcceptanceId: AC-3, Description: "The isolated compile-contract source defines an awaitable AsyncFakeProvider using only canonical in-memory fixtures; it compiles a co_await consumer against the new interfaces without any network or AsyncHttpTransport type.", Evidence: "Windows C++20 compile-contract executable builds and its single CTest passes; source diff contains no real adapter, transport, or socket call."}
+      - {AcceptanceId: AC-4, Description: "The standalone target uses the pinned EmulativeDialogBoostAsio interface and verify target without editing root CMake or the shared Agent test CMake.", Evidence: "Fresh configure/build/CTest pass; target dependency and exact changed paths are inspected."}
+      - {AcceptanceId: AC-5, Description: "Existing synchronous ModelProviderPort and AgentRuntimePort callers remain source-compatible.", Evidence: "V1 declarations are unchanged and the standalone compile contract includes the existing V1 headers."}
+    Validation:
+      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract
+      DependencyCache:
+        BaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
+        BoostSourceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource
+        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+        UpdatesDisconnected: true
+        PreflightRecheckRequired: true
+      Coverage: {Required: false, NotApplicable: true, NotApplicableReason: "This task freezes declarations and compiles an in-memory contract fake; it adds no production implementation source."}
+      RequiredBuildTargets: [AsyncApiCompileContractTests]
+      RequiredCTestTests: [Agent.AsyncApiCompileContract]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract'
+        $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies'
+        $BoostSource = Join-Path $BoostCache 'EmulativeDialogBoostAsioSource'
+        if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
+        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        if (-not (Test-Path -LiteralPath $BoostSource -PathType Container)) { throw "Pinned Boost source cache is missing: $BoostSource" }
+        $ActualCommit = & git -C $BoostSource rev-parse HEAD
+        if ($LASTEXITCODE -ne 0 -or ($ActualCommit -join '').Trim() -ne 'afdfa32505af73e3d208144b3f623f0096cb62b6') { throw "Pinned Boost source commit check failed: $BoostSource" }
+        foreach ($RequiredPath in @('libs/asio/include/boost/asio.hpp', 'libs/config/include/boost/version.hpp', 'libs/json/include/boost/json.hpp', 'LICENSE_1_0.txt')) { if (-not (Test-Path -LiteralPath (Join-Path $BoostSource $RequiredPath))) { throw "Pinned Boost source is incomplete: $RequiredPath" } }
+        Write-Output 'FRESH_BUILD_AND_PINNED_BOOST_PREFLIGHT_OK=1'
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree/Tests/Contract/Agent/AsyncApiCompileContract -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract --target AsyncApiCompileContractTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract --output-on-failure --no-tests=error -R '^Agent\\.AsyncApiCompileContract$'"
+      StaticChecks:
+        - "After the product PR is opened, bind PRBaseCommit and PRHeadCommit from GitHub base.sha and head.sha; leave them unset until then."
+        - "Run git diff --check PRBaseCommit...PRHeadCommit and require git diff --name-only PRBaseCommit...PRHeadCommit to equal the exact seven-path WriteSet."
+        - "Verify BaselineCommit is an ancestor of PRBaseCommit and PRHeadCommit; separately audit BaselineCommit..PRBaseCommit as inherited merged governance changes with no path overlapping the product WriteSet."
+        - "All configure source paths are derived from ExpectedAssignedWorktreePath under the central .build tree; the main workspace is never used as a source tree."
+        - "Source/Agent/AgentRuntime.h, Source/Core/AgentRuntimePort.h, and Source/Providers/Contracts/ModelProviderPort.h are unchanged."
+        - "No real provider, network, AsyncHttpTransport, socket, root CMake, or shared Agent CMake path is changed."
+        - "The standalone compile target links EmulativeDialogBoostAsio and depends on EmulativeDialogBoostAsioVerify; the pinned source cache commit is rechecked and external updates remain disconnected."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The async fake is in-memory and the compile-contract target performs no provider or channel I/O."
+    RiskLevel: Medium
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0150]}
+
+
+
+  - TaskId: ED-0149
     TaskRevision: 1
     EpicId: EP-06
     Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
@@ -3232,154 +3416,6 @@ Tasks:
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0150]}
 
-
-  - TaskId: ED-0149
-    TaskRevision: 2
-    EpicId: EP-06
-    Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
-    TaskKind: IntegrationTask
-    State: Proposed
-    SupersedesTaskRevision: 1
-    ChangeRequestId: CR-ED-0149-R1-VALIDATION-001
-    ChangeRequestAcceptedEventId: 7d778fe9-65dd-48b8-91ef-6a84d6347b5d
-    ProposedBranch: Task/ED-0149-R2-AsyncProviderAgentRuntimeContract-Impl
-    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
-    BlockedBy: >-
-      The validation-range CR is accepted. This R2 TaskSpec candidate requires independent fixed-head review and merge; after that, a separate assignment ledger and post-merge WorkflowController validate-assignment must pass before TaskStarted or product WriteSet edits.
-    Phase: P3
-    OwnerRole: AgentRuntimeOwner
-    OwnerSlotId: Worker02
-    ReviewerRole: IndependentReviewer
-    ReviewerSlotId: Worker04
-    ReviewerIndependence: Required
-    CreatedBy: Coordinator
-    TaskSpecReviewStatus: PendingFixedHeadReview
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewSource: InternalFixedHeadReview
-    GitHubNativeReviewSubmissionCount: 0
-    TaskSpecProposalPullRequestNumber: 72
-    TaskSpecProposalPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/72
-    TaskSpecProposalPullRequestBaseCommit: dee5af660d2067465e1ef184ba6793479eb2018e
-    TaskSpecProposalPullRequestCreatedHeadCommit: 93e2909b0297ed2f543044f94df396bf9978897c
-    TaskSpecProposalPullRequestCreatedAtUtc: "2026-10-30T02:30:36Z"
-    TaskSpecProposalPullRequestCreatedEventId: a2762e7c-d6a5-4272-a112-fa156c1e59f1
-    BaselineCommit: 72fa92d441aa2807137a46cd9152ee4fa72f1124
-    OwnerAgentId: /root/luna02_ed0148_pr_ready
-    ReviewerAgentId: /root/luna04_ed0144_branch_review
-    Goal: >-
-      冻结不破坏 V1 同步 API 的 C++20 Boost.Asio awaitable ModelProvider 与 AgentRuntime 公共合同，并新增独立
-      .hpp 声明与隔离编译合同目标。Provider fake 必须使用 awaitable。该任务不实现真实 Provider adapter、
-      网络 I/O 或产品回合行为。
-    OutOfScope:
-      - 修改 V1 同步 ModelProviderPort、AgentRuntimePort 或 AgentRuntime::RunTurn
-      - 新增 AsyncHttpTransport、修改 HttpTransportPort 或实现真实网络 I/O
-      - 实现 OpenAI Responses、Chat Completions 或 Anthropic Messages Provider adapter
-      - 修改根 CMakeLists.txt、CMakePresets.json 或 Tests/Contract/Agent/CMakeLists.txt
-      - QQ、微信、外部账户、真实凭据或外网请求
-    DependsOn: [ED-0007, ED-0015, ED-0131]
-    ContractVersion:
-      - Architecture/Contracts/AsyncModelProviderContract.md V1 (proposed)
-      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1 (proposed)
-      - Architecture/Contracts/ModelProviderContract.md V1.2
-      - Architecture/Contracts/CoreAgentContract.md V1
-      - Boost.Asio 1.92.0 at afdfa32505af73e3d208144b3f623f0096cb62b6
-    ModuleIds: [Core, AgentRuntime, ModelProviderPort]
-    Context:
-      ModuleId: AgentRuntime
-      ReadSet:
-        - AGENTS.md
-        - Workflow/CurrentState.md
-        - Workflow/TaskIndex.yaml
-        - Workflow/AgentExecutionStandard.md
-        - Workflow/TaskLifecycle.md
-        - Architecture/ModuleMap.yaml
-        - Architecture/Modules/HostCoreAgent.yaml
-        - Architecture/Modules/Providers.yaml
-        - Architecture/Contracts/ModelProviderContract.md
-        - Architecture/Contracts/CoreAgentContract.md
-        - Source/Agent/AgentRuntime.h
-        - Source/Providers/Contracts/ModelProviderPort.h
-      OnDemandSet:
-        - Workflow/Plans/P3.yaml
-        - Source/Core/AgentRuntimePort.h
-        - Source/Core/CoreChatService.h
-        - CMake/BoostAsioDependency.cmake
-        - CMake/BoostAsioCoroutineProbe.cpp
-        - CMakeLists.txt
-        - Tests/Contract/Agent/CMakeLists.txt
-        - Tests/Contract/Providers/Contracts/FakeProvider.h
-      ForbiddenSet:
-        - Source/Agent/AgentRuntime.cpp
-        - Source/Platform/Network/
-        - Source/Providers/OpenAIResponses/
-        - Source/Providers/OpenAIChatCompletions/
-        - Source/Providers/AnthropicMessages/
-        - Source/Channels/
-        - CMakePresets.json
-      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-      MaxReferenceFiles: 12
-      ExpansionReasonRequired: false
-    WriteSet:
-      - Architecture/Contracts/AsyncModelProviderContract.md
-      - Architecture/Contracts/AsyncAgentRuntimeContract.md
-      - Source/Providers/Contracts/AsyncModelProviderPort.hpp
-      - Source/Core/AsyncAgentRuntimePort.hpp
-      - Source/Agent/AsyncAgentRuntime.hpp
-      - Tests/Contract/Agent/AsyncApiCompileContract/CMakeLists.txt
-      - Tests/Contract/Agent/AsyncApiCompileContract/AsyncApiCompileContract.cpp
-    SharedLocks: [AsyncModelProviderContractV1, AsyncAgentRuntimeContractV1, BoostAsioDependency]
-    Acceptance:
-      - {AcceptanceId: AC-1, Description: "AsyncModelProviderPort exposes GetCapabilitiesAsync, ValidateProfileAsync, StreamTurnAsync, and HealthCheckAsync using boost::asio::awaitable and existing ModelProvider V1 profile/result/request/event types; AsyncAgentRuntimePort exposes RunTurnAsync returning awaitable<AgentRunResult>. New API uses sibling .hpp files and preserves all synchronous V1 declarations and behavior.", Evidence: "Both versioned contracts and the three public .hpp declarations are reviewed and merged together; old V1 headers are byte-for-byte unchanged in the task diff."}
-      - {AcceptanceId: AC-2, Description: "Async API contract specifies borrowed argument and CredentialLease lifetimes through awaitable completion, serial nonterminal EventSink delivery on the associated executor, monotonically sequenced events, exactly one returned terminal, no callbacks after completion, std::stop_token cancellation, and UnknownOutcome when the remote request may have been sent.", Evidence: "Independent fixed-head review checks each lifecycle and compatibility rule against the declared signatures and existing V1 terminal/event types."}
-      - {AcceptanceId: AC-3, Description: "The isolated compile-contract source defines an awaitable AsyncFakeProvider using only canonical in-memory fixtures; it compiles a co_await consumer against the new interfaces without any network or AsyncHttpTransport type.", Evidence: "Windows C++20 compile-contract executable builds and its single CTest passes; source diff contains no real adapter, transport, or socket call."}
-      - {AcceptanceId: AC-4, Description: "The standalone target uses the pinned EmulativeDialogBoostAsio interface and verify target without editing root CMake or the shared Agent test CMake.", Evidence: "Fresh configure/build/CTest pass; target dependency and exact changed paths are inspected."}
-      - {AcceptanceId: AC-5, Description: "Existing synchronous ModelProviderPort and AgentRuntimePort callers remain source-compatible.", Evidence: "V1 declarations are unchanged and the standalone compile contract includes the existing V1 headers."}
-    Validation:
-      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract
-      DependencyCache:
-        BaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
-        BoostSourceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource
-        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
-        UpdatesDisconnected: true
-        PreflightRecheckRequired: true
-      Coverage: {Required: false, NotApplicable: true, NotApplicableReason: "This task freezes declarations and compiles an in-memory contract fake; it adds no production implementation source."}
-      RequiredBuildTargets: [AsyncApiCompileContractTests]
-      RequiredCTestTests: [Agent.AsyncApiCompileContract]
-      FreshBuildPreflight: |-
-        $ErrorActionPreference = 'Stop'
-        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract'
-        $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies'
-        $BoostSource = Join-Path $BoostCache 'EmulativeDialogBoostAsioSource'
-        if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
-        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
-        if (-not (Test-Path -LiteralPath $BoostSource -PathType Container)) { throw "Pinned Boost source cache is missing: $BoostSource" }
-        $ActualCommit = & git -C $BoostSource rev-parse HEAD
-        if ($LASTEXITCODE -ne 0 -or ($ActualCommit -join '').Trim() -ne 'afdfa32505af73e3d208144b3f623f0096cb62b6') { throw "Pinned Boost source commit check failed: $BoostSource" }
-        foreach ($RequiredPath in @('libs/asio/include/boost/asio.hpp', 'libs/config/include/boost/version.hpp', 'libs/json/include/boost/json.hpp', 'LICENSE_1_0.txt')) { if (-not (Test-Path -LiteralPath (Join-Path $BoostSource $RequiredPath))) { throw "Pinned Boost source is incomplete: $RequiredPath" } }
-        Write-Output 'FRESH_BUILD_AND_PINNED_BOOST_PREFLIGHT_OK=1'
-      TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree/Tests/Contract/Agent/AsyncApiCompileContract -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract --target AsyncApiCompileContractTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/CompileContract --output-on-failure --no-tests=error -R '^Agent\\.AsyncApiCompileContract$'"
-      StaticChecks:
-        - "After the product PR is opened, bind PRBaseCommit and PRHeadCommit from GitHub base.sha and head.sha; leave them unset until then."
-        - "Run git diff --check PRBaseCommit...PRHeadCommit and require git diff --name-only PRBaseCommit...PRHeadCommit to equal the exact seven-path WriteSet."
-        - "Verify BaselineCommit is an ancestor of PRBaseCommit and PRHeadCommit; separately audit BaselineCommit..PRBaseCommit as inherited merged governance changes with no path overlapping the product WriteSet."
-        - "All configure source paths are derived from ExpectedAssignedWorktreePath under the central .build tree; the main workspace is never used as a source tree."
-        - "Source/Agent/AgentRuntime.h, Source/Core/AgentRuntimePort.h, and Source/Providers/Contracts/ModelProviderPort.h are unchanged."
-        - "No real provider, network, AsyncHttpTransport, socket, root CMake, or shared Agent CMake path is changed."
-        - "The standalone compile target links EmulativeDialogBoostAsio and depends on EmulativeDialogBoostAsioVerify; the pinned source cache commit is rechecked and external updates remain disconnected."
-      LiveSideEffects: Forbidden
-      NotRunReason: "The async fake is in-memory and the compile-contract target performs no provider or channel I/O."
-    RiskLevel: Medium
-    RiskOwnerRole: AgentRuntimeOwner
-    RequiresCredentials: false
-    RequiresExternalAccount: false
-    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
-    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0150]}
 
 
   - TaskId: ED-0150
