@@ -4584,7 +4584,10 @@ Tasks:
       compile features and Boost include requirements reach CoreChatService.cpp and consumers that include the
       asynchronous AgentRuntime/provider public interfaces. Preserve all runtime behavior and dependency pins.
     OutOfScope:
-      - Source/ production code, public C++ APIs, tests, or provider/channel behavior
+      - >-
+        Source/ production code, public C++ APIs, test source/fixtures/behavior, or provider/channel behavior. The sole
+        permitted test-build configuration edit is the exact Tests/Contract/Agent/CMakeLists.txt WriteSet for this
+        compile-link edge.
       - Root CMakeLists.txt, CMake/BoostAsioDependency.cmake, dependency pins, and workflow configuration
       - ED-0150 files or scope; this task only supplies the missing compile usage-requirement edge
       - P2/P3 gate decisions, protocol contracts, credentials, or live channel/provider traffic
@@ -4675,23 +4678,43 @@ Tasks:
     Validation:
       RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
       RequiredCTestTests: [AgentRuntime.VerticalSlice]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Windows
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice'
+        $IntegrationWorktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree'
+        $IntegrationBuild = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice'
+        if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
+        if (Test-Path -LiteralPath $Build) { throw "Fresh preset binaryDir already exists; preserve it and stop: $Build" }
+        if (Test-Path -LiteralPath $IntegrationWorktree) { throw "Disposable integration worktree path already exists; preserve it and stop: $IntegrationWorktree" }
+        if (Test-Path -LiteralPath $IntegrationBuild) { throw "Fresh integration preset binaryDir already exists; preserve it and stop: $IntegrationBuild" }
+        Write-Output 'FRESH_TASK_AND_INTEGRATION_BINARYDIR_PREFLIGHT_OK=1'
       FreshDirectoryPolicy: >-
-        Before configure, verify both the task build directory and disposable integration build directory do not
-        exist. Do not clear, reuse, or overwrite an existing build/evidence directory.
+        CMakePresets.json resolves windows-agent-slice binaryDir as
+        `${sourceParentDir}/${sourceDirName}.build/${presetName}`. Before configure, verify both the task binaryDir
+        in TaskBuildDirectory and the integration binaryDir in IntegrationReproduction.BuildDirectory do not exist
+        using FreshBuildPreflight. Run TargetedBuild from the assigned Worktree and IntegrationReproduction.Commands
+        from IntegrationReproduction.Worktree after creating the detached integration checkout. Do not clear, reuse,
+        or overwrite an existing build/evidence directory.
       TargetedBuild:
         - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies"
         - "cmake --build --preset windows-agent-slice --parallel 4"
-        - "ctest --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Windows/windows-agent-slice -R '^AgentRuntime\\.VerticalSlice$' --no-tests=error --output-on-failure"
+        - "ctest --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice -R '^AgentRuntime\\.VerticalSlice$' --no-tests=error --output-on-failure"
       IntegrationReproduction:
         BaseCommit: 3b729eb295aae551633185bc50d032e971350de9
         Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree
-        BuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationBuild
+        BuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice
+        Commands:
+          - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies"
+          - "cmake --build --preset windows-agent-slice --parallel 4"
+          - "ctest --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice -R '^AgentRuntime\\.VerticalSlice$' --no-tests=error --output-on-failure"
         OverlayRule: >-
           Create a disposable detached worktree at the pinned ED-0150/R2 head; overlay only the committed
           Tests/Contract/Agent/CMakeLists.txt from the ED-0155 implementation head for validation. Do not checkout,
-          edit, reset, or clean the live ED-0150 worktree/branch. Run the same fresh Windows configure/build and the
-          targeted AgentRuntime.VerticalSlice CTest command above against the disposable integration worktree.
+          edit, reset, or clean the live ED-0150 worktree/branch. Run the integration-specific fresh Windows
+          configure/build/CTest commands above from IntegrationReproduction.Worktree; the CTest test-dir must be
+          IntegrationReproduction.BuildDirectory.
       StaticChecks:
         - "Controller query reports ED-0131/R2 Merged and P3 EntryGate=Passed before assignment."
         - "Controller validate-assignment returns AssignmentAccepted after the assignment-ledger PR merges to main."
