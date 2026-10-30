@@ -525,3 +525,18 @@
 - PR #77's merge and branch retirement are recorded on current main@47ead8f. ED-0114's dependencies are merged, but R4's old validation directory and task-agent identities are stale.
 - CR-ED-0114-R4-BUILDROOT-001 proposes R5 with the same 17-path product WriteSet and acceptance. It moves the fresh Windows build, reports, and source worktree under H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5 and binds the registered Worker02/Worker04 identities without changing their slots.
 - On fixed Base 47ead8f → Head 338b296, independent Reviewer Worker04 approved the fully archived R2 history and unchanged 17-path product scope. Owner Worker02 returned CHANGES_REQUESTED F004: five recent append-only events lacked required CorrelationId values, and the scope-amendment event had malformed EvidenceRefs. Five Correction events now preserve the original records and supply authoritative values; F004 is recorded as EventId d45c0f3a-abee-4bc3-9c48-ba346714882e. ReviewEvidenceReconciled EventId 6a58c82d-67b1-4c61-b605-2eaade6f8712 records both fixed-head decisions. A new fixed-head review is required after these event corrections. PR #78 is open; ED-0114/R5 remains Proposed with no product C++ write authorization.
+
+## 2026-10-30 ED-0154 Windows required-check implementation
+
+- PR #78 merged to main at `7a66a8444dd8e8b8785aabeee6958ebf1f1289d8`; its Task/ED-0114-R5-TaskSpec branch was deleted. Remote branches are 3/4: main, Task/ED-0144-MemorySqliteAdapter, and Task/ED-0153-R1AsyncHttpTransportTaskSpec.
+- ED-0154/R1 is a build-support task to add one SHA-pinned Windows Agent Slice Actions workflow at `.github/workflows/WindowsAgentSlice.yml`; it does not add product C++ behavior. Worker01 owns it and Worker06 is the independent reviewer.
+- WorkflowController query and `validate-assignment` on the isolated ED-0154 worktree both exited 0; assignment validation returned `AssignmentAccepted`. Reproduced local static checks and `git diff --check` exited 0; log: `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Logs/PreReviewValidation.log`.
+- GitHub Actions has not run yet, so the Windows build, CTest results, and exact remote check context remain unverified. `main` remains unprotected until the first successful check and Coordinator configuration/verification.
+- ED-0114/R5 remains Proposed with no product C++ write authorization; its 17-path product implementation is the next owner task after the required-check gate is established.
+
+## 2026-10-30 PR #79 Windows check and review handoff
+
+- PR #79 was created at 2026-10-30T09:29:11Z from Base `7a66a8444dd8e8b8785aabeee6958ebf1f1289d8`, initially at Head `6fa67103ecfc585953487d52bf93c64bd8493a79`. The implementation Head before this coordinator metadata update is `2e974e9c6021429474d3a5a891ba5ad28207a77a`.
+- Both Windows Actions runs on that implementation Head passed: PR run `41036622569` and push run `41036617262`. The workflow configured and built the existing Windows Agent Slice; CTest passed 2/2. Branch protection now requires `WindowsAgentSlice / Build and Test`.
+- Worker06's interim implementation review found no workflow code issue. Final fixed-head review must cover the coordinator metadata update, and the updated Head must pass the required Windows check before merge.
+- This is a CI/branch-protection support PR only; it changes no product C++ and does not count as AgentRuntime rewrite progress. The root worktree's existing uncommitted P3 event and `$deps/` remain untouched.
