@@ -3816,19 +3816,19 @@ Tasks:
 
 
   - TaskId: ED-0150
-    TaskRevision: 3
-    SupersedesTaskRevision: 2
-    RevisionTransition: {FromRevision: 2, ToRevision: 3}
-    ChangeRequestId: CR-ED-0150-R2-COVERAGE-DIAGNOSTIC-001
+    TaskRevision: 4
+    SupersedesTaskRevision: 3
+    RevisionTransition: {FromRevision: 3, ToRevision: 4}
+    ChangeRequestId: CR-ED-0150-R3-COVERAGE-PREFLIGHT-001
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 到 Mock Channel 回执的 C++ 纵向切片
     TaskKind: CapabilitySlice
     State: Proposed
     BlockedBy: >-
-      R3 is a proposed task-spec revision awaiting fixed-head review and Coordinator acceptance. The R2
-      assignment and its TaskStarted/validation evidence remain historical and do not bind or activate R3.
-      No R3 validation run or product write is authorized until the Coordinator records the accepted revision
-      and any required assignment/readiness gates.
+      R4 is a proposed validation-only revision awaiting Owner and independent fixed-head review and Coordinator
+      acceptance. R2 assignment evidence and the unaccepted R3 proposal remain historical; neither authorizes R4
+      validation. No configure, build, CTest, gcov, or product write is authorized until the Coordinator records
+      acceptance and the required assignment/readiness gates.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3836,9 +3836,9 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    TaskSpecProposalBaseCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
-    ProposedTaskSpecBranch: Task/ED-0150-R3-CoverageDiagnosticTaskSpec
-    ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R3-CoverageTaskSpec/Worktree
+    TaskSpecProposalBaseCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
+    ProposedTaskSpecBranch: Task/ED-0150-R4-CoveragePreflight
+    ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R4-TaskSpec/Worktree
     TaskSpecReviewStatus: PendingFixedHeadReview
     TaskSpecOwnerDecision: PendingFixedHeadReview
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
@@ -3848,15 +3848,37 @@ Tasks:
     TaskSpecCoordinatorDecision: Pending
     TaskSpecReviewSource: LocalFixedHeadCandidate
     TaskSpecStatusNote: >-
-      R3 proposes a CoverageCommand diagnostic-filter correction and a short, fresh validation-path reservation.
-      The R2 implementation assignment and its historical approvals remain recorded below; they do not constitute
-      review or acceptance of R3. The task is Proposed; R2 assignment fields are archived below and do not assign or
-      activate R3. R3 has
-      no product-write authorization. Coordinator must record the TaskSpec/CR events and reconcile
-      task revision/assignment state after fixed-head review and acceptance; no validation result is claimed here.
+      R4 preserves the R3 diagnostic predicate and short fresh validation paths, adding the two Owner-required
+      safety checks: reject a dirty PR #85 checkout at both preflight and coverage time, and create B/Logs before
+      appending command output. PR #92 merged R3 before its Owner fixed-head review; that post-merge review returned
+      CHANGES_REQUESTED, so R3 was never accepted and no validation was authorized. R4 remains Proposed until its
+      Owner and independent Reviewer approve the exact Head and the Coordinator records acceptance. R2 assignment
+      fields remain historical and do not assign or activate R4.
+    PreviousRevision3:
+      TaskRevision: 3
+      Disposition: SupersededByOwnerFindingsBeforeValidation
+      StateAtSupersession: Proposed
+      ChangeRequestId: CR-ED-0150-R2-COVERAGE-DIAGNOSTIC-001
+      TaskSpecProposalBaseCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
+      TaskSpecHeadCommit: 4fbc3385b5ef80762ebf42f8e4ece74e973946ad
+      TaskSpecMergedToMainCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
+      TaskSpecMergePullRequestNumber: 92
+      TaskSpecMergedAtUtc: '2026-10-30T19:42:12Z'
+      OwnerDecision: CHANGES_REQUESTED
+      OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
+      OwnerDecisionAtUtc: '2026-10-30T19:43:24Z'
+      OwnerFindingIds: [F001, F002]
+      OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R3-TaskSpec/Worker02-Owner-FixedHeadReview-PR92-4fbc3385-20261030.md
+      OwnerReviewBundleSha256: 23EF221DF5062CC6C2A0DFA48ADE6C804D08B210389260502334A3795981BA8B
+      IndependentReviewerDecision: APPROVE
+      IndependentReviewerAgentId: /root/luna06_capability_status_audit
+      IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R3-CoverageTaskSpec/Worker06-FixedHeadReview-PR92-4fbc338-20261031.md
+      IndependentReviewerReviewBundleSha256: 4D85F9CD43210675D79EBF598FB17E46DFE7A5E6D14341489195948A54FCD25F
+      CoordinatorDecision: NOT_ACCEPTED
+      MergeChronology: 'PR #92 merged at 19:42:12Z before Owner CHANGES_REQUESTED at 19:43:24Z; the Owner review is post-merge and cannot satisfy the merge gate.'
     PreviousRevision2:
       TaskRevision: 2
-      Disposition: RetainedAsHistoricalPendingRevision3Acceptance
+      Disposition: RetainedAsHistoricalSupersededByRevision4
       StateAtRevision: Assigned
       OwnerAgentId: /root/luna02_ed0148_pr_ready
       Branch: Task/ED-0150-AsyncRuntimeVerticalSlice
@@ -4039,6 +4061,50 @@ Tasks:
         successful WindowsAgentSlice checks, which establish build/CTest status only. The fresh R3 dependency cache
         must still pass EmulativeDialogBoostAsioVerify at the pinned commit and complete submodule closure; this TaskSpec
         candidate does not authorize that validation run or claim either source has met 80 percent.
+    Revision4ChangeRequest:
+      ChangeRequestId: CR-ED-0150-R3-COVERAGE-PREFLIGHT-001
+      TargetTaskRevision: 3
+      ProposedTaskRevision: 4
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: PendingCoordinatorAcceptance
+      OwnerDecision: PendingFixedHeadReview
+      OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
+      IndependentReviewerDecision: PendingFixedHeadReview
+      IndependentReviewerSlotId: Worker06
+      IndependentReviewerAgentId: /root/luna06_capability_status_audit
+      Scope: >-
+        Preserve the R3 diagnostic predicate, all gcov flags/order, short fresh paths, PR #85 Base/Head binding,
+        source identity, CTest freshness, paired .gcno/.gcda validation, JSON v2 parsing, unique executable-line
+        accounting, 80 percent threshold, product Goal, Acceptance, dependencies, contracts, ReadSet, Owner/Reviewer
+        bindings, and exact five-path product WriteSet. Add a fail-closed `git status --porcelain --untracked-files=all`
+        empty-status check to both FreshBuildPreflight and CoverageCommand for the exact assigned product checkout.
+        Ensure CoverageCommand creates and verifies B/Reports and B/Logs before its first file write. Do not modify
+        product code/tests or authorize coverage until both reviews and Coordinator acceptance are recorded.
+      Reason: >-
+        Worker02's fixed-head Owner review of PR #92 Head 4fbc3385b5ef80762ebf42f8e4ece74e973946ad found that a dirty
+        worktree could compile source differing from the frozen PR #85 Head while branch and HEAD checks still passed,
+        and that the first Add-Content could fail because B/Logs was not created. Worker06's independent command audit
+        confirmed these are the only concrete pre-run blockers in R3. PR #92 merged before its Owner review, so R3 was
+        not accepted; R4 closes both findings before any configure/build/CTest/gcov run.
+      ImpactPaths: [Workflow/Plans/P3.yaml]
+      CompatibilityAndSecurityImpact: >-
+        Validation metadata only. The clean-check binds evidence to the reviewed source snapshot; explicit directory
+        creation makes the command runnable in a fresh build root without deleting or overwriting existing artifacts.
+        No API, runtime, protocol, data, or product WriteSet changes.
+      Rollback: >-
+        If either fixed-head review rejects this revision, keep ED-0150/R4 Proposed, preserve the merged R3 and R2
+        records, and do not run validation or alter the PR #85 product branch.
+      EvidenceRefs:
+        - "PR #92 Owner review: Worker02 CHANGES_REQUESTED on fixed Head 4fbc3385b5ef80762ebf42f8e4ece74e973946ad; findings F001/F002."
+        - "PR #92 Worker06 review: APPROVE on Base 19ddbfd161b4db76614fd625203c68cfcc86360e -> Head 4fbc3385b5ef80762ebf42f8e4ece74e973946ad; no other concrete coverage-command blocker."
+        - "PR #85 fixed coverage target remains Base 19ddbfd161b4db76614fd625203c68cfcc86360e -> Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586."
+      ProductWriteAuthorization: None
+      CoordinatorActionRequired: >-
+        After final R4 Owner and Worker06 fixed-head review, the Coordinator must record the CR proposal, review and
+        acceptance/rejection events against the exact R4 Base/Head, then reconcile ED-0150 revision/assignment state.
+        No R4 validation is authorized before that record and required Controller assignment gates. The existing clean
+        PR #85 checkout at E15R3/W is a prepared input only; do not run it until the accepted R4 command is active.
     BaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
@@ -4219,6 +4285,11 @@ Tasks:
         $GitExit = $LASTEXITCODE
         $ActualHead = ($HeadOutput -join '').Trim()
         if ($GitExit -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Expected PR #85 product Head $ExpectedHead, found $ActualHead" }
+        $StatusLines = @(& git -C $Worktree status --porcelain --untracked-files=all)
+        $GitExit = $LASTEXITCODE
+        if ($GitExit -ne 0) { throw 'Could not verify the assigned product worktree status' }
+        if ($StatusLines.Count -ne 0) { throw "Expected a clean PR #85 worktree; found: $($StatusLines -join '; ')" }
+        Write-Output 'PRODUCT_WORKTREE_CLEAN=1'
         foreach ($FreshPath in @($Build, $Reports, $BoostCache)) { if (Test-Path -LiteralPath $FreshPath) { throw "Fresh validation path already exists; preserve it and stop: $FreshPath" } }
         Write-Output 'FRESH_BUILD_AND_EMPTY_PINNED_CACHE_PREFLIGHT_OK=1'
       TargetedBuild:
@@ -4241,8 +4312,17 @@ Tasks:
         $GitExit = $LASTEXITCODE
         $ActualHead = ($HeadOutput -join '').Trim()
         if ($GitExit -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Expected PR #85 product Head $ExpectedHead, found $ActualHead" }
+        $StatusLines = @(& git -C $Worktree status --porcelain --untracked-files=all)
+        $GitExit = $LASTEXITCODE
+        if ($GitExit -ne 0) { throw 'Could not verify the assigned product worktree status' }
+        if ($StatusLines.Count -ne 0) { throw "Expected a clean PR #85 worktree; found: $($StatusLines -join '; ')" }
+        Write-Output 'PRODUCT_WORKTREE_CLEAN=1'
         $Report = Join-Path $Build 'Reports'
         $Logs = Join-Path $Build 'Logs'
+        New-Item -ItemType Directory -Force -Path $Report, $Logs | Out-Null
+        if (-not (Test-Path -LiteralPath $Report -PathType Container)) { throw "Coverage report directory is missing: $Report" }
+        if (-not (Test-Path -LiteralPath $Logs -PathType Container)) { throw "Coverage log directory is missing: $Logs" }
+        Write-Output 'COVERAGE_REPORT_AND_LOG_DIRECTORIES_READY=1'
         $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
         $CTestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
         $Sources = @('Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')
@@ -4317,7 +4397,8 @@ Tasks:
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen five-path WriteSet."
-        - "R3 coverage inputs are bound to PR #85 base 19ddbfd161b4db76614fd625203c68cfcc86360e and exact product Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586; the fresh preflight and CoverageCommand reject another branch or Head."
+        - "R4 coverage inputs are bound to PR #85 base 19ddbfd161b4db76614fd625203c68cfcc86360e and exact product Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586; the fresh preflight and CoverageCommand reject another branch, Head, or dirty checkout."
+        - "CoverageCommand creates and verifies B/Reports and B/Logs before its first report or log write; the fresh build and dependency-cache paths are never deleted or overwritten."
         - "WindowsAgentSlice check runs 41115022305 and 41115014423 passed on that Head; their build/CTest result is not coverage evidence."
         - "P3 EntryGate is Passed and ED-0114 is complete/merged before assignment; WorkflowController validate-assignment accepts the exact task revision."
         - "CoreChatService::Process and ProcessAsync use one shared Core preflight and the same per-instance policy/dedup/action/operation/receipt state; no duplicate AsyncCoreChatService exists."
