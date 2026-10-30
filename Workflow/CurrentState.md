@@ -493,3 +493,9 @@
 
 - PR #71 is open at base a4f9b3d6793bf6603a2d1f5d5784764e816f2d52 and creation Head fc03bb38e8795dcacac98fddd73410869d84f524. Its PRCreated event is 083163bb-8f6a-48b2-8f7d-00d02b12fba1.
 - Worker02 approved preserving the historical R1 baseline and comparing the eventual product PR at GitHub base.sha..head.sha; inherited Baseline..PRBase changes will be audited separately. Worker04 fixed-head review is pending. Final audit event a0f850fc-35aa-49ee-a5dd-4425f5fbdaf5 records exit 0; see FinalAudit.log. R1 remains Assigned with no TaskStarted and no product code.
+
+## 2026-10-30 ED-0149 validation-range CR accepted
+
+- PR #71 merged at 2026-10-30T02:23:33Z as dee5af660d2067465e1ef184ba6793479eb2018e after Worker04 APPROVE at fixed Base/Head; its remote branch was deleted after exact-SHA verification.
+- CR-ED-0149-R1-VALIDATION-001 is accepted by Owner Worker02, Reviewer Worker04, and Coordinator. R1 is preserved as superseded; R2 candidate keeps the seven-path product WriteSet and historical baseline, with the product PR diff range bound to GitHub base.sha..head.sha.
+- ED-0149/R2 TaskSpec is Proposed in open PR #72 at base dee5af660d2067465e1ef184ba6793479eb2018e; PR-created event a2762e7c-d6a5-4272-a112-fa156c1e59f1 records initial head 93e2909b0297ed2f543044f94df396bf9978897c. It still requires fixed-head review/merge and a separate assignment ledger/Controller validation. No product C++ code or TaskStarted has been added.
