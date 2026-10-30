@@ -371,6 +371,11 @@ CoreChatResult CoreChatService::CompleteTurn(
     const AuthorizedTurnContext& Context,
     AgentRunResult AgentResult,
     std::stop_token CancellationToken) {
+  if (AgentResult.GetStatus() == AgentRunStatus::UnknownOutcome) {
+    return CoreChatResult{CoreChatStatus::UnknownOutcome,
+                          CoreChatFailureCode::None,
+                          std::nullopt, std::nullopt, std::nullopt};
+  }
   if (CancellationToken.stop_requested()) {
     return CoreChatResult{CoreChatStatus::Cancelled, CoreChatFailureCode::None,
                           std::nullopt, std::nullopt, std::nullopt};

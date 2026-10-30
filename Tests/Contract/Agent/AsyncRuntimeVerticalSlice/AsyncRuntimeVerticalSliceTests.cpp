@@ -13,6 +13,7 @@
 
 #include <atomic>
 #include <algorithm>
+#include <barrier>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
@@ -1013,6 +1014,52 @@ struct ScenarioExpectation final {
                     "cancellation after the async wait releases the output-budget ledger");
   }
   {
+    Fixture TestFixture(FakeScenario::Unknown);
+    TestFixture.Provider.StreamDelay = std::chrono::milliseconds(80);
+    const Channels::InboundChannelMessage Message = TestFixture.Inbound();
+    std::stop_source Cancellation;
+    Asio::io_context Context;
+    Asio::steady_timer CancelWhileProviderSuspended(Context);
+    CancelWhileProviderSuspended.expires_after(std::chrono::milliseconds(10));
+    std::atomic<bool> StopWasRequestedDuringProviderWait{false};
+    CancelWhileProviderSuspended.async_wait(
+        [&TestFixture, &Cancellation, &StopWasRequestedDuringProviderWait](
+            const auto& Error) {
+          if (!Error) {
+            StopWasRequestedDuringProviderWait.store(
+                TestFixture.Provider.AwaitingProvider.load());
+            Cancellation.request_stop();
+          }
+        });
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Asio::co_spawn(
+        Context,
+        TestFixture.Service.ProcessAsync(
+            Message, TestFixture.Runtime, TestFixture.Provider,
+            Cancellation.get_token()),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    const bool BudgetReleased =
+        !EmulativeDialog::Agent::OutputBudgetController::Shared()
+             .HasActiveTurn(MakeTurnId(Message.Envelope));
+    Passed &= Check(!Failure && Result.has_value() &&
+                        StopWasRequestedDuringProviderWait.load() &&
+                        TestFixture.Provider.DispatchCount.load() == 1,
+                    "cancellation is requested after dispatch while the fake provider is suspended");
+    Passed &= Check(Result->Status == Core::CoreChatStatus::UnknownOutcome &&
+                        TestFixture.IdSource.NextSequence.load() == 1 &&
+                        TestFixture.Channel.GetSendAttemptCount() == 0 &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0,
+                    "a possibly dispatched UnknownOutcome outranks concurrent cancellation and is never replayed");
+    Passed &= Check(BudgetReleased,
+                    "unknown outcome after concurrent cancellation releases the output-budget ledger");
+  }
+  {
     Fixture TestFixture;
     auto Empty = TestFixture.Inbound();
     Empty.Message.MessageParts.clear();
@@ -1091,86 +1138,114 @@ struct ScenarioExpectation final {
                         TestFixture.Channel.GetSendActionCallCount() == 1,
                     "synchronous V1 Process remains callable through shared Core helpers");
   }
-  {
+  const auto RunBarrierRace = [](bool AsyncWins) {
     Fixture TestFixture;
-    const auto Message = TestFixture.Inbound();
-    Asio::io_context Context;
+    const Channels::InboundChannelMessage Message = TestFixture.Inbound();
+    std::barrier<> StartGate{3};
+    std::promise<void> WinnerEnteredRuntime;
+    std::shared_future<void> WinnerEnteredRuntimeFuture =
+        WinnerEnteredRuntime.get_future().share();
+    std::promise<void> ReleaseWinner;
+    std::shared_future<void> ReleaseWinnerFuture = ReleaseWinner.get_future();
+    std::promise<void> LoserReturned;
+    std::future<void> LoserReturnedFuture = LoserReturned.get_future();
+    std::atomic<bool> WinnerReleased{false};
+    std::atomic<bool> LoserReturnedWhileWinnerHeld{false};
     std::optional<Core::CoreChatResult> AsyncResult;
+    std::optional<Core::CoreChatResult> SyncResult;
     std::exception_ptr AsyncFailure;
-    std::promise<void> Dispatched;
-    std::future<void> DispatchedFuture = Dispatched.get_future();
-    std::promise<void> ReleaseProvider;
-    std::future<void> ReleaseFuture = ReleaseProvider.get_future();
-    TestFixture.Provider.OnDispatched = [&Dispatched, &ReleaseFuture]() {
-      Dispatched.set_value();
-      ReleaseFuture.wait();
-    };
-    Asio::co_spawn(
-        Context,
-        TestFixture.Service.ProcessAsync(Message, TestFixture.Runtime,
-                                         TestFixture.Provider),
-        [&AsyncResult, &AsyncFailure](std::exception_ptr Exception,
-                                      Core::CoreChatResult Value) {
-          AsyncFailure = std::move(Exception);
-          AsyncResult = std::move(Value);
-        });
-    std::thread AsyncThread([&Context]() { Context.run(); });
-    DispatchedFuture.wait();
+    std::exception_ptr SyncFailure;
 
-    auto SyncResult = std::async(std::launch::async, [&TestFixture, &Message]() {
-      return TestFixture.Service.Process(Message);
+    if (AsyncWins) {
+      TestFixture.Provider.OnDispatched = [&WinnerEnteredRuntime,
+                                           ReleaseWinnerFuture]() {
+        WinnerEnteredRuntime.set_value();
+        ReleaseWinnerFuture.wait();
+      };
+    } else {
+      TestFixture.SyncRuntime.OnRun = [&WinnerEnteredRuntime,
+                                       ReleaseWinnerFuture]() {
+        WinnerEnteredRuntime.set_value();
+        ReleaseWinnerFuture.wait();
+      };
+    }
+
+    std::thread AsyncThread([&]() {
+      StartGate.arrive_and_wait();
+      if (!AsyncWins &&
+          WinnerEnteredRuntimeFuture.wait_for(std::chrono::seconds(2)) !=
+              std::future_status::ready) {
+        LoserReturned.set_value();
+        return;
+      }
+      try {
+        AsyncResult = TestFixture.RunAsync(Message);
+      } catch (...) {
+        AsyncFailure = std::current_exception();
+      }
+      if (!AsyncWins) {
+        LoserReturnedWhileWinnerHeld.store(!WinnerReleased.load());
+        LoserReturned.set_value();
+      }
     });
-    const bool SyncDuplicateReturnedBeforeProviderResume =
-        SyncResult.wait_for(std::chrono::milliseconds(250)) ==
+    std::thread SyncThread([&]() {
+      StartGate.arrive_and_wait();
+      if (AsyncWins &&
+          WinnerEnteredRuntimeFuture.wait_for(std::chrono::seconds(2)) !=
+              std::future_status::ready) {
+        LoserReturned.set_value();
+        return;
+      }
+      try {
+        SyncResult = TestFixture.Service.Process(Message);
+      } catch (...) {
+        SyncFailure = std::current_exception();
+      }
+      if (AsyncWins) {
+        LoserReturnedWhileWinnerHeld.store(!WinnerReleased.load());
+        LoserReturned.set_value();
+      }
+    });
+
+    StartGate.arrive_and_wait();
+    const bool WinnerEntered =
+        WinnerEnteredRuntimeFuture.wait_for(std::chrono::seconds(2)) ==
         std::future_status::ready;
-    ReleaseProvider.set_value();
-    const Core::CoreChatResult Duplicate = SyncResult.get();
+    const bool LoserReturnedBeforeRelease =
+        LoserReturnedFuture.wait_for(std::chrono::seconds(2)) ==
+        std::future_status::ready;
+    WinnerReleased.store(true);
+    ReleaseWinner.set_value();
     AsyncThread.join();
+    SyncThread.join();
 
-    Passed &= Check(SyncDuplicateReturnedBeforeProviderResume &&
-                        Duplicate.Status == Core::CoreChatStatus::Duplicate,
-                    "mixed sync/async duplicate reserves once without awaiting under Core lock");
-    Passed &= Check(!AsyncFailure && AsyncResult.has_value() &&
-                        AsyncResult->Status == Core::CoreChatStatus::Completed &&
-                        TestFixture.SyncRuntime.Calls.load() == 0 &&
-                        TestFixture.Channel.GetSendActionCallCount() == 1,
-                    "the async winner completes once while sync duplicate never enters Runtime");
-  }
-  {
-    Fixture TestFixture;
-    const auto Message = TestFixture.Inbound();
-    std::promise<void> SyncRuntimeEntered;
-    std::future<void> SyncRuntimeEnteredFuture = SyncRuntimeEntered.get_future();
-    std::promise<void> ReleaseSyncRuntime;
-    std::future<void> ReleaseSyncFuture = ReleaseSyncRuntime.get_future();
-    TestFixture.SyncRuntime.OnRun = [&SyncRuntimeEntered, &ReleaseSyncFuture]() {
-      SyncRuntimeEntered.set_value();
-      ReleaseSyncFuture.wait();
-    };
-    auto SyncResult = std::async(std::launch::async, [&TestFixture, &Message]() {
-      return TestFixture.Service.Process(Message);
-    });
-    const bool SyncReservedAndEnteredRuntime =
-        SyncRuntimeEnteredFuture.wait_for(std::chrono::seconds(2)) ==
-        std::future_status::ready;
-    auto AsyncDuplicateFuture = std::async(
-        std::launch::async, [&TestFixture, &Message]() {
-          return TestFixture.RunAsync(Message);
-        });
-    const bool AsyncDuplicateReturnedBeforeSyncResume =
-        AsyncDuplicateFuture.wait_for(std::chrono::milliseconds(250)) ==
-        std::future_status::ready;
-    ReleaseSyncRuntime.set_value();
-    const Core::CoreChatResult AsyncDuplicate = AsyncDuplicateFuture.get();
-    const Core::CoreChatResult SyncCompleted = SyncResult.get();
-    Passed &= Check(SyncReservedAndEnteredRuntime &&
-                        AsyncDuplicateReturnedBeforeSyncResume &&
-                        AsyncDuplicate.Status == Core::CoreChatStatus::Duplicate &&
-                        SyncCompleted.Status == Core::CoreChatStatus::Completed &&
-                        TestFixture.Provider.DispatchCount.load() == 0 &&
-                        TestFixture.Channel.GetSendActionCallCount() == 1,
-                    "sync winner reserves before await and async duplicate never dispatches");
-  }
+    const bool WinnerCompleted =
+        AsyncWins ? AsyncResult.has_value() &&
+                        AsyncResult->Status == Core::CoreChatStatus::Completed
+                  : SyncResult.has_value() &&
+                        SyncResult->Status == Core::CoreChatStatus::Completed;
+    const bool LoserWasDuplicate =
+        AsyncWins ? SyncResult.has_value() &&
+                        SyncResult->Status == Core::CoreChatStatus::Duplicate
+                  : AsyncResult.has_value() &&
+                        AsyncResult->Status == Core::CoreChatStatus::Duplicate;
+    const bool ExactlyOneRuntimePath =
+        AsyncWins ? TestFixture.Provider.DispatchCount.load() == 1 &&
+                        TestFixture.SyncRuntime.Calls.load() == 0
+                  : TestFixture.Provider.DispatchCount.load() == 0 &&
+                        TestFixture.SyncRuntime.Calls.load() == 1;
+    return Check(WinnerEntered && LoserReturnedBeforeRelease &&
+                     LoserReturnedWhileWinnerHeld.load() && !AsyncFailure &&
+                     !SyncFailure && WinnerCompleted && LoserWasDuplicate &&
+                     ExactlyOneRuntimePath &&
+                     TestFixture.Channel.GetSendActionCallCount() == 1,
+                 AsyncWins
+                     ? "barrier-start async winner is held while sync duplicate loses once"
+                     : "barrier-start sync winner is held while async duplicate loses once");
+  };
+
+  Passed &= RunBarrierRace(true);
+  Passed &= RunBarrierRace(false);
   return Passed;
 }
 
