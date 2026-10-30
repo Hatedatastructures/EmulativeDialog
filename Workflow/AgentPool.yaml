@@ -101,7 +101,7 @@ Slots:
       - Memory
       - ContextSelector
     CurrentTaskId: ED-0144/R3-MemorySqliteAdapter
-    Status: Assigned
+    Status: Active
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
     AgentId: "/root/luna06_capability_status_audit"

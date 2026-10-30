@@ -2343,8 +2343,8 @@ Tasks:
     EpicId: EP-06
     Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
-    State: Ready
-    AssignmentNote: "The R3 TaskSpec merged through PR #99 at 86c7e84bdc2e4e80059ec577b9eccb6db0c36217. P3 EntryGate is Passed; ED-0113, ED-0123, and ED-0148/R6 are merged. This assignment is a candidate only until its PR merges and post-merge WorkflowController validation returns AssignmentAccepted. PR #25 still needs the accepted TTL-preservation behavior and fresh R3 validation."
+    State: Assigned
+    AssignmentNote: "The R3 TaskSpec merged through PR #99 at 86c7e84bdc2e4e80059ec577b9eccb6db0c36217. Assignment PR #100 merged and post-merge validation returned AssignmentAccepted; PR #101 records TaskStarted but remains the activation gate. Product writes begin only after PR #101 merges. PR #25 still needs the accepted TTL-preservation behavior and fresh R3 validation."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0144-002
       Decision: Accepted
@@ -2482,7 +2482,7 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "独立 Memory 合同目标可编译并运行；根 CMake/CTest 注册由 ED-0145 统一完成。", Evidence: "Standalone CMake target and CTest pass; ED-0145 later verifies the root suite."}
       - {AcceptanceId: AC-4, Description: "SQLite adapter losslessly preserves valid optional ProposalId while keeping existing V1 rows readable and rejecting malformed/future encodings; exact proposal-bound consent survives recall and backup restore.", Evidence: "Real SQLite tests cover nullopt V1 with no inferred ProposalId and non-empty delimiter-containing, embedded-NUL and non-UTF-8 ProposalId byte sequences through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup; empty and mismatched proposal-bound IDs fail closed; malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future values fail closed on active and backup reads."}
       - {AcceptanceId: AC-5, Description: "Backup recall and authorized restore preserve each record's optional ExpiresAt; an expired record is unavailable after its original expiry and cannot become permanent through restore.", Evidence: "Real SQLite test stores a future-expiring record, recalls backup and restarts the database, restores through ConversationMemory, verifies exact expiry equality, then verifies no Recall/ListActive result at or after the original expiry."}
-    AssignmentStatus: AssignedCandidatePendingPostMergeControllerAcceptance
+    AssignmentStatus: ActiveAfterTaskStarted
     PreMergeAssignmentValidationEventId: c4628d86-c990-4383-b6e7-7ff4e1f05997
     TaskReadinessValidatedEventId: 9987a36f-bfea-4b4c-8ec9-d0cf50b28bc3
     TaskAssignedEventId: ce30b2a4-af88-4ae4-b051-50e94a3ad490
@@ -2493,18 +2493,29 @@ Tasks:
     AssignmentLedgerPullRequestCreatedHeadCommit: 282f67faf02b594d8a18f195b2ce01fd32eb7bed
     AssignmentLedgerPullRequestCreatedAtUtc: '2026-10-30T22:46:11Z'
     AssignmentLedgerPullRequestCreatedEventId: 5927fdaa-7745-4aee-8ee9-f8a71606c35a
+    AssignmentLedgerPullRequestMergeCommit: e7069c930db9f9d8f8cfb5b62a7e31580ea68b79
+    AssignmentLedgerPullRequestMergedEventId: b7024e93-d65c-4a49-b3a4-8018261f5959
+    PostMergeAssignmentValidationLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3-Activation/Logs/PostMerge-AssignmentValidation-Final.log
+    PostMergeAssignmentValidationEventId: b7e5c448-9c22-453a-aba9-30a2034790a7
+    TaskStartedAtUtc: '2026-10-30T22:57:47Z'
+    TaskStartedEventId: b7b0be66-b6e8-49b3-8a37-7ec113e98778
+    ActivationLedgerPullRequestNumber: 101
+    ActivationLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/101
+    ActivationLedgerPullRequestBaseCommit: e7069c930db9f9d8f8cfb5b62a7e31580ea68b79
+    ActivationLedgerPullRequestCreatedHeadCommit: 21b304e4e42190ffb19be6ae319e9baee7c76380
+    ActivationLedgerPullRequestCreatedAtUtc: '2026-10-30T22:59:24Z'
+    ActivationLedgerPullRequestCreatedEventId: 0a95acb7-e31d-46ad-9baa-902d13dced06
     AssignmentLedgerBaseCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
     AssignmentTaskSpecPullRequestNumber: 99
     AssignmentTaskSpecMergeCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
     AssignedBranch: Task/ED-0144-MemorySqliteAdapter
     AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0144
     AssignedBaselineCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
-    ProductWriteAuthorization: None
+    ProductWriteAuthorization: "Worker05 is authorized to modify only the frozen ED-0144/R3 four-path WriteSet after PR #101 merges to main; TaskStarted in the unmerged activation PR does not authorize product writes."
     AssignmentGate: >-
-      PR #99 merged the frozen R3 TaskSpec. This separate assignment candidate moves Blocked to Ready and binds the
-      current main baseline, Worker05 owner, Worker06 reviewer, exact product branch/worktree, and unchanged four-path
-      WriteSet. Product edits and R3 validation remain unauthorized until this assignment PR merges,
-      WorkflowController validate-assignment returns AssignmentAccepted on main, and the Coordinator records TaskStarted.
+      PR #100 merged after fixed-head review and the required WindowsAgentSlice check passed. Post-merge
+      WorkflowController validate-assignment returned AssignmentAccepted and TaskStarted is recorded. Product work
+      may begin only after this activation ledger merges; scope remains the frozen four-path WriteSet.
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory
       Coverage:
