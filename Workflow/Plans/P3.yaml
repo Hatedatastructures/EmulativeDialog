@@ -4821,7 +4821,7 @@ Tasks:
     EpicId: EP-06
     Title: 补齐固定 Boost.Asio Windows 依赖闭包
     TaskKind: Build
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -4835,6 +4835,47 @@ Tasks:
     ProposedImplementationBranch: Task/ED-0156-R1BoostWinApiClosure
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree
     TaskSpecProposalBaseCommit: aab5e24524270379b7b5149511a88db6381fe547
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerAgentId: /root/luna01_ed0112_r8_audit
+    TaskSpecOwnerReviewBaseCommit: aab5e24524270379b7b5149511a88db6381fe547
+    TaskSpecOwnerReviewHeadCommit: d2f0bcdb398984b86d76fa73ff95dc5603a874a6
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0156-R1-TaskSpec/Worker01-OwnerReview-d2f0bcd.md
+    TaskSpecOwnerReviewBundleSha256: DCDCD064B36EA876F8265E9627A3264D820682CEB8E43C1939EC964D4A92273A
+    TaskSpecOwnerDecisionEventId: 7e5369dc-32c4-41a4-91f5-2f32f2a9a55c
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerAgentId: /root/luna06_capability_status_audit
+    TaskSpecReviewerReviewBaseCommit: aab5e24524270379b7b5149511a88db6381fe547
+    TaskSpecReviewerReviewHeadCommit: d2f0bcdb398984b86d76fa73ff95dc5603a874a6
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0156-R1-TaskSpec/Worker06-DeltaReview-PR89-d2f0bcdb-20261031.md
+    TaskSpecReviewerReviewBundleSha256: 6C581A12E756ABC176EA02B0EEEC23E7EA0C835892A6A78B72B9A9F4970F7579
+    TaskSpecReviewerDecisionEventId: c37158e3-782b-48cd-9f19-039f8b4a65ae
+    TaskSpecCoordinatorDecision: ACCEPTED
+    TaskSpecCoordinatorDecisionAgentId: /root
+    TaskSpecCoordinatorDecisionHeadCommit: d2f0bcdb398984b86d76fa73ff95dc5603a874a6
+    TaskSpecCoordinatorDecisionEventId: 79f9989a-584a-4164-b3e9-a6aa541f57cf
+    TaskSpecMergedEventId: 3f2a62f4-6ab3-4f1f-bf4a-815ecf1696fd
+    TaskSpecHeadCommit: d2f0bcdb398984b86d76fa73ff95dc5603a874a6
+    TaskSpecMergedToMainCommit: ace7ec2fb11fd75b9089dd4439ef99d01a4b3a70
+    TaskSpecMergePullRequestNumber: 89
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/89
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: '2026-10-31T02:39:42+08:00'
+    BaselineCommit: ace7ec2fb11fd75b9089dd4439ef99d01a4b3a70
+    AssignmentBaseCommit: ace7ec2fb11fd75b9089dd4439ef99d01a4b3a70
+    Branch: Task/ED-0156-R1BoostWinApiClosure
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree
+    AssignedToSlot: Worker01
+    TaskReadinessValidatedEventId: 4bc5c89d-f0ad-43a6-8ed5-a76558cef0be
+    AssignmentValidationEventId: 3329f453-68ed-4a52-9a9b-5f3944531123
+    TaskAssignedEventId: 3d82cb15-2a23-4b87-b743-8f4ddbba7d1d
+    AssignmentLedgerBranch: Task/ED-0156-R1AssignmentLedger
+    AssignmentLedgerWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1AssignmentLedger/Worktree
+    AssignmentLedgerPullRequestNumber: 90
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/90
+    AssignmentLedgerPullRequestBaseCommit: ace7ec2fb11fd75b9089dd4439ef99d01a4b3a70
+    AssignmentLedgerPullRequestHeadCommit: 6e01cb65b268731e812d2ad4f8ff1d5f39e65fca
+    AssignmentLedgerPullRequestCreatedEventId: ed34831a-f09d-4ea8-8b73-29e0681cc3c5
     Goal: >-
       Complete the pinned Boost 1.92.0 dependency closure used by EmulativeDialogBoostAsio so Windows consumers of
       Boost.System receive Boost.WinAPI headers from the same pinned source checkout and compile without relying on
