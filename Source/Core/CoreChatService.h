@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 #include <optional>
 #include <stop_token>
 #include <string>
@@ -9,10 +10,14 @@
 
 #include "Source/Channels/Contracts/ChannelAdapterPort.h"
 #include "Source/Core/AgentRuntimePort.h"
+#include "Source/Core/AsyncAgentRuntimePort.hpp"
 #include "Source/Core/CredentialLease.h"
 #include "Source/Core/IdentityPolicy.h"
 #include "Source/Core/OperationRecord.h"
 #include "Source/Providers/Contracts/ModelProviderPort.h"
+#include "Source/Providers/Contracts/AsyncModelProviderPort.hpp"
+
+#include <boost/asio/awaitable.hpp>
 
 namespace EmulativeDialog::Core {
 
@@ -25,6 +30,8 @@ struct CoreActionIdentifiers final {
 class CoreActionIdSource {
 public:
   virtual ~CoreActionIdSource() = default;
+  // Different messages may call Next concurrently. Implementations must be
+  // thread-safe and return globally unique identifiers for all three fields.
   [[nodiscard]] virtual CoreActionIdentifiers Next() = 0;
 };
 
@@ -79,7 +86,25 @@ public:
       const Channels::InboundChannelMessage& Message,
       std::stop_token CancellationToken = {});
 
+  [[nodiscard]] boost::asio::awaitable<CoreChatResult> ProcessAsync(
+      Channels::InboundChannelMessage Message,
+      AsyncAgentRuntimePort& AsyncAgentRuntime,
+      Providers::AsyncModelProviderPort& AsyncProvider,
+      std::stop_token CancellationToken = {});
+
 private:
+  [[nodiscard]] std::optional<CoreChatResult> PrepareTurn(
+      const Channels::InboundChannelMessage& Message,
+      std::stop_token CancellationToken,
+      std::optional<ResolvedIdentity>& Identity,
+      std::optional<AuthorizedTurnContext>& Context);
+
+  [[nodiscard]] CoreChatResult CompleteTurn(
+      const ResolvedIdentity& Identity,
+      const AuthorizedTurnContext& Context,
+      AgentRunResult AgentResult,
+      std::stop_token CancellationToken);
+
   const IdentityPolicy& Policy;
   AgentRuntimePort& AgentRuntime;
   Providers::ModelProviderPort& Provider;
@@ -89,6 +114,7 @@ private:
   const CredentialLease& ChannelLease;
   CoreActionIdSource& ActionIdSource;
   OperationRecordObserver* RecordObserver{};
+  std::mutex StateMutex;
   std::unordered_set<std::string> ProcessedDeduplicationIds;
   std::unordered_set<std::string> IssuedActionIds;
   std::unordered_set<std::string> IssuedOperationIds;
