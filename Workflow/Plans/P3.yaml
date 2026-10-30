@@ -4802,3 +4802,171 @@ Tasks:
       LastValidationResult: "Pre-merge Controller validate-assignment passed with AssignmentAccepted; product build and CTest remain pending after ledger merge."
     TaskSpecCreationEventId: 91fd97d0-bc23-4f51-9c9d-2985c9b8e115
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0156
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 补齐固定 Boost.Asio Windows 依赖闭包
+    TaskKind: Build
+    State: Ready
+    Phase: P3
+    OwnerRole: BuildAndDependencyOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/luna01_ed0112_r8_audit"
+    ReviewerRole: IndependentValidator
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/luna06_capability_status_audit"
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-31"
+    Branch: Task/ED-0156-R1BoostWinApiClosure
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree
+    BaselineCommit: aab5e24524270379b7b5149511a88db6381fe547
+    Goal: >-
+      Complete the pinned Boost 1.92.0 dependency closure used by EmulativeDialogBoostAsio so Windows consumers of
+      Boost.System receive Boost.WinAPI headers from the same pinned source checkout and compile without relying on
+      a developer machine's system Boost installation.
+    OutOfScope:
+      - Changing the Boost 1.92.0 version or superproject commit
+      - Changing public C++ APIs, provider protocols, AgentRuntime behavior, or product runtime packaging
+      - Adding real network, provider, QQ, or WeChat behavior
+      - Modifying PR #85 product source or its five-path WriteSet
+    DependsOn: [ED-0131, ED-0155]
+    ContractVersion: "Boost 1.92.0 superproject commit afdfa32505af73e3d208144b3f623f0096cb62b6"
+    Context:
+      ModuleId: RootBuildAndDependencies
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/Plans/P3.yaml#TaskId=ED-0155
+        - Architecture/ModuleMap.yaml#ModuleId=RootBuildAndDependencies
+        - Architecture/Modules/BuildRelease.yaml#ModuleId=RootBuildAndDependencies
+        - Standards/CppEngineeringStandard.md
+        - Standards/DependencyPolicy.md
+        - CMakeLists.txt
+        - CMakePresets.json
+        - CMake/BoostAsioDependency.cmake
+        - Tests/Contract/Agent/CMakeLists.txt
+      OnDemandSet: []
+      ForbiddenSet:
+        - Source/Providers/
+        - Source/Core/
+        - Source/Agent/
+        - Source/Channels/QQ/
+        - Workflow/Events/Bootstrap/P1.jsonl
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [CMake/BoostAsioDependency.cmake]
+    SharedLocks: [DependencyLock]
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          The required pinned Boost submodule list contains libs/winapi, so ExternalProject checks out the exact
+          WinAPI gitlink from Boost commit afdfa32505af73e3d208144b3f623f0096cb62b6 and the reusable
+          EmulativeDialogBoostAsio interface target exposes its include directory.
+        Evidence: >-
+          Fixed source diff, pinned checkout gitlink/submodule HEAD, and target include-directory inspection.
+      - AcceptanceId: AC-2
+        Description: >-
+          The build-stage verifier fails closed if the pinned checkout is incomplete and explicitly requires
+          libs/winapi/include/boost/winapi/error_handling.hpp.
+        Evidence: >-
+          Verifier source check plus a fresh empty-cache build log showing the pinned Boost.WinAPI checkout and
+          -H compiler include trace resolving boost/winapi/error_handling.hpp under FETCHCONTENT_BASE_DIR rather
+          than a system Boost directory.
+      - AcceptanceId: AC-3
+        Description: >-
+          A clean native Windows C++20 configure and CoreChatServiceObject build succeed with no pre-populated
+          dependency cache; the full windows-agent-slice build and all registered CTests pass.
+        Evidence: >-
+          Fresh configure, verbose target build, full preset build, and preset CTest logs with exact commands and
+          exit codes; CTest uses --no-tests=error and includes AgentRuntime.VerticalSlice.
+      - AcceptanceId: AC-4
+        Description: >-
+          The fix reproduces successfully on the exact PR #85 product head 7c62ebb38f56ea9087ab56baedb60d5c10ba0373
+          in a disposable detached integration worktree with a separate empty dependency cache, overlaying only
+          this task's CMake/BoostAsioDependency.cmake.
+        Evidence: >-
+          Integration worktree HEAD, one-path overlay diff, fresh dependency/build preflight, verbose compile trace,
+          full build and CTest logs, and before/after confirmation that the live PR #85 worktree and branch are
+          unchanged.
+      - AcceptanceId: AC-5
+        Description: >-
+          The implementation changes only CMake/BoostAsioDependency.cmake, preserves the Boost version and
+          superproject commit, and changes no product API or runtime behavior.
+        Evidence: Exact Base-to-Head changed-path comparison and git diff --check.
+    Validation:
+      RequiredTargets: [CoreChatServiceObject, AgentRuntimeVerticalSliceTests, WorkflowController, WorkflowControllerContractTests]
+      RequiredCTestTests: [AgentRuntime.VerticalSlice, WorkflowController.Contract]
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree.build/windows-agent-slice
+      DependencyCache:
+        TaskBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Dependencies
+        IntegrationBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationDependencies
+        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+        RequiredWinApiCommit: 094612ee33a8dce960cd075537266fdb4788d059
+        MustBeAbsentBeforeConfigure: true
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $TaskWorktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree'
+        $TaskBuild = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree.build/windows-agent-slice'
+        $TaskDependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Dependencies'
+        $IntegrationWorktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationWorktree'
+        $IntegrationBuild = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationWorktree.build/windows-agent-slice'
+        $IntegrationDependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationDependencies'
+        if (-not (Test-Path -LiteralPath $TaskWorktree -PathType Container)) { throw "Missing task worktree: $TaskWorktree" }
+        foreach ($Path in @($TaskBuild, $TaskDependencies, $IntegrationWorktree, $IntegrationBuild, $IntegrationDependencies)) {
+          if (Test-Path -LiteralPath $Path) { throw "Preserve existing path and stop; fresh validation path already exists: $Path" }
+        }
+        Write-Output 'ED0156_FRESH_TASK_AND_INTEGRATION_PATHS=1'
+      FreshDirectoryPolicy: >-
+        Preserve every existing build and dependency directory. Run the task build from the assigned Worktree with
+        its absent TaskBaseDirectory, then create a detached integration checkout at the exact PR #85 head and
+        overlay only CMake/BoostAsioDependency.cmake from the reviewed implementation head. Run integration commands
+        from IntegrationWorktree with its independent absent IntegrationBaseDirectory; never modify, reset, or clean
+        the live PR #85 checkout.
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_FLAGS=-H -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree.build/windows-agent-slice --target CoreChatServiceObject --verbose --parallel 4"
+        - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --parallel 4"
+        - "I:/cmake/bin/ctest.exe --preset windows-agent-slice --no-tests=error --output-on-failure"
+      IntegrationReproduction:
+        BaseCommit: 7c62ebb38f56ea9087ab56baedb60d5c10ba0373
+        Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationWorktree
+        BuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationWorktree.build/windows-agent-slice
+        DependencyBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationDependencies
+        Commands:
+          - "I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_FLAGS=-H -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationDependencies -DBUILD_TESTING=ON"
+          - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationWorktree.build/windows-agent-slice --target CoreChatServiceObject --verbose --parallel 4"
+          - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --parallel 4"
+          - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/IntegrationWorktree.build/windows-agent-slice --no-tests=error --output-on-failure"
+        OverlayRule: >-
+          Fetch Task/ED-0150-AsyncRuntimeVerticalSlice and create a detached worktree at the fixed BaseCommit.
+          Copy only CMake/BoostAsioDependency.cmake from the reviewed ED-0156 implementation Head into that
+          integration worktree. Verify the overlay diff is exactly one path before configure; record PR branch
+          status before and after and do not edit the live PR #85 checkout.
+      StaticChecks:
+        - "Controller query reports ED-0131/R2 and ED-0155/R1 merged before assignment."
+        - "git diff --check exits 0 and implementation changed paths equal exactly CMake/BoostAsioDependency.cmake."
+        - "The pinned source commit and Boost.WinAPI submodule commit remain unchanged; no MSYS2 Boost path is added."
+        - "Required submodule/include list includes libs/winapi and verifier checks error_handling.hpp under the pinned source tree."
+        - "Both fresh dependency caches are absent before configure; -H output proves the WinAPI header resolves from the pinned checkout."
+        - "The integration validation uses exact PR #85 head 7c62ebb38f56ea9087ab56baedb60d5c10ba0373 and leaves its live branch/worktree unchanged."
+        - "Both full preset builds succeed and both named CTests pass with --no-tests=error."
+      Coverage: {Required: false, ProductionSources: [], MinimumLinePercent: 80, NotApplicableReason: "The WriteSet changes only the pinned Boost dependency closure and verifier; no production runtime source changes."}
+      LiveSideEffects: Forbidden
+      NotRunReason: "All build and test activity is offline except fetching the pinned open-source Boost submodules; no provider or channel network call is made."
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndDependencyOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, PAR-002, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
+    Checkpoint:
+      LastCompletedAcceptance: "GitHub WindowsAgentSlice run 41099158833 reached CoreChatServiceObject after the pinned Boost checkout and verifier succeeded."
+      CurrentFindingOrFailure: "CoreChatService.cpp cannot include boost/winapi/error_handling.hpp because libs/winapi is absent from EmulativeDialogBoostRequiredSubmodules; current clean CI exits 1 and skips CTest."
+      TriedApproaches: ["ED-0155/R1 propagates EmulativeDialogBoostAsio to CoreChatServiceObject; this exposes but does not supply the missing WinAPI transitive headers."]
+      NextAction: "After this TaskSpec is approved and merged, assign Worker01 to add libs/winapi to the pinned required-submodule/include list and explicit verifier check, then run both fresh task and PR #85 integration validations."
+      OpenMessageIds: []
+      LastValidationResult: "GitHub run 41099158833 / job 124212689226: configure and pinned Asio verification pass; CoreChatServiceObject compile fails at boost/winapi/error_handling.hpp; exit 1; CTest skipped."
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
