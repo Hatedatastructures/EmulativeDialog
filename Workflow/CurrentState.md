@@ -1,5 +1,12 @@
 # 当前状态
 
+## 2026-10-31 ED-0144/R3 实施激活候选
+
+- assignment PR #100 已于 main@e7069c930db9f9d8f8cfb5b62a7e31580ea68b79 合并；主线 WorkflowController validate-assignment 返回 AssignmentAccepted（exit 0，1312 ms），TaskStarted 已写入本候选。
+- 本激活账本 PR 合并后，Worker05 才开始修复 SQLite 备份召回保留 ExpiresAt，并补真实 SQLite 到期/恢复回归；Worker06 是独立 Reviewer，产品写集仍为四个冻结路径。
+- 当前 PR 只包含激活记录，没有产品代码；Worker05 在激活账本合并前不修改 PR #25 源分支。
+- PR #25 仍保留在 Task/ED-0144-MemorySqliteAdapter，产品基线 86c7e84；源工作树仍干净。
+
 日期：2026-10-29
 
 ## 仓库与分支
