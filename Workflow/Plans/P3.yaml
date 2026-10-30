@@ -3046,7 +3046,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Active
     SupersedesTaskRevision: 1
     ChangeRequestId: CR-ED-0149-R1-VALIDATION-001
     ChangeRequestAcceptedEventId: 7d778fe9-65dd-48b8-91ef-6a84d6347b5d
@@ -3059,6 +3059,26 @@ Tasks:
     AssignmentLedgerPullRequestCreatedHeadCommit: 534f292cc2fc4cdb4770a33823a64620fcc6602e
     AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-30T02:50:52Z"
     AssignmentLedgerPullRequestCreatedEventId: 76638fc0-5744-45f7-bf73-42599d27c8d2
+    AssignmentLedgerPullRequestFinalHeadCommit: 8085ddda13c64a4493937d8edf047cdd592e4214
+    AssignmentLedgerMergeCommit: 55a1d1bb94ec2a27ec60b01dbbfbeaef7b54eef5
+    AssignmentLedgerMergedAtUtc: "2026-10-30T03:03:54Z"
+    AssignmentLedgerMergeMethod: squash
+    AssignmentLedgerMergedEventId: 9d8ec3cf-8d53-4868-9da6-5af056205a8c
+    AssignmentLedgerReviewerAgentId: /root/luna04_ed0144_branch_review
+    AssignmentLedgerReviewerDecision: APPROVE
+    AssignmentLedgerReviewBaseCommit: 4a41e200fe324a0ff9811e3afd599436d671e700
+    AssignmentLedgerReviewHeadCommit: 8085ddda13c64a4493937d8edf047cdd592e4214
+    AssignmentLedgerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0149-R2-AssignmentLedger/Worker04-FixedHeadReview-PR73-8085ddda-20261030.md
+    PostMergeQueryEventId: 539730aa-68ce-4b7a-8bb1-160c434b286a
+    PostMergeAssignmentValidationEventId: 5542aa2b-20a6-469f-a37c-3adf7c3dd8d3
+    TaskStartedEventId: 09cd067d-187e-417e-98bb-c517460bce7a
+    ActivationLedgerPullRequestNumber: 74
+    ActivationLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/74
+    ActivationLedgerPullRequestBaseCommit: 55a1d1bb94ec2a27ec60b01dbbfbeaef7b54eef5
+    ActivationLedgerPullRequestCreatedHeadCommit: 55b7f76638a8f8307f41312fc9e27d4dead3c3db
+    ActivationLedgerPullRequestCreatedAtUtc: "2026-10-30T03:08:57Z"
+    ActivationLedgerPullRequestCreatedEventId: d3b9db08-e4ac-4148-824d-2190d934b416
+    ActivationLedgerAuditCorrectionEventId: dcad27ae-fa58-4796-bd4d-b5bcf0bd5b2c
     Branch: Task/ED-0149-AsyncProviderAgentRuntimeContractR2
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
     AssignedToSlot: Worker02
@@ -3069,9 +3089,7 @@ Tasks:
     OwnerSlotAssignedEventId: ea1906ef-adff-4782-ba95-630899450928
     WorktreeCreatedEventId: 2d2e9b61-a102-478a-ae03-e76d9966dd29
     WorktreeVerifiedEventId: 68a217c3-d152-40f3-9871-a919a492448d
-    AssignmentNote: "Assignment candidate is effective only after its ledger PR merges and post-merge Controller validation succeeds; no product TaskStarted yet."
-    BlockedBy: >-
-      Assignment candidate only. It becomes effective after the assignment-ledger PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted. Do not add TaskStarted or product files before that result.
+    AssignmentNote: "PR #73 merged and clean-main post-merge Controller validation returned AssignmentAccepted. TaskStarted is staged in this activation ledger; product writes begin after this ledger merges."
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3105,7 +3123,7 @@ Tasks:
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/72
     TaskSpecMergeMethod: squash
     TaskSpecMergedAt: "2026-10-30T02:36:01Z"
-    TaskSpecStatusNote: "PR #72 merged TaskSpec R2 after fixed-head Owner/Reviewer approvals; R2 is Ready but remains unassigned until the separate assignment ledger passes post-merge validation."
+    TaskSpecStatusNote: "PR #72 merged TaskSpec R2; PR #73 assignment ledger merged and passed post-merge Controller validation; Worker02 TaskStarted is recorded by activation ledger PR #74."
     BaselineCommit: 72fa92d441aa2807137a46cd9152ee4fa72f1124
     OwnerAgentId: /root/luna02_ed0148_pr_ready
     ReviewerAgentId: /root/luna04_ed0144_branch_review
