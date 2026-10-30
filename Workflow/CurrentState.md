@@ -430,3 +430,30 @@
 - 已按事件只追加规则保留原事件，并追加三条 Correction，明确原 OccurredAt 不可信、准确执行时间未记录，attempt log 的 1→2→3 顺序为唯一可用顺序。更正事件分别引用原 EventId；未猜测或补造时间。
 - 本次更正不改变验证结果、任务状态或 P3 门状态；P3 仍 Pending，无 TaskStarted 或 P3EntryGatePassed。PR #66 新 Head 需要 Worker04 固定头复审。
 - 同次复验脚本的首次运行因检查了不存在的 EntryGateState 字段而失败；P3 计划的真实字段是 EntryGate.State，现场值为 Pending。此为检查器假设错误，不是验收失败；记录见 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-PR66ChronologyCorrectionValidatorAttempt-20261030.log。已改为按真实字段校验后重跑。- 修正后的 PR #66 候选复验通过：预追加快照 257 条事件，追加验证事件后 258 条均为有效 JSON、EventId 唯一；242 条主线事件前缀完整；P2 blob 未变；无门禁通过或 R3 TaskStarted；Controller 查询为 Assigned、候选 validate-assignment 为 AssignmentAccepted、过期 R2 查询被拒绝。日志：H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-PR66ChronologyCorrectionValidation-20261030.log；CommandExecuted EventId faa09821-fc99-44a3-b68b-b67821f13b08。
+## 2026-10-30 ED-0151/R3 开始 H1 门评审
+
+- PR #66 经 Worker04 对固定 Base 554ba46146eeada94b2863a97c2b5b96e1260b51 → Head 4aefd98bb170b300021e76ea928bc2faf4671f72 APPROVE 后 squash 合入 main，merge SHA 为 f543bb64cea60cd14075e5a93279668d7de4adc1；远端合并分支已删除，远端当前 2 个分支。
+- 合并后在工作树内容与 main 完全一致、无未提交改动的条件下，WorkflowController query 返回 Assigned（exit 0），validate-assignment 返回 AssignmentAccepted（exit 0）。分配基线仍为 554ba46146eeada94b2863a97c2b5b96e1260b51；main 当前为 f543bb64cea60cd14075e5a93279668d7de4adc1。证据日志：H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-PostMergeAssignmentValidation-Rerun-20261030.log。
+- 已追加 PRCreated、PRMerged、post-merge query/validation 和 TaskStarted 事件；ED-0151/R3 状态进入 Active，开始准备 H1 GateDecisionReview。P3 与 EntryGate 仍 Pending，无通过事件；本任务仍只改治理账本，不代表 Codex 产品重写已完成。
+- TaskStarted 后 WorkflowController 再次查询 ED-0151/R3 返回 State=Active（exit 0，172.67 ms），日志 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-ActiveStateQuery-20261030.log；CommandExecuted EventId a60120d2-7b09-4ce7-a4e1-5743ec155fab。
+## 2026-10-30 ED-0151/R3 H1 证据准备
+
+- AC-1：Worker01 在固定 main f543bb64cea60cd14075e5a93279668d7de4adc1 核对 P1 gate 与 ED-0006/R1、ED-0007/R1、ED-0008/R4，结论满足。
+- AC-2：Worker02 核对 P2 FirstCppAgentRuntimeVerticalSliceVerified 及 ED-0109/R4、ED-0125/R3、ED-0101/R5、ED-0124/R9，结论满足；该范围仅是同步 Mock/FakeProvider 首轮切片。
+- AC-3：Worker06 核对 ED-0146/R6、ED-0147/R9、ED-0120/R5 的 PR/固定头/验收记录、两个 Frozen 合同及 ADR-0003，结论满足。
+- AC-4：Worker03 在固定 Base f543bb64cea60cd14075e5a93279668d7de4adc1 核对当前候选，P2 文件和 TaskIndex 无变化，其它任务 State 未变，实际路径在 WriteSet 内，EntryGate Pending 且无通过事件，结论满足。
+- AC-1 到 AC-4 的独立证据核查均为只读。更新后的 PendingReason 纠正已解决事实，同时明确 H1/H2 尚未完成；P3 仍 Pending。Worker04 的 H1 固定头审查尚未完成。
+- H1 候选预审验证通过：固定 Base main f543bb64cea60cd14075e5a93279668d7de4adc1；10 个精确依赖均 Controller State=Merged，ED-0151/R3 State=Active；P2 与 TaskIndex 不变；精确三路径 WriteSet；P3 事件基线 258 条完整，追加后 265 条有效且 EventId 唯一；P3/EntryGate Pending，无通过事件。日志：H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H1CandidatePreReviewValidation-20261030.log；CommandExecuted EventId e7b9508b-5458-4299-8523-9121b41f4e85。Worker04 固定头 GateDecisionReview 尚未完成。
+## 2026-10-30 ED-0151/R3 H1 固定头评审发现
+
+- Worker04 对 Base `f543bb64cea60cd14075e5a93279668d7de4adc1` → Head `4df6b99c4cfd94ee2f1021c90ebbf44eea47428c` 做独立 GateDecisionReview，结论为 REQUEST_CHANGES。AC-1 至 AC-4 均满足，没有未满足的门禁 AcceptanceId。Finding `ED0151-R3-H1-F001` 指向 `Workflow/Plans/P3.yaml` 的 `EntryGate.PendingReason`：该字段夹带了下游产品实现清单，超出本门禁状态说明范围。
+- 该句已从修订候选的 PendingReason 移除。P3 和 EntryGate 保持 Pending；没有创建 H2 成功状态或 `P3EntryGatePassed` 事件。修订候选仍须重新固定 Base/Head 并由 Worker04 独立复审。
+- 固定头审查证据：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R3-H1Finding-20261030.md`。Finding EventId：`e324a8e7-3502-4141-8079-74d400e3d515`。
+- 修订后的 H1 候选静态校验通过：追加验证记录前 270 条、追加后 271 条 JSONL 事件均有效且 EventId 唯一；258 条 Base 前缀完整；P3/EntryGate 仍 Pending、没有 P3EntryGatePassed；WriteSet、P2/TaskIndex 和 git diff --check 均通过。日志：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H1-F001-CorrectedCandidateValidation-20261030.log`；CommandExecuted EventId `028444f2-078e-4739-8f2e-a549f7f52213`。新 Head 仍待 Worker04 固定头复审。
+
+## 2026-10-30 ED-0151/R3 P3 EntryGate Closeout — H2 candidate
+
+- H1 GateDecisionReview：Worker04 于 `2026-10-30T00:17:26Z` 对 Base `f543bb64cea60cd14075e5a93279668d7de4adc1` → Head `817387a5fb1df4caad7e0ffd143ed31f61735b9e` 作出 APPROVE。AC-1 至 AC-4 满足，Finding `ED0151-R3-H1-F001` 已解决；证据：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R3-H1GateDecisionReview-20261030.md`。
+- H2 候选 EvaluationEventId / `P3EntryGatePassed` EventId：`aa6bf49d-0b25-46a7-afdc-7fd2238ebcdf`。候选 P3 路由为 Current、EntryGate 为 Passed；当前 main 仍在 `f543bb64cea60cd14075e5a93279668d7de4adc1`，只有 H2 PR 完成独立最终审查并合并后，主线才进入 P3。
+- 状态边界：`P2FirstSliceGate=Passed`；`LargeScaleProductImplementation=BlockedUnverified`；`CodexAgentRewrite=Incomplete`。本门禁不包含产品源码或测试变更，也不代表完整重写完成。
+- H2 审查与合并尚未完成；H2 的固定头最终审查仍需单独执行。
