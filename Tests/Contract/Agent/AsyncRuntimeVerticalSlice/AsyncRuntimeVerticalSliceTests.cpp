@@ -24,6 +24,7 @@
 #include <mutex>
 #include <optional>
 #include <stop_token>
+#include <thread>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -1138,114 +1139,151 @@ struct ScenarioExpectation final {
                         TestFixture.Channel.GetSendActionCallCount() == 1,
                     "synchronous V1 Process remains callable through shared Core helpers");
   }
-  const auto RunBarrierRace = [](bool AsyncWins) {
+  enum class RacePath : std::uint8_t { None, Async, Sync };
+  bool ObservedAsyncWins = false;
+  bool ObservedSyncWins = false;
+  constexpr std::size_t RaceCount = 24;
+
+  for (std::size_t RaceIndex = 0; RaceIndex < RaceCount; ++RaceIndex) {
     Fixture TestFixture;
     const Channels::InboundChannelMessage Message = TestFixture.Inbound();
     std::barrier<> StartGate{3};
-    std::promise<void> WinnerEnteredRuntime;
-    std::shared_future<void> WinnerEnteredRuntimeFuture =
-        WinnerEnteredRuntime.get_future().share();
+    const RacePath DelayedArrivalPath =
+        RaceIndex % 2 == 0 ? RacePath::Async : RacePath::Sync;
+    std::atomic<RacePath> WinnerPath{RacePath::None};
+    std::atomic<std::uint32_t> RuntimeEntryCount{0};
+    std::promise<RacePath> WinnerEntered;
+    std::future<RacePath> WinnerEnteredFuture = WinnerEntered.get_future();
     std::promise<void> ReleaseWinner;
     std::shared_future<void> ReleaseWinnerFuture = ReleaseWinner.get_future();
-    std::promise<void> LoserReturned;
-    std::future<void> LoserReturnedFuture = LoserReturned.get_future();
+    std::promise<void> AsyncDone;
+    std::future<void> AsyncDoneFuture = AsyncDone.get_future();
+    std::promise<void> SyncDone;
+    std::future<void> SyncDoneFuture = SyncDone.get_future();
     std::atomic<bool> WinnerReleased{false};
-    std::atomic<bool> LoserReturnedWhileWinnerHeld{false};
+    std::atomic<bool> AsyncReturnedWhileWinnerHeld{false};
+    std::atomic<bool> SyncReturnedWhileWinnerHeld{false};
     std::optional<Core::CoreChatResult> AsyncResult;
     std::optional<Core::CoreChatResult> SyncResult;
     std::exception_ptr AsyncFailure;
     std::exception_ptr SyncFailure;
 
-    if (AsyncWins) {
-      TestFixture.Provider.OnDispatched = [&WinnerEnteredRuntime,
-                                           ReleaseWinnerFuture]() {
-        WinnerEnteredRuntime.set_value();
-        ReleaseWinnerFuture.wait();
-      };
-    } else {
-      TestFixture.SyncRuntime.OnRun = [&WinnerEnteredRuntime,
-                                       ReleaseWinnerFuture]() {
-        WinnerEnteredRuntime.set_value();
-        ReleaseWinnerFuture.wait();
-      };
-    }
-
-    std::thread AsyncThread([&]() {
-      StartGate.arrive_and_wait();
-      if (!AsyncWins &&
-          WinnerEnteredRuntimeFuture.wait_for(std::chrono::seconds(2)) !=
-              std::future_status::ready) {
-        LoserReturned.set_value();
-        return;
+    const auto HoldWinner = [&](RacePath Path) {
+      RuntimeEntryCount.fetch_add(1);
+      RacePath Expected = RacePath::None;
+      if (WinnerPath.compare_exchange_strong(Expected, Path)) {
+        WinnerEntered.set_value(Path);
       }
+      ReleaseWinnerFuture.wait();
+    };
+    TestFixture.Provider.OnDispatched = [&]() {
+      HoldWinner(RacePath::Async);
+    };
+    TestFixture.SyncRuntime.OnRun = [&]() {
+      HoldWinner(RacePath::Sync);
+    };
+
+    const auto AsyncTask = [&]() {
+      if (DelayedArrivalPath == RacePath::Async) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
+      StartGate.arrive_and_wait();
       try {
         AsyncResult = TestFixture.RunAsync(Message);
       } catch (...) {
         AsyncFailure = std::current_exception();
       }
-      if (!AsyncWins) {
-        LoserReturnedWhileWinnerHeld.store(!WinnerReleased.load());
-        LoserReturned.set_value();
+      AsyncReturnedWhileWinnerHeld.store(!WinnerReleased.load());
+      AsyncDone.set_value();
+    };
+    const auto SyncTask = [&]() {
+      if (DelayedArrivalPath == RacePath::Sync) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
       }
-    });
-    std::thread SyncThread([&]() {
       StartGate.arrive_and_wait();
-      if (AsyncWins &&
-          WinnerEnteredRuntimeFuture.wait_for(std::chrono::seconds(2)) !=
-              std::future_status::ready) {
-        LoserReturned.set_value();
-        return;
-      }
       try {
         SyncResult = TestFixture.Service.Process(Message);
       } catch (...) {
         SyncFailure = std::current_exception();
       }
-      if (AsyncWins) {
-        LoserReturnedWhileWinnerHeld.store(!WinnerReleased.load());
-        LoserReturned.set_value();
-      }
-    });
+      SyncReturnedWhileWinnerHeld.store(!WinnerReleased.load());
+      SyncDone.set_value();
+    };
+
+    std::thread AsyncThread;
+    std::thread SyncThread;
+    if (RaceIndex % 2 == 0) {
+      AsyncThread = std::thread(AsyncTask);
+      SyncThread = std::thread(SyncTask);
+    } else {
+      SyncThread = std::thread(SyncTask);
+      AsyncThread = std::thread(AsyncTask);
+    }
 
     StartGate.arrive_and_wait();
-    const bool WinnerEntered =
-        WinnerEnteredRuntimeFuture.wait_for(std::chrono::seconds(2)) ==
-        std::future_status::ready;
-    const bool LoserReturnedBeforeRelease =
-        LoserReturnedFuture.wait_for(std::chrono::seconds(2)) ==
-        std::future_status::ready;
+    RacePath ActualWinner = RacePath::None;
+    if (WinnerEnteredFuture.wait_for(std::chrono::seconds(2)) ==
+        std::future_status::ready) {
+      ActualWinner = WinnerEnteredFuture.get();
+    }
+
+    bool LoserReturnedBeforeRelease = false;
+    if (ActualWinner == RacePath::Async) {
+      LoserReturnedBeforeRelease =
+          SyncDoneFuture.wait_for(std::chrono::seconds(2)) ==
+          std::future_status::ready;
+    } else if (ActualWinner == RacePath::Sync) {
+      LoserReturnedBeforeRelease =
+          AsyncDoneFuture.wait_for(std::chrono::seconds(2)) ==
+          std::future_status::ready;
+    }
+
     WinnerReleased.store(true);
     ReleaseWinner.set_value();
     AsyncThread.join();
     SyncThread.join();
 
     const bool WinnerCompleted =
-        AsyncWins ? AsyncResult.has_value() &&
-                        AsyncResult->Status == Core::CoreChatStatus::Completed
-                  : SyncResult.has_value() &&
-                        SyncResult->Status == Core::CoreChatStatus::Completed;
+        ActualWinner == RacePath::Async
+            ? AsyncResult.has_value() &&
+                  AsyncResult->Status == Core::CoreChatStatus::Completed
+            : ActualWinner == RacePath::Sync && SyncResult.has_value() &&
+                  SyncResult->Status == Core::CoreChatStatus::Completed;
     const bool LoserWasDuplicate =
-        AsyncWins ? SyncResult.has_value() &&
-                        SyncResult->Status == Core::CoreChatStatus::Duplicate
-                  : AsyncResult.has_value() &&
-                        AsyncResult->Status == Core::CoreChatStatus::Duplicate;
+        ActualWinner == RacePath::Async
+            ? SyncResult.has_value() &&
+                  SyncResult->Status == Core::CoreChatStatus::Duplicate
+            : ActualWinner == RacePath::Sync && AsyncResult.has_value() &&
+                  AsyncResult->Status == Core::CoreChatStatus::Duplicate;
+    const bool LoserReturnedWhileHeld =
+        ActualWinner == RacePath::Async
+            ? SyncReturnedWhileWinnerHeld.load()
+            : ActualWinner == RacePath::Sync &&
+                  AsyncReturnedWhileWinnerHeld.load();
     const bool ExactlyOneRuntimePath =
-        AsyncWins ? TestFixture.Provider.DispatchCount.load() == 1 &&
-                        TestFixture.SyncRuntime.Calls.load() == 0
-                  : TestFixture.Provider.DispatchCount.load() == 0 &&
-                        TestFixture.SyncRuntime.Calls.load() == 1;
-    return Check(WinnerEntered && LoserReturnedBeforeRelease &&
-                     LoserReturnedWhileWinnerHeld.load() && !AsyncFailure &&
-                     !SyncFailure && WinnerCompleted && LoserWasDuplicate &&
-                     ExactlyOneRuntimePath &&
-                     TestFixture.Channel.GetSendActionCallCount() == 1,
-                 AsyncWins
-                     ? "barrier-start async winner is held while sync duplicate loses once"
-                     : "barrier-start sync winner is held while async duplicate loses once");
-  };
+        ActualWinner == RacePath::Async
+            ? TestFixture.Provider.DispatchCount.load() == 1 &&
+                  TestFixture.SyncRuntime.Calls.load() == 0
+            : ActualWinner == RacePath::Sync &&
+                  TestFixture.Provider.DispatchCount.load() == 0 &&
+                  TestFixture.SyncRuntime.Calls.load() == 1;
+    const bool SingleRuntimeEntry = RuntimeEntryCount.load() == 1;
 
-  Passed &= RunBarrierRace(true);
-  Passed &= RunBarrierRace(false);
+    ObservedAsyncWins |= ActualWinner == RacePath::Async && WinnerCompleted &&
+                         LoserWasDuplicate;
+    ObservedSyncWins |= ActualWinner == RacePath::Sync && WinnerCompleted &&
+                        LoserWasDuplicate;
+    Passed &= Check(ActualWinner != RacePath::None &&
+                        LoserReturnedBeforeRelease && LoserReturnedWhileHeld &&
+                        !AsyncFailure && !SyncFailure && WinnerCompleted &&
+                        LoserWasDuplicate && ExactlyOneRuntimePath &&
+                        SingleRuntimeEntry &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1,
+                    "both barrier-released API calls race reservation; loser returns Duplicate while winner is held");
+  }
+
+  Passed &= Check(ObservedAsyncWins && ObservedSyncWins,
+                  "repeated mixed sync/async barrier races observe both winner orders");
   return Passed;
 }
 
