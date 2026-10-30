@@ -1,5 +1,12 @@
 # 当前状态
 
+## 2026-10-31 ED-0144/R3 实施派工候选
+
+- R3 TaskSpec 已通过 PR #99 合入 main@`86c7e84`；P3 EntryGate 已 Passed，ED-0113、ED-0123、ED-0148/R6 均已合并。
+- 当前提交仅准备 Worker05 实施 ED-0144/R3：修复 SQLite 备份恢复保留 ExpiresAt，并增加真实数据库过期回归。独立 Reviewer 为 Worker06，产品写集仍是四个冻结路径。
+- 本派工分支只作为 assignment-ledger 候选；PR 合并且 Controller 在主线返回 `AssignmentAccepted`、记录 `TaskStarted` 前，不对产品代码或 R3 构建目录写入。
+- PR #25 仍保留在 `Task/ED-0144-MemorySqliteAdapter`，基线 `86c7e84`，目前只包含 R2 产品代码；源工作树保持干净。
+
 日期：2026-10-29
 
 ## 仓库与分支

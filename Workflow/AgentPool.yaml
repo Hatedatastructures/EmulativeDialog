@@ -100,8 +100,8 @@ Slots:
       - ProviderAnthropicMessages
       - Memory
       - ContextSelector
-    CurrentTaskId: ""
-    Status: Active
+    CurrentTaskId: ED-0144/R3-MemorySqliteAdapter
+    Status: Assigned
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
     AgentId: "/root/luna06_capability_status_audit"
