@@ -36,6 +36,19 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-make
 
+      - name: Prioritize UCRT64 toolchain
+        run: |
+          $ucrtBin = 'C:\msys64\ucrt64\bin'
+          if (-not (Test-Path -LiteralPath $ucrtBin -PathType Container)) {
+            throw "UCRT64 binary directory is missing: $ucrtBin"
+          }
+          if (-not $env:GITHUB_PATH) {
+            throw 'GITHUB_PATH is missing; cannot prioritize UCRT64 for later steps.'
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
+          Add-Content -LiteralPath $env:GITHUB_PATH -Value $ucrtBin -Encoding utf8
+          Write-Output "UCRT64_BIN=$ucrtBin"
+
       - name: Verify Windows C++20 toolchain
         run: |
           cmake --version
