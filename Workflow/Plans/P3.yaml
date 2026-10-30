@@ -1423,7 +1423,12 @@ Tasks:
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
     State: Blocked
-    BlockedBy: "P3 EntryGate is still Pending on ED-0146/ED-0147, and ED-0114/R4 TaskSpec is only in the Coordinator governance candidate; implementation may resume only after the P3 gate passes, the fixed-head TaskSpec receives owner/reviewer approval and merges to main, and its main baseline is rebound."
+    BlockedBy: >-
+      P3 EntryGate is Passed and ED-0114/R4 TaskSpec is merged by PR #26. The prior
+      ED-0114 product PR #20 was closed without merge and is not completion evidence.
+      ED-0149/R2 must first be closed on main and Worker02 released. Then bind ED-0114/R4
+      to the resulting main baseline in a separate assignment ledger and require
+      WorkflowController validate-assignment to accept it before any product write.
     PreviousRevision3:
       TaskRevision: 3
       Disposition: SupersededBeforeFinalValidation
@@ -3046,10 +3051,29 @@ Tasks:
     EpicId: EP-06
     Title: 冻结异步 ModelProvider 与 AgentRuntime 公共合同
     TaskKind: IntegrationTask
-    State: Active
+    State: Merged
     SupersedesTaskRevision: 1
     ChangeRequestId: CR-ED-0149-R1-VALIDATION-001
     ChangeRequestAcceptedEventId: 7d778fe9-65dd-48b8-91ef-6a84d6347b5d
+    PostMergeContractFreezeChangeRequestId: CR-ED-0149-R2-FREEZE-001
+    PostMergeContractFreezeChangeRequest:
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Scope: "Change only the Status line in each of AsyncModelProviderContract.md and AsyncAgentRuntimeContract.md from Proposed to Frozen; preserve all contract bodies, APIs, and task acceptance semantics."
+      WriteSet:
+        - Architecture/Contracts/AsyncModelProviderContract.md
+        - Architecture/Contracts/AsyncAgentRuntimeContract.md
+      OwnerDecision: Approve
+      OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
+      IndependentReviewerDecision: Approve
+      IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionEventId: 9af9a8e2-86bf-4322-8e81-b798eeafaff2
+      EvidenceRefs:
+        - "PR #75 merged at 2026-10-30T03:56:46Z; merged commit 2e6fdadc6d5fb3bb25bd0ed5229ec700bb60b070"
+        - "Worker04 fixed-head approval: Base ff25696a84cacc9a1e420fab3fd18055257c93bc; Head 7c4078fe9efd05da3da8fcbce345b4e15f2e9c88"
+        - "Owner and independent Reviewer approved this status-only proposal before implementation"
     ProposedBranch: Task/ED-0149-AsyncProviderAgentRuntimeContractR2
     ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
     AssignmentBaseCommit: 4a41e200fe324a0ff9811e3afd599436d671e700
@@ -3079,6 +3103,10 @@ Tasks:
     ActivationLedgerPullRequestCreatedAtUtc: "2026-10-30T03:08:57Z"
     ActivationLedgerPullRequestCreatedEventId: d3b9db08-e4ac-4148-824d-2190d934b416
     ActivationLedgerAuditCorrectionEventId: dcad27ae-fa58-4796-bd4d-b5bcf0bd5b2c
+    ActivationLedgerMergeCommit: ff25696a84cacc9a1e420fab3fd18055257c93bc
+    ActivationLedgerMergedAtUtc: "2026-10-30T03:35:58Z"
+    ActivationLedgerPRMergedEventId: 88d32fba-f946-4435-a7d9-f7f07806a218
+    TaskStartedEffectiveAtUtc: "2026-10-30T03:35:58Z"
     Branch: Task/ED-0149-AsyncProviderAgentRuntimeContractR2
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2/Worktree
     AssignedToSlot: Worker02
@@ -3089,7 +3117,7 @@ Tasks:
     OwnerSlotAssignedEventId: ea1906ef-adff-4782-ba95-630899450928
     WorktreeCreatedEventId: 2d2e9b61-a102-478a-ae03-e76d9966dd29
     WorktreeVerifiedEventId: 68a217c3-d152-40f3-9871-a919a492448d
-    AssignmentNote: "PR #73 merged and clean-main post-merge Controller validation returned AssignmentAccepted. TaskStarted is staged in this activation ledger; product writes begin after this ledger merges."
+    AssignmentNote: "PR #73 post-merge validation accepted the assignment. PR #74 then merged the staged TaskStarted record to main at 2026-10-30T03:35:58Z; its earlier OccurredAt is preserved as the staging time and its authoritative mainline effect begins at the PR #74 merge. PR #75 completed and merged only the seven-path async contract/compile-contract scope. No AgentRuntime turn loop was implemented."
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3139,8 +3167,8 @@ Tasks:
       - QQ、微信、外部账户、真实凭据或外网请求
     DependsOn: [ED-0007, ED-0015, ED-0131]
     ContractVersion:
-      - Architecture/Contracts/AsyncModelProviderContract.md V1 (proposed)
-      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1 (proposed)
+      - Architecture/Contracts/AsyncModelProviderContract.md V1
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1
       - Architecture/Contracts/ModelProviderContract.md V1.2
       - Architecture/Contracts/CoreAgentContract.md V1
       - Boost.Asio 1.92.0 at afdfa32505af73e3d208144b3f623f0096cb62b6
@@ -3240,6 +3268,20 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0150]}
+
+    ProductPullRequestNumber: 75
+    ProductPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/75
+    ProductPullRequestBaseCommit: ff25696a84cacc9a1e420fab3fd18055257c93bc
+    ProductPullRequestHeadCommit: 7c4078fe9efd05da3da8fcbce345b4e15f2e9c88
+    ProductPullRequestMergeCommit: 2e6fdadc6d5fb3bb25bd0ed5229ec700bb60b070
+    ProductPullRequestMergedAtUtc: "2026-10-30T03:56:46Z"
+    ProductPullRequestCreatedEventId: b0f78f70-2cca-4588-a4b8-54dff5d080f2
+    TaskValidationCompletedEventId: cc420546-d41f-41c2-b7e7-6a7be53de155
+    TaskReviewCompletedEventId: c179f3e7-8586-4b00-8c0f-a68a2fb87c47
+    ProductPullRequestMergedEventId: 1b772b5b-8529-4b60-8acb-eb062aaa51be
+    TaskClosedEventId: 0e4c8ac7-725d-4fc8-b732-9c467765a716
+    OwnerSlotRecoveredEventId: 27978dc9-2e53-4c5b-906c-c9707fb9abc4
+    TaskStatusNote: "PR #75 merged after independent Worker04 approval and Windows C++20 compile-contract validation. ED-0149/R2 is closed as Merged for its contract-only scope. AsyncAgentRuntime::RunTurnAsync product behavior remains unimplemented and is tracked by ED-0150."
 
 
 
@@ -3443,11 +3485,11 @@ Tasks:
     TaskKind: CapabilitySlice
     State: Proposed
     BlockedBy: >-
-      TaskSpec candidate only. Fixed-head Owner/Reviewer review of this governance candidate is allowed while P3
-      EntryGate is Pending; that review and merge grant no implementation authority. Do not assign or implement
-      until this TaskSpec is independently approved and merged, P3 EntryGate is Passed, ED-0114 is complete and
-      merged, ED-0146/ED-0147 satisfy the gate, ED-0149 is merged, and a separate assignment ledger is accepted
-      by WorkflowController validate-assignment.
+      ED-0150/R1 TaskSpec is approved and merged by PR #56, P3 EntryGate is Passed, and
+      ED-0146/R6 plus ED-0147/R9 are merged. Do not assign until ED-0149/R2 is closed as
+      Merged and ED-0114/R4 is implemented and merged. Then create a separate ED-0150/R1
+      assignment ledger on the current main baseline and require WorkflowController
+      validate-assignment to accept it before product writes.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
