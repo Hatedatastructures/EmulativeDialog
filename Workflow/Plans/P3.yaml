@@ -1533,6 +1533,19 @@ Tasks:
         OwnerReviewFindingEventId: 1521ae07-98f1-4d94-871a-afdebef28579
         IndependentReviewerDecision: Pending
         IndependentReviewerReviewAgentId: /root/luna04_ed0144_branch_review
+      PriorFixedHeadReviewRound3:
+        ReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        ReviewedHeadCommit: 338b296e6aa8211220f2c5143753a55f8444ac01
+        OwnerDecision: ChangesRequested
+        OwnerFinding: ED0114-R5-OWNER-F004
+        OwnerFindingEventId: d45c0f3a-abee-4bc3-9c48-ba346714882e
+        IndependentReviewerDecision: Approve
+        IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+        IndependentReviewerReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        IndependentReviewerReviewedHeadCommit: 338b296e6aa8211220f2c5143753a55f8444ac01
+        IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-FixedHeadReview-ED0114-R5-338b296-20261030.md
+        ReviewEvidenceReconciliationEventId: 6a58c82d-67b1-4c61-b605-2eaade6f8712
+      AppendOnlyCorrectionEventIds: [a9a30002-6ab9-464f-81b2-24b7de7435f8, 7c7c44a1-a303-4820-9a55-5b43d0323991, 5bcf1f4d-489a-429d-bb3e-1ab8a23f8202, a2c60cf1-583a-4c7f-9018-f94f34aed389, 4ffa6f73-fd8c-4189-a83f-489917733cb3]
       NoProductWriteAuthorization: true
       ProductWriteSetPathCount: 17
     PreviousRevision3:
