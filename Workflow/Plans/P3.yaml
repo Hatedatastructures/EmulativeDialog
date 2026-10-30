@@ -1418,17 +1418,136 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0112, ED-0115]}
 
   - TaskId: ED-0114
-    TaskRevision: 4
+    TaskRevision: 5
+    SupersedesTaskRevision: 4
+    ChangeRequestId: CR-ED-0114-R4-BUILDROOT-001
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Blocked
-    BlockedBy: >-
-      P3 EntryGate is Passed and ED-0114/R4 TaskSpec is merged by PR #26. The prior
-      ED-0114 product PR #20 was closed without merge and is not completion evidence.
-      ED-0149/R2 must first be closed on main and Worker02 released. Then bind ED-0114/R4
-      to the resulting main baseline in a separate assignment ledger and require
-      WorkflowController validate-assignment to accept it before any product write.
+    State: Proposed
+    ReadinessStatusNote: >-
+      R5 is a proposed TaskSpec revision only. It preserves the 17-path product WriteSet and acceptance
+      but relocates all validation/build outputs into the central .build root and binds the registered
+      Worker02/Worker04 identities. No implementation assignment or product write is authorized yet.
+    ProposedBranch: Task/ED-0114-R5-UsageBudgetIntegration
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Worktree
+    PreviousRevision4:
+      TaskRevision: 4
+      Disposition: SupersededByCRBeforeProductImplementation
+      State: Blocked
+      BaselineCommit: 1d8863b286f8e752edc06c2a671721af0a9a74f3
+      OwnerAgentId: /root/worker02_ed0114_budget
+      ReviewerAgentId: /root/worker04_reviewer_queue
+      Branch: Task/ED-0114-R2-UsageLimits
+      Worktree: H:/Qbot/EmulativeDialog.ED-0114-R2
+      HistoricalPullRequest:
+        TaskRevision: 2
+        Number: 20
+        Url: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
+        State: ClosedWithoutMerge
+        ReviewStatus: Rework
+      HistoricalRevision2Review:
+        ReviewStatus: Rework
+        Revision2ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
+        Revision2ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
+        ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
+        ReviewRound2Status: ChangesRequested
+        ReviewRound3Status: ChangesRequested
+        ReviewRound3Reviewer: Worker04
+        ReviewRound3DecisionAt: 2026-10-28
+        ReviewRound3Validation: "Independent Windows C++20 configure/build exit 0; full CTest 19/19; gcov JSON v2: AgentRuntime 259/304, OutputBudgetController 224/256, ToolCallCoordinator 138/141, Responses normalizer 45/46, Chat normalizer 46/47, Anthropic normalizer 22/22; no explicit source exclusions."
+        ReviewRound3Findings:
+          - {FindingId: ED0114-R2-F1, Severity: P1, Summary: "When a provider returns no usage event/snapshot at all, the ledger treats the configured budget as fully available and permits tool dispatch or further sampling; missing must be Unavailable after the request and fail closed."}
+          - {FindingId: ED0114-R2-F2, Severity: P1, Summary: "ApproveContinuation is called only by tests; CoreChatService has no production context-compression approval path, so arbitrary callers can self-authorize continuation."}
+          - {FindingId: ED0114-R2-F3, Severity: P2, Summary: "SharedTurnBudgetLedger retains every TurnId/RequestId indefinitely; EraseTurn/Reset have no production call site."}
+          - {FindingId: ED0114-R2-F4, Severity: P2, Summary: "PR changes 16 paths while frozen WriteSet lists 13; AgentRuntimeContractTests.cpp, AgentRuntimeVerticalSliceTests.cpp and ToolCallRoundTripTests.cpp must be explicitly authorized before merge."}
+        ReviewRound3Bundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0114-R2-Review-a23f252/ReviewResult.md
+        IndependentValidationSummary: H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0114/Validation-20261028-01/Reports/ED0114-independent-coverage-rerun1.txt
+        PriorRevision2ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
+        ReviewFindings:
+          - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
+          - "Production AgentRuntime and ToolCallCoordinator integration is required for OutputLimit dispatch blocking and Core-approved continuation with a new RequestId."
+          - "RecordProviderOutputLimited must close or mark remaining output unknown."
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone
+      Reason: >-
+        PR #20 was not merged and is not completion evidence. The old assigned source tree and sibling build
+        directory are retained as history; this revision uses a new isolated worktree and central build root.
+    Revision5ChangeRequest:
+      ChangeRequestId: CR-ED-0114-R4-BUILDROOT-001
+      TargetTaskRevision: 4
+      ProposedTaskRevision: 5
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: ProposedAwaitingOwnerAndReviewerReview
+      OwnerAgentId: /root/luna02_ed0148_pr_ready
+      OwnerDecision: Pending
+      IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+      IndependentReviewerDecision: Pending
+      Scope: >-
+        Preserve Goal, WriteSet, Acceptance, dependencies, ContractVersion, OwnerRole/OwnerSlotId,
+        ReviewerRole/ReviewerSlotId, RiskLevel, and product behavior. Update validation paths to use the
+        assigned R5 worktree and central H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows;
+        refresh BaselineCommit to current main; bind OwnerAgentId and ReviewerAgentId to the registered
+        Worker02 and Worker04 identities; archive PR #20 and its R2 review state and evidence beneath
+        PreviousRevision4.HistoricalPullRequest and PreviousRevision4.HistoricalRevision2Review; and keep
+        the active R5 PR/review fields clear. Preserve the old R4/R2 branch, worktree, baseline, and build path.
+      ScopeAmendment:
+        AddedAfterFindingId: ED0114-R5-OWNER-F003
+        ScopeAmendmentEventId: bf63ad81-a9b4-470d-9be8-190314d8f9cc
+        MetadataMigrationOnly: true
+        ProductWriteSetChanged: false
+        ProductBehaviorChanged: false
+      Reason: >-
+        The user requires generated build artifacts to remain under the central integration-port-contract.build root.
+        R4's commands point to H:/Qbot/EmulativeDialog.ED-0114-R4.build and the superseded R2 source tree, while its
+        baseline and AgentIds predate the current main and registered slot identities. All ED-0114 dependencies are
+        merged on main after PR #77, so a fresh R5 specification and separate assignment can proceed without changing
+        product scope.
+      Impact: >-
+        Validation paths, task assignment identity metadata, and location of unchanged historical R2 review records
+        only. No C++ source, test behavior, module, contract, dependency, acceptance criterion, or product WriteSet changes.
+      Rollback: >-
+        If Owner or Reviewer rejects this CR, retain ED-0114/R4 Blocked with its historical paths and do not assign
+        or write product code. No old worktree or build output is deleted or overwritten.
+      EvidenceRefs:
+        - Workflow/AgentPool.yaml#Worker02
+        - Workflow/AgentPool.yaml#Worker04
+        - Workflow/Plans/P3.yaml#TaskId=ED-0114&TaskRevision=4
+        - "PR #77 merged 2026-10-30T08:12:11Z as 47ead8f452b9963778ae33ded8447541dfe64e67; P3 EntryGate and ED-0149/R2 closeout are on main"
+      ChangeRequestProposedEventId: cd6039a2-fdf7-482f-b261-c22f44b5911b
+      CandidatePreReviewAuditEventId: 6d95a869-612f-49a4-9262-c7828f2ea422
+      PriorFixedHeadReviewRound:
+        ReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        ReviewedHeadCommit: a26693054e0f53312fcd6964786b016e6d197177
+        OwnerDecision: ChangesRequested
+        OwnerFindings: [ED0114-R5-OWNER-F001, ED0114-R5-OWNER-F002]
+        OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Owner-FixedHeadReview-ED0114-R5-a2669305-20261030.md
+        IndependentReviewerDecision: ChangesRequested
+        IndependentReviewerFindings: [ED0114-R5-REVIEWER-F001]
+        IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-FixedHeadReview-ED0114-R5-TaskSpec-a2669305-20261030.md
+      PriorFixedHeadReviewRound2:
+        ReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        ReviewedHeadCommit: a88af557717f4fec53956e3abff97d52ac4c5bcb
+        OwnerDecision: ChangesRequested
+        OwnerFinding: ED0114-R5-OWNER-F003
+        OwnerReviewFindingEventId: 1521ae07-98f1-4d94-871a-afdebef28579
+        IndependentReviewerDecision: Pending
+        IndependentReviewerReviewAgentId: /root/luna04_ed0144_branch_review
+      PriorFixedHeadReviewRound3:
+        ReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        ReviewedHeadCommit: 338b296e6aa8211220f2c5143753a55f8444ac01
+        OwnerDecision: ChangesRequested
+        OwnerFinding: ED0114-R5-OWNER-F004
+        OwnerFindingEventId: d45c0f3a-abee-4bc3-9c48-ba346714882e
+        IndependentReviewerDecision: Approve
+        IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+        IndependentReviewerReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        IndependentReviewerReviewedHeadCommit: 338b296e6aa8211220f2c5143753a55f8444ac01
+        IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-FixedHeadReview-ED0114-R5-338b296-20261030.md
+        ReviewEvidenceReconciliationEventId: 6a58c82d-67b1-4c61-b605-2eaade6f8712
+      AppendOnlyCorrectionEventIds: [a9a30002-6ab9-464f-81b2-24b7de7435f8, 7c7c44a1-a303-4820-9a55-5b43d0323991, 5bcf1f4d-489a-429d-bb3e-1ab8a23f8202, a2c60cf1-583a-4c7f-9018-f94f34aed389, 4ffa6f73-fd8c-4189-a83f-489917733cb3]
+      NoProductWriteAuthorization: true
+      ProductWriteSetPathCount: 17
     PreviousRevision3:
       TaskRevision: 3
       Disposition: SupersededBeforeFinalValidation
@@ -1482,44 +1601,22 @@ Tasks:
       PreserveGoalAcceptanceDependenciesContractsOwnerReviewer: true
       PreserveWriteSetPathCount: 17
       AcceptedAt: 2026-10-28
-    BaselineCommit: 1d8863b286f8e752edc06c2a671721af0a9a74f3
-    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0114-R2
-    AssignedBranch: Task/ED-0114-R2-UsageLimits
-    PullRequestCreated: true
-    PullRequestNumber: 20
-    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
-    Revision2ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
-    Revision2ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
-    ReviewStatus: Rework
-    ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
-    ReviewRound2Status: ChangesRequested
-    ReviewRound3Status: ChangesRequested
-    ReviewRound3Reviewer: Worker04
-    ReviewRound3DecisionAt: 2026-10-28
-    ReviewRound3Validation: "Independent Windows C++20 configure/build exit 0; full CTest 19/19; gcov JSON v2: AgentRuntime 259/304, OutputBudgetController 224/256, ToolCallCoordinator 138/141, Responses normalizer 45/46, Chat normalizer 46/47, Anthropic normalizer 22/22; no explicit source exclusions."
-    ReviewRound3Findings:
-      - {FindingId: ED0114-R2-F1, Severity: P1, Summary: "When a provider returns no usage event/snapshot at all, the ledger treats the configured budget as fully available and permits tool dispatch or further sampling; missing must be Unavailable after the request and fail closed."}
-      - {FindingId: ED0114-R2-F2, Severity: P1, Summary: "ApproveContinuation is called only by tests; CoreChatService has no production context-compression approval path, so arbitrary callers can self-authorize continuation."}
-      - {FindingId: ED0114-R2-F3, Severity: P2, Summary: "SharedTurnBudgetLedger retains every TurnId/RequestId indefinitely; EraseTurn/Reset have no production call site."}
-      - {FindingId: ED0114-R2-F4, Severity: P2, Summary: "PR changes 16 paths while frozen WriteSet lists 13; AgentRuntimeContractTests.cpp, AgentRuntimeVerticalSliceTests.cpp and ToolCallRoundTripTests.cpp must be explicitly authorized before merge."}
-    ReviewRound3Bundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0114-R2-Review-a23f252/ReviewResult.md
-    IndependentValidationSummary: H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0114/Validation-20261028-01/Reports/ED0114-independent-coverage-rerun1.txt
-    PriorRevision2ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
-    ReviewFindings:
-      - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
-      - "Production AgentRuntime and ToolCallCoordinator integration is required for OutputLimit dispatch blocking and Core-approved continuation with a new RequestId."
-      - "RecordProviderOutputLimited must close or mark remaining output unknown."
+    BaselineCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+    AssignedWorktree: ""
+    AssignedBranch: ""
+    PullRequestCreated: false
+    ReviewStatus: NotStarted
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
     OwnerSlotId: Worker02
-    OwnerAgentId: /root/worker02_ed0114_budget
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
     ReviewerRole: MemoryContextOwner
     ReviewerSlotId: Worker04
-    ReviewerAgentId: /root/worker04_reviewer_queue
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    Branch: Task/ED-0114-R2-UsageLimits
-    Worktree: H:/Qbot/EmulativeDialog.ED-0114-R2
+    Branch: ""
+    Worktree: ""
     PriorRevisionEvidence:
       TaskRevision: 1
       TaskSpecCommit: c5306e27c4ec8bad8ff45d1ac98a01ed0faabd82
@@ -1570,20 +1667,20 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "Every changed production source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 report for each of the seven changed production sources with numerator, denominator, exclusions, and tool version."}
       - {AcceptanceId: AC-4, Description: "CoreChatService releases this AgentTurn's budget ledger entry on every Process exit, including exceptions and all terminal statuses.", Evidence: "Production Core vertical-slice tests assert no turn/request retention after completed, rejected, failed, cancelled, unsupported, and unknown outcomes."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows
       Coverage:
         Required: true
         ProductionSources: [Source/Core/CoreChatService.cpp, Source/Agent/AgentRuntime.cpp, Source/Agent/OutputBudgetController.cpp, Source/Agent/ToolCallCoordinator.cpp, Source/Providers/OpenAIResponses/ResponsesUsageNormalizer.cpp, Source/Providers/OpenAIChatCompletions/ChatUsageNormalizer.cpp, Source/Providers/AnthropicMessages/AnthropicUsageNormalizer.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows/Reports
       RequiredTargets: [OutputBudgetControllerTests, UsageNormalizationTests, AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests, ToolCallRoundTripTests, CorePolicyAndActionContractTests, ED0114CoverageReport]
       RequiredCTestTests: [Agent.OutputBudgetController, Providers.UsageNormalization, AgentRuntime.Contract, AgentRuntime.VerticalSlice, Agent.ToolCallRoundTrip, Core.PolicyAndAction]
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0114-R2/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone/Reports -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --target OutputBudgetControllerTests UsageNormalizationTests AgentRuntimeContractTests AgentRuntimeVerticalSliceTests ToolCallRoundTripTests CorePolicyAndActionContractTests --parallel 4"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --output-on-failure --no-tests=error -R \"^(Agent.OutputBudgetController|Providers.UsageNormalization|AgentRuntime.Contract|AgentRuntime.VerticalSlice|Agent.ToolCallRoundTrip|Core.PolicyAndAction)$\""
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone --target ED0114CoverageReport --parallel 4"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Worktree/Tests/Contract/Agent -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DAGENT_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows/Reports -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows --target OutputBudgetControllerTests UsageNormalizationTests AgentRuntimeContractTests AgentRuntimeVerticalSliceTests ToolCallRoundTripTests CorePolicyAndActionContractTests --parallel 4"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows --output-on-failure --no-tests=error -R \"^(Agent.OutputBudgetController|Providers.UsageNormalization|AgentRuntime.Contract|AgentRuntime.VerticalSlice|Agent.ToolCallRoundTrip|Core.PolicyAndAction)$\""
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows --target ED0114CoverageReport --parallel 4"
       ContractFixtures: ["Synthetic absent/partial/final/Unavailable protocol usage; missing usage fail-closed; output-limit/incomplete tool arguments never execute; no continuation without Core authorization; Core turn exit clears ledger state; existing Core policy/action contract cases remain green."]
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
