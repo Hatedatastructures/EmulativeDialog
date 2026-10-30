@@ -444,3 +444,9 @@
 - AC-4：Worker03 在固定 Base f543bb64cea60cd14075e5a93279668d7de4adc1 核对当前候选，P2 文件和 TaskIndex 无变化，其它任务 State 未变，实际路径在 WriteSet 内，EntryGate Pending 且无通过事件，结论满足。
 - AC-1 到 AC-4 的独立证据核查均为只读。更新后的 PendingReason 纠正已解决事实，同时明确 H1/H2 尚未完成；P3 仍 Pending。Worker04 的 H1 固定头审查尚未完成。
 - H1 候选预审验证通过：固定 Base main f543bb64cea60cd14075e5a93279668d7de4adc1；10 个精确依赖均 Controller State=Merged，ED-0151/R3 State=Active；P2 与 TaskIndex 不变；精确三路径 WriteSet；P3 事件基线 258 条完整，追加后 265 条有效且 EventId 唯一；P3/EntryGate Pending，无通过事件。日志：H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H1CandidatePreReviewValidation-20261030.log；CommandExecuted EventId e7b9508b-5458-4299-8523-9121b41f4e85。Worker04 固定头 GateDecisionReview 尚未完成。
+## 2026-10-30 ED-0151/R3 H1 固定头评审发现
+
+- Worker04 对 Base `f543bb64cea60cd14075e5a93279668d7de4adc1` → Head `4df6b99c4cfd94ee2f1021c90ebbf44eea47428c` 做独立 GateDecisionReview，结论为 REQUEST_CHANGES。AC-1 至 AC-4 均满足，没有未满足的门禁 AcceptanceId。Finding `ED0151-R3-H1-F001` 指向 `Workflow/Plans/P3.yaml` 的 `EntryGate.PendingReason`：该字段夹带了下游产品实现清单，超出本门禁状态说明范围。
+- 该句已从修订候选的 PendingReason 移除。P3 和 EntryGate 保持 Pending；没有创建 H2 成功状态或 `P3EntryGatePassed` 事件。修订候选仍须重新固定 Base/Head 并由 Worker04 独立复审。
+- 固定头审查证据：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R3-H1Finding-20261030.md`。Finding EventId：`e324a8e7-3502-4141-8079-74d400e3d515`。
+- 修订后的 H1 候选静态校验通过：追加验证记录前 270 条、追加后 271 条 JSONL 事件均有效且 EventId 唯一；258 条 Base 前缀完整；P3/EntryGate 仍 Pending、没有 P3EntryGatePassed；WriteSet、P2/TaskIndex 和 git diff --check 均通过。日志：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H1-F001-CorrectedCandidateValidation-20261030.log`；CommandExecuted EventId `028444f2-078e-4739-8f2e-a549f7f52213`。新 Head 仍待 Worker04 固定头复审。
