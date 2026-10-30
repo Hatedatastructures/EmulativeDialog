@@ -78,4 +78,8 @@ if(BUILD_TESTING)
     NAME Agent.AsyncRuntimeVerticalSlice
     COMMAND AsyncRuntimeVerticalSliceTests
   )
+  set_tests_properties(
+    Agent.AsyncRuntimeVerticalSlice
+    PROPERTIES TIMEOUT 30
+  )
 endif()
