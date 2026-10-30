@@ -556,3 +556,11 @@
 - TaskStarted EventId `a011bb20-636b-403b-9050-fa45983f9784` marks the authorized start of Worker02 implementation work under the frozen 17-path WriteSet. PR #80 itself is governance-only and contains no product C++; implementation is now in progress and is not yet complete.
 - ED-0114/R5 covers three protocol usage normalizers, output budget enforcement, AgentRuntime/tool dispatch/Core lifecycle integration and six contract targets. Required acceptance includes fail-closed missing usage, no unapproved continuation, complete turn-state cleanup, and at least 80% gcov JSON v2 line coverage for each changed production source.
 - The broader rewrite remains incomplete. ED-0150 async AgentRuntime-to-Mock-Channel behavior is downstream; LargeScaleProductImplementation remains unverified until an actual product-code PR passes its independent review and required Windows checks.
+
+
+## 2026-10-30 当前 P3 状态更新（PR #82 与 ED-0150）
+
+- PR #82（ED-0114/R5）已合并到 main@50d4a1917cdd53254ce4b86516f3b3b657183cb6，17 个路径、+1,267/-9；实现 usage-aware output budget 检查和三协议 usage 正规化。Worker04 固定头审查与 Worker06 支持验证均 Approve。Windows C++20 构建通过，CTest 6/6，七个生产源 unique-line gcov JSON v2 覆盖率为 89.29%–100%，两个必需 Windows Actions 检查成功。
+- 该 PR 不含异步 AgentRuntime 回合循环。主线已有异步合同和接口，但 Source/Agent/AsyncAgentRuntime.cpp、CoreChatService::ProcessAsync 及 FakeProvider 到 Mock receipt 异步行为仍未实现。
+- ED-0114/R5 在本次 Coordinator closeout 中记录为 Merged，并释放 Worker02；ED-0150/R2 在 Owner、独立 Reviewer 固定头批准及 Coordinator 接受 CR 前保持 Proposed。之后仍需单独的当前 main assignment ledger 和合并后的 WorkflowController validate-assignment=AssignmentAccepted，产品写入才获授权。
+- ED-0150 的产品目标仍为五路径 C++20 coroutine 纵向切片：同一个 CoreChatService 实例的身份/策略检查、异步 AgentRuntime、awaitable FakeProvider 与匹配的 Mock Channel receipt。当前没有产品写入授权。
