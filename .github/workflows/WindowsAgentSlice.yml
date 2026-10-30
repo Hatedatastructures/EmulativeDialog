@@ -26,6 +26,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Checkout frozen WorkflowController fixture
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: 5d8618036a559388bbaefa277a9d3288450e927e
+          path: ci-fixtures/Qbot/EmulativeDialog.ED-0014-R9
+          persist-credentials: false
+
       - name: Set up UCRT64 MinGW
         id: msys2
         uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
@@ -118,5 +125,29 @@ jobs:
             throw "Required UCRT64 tools are missing under $ucrtBin"
           }
           $env:PATH = "$ucrtBin;$env:PATH"
+
+          $existingHDrive = Get-PSDrive -Name H -ErrorAction SilentlyContinue
+          if ($null -ne $existingHDrive) {
+            throw "Refusing to replace existing H: drive mapping rooted at $($existingHDrive.Root)"
+          }
+          $fixtureRoot = Join-Path $env:GITHUB_WORKSPACE 'ci-fixtures'
+          $substExe = Join-Path $env:SystemRoot 'System32\subst.exe'
+          if (-not (Test-Path -LiteralPath $substExe -PathType Leaf)) {
+            throw "Windows subst utility is missing: $substExe"
+          }
+          & $substExe 'H:' $fixtureRoot
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          $fixtureRepo = 'H:\Qbot\EmulativeDialog.ED-0014-R9'
+          if (-not (Test-Path -LiteralPath (Join-Path $fixtureRepo '.git'))) {
+            throw "Frozen WorkflowController Git fixture is missing: $fixtureRepo\.git"
+          }
+          $fixtureHead = (git -C $fixtureRepo rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $expectedFixtureHead = '5d8618036a559388bbaefa277a9d3288450e927e'
+          if ($fixtureHead -ne $expectedFixtureHead) {
+            throw "Unexpected WorkflowController fixture HEAD: $fixtureHead"
+          }
+
           ctest --preset windows-agent-slice --no-tests=error --output-on-failure
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
