@@ -513,3 +513,15 @@
 - Worker04 approved PR #75's fixed Base/Head; the Windows C++20 configure, `AsyncApiCompileContractTests` build, and `Agent.AsyncApiCompileContract` CTest 1/1 evidence passed. Coverage is not applicable because this task added no production implementation `.cpp`.
 - ED-0149/R2 is closed as Merged for its contract-only scope. CR-ED-0149-R2-FREEZE-001 was approved by Owner Worker02 and independent Reviewer Worker04, then accepted by the Coordinator; only the two async contract Status lines are now Frozen. Worker02 is released from ED-0149; the next product task is ED-0114/R4 after a fresh assignment ledger and `WorkflowController validate-assignment`. ED-0150 remains unassigned until ED-0114 is implemented and merged.
 - Current main has three remote branches before this closeout PR: `main`, `Task/ED-0144-MemorySqliteAdapter`, and `Task/ED-0153-R1AsyncHttpTransportTaskSpec`. The four-branch limit remains in force.
+
+## 2026-10-30 PR #77 closeout merged
+
+- PR #77 merged to main at 2026-10-30T08:12:11Z as 47ead8f452b9963778ae33ded8447541dfe64e67, after Worker04 fixed-head APPROVE with zero findings on Base 2e6fdadc6d5fb3bb25bd0ed5229ec700bb60b070 → Head 9a209b2b4b28850eb32d52f9f77065fbed11b4b8. ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0149-R2-LifecycleCloseout/Worker04-FixedHeadReview-ED0149-R2-LifecycleCloseout-9a209b2b-20261030.md.
+- The merged task branch was deleted and verified absent. Remote branch count is 3/4: main, Task/ED-0144-MemorySqliteAdapter, and the blocked Task/ED-0153-R1AsyncHttpTransportTaskSpec.
+- PR #77 records ED-0149/R2 lifecycle closeout only; async AgentRuntime turn behavior is still not implemented. ED-0114/R4 remains unassigned until a fresh task revision and separate assignment ledger pass Controller validation.
+
+## 2026-10-30 ED-0114/R5 TaskSpec and build-root CR candidate
+
+- PR #77's merge and branch retirement are recorded on current main@47ead8f. ED-0114's dependencies are merged, but R4's old validation directory and task-agent identities are stale.
+- CR-ED-0114-R4-BUILDROOT-001 proposes R5 with the same 17-path product WriteSet and acceptance. It moves the fresh Windows build, reports, and source worktree under H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5 and binds the registered Worker02/Worker04 identities without changing their slots.
+- Owner and independent Reviewer decisions are pending. ED-0114/R5 remains Proposed; no product C++ files are authorized or changed by this candidate.
