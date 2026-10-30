@@ -3178,7 +3178,7 @@ Tasks:
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0148-R6-VALIDATION-001
     OwnerRole: MemoryOwner
@@ -3188,21 +3188,27 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/luna06_capability_status_audit
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
-    TaskSpecHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecHeadCommit: 4441ad2f2290ee96ac359327f9855f4cecc7e761
     TaskSpecOwnerDecision: Approve
     TaskSpecReviewerDecision: Approve
     TaskSpecCoordinatorDecision: Accepted
     TaskSpecOwnerReviewHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
-    TaskSpecReviewerReviewHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
+    TaskSpecReviewerReviewHeadCommit: 4441ad2f2290ee96ac359327f9855f4cecc7e761
     TaskSpecCoordinatorDecisionHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
-    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergedToMainCommit: 9b1504acc168887e1e1eb900f115da94d74c349e
+    TaskSpecMergePullRequestNumber: 95
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/95
+    TaskSpecMergeMethod: squash
     ProposedTaskSpecBaseCommit: b638925fed2355ed44c978abe1bc635ba6b1d9b4
 
     BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
     Branch: Task/ED-0148-R4ConsentMatchingImpl
     Worktree: H:/Qbot/EmulativeDialog.ED-0148
-    AssignmentNote: "R6 is validation-only and remains Proposed until its fixed-head reviews and merge. After merge, Coordinator must create a fresh assignment ledger for current Worker05, pass WorkflowController validate-assignment, then synchronize the existing product branch before validation. No R6 source write is authorized before that gate."
+
+    AssignedToSlot: Worker05
+    AssignmentEventId: 7d722191-9354-495c-abe9-f79b120f644c
+    AssignmentNote: "PR #95 merged R6 TaskSpec to main at 9b1504acc168887e1e1eb900f115da94d74c349e. This Worker05 assignment is only a candidate until its ledger PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted. Then run the frozen R6 validation on the existing product branch/worktree at baseline d8e918bd812f55b82babd3ef8df6a9b1b08f1eda; no product source writes are in scope."
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
