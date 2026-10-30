@@ -1424,11 +1424,13 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Provider usage 归一化与输出预算闭环
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     ReadinessStatusNote: >-
-      R5 TaskSpec merged through PR #78. Coordinator assignment is staged on the current main baseline;
-      implementation begins only after this assignment-ledger PR merges and post-merge Controller
-      validation succeeds. The exact 17-path product WriteSet remains unchanged.
+      The ED-0114/R5 assignment ledger PR #80 merged; post-merge Controller returned
+      AssignmentAccepted and TaskStarted event a011bb20-636b-403b-9050-fa45983f9784 records Worker02 activation.
+      Product PR #82 merged at 50d4a1917cdd53254ce4b86516f3b3b657183cb6 after fixed-head review,
+      Windows build/CTest/coverage validation, and both required Windows Actions checks passed.
+      This closeout marks ED-0114/R5 Merged and releases Worker02.
     ProposedBranch: Task/ED-0114-UsageBudgetIntegration
     ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Worktree
     PreviousRevision4:
@@ -1687,6 +1689,33 @@ Tasks:
     PostMergeAssignmentValidationEventId: f892b156-a1ac-4a68-be2c-7961a3554ebe
     TaskStartedAtUtc: "2026-10-30T11:10:16Z"
     TaskStartedEventId: a011bb20-636b-403b-9050-fa45983f9784
+    ProductPullRequestNumber: 82
+    ProductPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/82
+    ProductPullRequestBaseCommit: 6f0a7d27c2cacd93a60f0a5b43df74f9c5987f63
+    ProductPullRequestHeadCommit: 15d01d87f459fa21472baa00d2a0d6aaee952a79
+    ProductPullRequestMergeCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+    ProductPullRequestMergedAtUtc: "2026-10-30T11:54:54Z"
+    ProductPullRequestMergeMethod: squash
+    ProductPullRequestChangedFiles: 17
+    ProductPullRequestAdditions: 1267
+    ProductPullRequestDeletions: 9
+    ProductReviewerAgentId: /root/luna04_ed0144_branch_review
+    ProductReviewerDecision: APPROVE
+    ProductReviewerBaseCommit: 6f0a7d27c2cacd93a60f0a5b43df74f9c5987f63
+    ProductReviewerHeadCommit: 15d01d87f459fa21472baa00d2a0d6aaee952a79
+    ProductReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-Product/Worker04-FixedHeadReview-PR82-15d01d8-20261030.md
+    ProductSupportReviewerAgentId: /root/luna06_capability_status_audit
+    ProductSupportReviewerDecision: APPROVE
+    ProductSupportReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-Product/Worker06-SupportReReview-PR82-15d01d8-20261030.md
+    ProductWindowsRunIds: [41050960832, 41050953599]
+    ProductValidationSummary: "Windows C++20 full build exit 0; CTest 6/6; seven changed production sources 89.29%-100% unique-line gcov JSON v2; both required Windows checks success."
+    ProductValidationLogs: [H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows/Logs/Build-PostFix-Full.log, H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows/Logs/CTest-PostFix-Final.log, H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows/Logs/Coverage-PostFix-Final.log]
+    ProductPullRequestMergedEventId: 666347a2-ad34-4a41-b628-f10aab218bb5
+    ProductValidationCompletedEventId: 76af8413-5847-45ff-819c-bceb3340aa7d
+    ProductReviewCompletedEventId: d56fdb96-979b-4821-8b9d-f0d90885da99
+    TaskClosedEventId: f3a15b69-2dd6-4301-8615-620359e3884e
+    OwnerSlotRecoveredEventId: 82451d4f-32f9-4816-a97d-0aa9888e5557
+    TaskStatusNote: "PR #82 merged after independent fixed-head review, Windows build, 6/6 CTest, 80%+ per-source coverage and both required checks. ED-0114/R5 is closed as Merged; asynchronous AgentRuntime behavior remains tracked by ED-0150."
     AssignmentLedgerReviewRounds:
       - ReviewedBaseCommit: 734998470e7561052794ea189cd83a8f0cbb5371
         ReviewedHeadCommit: 072b965320a2bf384c970bdeba6e45de27fc697f
@@ -1704,8 +1733,8 @@ Tasks:
         FindingIds: [ED0114-R5-ASSIGN-W04-F001, ED0114-R5-ASSIGN-W04-F002]
         ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-Assignment/Worker04-FixedHeadReview-PR80-072b965-20261030.md
         ReviewBundleSha256: 3FA46092EA6CF9CB6F495B7E326E5DB36B77FBB78AF4450CBDC6432CBCB2A978
-    PullRequestCreated: false
-    ReviewStatus: NotStarted
+    PullRequestCreated: true
+    ReviewStatus: Approved
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
     OwnerSlotId: Worker02
@@ -3787,17 +3816,21 @@ Tasks:
 
 
   - TaskId: ED-0150
-    TaskRevision: 1
+    TaskRevision: 2
+    SupersedesTaskRevision: 1
+    RevisionTransition: {FromRevision: 1, ToRevision: 2}
+    ChangeRequestId: CR-ED-0150-R2-DEPENDENCY-STATUS-001
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 到 Mock Channel 回执的 C++ 纵向切片
     TaskKind: CapabilitySlice
     State: Proposed
     BlockedBy: >-
-      ED-0150/R1 TaskSpec is approved and merged by PR #56, P3 EntryGate is Passed, and
-      ED-0146/R6 plus ED-0147/R9 are merged. Do not assign until ED-0149/R2 is closed as
-      Merged and ED-0114/R4 is implemented and merged. Then create a separate ED-0150/R1
-      assignment ledger on the current main baseline and require WorkflowController
-      validate-assignment to accept it before product writes.
+      ED-0150/R1 was approved and merged by PR #56. P3 EntryGate is Passed; ED-0146/R6,
+      ED-0147/R9, ED-0149/R2 and ED-0114/R5 product PR #82 are merged. This PR candidate
+      records ED-0114/R5 closeout and Worker02 slot recovery. ED-0150/R2 remains Proposed
+      until the independent Reviewer approves this fixed-head CR and the Coordinator accepts it.
+      After acceptance, a separate assignment ledger must bind Worker02 on then-current main,
+      merge, and pass post-merge WorkflowController validate-assignment before product writes.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3805,21 +3838,66 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecReviewerDecision: Approve
+    TaskSpecReviewStatus: OwnerApprovedPendingIndependentReviewR2
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
+    TaskSpecOwnerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+    TaskSpecOwnerReviewHeadCommit: 3769c7b3248881f37269b474001d06b465b389c0
+    TaskSpecOwnerDecisionAtUtc: '2026-10-30T12:36:02Z'
+    TaskSpecReviewerDecision: Pending
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewerReviewBaseCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
-    TaskSpecReviewerReviewHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
-    TaskSpecReviewSource: InternalFixedHeadReview
+    TaskSpecReviewSource: PR83FixedHeadOwnerApprovedAwaitingIndependentReview
     GitHubNativeReviewSubmissionCount: 0
-    TaskSpecHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
-    TaskSpecFinalPullRequestHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
-    TaskSpecMergedToMainCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
-    TaskSpecMergePullRequestNumber: 56
-    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/56
-    TaskSpecMergeMethod: squash
-    TaskSpecMergedAt: "2026-10-29T19:10:33Z"
-    TaskSpecStatusNote: "PR #56 merged the reviewed TaskSpec corrections only. Task State remains Proposed while P3 EntryGate is Pending; this record grants no implementation authority."
+    TaskSpecStatusNote: "R2 corrects stale dependency facts and records ED-0114/R5 PR #82 closeout. Worker02 OwnerDecision=APPROVE is recorded; ED-0150 remains Proposed pending Worker04 fixed-head review and Coordinator CR acceptance. Product writes still require a separate current-main assignment ledger and post-merge Controller acceptance."
+    Revision2ChangeRequest:
+      ChangeRequestId: CR-ED-0150-R2-DEPENDENCY-STATUS-001
+      TargetTaskRevision: 1
+      ProposedTaskRevision: 2
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: OwnerApprovedAwaitingIndependentReview
+      OwnerDecision: APPROVE
+      OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
+      OwnerDecisionAtUtc: '2026-10-30T12:36:02Z'
+      OwnerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+      OwnerReviewHeadCommit: 3769c7b3248881f37269b474001d06b465b389c0
+      OwnerDecisionEventId: 20dc5ba2-164c-4a90-88ed-d0c9fdff05ce
+      IndependentReviewerDecision: PendingFixedHeadReview
+      CoordinatorDecision: Pending
+      Scope: >-
+        Preserve the ED-0150 product Goal, OutOfScope, DependsOn list, ContractVersion, ModuleIds,
+        ReadSet, OnDemandSet, ForbiddenSet, exact five-path WriteSet, Acceptance, Validation, RiskLevel,
+        R1 BaselineCommit, OwnerSlotId and ReviewerSlotId. Correct only BlockedBy and TaskSpecStatusNote;
+        record the merged ED-0114/R5 PR #82 closeout and Worker02 slot recovery; keep R2 Proposed until
+        fixed-head Owner/Reviewer decisions and Coordinator CR acceptance are recorded. No product source
+        or test path is changed. The later assignment ledger remains a separate mandatory gate.
+      Reason: >-
+        R1 still says P3 EntryGate is Pending, ED-0149/R2 is not closed, and ED-0114/R4 is the
+        required revision. Current main records P3 EntryGate Passed and ED-0149/R2 Merged; ED-0114/R5
+        product PR #82 is merged but its task/slot closeout was not recorded, leaving Controller state
+        Assigned and Worker02 occupied.
+      ImpactPaths: [Workflow/Plans/P3.yaml, Workflow/AgentPool.yaml, Workflow/Events/CodexRewrite/P3.jsonl, Workflow/CurrentState.md]
+      CompatibilityAndSecurityImpact: >-
+        Governance metadata only. No API, contract, data format, authorization, or product runtime
+        behavior changes. Existing ED-0114/R5 review and verification evidence is referenced without
+        upgrading an unverified claim.
+      Rollback: >-
+        If review rejects this revision, keep R1 Proposed and retain its exact prior BlockedBy,
+        TaskSpecStatusNote and baseline. Do not create an ED-0150 assignment or modify product files.
+      EvidenceRefs:
+        - "P3EntryGatePassed event aa6bf49d-0b25-46a7-afdc-7fd2238ebcdf"
+        - "ED-0149/R2 merged by PR #75 as 2e6fdadc6d5fb3bb25bd0ed5229ec700bb60b070"
+        - "ED-0114/R5 PR #82 merged as 50d4a1917cdd53254ce4b86516f3b3b657183cb6; Base 6f0a7d27c2cacd93a60f0a5b43df74f9c5987f63; Head 15d01d87f459fa21472baa00d2a0d6aaee952a79"
+        - "GitHub WindowsAgentSlice runs 41050960832 and 41050953599 both completed success"
+        - "WorkflowController query at Base 50d4a19 reported ED-0114/R5 Assigned and ED-0150/R1 Proposed"
+      ProductWriteAuthorization: None
+      ChangeRequestProposedEventId: aa47b6cf-b6d8-4181-b9dc-4cc0bee3e8e4
+      OwnerSlotId: Worker02
+      OwnerAgentId: /root/luna02_ed0148_pr_ready
+      IndependentReviewerSlotId: Worker04
+      IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+      ReviewerMustInspectFixedBaseHead: true
+      R2ReviewStatus: OwnerApprovedAwaitingIndependentReviewerAndCoordinator
     BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
@@ -4063,7 +4141,27 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
-
+    PreviousRevision1:
+      TaskRevision: 1
+      State: Proposed
+      BaselineCommit: 5364581858c8299884e87e00730748b86fb43346
+      BlockedBy: "ED-0149/R2 not closed and ED-0114/R4 implementation/merge required; P3 EntryGate noted as Pending."
+      TaskSpecStatusNote: "PR #56 merged the reviewed TaskSpec corrections only. Task State remains Proposed while P3 EntryGate is Pending; this record grants no implementation authority."
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecReviewerDecision: Approve
+      TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+      TaskSpecReviewerReviewBaseCommit: 1daa147859705a1b0ae5551e282c3982eedf55c5
+      TaskSpecReviewerReviewHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+      TaskSpecReviewSource: InternalFixedHeadReview
+      GitHubNativeReviewSubmissionCount: 0
+      TaskSpecHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+      TaskSpecFinalPullRequestHeadCommit: c6d44a9b0ebfe8634bec4b74c0a94d32dcd6e654
+      TaskSpecMergedToMainCommit: fad25fcfeb4a5e64c8f5f3da1151bddcee32de9e
+      TaskSpecMergePullRequestNumber: 56
+      TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/56
+      TaskSpecMergeMethod: squash
+      TaskSpecMergedAt: "2026-10-29T19:10:33Z"
+      Disposition: RetainedAsPriorRevision; R2 supersession is pending CR acceptance.
   - TaskId: ED-0151
     TaskRevision: 3
     RevisionTransition: {FromRevision: 2, ToRevision: 3}
