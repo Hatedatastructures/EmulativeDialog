@@ -457,3 +457,11 @@
 - H2 候选 EvaluationEventId / `P3EntryGatePassed` EventId：`aa6bf49d-0b25-46a7-afdc-7fd2238ebcdf`。候选 P3 路由为 Current、EntryGate 为 Passed；当前 main 仍在 `f543bb64cea60cd14075e5a93279668d7de4adc1`，只有 H2 PR 完成独立最终审查并合并后，主线才进入 P3。
 - 状态边界：`P2FirstSliceGate=Passed`；`LargeScaleProductImplementation=BlockedUnverified`；`CodexAgentRewrite=Incomplete`。本门禁不包含产品源码或测试变更，也不代表完整重写完成。
 - H2 审查与合并尚未完成；H2 的固定头最终审查仍需单独执行。
+
+## 2026-10-30 PR #67 合并与 P3 收尾
+
+- GitHub PR #67 已 squash 合并到 main：Base f543bb64cea60cd14075e5a93279668d7de4adc1，最终固定头 589523f18aec09a3e9a226acc00707d2e8de043b，merge commit d65e7e372b71529951e8774e19026988c1e0e51c，合并时间 2026-10-30T00:50:37Z。Worker04 于 00:49:57Z 对同一 Base/Head 作出 APPROVE；审查证据见 H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R3-FinalPRReview-20261030.md。PR 没有 GitHub 原生 review submission；固定头审查记录在该独立证据文件中。
+- P3 EntryGate 已在 main 上为 Passed，P3 路由为 Current。ED-0151/R3 生命周期现已记录 PRMerged 与 TaskClosed；H2 门禁字段保持原样。
+- 远端分支已清理为 2 条：main 和仍开放的 ED-0144 PR #25 分支。ED-0151 合并分支已删除，满足最多 4 条远端分支限制。
+- LargeScaleProductImplementation 仍是 BlockedUnverified；CodexAgentRewrite 仍是 Incomplete。P3 通过不代表异步 AgentRuntime 或整体重写完成。当前尚无可授权的异步 AgentRuntime C++ 实现任务；先补正式 Required Checks 与 main 分支保护，再按 ED-0114/ED-0149/ED-0150 依赖推进。
+- 本次只完成合并后治理收尾，没有改动产品 C++ 源码；产品构建与 CTest 未运行。
