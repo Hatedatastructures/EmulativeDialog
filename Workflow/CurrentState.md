@@ -578,3 +578,13 @@
 - ED-0155/R1 为 `Proposed`，Owner Worker01，固定头 Reviewer Worker06，产品 WriteSet 仅 `Tests/Contract/Agent/CMakeLists.txt`，依赖 ED-0131/R2（Merged）。TaskSpec 等待固定头审查及协调者接受；没有 assignment，也没有产品写授权。TaskCreated EventId=`91fd97d0-bc23-4f51-9c9d-2985c9b8e115`。
 - P3 的 `TaskSpecRegistration.AdditionalInfrastructureTaskIds` 已加入 ED-0155。TaskIndex 只路由阶段和门控，没有 per-task ID 注册字段；P3 当前已是 Current 且 EntryGate Passed，因此没有 TaskIndex 路由改动。
 - ED-0145/R1 仍为 Blocked，且其既有 WriteSet 不包含 Agent CMake 文件。本次没有修改 ED-0150/R2 分支或工作树。
+
+## 2026-10-30 ED-0155/R1 assignment candidate (15:55 UTC)
+
+- PR #86 merged to main at 0fedc4ef19273ccda86c5372a8cfccc214b15424; Worker01 Owner and Worker06 independent fixed-head reviewer approved the exact TaskSpec head. Coordinator records acceptance in the assignment ledger.
+- Worker01 is bound to Task/ED-0155-R1AgentAsioPropagation at H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree, based on 0fedc4ef19273ccda86c5372a8cfccc214b15424. The worktree is prepared and has no product changes.
+- This ledger is a candidate until PR merge and post-merge WorkflowController validate-assignment returns AssignmentAccepted; only then may the two CMake edges be implemented.
+- PR #85 remains blocked by this missing Boost.Asio target propagation. Its separate coverage command review found a false-positive diagnostic filter; a new ED-0150 task revision is pending owner/reviewer review.
+## 2026-10-30 ED-0155/R1 assignment ledger PR created (15:59 UTC)
+
+- PR #87 is open for the assignment ledger; remote branches are now at 4/4. Worker06 fixed-head review and Coordinator merge remain pending.

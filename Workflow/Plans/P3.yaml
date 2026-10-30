@@ -4567,7 +4567,7 @@ Tasks:
     EpicId: EP-06
     Title: 将 Boost.Asio C++20 使用要求传播到 CoreChatServiceObject
     TaskKind: Build
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: BuildAndWorkflowOwner
     OwnerSlotId: Worker01
@@ -4607,10 +4607,49 @@ Tasks:
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree
     ProposedTaskSpecBranch: Task/ED-0155-R1TaskSpec
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/TaskSpec
-    TaskSpecReviewStatus: AwaitingFixedHeadReview
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerAgentId: /root/luna01_ed0112_r8_audit
+    TaskSpecOwnerReviewBaseCommit: 3463e5acc62da96ff6066de5ddc43558bd8dc308
+    TaskSpecOwnerReviewHeadCommit: e0df90df9cd77bb96a8b3b95235d0462abcc7422
+    TaskSpecOwnerDecisionEventId: 629b23f8-dc22-4e99-bc19-18d1e62ff028
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerAgentId: /root/luna06_capability_status_audit
+    TaskSpecReviewerReviewBaseCommit: 3463e5acc62da96ff6066de5ddc43558bd8dc308
+    TaskSpecReviewerReviewHeadCommit: e0df90df9cd77bb96a8b3b95235d0462abcc7422
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0155-R1-TaskSpec/Worker06-FixedHeadReview-PR86-e0df90d.md
+    TaskSpecReviewerReviewBundleSha256: 8F10EC85B5270CBAC33BD600F539341A7730D97EDFEAC5EF5788777D6220285E
+    TaskSpecReviewerDecisionEventId: d4ded93c-5141-4f64-911e-ed39e14e560b
+    TaskSpecCoordinatorDecision: ACCEPTED
+    TaskSpecCoordinatorDecisionAgentId: /root
+    TaskSpecCoordinatorDecisionHeadCommit: e0df90df9cd77bb96a8b3b95235d0462abcc7422
+    TaskSpecCoordinatorDecisionEventId: f98b9dea-162d-43d7-82c9-fe2bdb6859af
+    TaskSpecReviewSource: PR86FixedHeadReview
+    TaskSpecHeadCommit: e0df90df9cd77bb96a8b3b95235d0462abcc7422
+    TaskSpecFinalPullRequestHeadCommit: e0df90df9cd77bb96a8b3b95235d0462abcc7422
+    TaskSpecMergedToMainCommit: 0fedc4ef19273ccda86c5372a8cfccc214b15424
+    TaskSpecMergePullRequestNumber: 86
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/86
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: '2026-10-30T15:34:19Z'
+    TaskSpecMergedEventId: b0407c81-4c5f-4da6-9229-bff2b12f0704
+    TaskSpecStatusNote: >-
+      PR #86 merged after Worker01 Owner and Worker06 fixed-head APPROVE for the exact TaskSpec head. Coordinator accepts the reviewed registration; the separate assignment ledger remains required and product writes remain gated on its merge plus post-merge Controller AssignmentAccepted.
+    BaselineCommit: 0fedc4ef19273ccda86c5372a8cfccc214b15424
+    AssignmentBaseCommit: 0fedc4ef19273ccda86c5372a8cfccc214b15424
+    Branch: Task/ED-0155-R1AgentAsioPropagation
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree
+    AssignedToSlot: Worker01
+    TaskReadinessValidatedEventId: 33f0e972-624c-473d-ba12-f78c846a5a9d
+    AssignmentValidationEventId: 8649f6a5-d963-4f6f-b1b6-83f17ab783bc
+    TaskAssignedEventId: 9918cd4a-a15f-4c15-bab6-792003661069
+    AssignmentLedgerBranch: Task/ED-0155-R1AssignmentLedger
+    AssignmentLedgerWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AssignmentLedger/Worktree
+    AssignmentLedgerPullRequestNumber: 87
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/87
+    AssignmentLedgerPullRequestCreatedAtUtc: '2026-10-30T15:59:16Z'
+    AssignmentLedgerPullRequestCreatedHeadCommit: ea998250d30e7e09072c123bc776a0cc9f845e1c
+    AssignmentLedgerPullRequestCreatedEventId: d7b500a8-dbd0-4088-b0fd-db45927ed79c
     Context:
       ModuleId: AgentRuntime
       AlwaysLoad: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml]
@@ -4755,11 +4794,11 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "TaskSpec proposal only; no implementation assignment or product write authorization."
-      CurrentFindingOrFailure: "PR #85 Windows run 41070517970 fails compiling CoreChatServiceObject because Boost.Asio usage requirements are not linked to that target."
+      LastCompletedAcceptance: "PR #86 TaskSpec merged and fixed-head approvals recorded; assignment candidate validated pre-merge. Product writes remain gated on assignment-ledger merge and post-merge Controller validation."
+      CurrentFindingOrFailure: "PR #85 Windows run 41081028399 fails compiling CoreChatServiceObject because Boost.Asio usage requirements are not linked to this target; ED-0155/R1 fixes the missing target propagation."
       TriedApproaches: []
-      NextAction: "Obtain Worker06 fixed-head review and Coordinator acceptance, merge the TaskSpec, then complete the separate assignment-ledger PR and post-merge Controller validation before implementation."
+      NextAction: "Merge the assignment ledger and require post-merge Controller AssignmentAccepted; then implement the two authorized CMake edges and run task plus ED-0150 integration validation."
       OpenMessageIds: []
-      LastValidationResult: "No implementation build has run; this is an unassigned TaskSpec proposal."
+      LastValidationResult: "Pre-merge Controller validate-assignment passed with AssignmentAccepted; product build and CTest remain pending after ledger merge."
     TaskSpecCreationEventId: 91fd97d0-bc23-4f51-9c9d-2985c9b8e115
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
