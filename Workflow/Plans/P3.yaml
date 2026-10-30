@@ -1446,6 +1446,28 @@ Tasks:
         Url: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
         State: ClosedWithoutMerge
         ReviewStatus: Rework
+      HistoricalRevision2Review:
+        ReviewStatus: Rework
+        Revision2ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
+        Revision2ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
+        ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
+        ReviewRound2Status: ChangesRequested
+        ReviewRound3Status: ChangesRequested
+        ReviewRound3Reviewer: Worker04
+        ReviewRound3DecisionAt: 2026-10-28
+        ReviewRound3Validation: "Independent Windows C++20 configure/build exit 0; full CTest 19/19; gcov JSON v2: AgentRuntime 259/304, OutputBudgetController 224/256, ToolCallCoordinator 138/141, Responses normalizer 45/46, Chat normalizer 46/47, Anthropic normalizer 22/22; no explicit source exclusions."
+        ReviewRound3Findings:
+          - {FindingId: ED0114-R2-F1, Severity: P1, Summary: "When a provider returns no usage event/snapshot at all, the ledger treats the configured budget as fully available and permits tool dispatch or further sampling; missing must be Unavailable after the request and fail closed."}
+          - {FindingId: ED0114-R2-F2, Severity: P1, Summary: "ApproveContinuation is called only by tests; CoreChatService has no production context-compression approval path, so arbitrary callers can self-authorize continuation."}
+          - {FindingId: ED0114-R2-F3, Severity: P2, Summary: "SharedTurnBudgetLedger retains every TurnId/RequestId indefinitely; EraseTurn/Reset have no production call site."}
+          - {FindingId: ED0114-R2-F4, Severity: P2, Summary: "PR changes 16 paths while frozen WriteSet lists 13; AgentRuntimeContractTests.cpp, AgentRuntimeVerticalSliceTests.cpp and ToolCallRoundTripTests.cpp must be explicitly authorized before merge."}
+        ReviewRound3Bundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0114-R2-Review-a23f252/ReviewResult.md
+        IndependentValidationSummary: H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0114/Validation-20261028-01/Reports/ED0114-independent-coverage-rerun1.txt
+        PriorRevision2ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
+        ReviewFindings:
+          - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
+          - "Production AgentRuntime and ToolCallCoordinator integration is required for OutputLimit dispatch blocking and Core-approved continuation with a new RequestId."
+          - "RecordProviderOutputLimited must close or mark remaining output unknown."
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone
       Reason: >-
         PR #20 was not merged and is not completion evidence. The old assigned source tree and sibling build
@@ -1463,11 +1485,18 @@ Tasks:
       IndependentReviewerDecision: Pending
       Scope: >-
         Preserve Goal, WriteSet, Acceptance, dependencies, ContractVersion, OwnerRole/OwnerSlotId,
-        ReviewerRole/ReviewerSlotId, RiskLevel, and product behavior. Update only the frozen validation paths
-        to use the assigned R5 worktree and H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows;
-        refresh BaselineCommit to the current main used for this successor task revision; and bind OwnerAgentId and
-        ReviewerAgentId to the current registered identities for the same stable Worker02 and Worker04 slots.
-        Preserve the old R4/PR #20 branch, worktree, baseline, and build path under PreviousRevision4.
+        ReviewerRole/ReviewerSlotId, RiskLevel, and product behavior. Update validation paths to use the
+        assigned R5 worktree and central H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0114-R5/Windows;
+        refresh BaselineCommit to current main; bind OwnerAgentId and ReviewerAgentId to the registered
+        Worker02 and Worker04 identities; archive PR #20 and its R2 review state and evidence beneath
+        PreviousRevision4.HistoricalPullRequest and PreviousRevision4.HistoricalRevision2Review; and keep
+        the active R5 PR/review fields clear. Preserve the old R4/R2 branch, worktree, baseline, and build path.
+      ScopeAmendment:
+        AddedAfterFindingId: ED0114-R5-OWNER-F003
+        ScopeAmendmentEventId: bf63ad81-a9b4-470d-9be8-190314d8f9cc
+        MetadataMigrationOnly: true
+        ProductWriteSetChanged: false
+        ProductBehaviorChanged: false
       Reason: >-
         The user requires generated build artifacts to remain under the central integration-port-contract.build root.
         R4's commands point to H:/Qbot/EmulativeDialog.ED-0114-R4.build and the superseded R2 source tree, while its
@@ -1475,8 +1504,8 @@ Tasks:
         merged on main after PR #77, so a fresh R5 specification and separate assignment can proceed without changing
         product scope.
       Impact: >-
-        Validation output and task assignment identity metadata only. No C++ source, test behavior, module, contract,
-        dependency, acceptance criterion, or product WriteSet changes.
+        Validation paths, task assignment identity metadata, and location of unchanged historical R2 review records
+        only. No C++ source, test behavior, module, contract, dependency, acceptance criterion, or product WriteSet changes.
       Rollback: >-
         If Owner or Reviewer rejects this CR, retain ED-0114/R4 Blocked with its historical paths and do not assign
         or write product code. No old worktree or build output is deleted or overwritten.
@@ -1496,6 +1525,14 @@ Tasks:
         IndependentReviewerDecision: ChangesRequested
         IndependentReviewerFindings: [ED0114-R5-REVIEWER-F001]
         IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-FixedHeadReview-ED0114-R5-TaskSpec-a2669305-20261030.md
+      PriorFixedHeadReviewRound2:
+        ReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        ReviewedHeadCommit: a88af557717f4fec53956e3abff97d52ac4c5bcb
+        OwnerDecision: ChangesRequested
+        OwnerFinding: ED0114-R5-OWNER-F003
+        OwnerReviewFindingEventId: 1521ae07-98f1-4d94-871a-afdebef28579
+        IndependentReviewerDecision: Pending
+        IndependentReviewerReviewAgentId: /root/luna04_ed0144_branch_review
       NoProductWriteAuthorization: true
       ProductWriteSetPathCount: 17
     PreviousRevision3:
@@ -1555,27 +1592,7 @@ Tasks:
     AssignedWorktree: ""
     AssignedBranch: ""
     PullRequestCreated: false
-    Revision2ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
-    Revision2ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
     ReviewStatus: NotStarted
-    ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
-    ReviewRound2Status: ChangesRequested
-    ReviewRound3Status: ChangesRequested
-    ReviewRound3Reviewer: Worker04
-    ReviewRound3DecisionAt: 2026-10-28
-    ReviewRound3Validation: "Independent Windows C++20 configure/build exit 0; full CTest 19/19; gcov JSON v2: AgentRuntime 259/304, OutputBudgetController 224/256, ToolCallCoordinator 138/141, Responses normalizer 45/46, Chat normalizer 46/47, Anthropic normalizer 22/22; no explicit source exclusions."
-    ReviewRound3Findings:
-      - {FindingId: ED0114-R2-F1, Severity: P1, Summary: "When a provider returns no usage event/snapshot at all, the ledger treats the configured budget as fully available and permits tool dispatch or further sampling; missing must be Unavailable after the request and fail closed."}
-      - {FindingId: ED0114-R2-F2, Severity: P1, Summary: "ApproveContinuation is called only by tests; CoreChatService has no production context-compression approval path, so arbitrary callers can self-authorize continuation."}
-      - {FindingId: ED0114-R2-F3, Severity: P2, Summary: "SharedTurnBudgetLedger retains every TurnId/RequestId indefinitely; EraseTurn/Reset have no production call site."}
-      - {FindingId: ED0114-R2-F4, Severity: P2, Summary: "PR changes 16 paths while frozen WriteSet lists 13; AgentRuntimeContractTests.cpp, AgentRuntimeVerticalSliceTests.cpp and ToolCallRoundTripTests.cpp must be explicitly authorized before merge."}
-    ReviewRound3Bundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0114-R2-Review-a23f252/ReviewResult.md
-    IndependentValidationSummary: H:/Qbot/EmulativeDialog.integration-port-contract.build/Review/ED-0114/Validation-20261028-01/Reports/ED0114-independent-coverage-rerun1.txt
-    PriorRevision2ExpectedBaseCommit: 5ac89661932c4a2fc032e4ce8ba154c3e79ba4d8
-    ReviewFindings:
-      - "Total-only or partial usage must not be interpreted as zero; unknown output budget must block safe continuation."
-      - "Production AgentRuntime and ToolCallCoordinator integration is required for OutputLimit dispatch blocking and Core-approved continuation with a new RequestId."
-      - "RecordProviderOutputLimited must close or mark remaining output unknown."
     Phase: P3
     OwnerRole: ProviderIntegrationOwner
     OwnerSlotId: Worker02
