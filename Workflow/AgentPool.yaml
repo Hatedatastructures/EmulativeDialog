@@ -68,7 +68,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: "ED-0149/R1-AsyncProviderAgentContract"
+    CurrentTaskId: "ED-0149/R2-AsyncProviderAgentContract"
     Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
