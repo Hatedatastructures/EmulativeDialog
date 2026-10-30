@@ -3240,6 +3240,12 @@ Tasks:
       ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
       TaskSpecReviewStatus: ApprovedAndMergedToMain
       TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+      TaskSpecOwnerDecision: Approve
+      TaskSpecReviewerDecision: Approve
+      TaskSpecCoordinatorDecision: Accepted
+      TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+      TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+      TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
       TaskSpecMergedToMainCommit: 13f4c94f694b4c89c367aa64fa245bad088bca3f
       PriorOwnerAgentId: /root/worker05_ed0144_memory
       PriorReviewerAgentId: /root/worker06_ed0105_review
