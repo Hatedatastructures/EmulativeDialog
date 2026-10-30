@@ -39,7 +39,7 @@ EntryGate:
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
-  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0153]
   AllTaskSpecsFrozenBeforeAssignment: true
   ValidationCommandChangeRequestId: CR-ED-0126-001
 
@@ -4079,3 +4079,227 @@ Tasks:
       LastValidationResult: "Pre-append validation passed with 287 valid unique P3 JSONL records; after appending CommandExecuted EventId 2532164e-fa2e-4886-a7de-85058fb76e82, final recheck passed with 288 valid unique records and Controller State=Merged. git diff --check exit 0; changed paths are CurrentState.md, P3.jsonl, and P3.yaml; P2 files and TaskIndex unchanged. Log: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0151-R3-PostMergeCloseout/ED0151-R3-PostMergeCloseout-20261030.log."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0153
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 冻结并实现 Boost.Asio/WinHTTP 异步 HTTPS 传输 Port
+    TaskKind: IntegrationTask
+    State: Proposed
+    BlockedBy: >-
+      This is a TaskSpec proposal only. It grants no product-write authorization. Keep it Proposed until this TaskSpec
+      is independently approved and merged, ED-0120/R5, ED-0121/R2, ED-0131/R2, ED-0146/R6, ED-0147/R9, and
+      ED-0149/R2 are all merged on main, their frozen contracts/build gates are verified, and Worker02 has been
+      explicitly released from ED-0149 before a separate post-merge assignment ledger is accepted by
+      WorkflowController validate-assignment. Do not edit ED-0149's seven-path task or implementation branch.
+    Phase: P3
+    OwnerRole: NetworkOwner
+    OwnerSlotId: Worker02
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker06
+    ReviewerIndependence: Required
+    ReviewerAgentId: /root/luna06_capability_status_audit
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-30"
+    TaskSpecProposalBaseCommit: ff25696a84cacc9a1e420fab3fd18055257c93bc
+    ProposedBranch: Task/ED-0153-R1AsyncHttpTransport
+    ProposedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Worktree
+    BaselineCommit: ff25696a84cacc9a1e420fab3fd18055257c93bc
+    Goal: >-
+      在既有 HttpTransportContract V1 之上新增版本化 AsyncHttpTransportContract V1，并以 C++20
+      Boost.Asio awaitable Port 和 Windows WinHTTP asynchronous API/Schannel 实现一次受 Core endpoint grant
+      约束的 HTTPS 请求与流式响应。协程调用不得同步阻塞；WinHTTP 状态回调必须被安全地投递到 Asio 执行器，
+      请求、句柄和回调数据在异步完成前保持有效，响应按有界块串行交付。保留 V1 的身份授权、系统 TLS
+      信任、代理、拒绝重定向、超时、取消、流式限制、脱敏终态和 unknown-outcome 语义。此任务不修改 V1
+      Port、V1 wire 行为或 Provider API。
+    OutOfScope:
+      - 修改 Architecture/Contracts/HttpTransportContract.md、Architecture/Contracts/CoreEndpointGrantContract.md 或 ADR-0003
+      - 修改 Source/Platform/Network/HttpTransportPort.hpp、WinHttpTransport.hpp 或 WinHttpTransport.cpp
+      - 修改现有 Tests/Contract/Platform/Network/CMakeLists.txt、根 CMakeLists.txt 或 CMakePresets.json
+      - 实现或修改 OpenAI Responses、Chat Completions、Anthropic Provider adapter、AgentRuntime、Channel 或 QQ
+      - 使用 OpenSSL、Boost.Asio SSL、curl、Beast TLS 或新增 TLS 根/证书绕过/降级策略
+      - 把 EndpointGrantId 或 TransportRequestId 发送到远端请求，或把 bearer grant 写入任何输出/记录
+      - 建立真实网络/DNS/TLS 测试、访问外网、使用真实凭据或添加通用网络工具
+      - 创建每请求线程、通过同步 WinHttpTransport::Stream 包装 awaitable，或在 Asio 执行器上同步等待 WinHTTP
+      - 修改 P3 Gate、Provider TaskSpec、其他 Agent 的任务写集或 ED-0149/R2 七路径产品写集
+    DependsOn: [ED-0120, ED-0121, ED-0131, ED-0146, ED-0147, ED-0149]
+    DependencyRevisionPolicy:
+      - {TaskId: ED-0120, Phase: P2, RequiredRevision: 5, RequiredState: Merged, Evidence: "HttpTransportContract V1 and CoreEndpointGrantContract V1 are Frozen; ADR-0003 R5 merged."}
+      - {TaskId: ED-0121, Phase: P3, RequiredRevision: 2, RequiredState: Merged, Evidence: "Existing synchronous WinHTTP/Schannel V1 implementation and offline contract tests are merged."}
+      - {TaskId: ED-0131, Phase: P2, RequiredRevision: 2, RequiredState: Merged, Evidence: "Pinned Boost.Asio 1.92.0 C++20 coroutine dependency and verify target are merged."}
+      - {TaskId: ED-0146, Phase: P2, RequiredRevision: 6, RequiredState: Merged, Evidence: "Transport grant validation and no-disclosure behavior are merged."}
+      - {TaskId: ED-0147, Phase: P3, RequiredRevision: 9, RequiredState: Merged, Evidence: "Core endpoint grant authority is merged and its independent Windows acceptance is recorded."}
+      - {TaskId: ED-0149, Phase: P3, RequiredRevision: 2, RequiredState: Merged, Evidence: "Async provider/AgentRuntime public contracts and Boost.Asio consumer compile contract are merged."}
+    ContractVersion:
+      - Architecture/Contracts/HttpTransportContract.md V1 (frozen prerequisite; unchanged)
+      - Architecture/Contracts/CoreEndpointGrantContract.md V1 (frozen prerequisite; unchanged)
+      - Architecture/Contracts/AsyncHttpTransportContract.md V1 (new, to be frozen with implementation)
+      - Architecture/Contracts/AsyncModelProviderContract.md V1 (ED-0149/R2 prerequisite)
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md V1 (ED-0149/R2 prerequisite)
+      - Boost.Asio 1.92.0 at afdfa32505af73e3d208144b3f623f0096cb62b6
+      - Windows WinHTTP with the system Schannel trust policy; no added TLS dependency
+    ModuleIds: [NetworkPlatform]
+    Context:
+      ModuleId: NetworkPlatform
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/Platform.yaml
+        - Architecture/Contracts/HttpTransportContract.md
+        - Architecture/Contracts/CoreEndpointGrantContract.md
+        - Source/Platform/Network/HttpTransportPort.hpp
+        - CMake/BoostAsioDependency.cmake
+        - CMake/DependencyPins.cmake
+      OnDemandSet:
+        - Standards/DependencyPolicy.md
+        - Source/Platform/Network/WinHttpTransport.hpp
+        - Source/Platform/Network/WinHttpTransport.cpp
+        - Tests/Contract/Platform/Network/CMakeLists.txt
+        - Tests/Contract/Platform/Network/WinHttpTransportTests.cpp
+        - Workflow/Plans/P3.yaml#TaskId=ED-0149&TaskRevision=2
+      ForbiddenSet:
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Agent/
+        - Source/Channels/
+        - CMakeLists.txt
+        - CMakePresets.json
+        - Tests/Contract/Providers/
+        - Tests/Contract/Agent/
+        - Tests/Contract/Channels/
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 18
+      ExpansionReasonRequired: true
+      ExpansionReason: "The Windows async implementation needs bounded inspection of the existing WinHTTP handle/security behavior, its offline fake seam, and the standalone CMake pattern in addition to the 12 primary contract/build references."
+    WriteSet:
+      - Architecture/Contracts/AsyncHttpTransportContract.md
+      - Source/Platform/Network/AsyncHttpTransportPort.hpp
+      - Source/Platform/Network/WinHttpAsyncTransport.hpp
+      - Source/Platform/Network/WinHttpAsyncTransport.cpp
+      - Tests/Contract/Platform/Network/AsyncHttpTransport/CMakeLists.txt
+      - Tests/Contract/Platform/Network/AsyncHttpTransport/AsyncHttpTransportContractTests.cpp
+    WriteSetRationale:
+      - "The new async contract, additive public Port, Windows implementation, and one isolated offline contract target form one reviewable transport boundary."
+      - "The independent nested CMake project links the pinned EmulativeDialogBoostAsio target and system WinHTTP without changing shared/root build files."
+      - "The implementation uses WinHTTP/Schannel for HTTPS and Boost.Asio for coroutine/executor/timer integration; it does not add OpenSSL or another TLS runtime."
+      - "No ED-0149 path is in this WriteSet; ED-0149/R2 explicitly excludes AsyncHttpTransport and real network I/O."
+    SharedLocks: [AsyncHttpTransportContractV1, HttpTransportContractV1, CoreEndpointGrantContractV1, BoostAsioDependency]
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "The new AsyncHttpTransportContract V1 and AsyncHttpTransportPort.hpp define one additive awaitable StreamAsync operation over the canonical TransportRequest/TransportTerminal types, caller stop_token, response-head sink, and bounded response-chunk sink. The owned request and all callback-visible state remain alive through terminal completion; callbacks are serial on the operation's Asio executor and no sink runs after exactly one returned terminal.", Evidence: "The contract and signatures are reviewed together; compile-time tests instantiate the awaitable Port with the pinned Boost.Asio executor and canonical V1 types, while the synchronous V1 Port diff remains unchanged."}
+      - {AcceptanceId: AC-2, Description: "Core endpoint grant validation occurs before any WinHTTP request/DNS/connect side effect. EndpointGrantId remains a local bearer capability and never enters logs, events, telemetry, diagnostics, persistence, command/user output, or remote headers/query/body. TransportRequestId is local correlation only and never substitutes for grant authorization or appears in remote request data.", Evidence: "Scripted fake API asserts grant rejection performs zero WinHTTP calls; request-capture tests search every emitted header, query/path and body for both IDs; static review finds no grant disclosure/output path."}
+      - {AcceptanceId: AC-3, Description: "Windows HTTPS uses WinHTTP asynchronous operation and the existing system Schannel trust policy. Redirects remain denied; System/Direct proxy semantics, request/response/header/chunk limits, timeouts, TLS fail-closed behavior, and the existing allowlist/framing rules remain compatible with HttpTransportContract V1. No synchronous Stream wrapper, blocking wait, per-request thread, OpenSSL, Boost.Asio SSL or new runtime dependency is introduced.", Evidence: "The fake-driven behavior matrix and fixed-head source/CMake review cover each frozen V1 rule; the product diff includes only the six-path WriteSet and the standalone target links EmulativeDialogBoostAsio plus system winhttp."}
+      - {AcceptanceId: AC-4, Description: "WinHTTP callbacks are safely bridged onto the Asio executor with owned callback state, copied transient callback payloads, bounded response chunks, one terminal transition, and handle cleanup only after callbacks are quiescent. Cancellation and timeout preserve V1 pre-send/sent-byte and UnknownOutcome semantics and never trigger an implicit retry.", Evidence: "Deterministic asynchronous fake schedules completion, data, cancellation, timeout, close and late callbacks across executor turns; tests assert exact terminal, ordering, no use-after-free, no callback after terminal, and no retry."}
+      - {AcceptanceId: AC-5, Description: "The standalone contract tests require no socket, DNS, external account, credential, or live endpoint and cover valid/invalid grant, success streaming, redirects, TLS failure, all timeout phases, cancellation before/after write, ambiguous post-send failure, response limits, malformed headers, proxy selection, callback races/lifetime, and privacy.", Evidence: "The named CTest Platform.Network.AsyncHttpTransport passes with the injected fake WinHTTP API; test source contains no live networking call or credential fixture."}
+      - {AcceptanceId: AC-6, Description: "WinHttpAsyncTransport.cpp reaches at least 80 percent unique executable source-line coverage using a fresh Windows gcov JSON v2 report paired with the exact passing CTest run.", Evidence: "CoverageCommand reports unique covered/total lines, percentage, JSON format version, GCC version, exact .gcno/.gcda paths and report path, and fails below 80 percent or on gcov/checksum warnings."}
+      - {AcceptanceId: AC-7, Description: "The standalone Windows C++20 target consumes Boost.Asio only from the pinned Boost 1.92.0 source/verify target; the fresh build preflight verifies the exact commit and required source files. The test executable links with Windows system WinHTTP and the pinned Asio interface target.", Evidence: "Fresh configure/build runs EmulativeDialogBoostAsioVerify and AsyncHttpTransportContractTests successfully with updates disconnected; the build and CMake diff show no system MSYS2 Boost, TLS library, root CMake or shared network test CMake dependency."}
+      - {AcceptanceId: AC-8, Description: "The product PR modifies exactly the six frozen WriteSet paths and preserves HttpTransportContract V1, CoreEndpointGrantContract V1, ADR-0003, the existing synchronous Port/WinHTTP implementation, provider adapters, and ED-0149's seven paths. Task remains unassignable until every dependency is merged and the Worker02 slot is released.", Evidence: "PRBaseCommit..PRHeadCommit path comparison equals the exact six-path WriteSet; dependency Controller queries, TaskSpec state, AgentPool slot history, and independent fixed-head review confirm all gates before any assignment."}
+    Validation:
+      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Worktree
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows
+      CommandLogDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows/Logs
+      DependencyCache:
+        BaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
+        BoostSourceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource
+        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+        UpdatesDisconnected: true
+        PreflightRecheckRequired: true
+      Coverage:
+        Required: true
+        ProductionSources: [Source/Platform/Network/WinHttpAsyncTransport.cpp]
+        MinimumLinePercent: 80
+        Metric: UniqueExecutableSourceLines
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows/Reports
+        ReportFormat: gcov JSON v2
+        FreshDirectoryRequired: true
+      RequiredBuildTargets: [EmulativeDialogBoostAsioVerify, EmulativeDialogWinHttpAsyncTransport, AsyncHttpTransportContractTests]
+      RequiredCTestTests: [Platform.Network.AsyncHttpTransport]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows'
+        $BoostSource = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies/EmulativeDialogBoostAsioSource'
+        if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
+        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        if (-not (Test-Path -LiteralPath (Join-Path $BoostSource '.git') -PathType Container)) { throw "Pinned Boost source checkout is missing: $BoostSource" }
+        $ActualCommit = (& git -C $BoostSource rev-parse HEAD | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0 -or $ActualCommit -ne 'afdfa32505af73e3d208144b3f623f0096cb62b6') { throw "Pinned Boost source commit check failed: $ActualCommit" }
+        foreach ($RequiredPath in @('libs/asio/include/boost/asio.hpp', 'libs/config/include/boost/version.hpp', 'LICENSE_1_0.txt')) { if (-not (Test-Path -LiteralPath (Join-Path $BoostSource $RequiredPath) -PathType Leaf)) { throw "Pinned Boost source is incomplete: $RequiredPath" } }
+        Write-Output 'FRESH_BUILD_AND_PINNED_BOOST_PREFLIGHT_OK=1'
+      TargetedBuild:
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Worktree/Tests/Contract/Platform/Network/AsyncHttpTransport -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows --target EmulativeDialogBoostAsioVerify EmulativeDialogWinHttpAsyncTransport AsyncHttpTransportContractTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows --output-on-failure --no-tests=error -R '^Platform\\.Network\\.AsyncHttpTransport$'"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0153-R1/Windows'
+        $Report = Join-Path $Build 'Reports'
+        $Logs = Join-Path $Build 'Logs'
+        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+        $SourceRelative = 'Source/Platform/Network/WinHttpAsyncTransport.cpp'
+        $Source = [System.IO.Path]::GetFullPath((Join-Path $Worktree $SourceRelative))
+        $CTestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+        $TestName = 'Platform.Network.AsyncHttpTransport'
+        if (-not (Test-Path -LiteralPath $CTestLog -PathType Leaf)) { throw "Missing fresh CTest log: $CTestLog" }
+        $CTestText = [System.IO.File]::ReadAllText($CTestLog)
+        if ($CTestText -notmatch '(?m)^1/1 Testing: Platform\.Network\.AsyncHttpTransport$' -or $CTestText -notmatch '(?m)^Test Passed\.$') { throw "Required CTest did not pass exactly once: $TestName" }
+        if ($CTestText -match '(?i)(libgcov|profiling error|checksum mismatch|overwrit|profile count data mismatch)') { throw 'CTest output contains a gcov checksum, overwrite, or profiling warning' }
+        $GcnoMatches = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter 'WinHttpAsyncTransport.cpp.gcno')
+        if ($GcnoMatches.Count -ne 1) { throw "Expected exactly one .gcno for $SourceRelative, found $($GcnoMatches.Count)" }
+        $Gcno = $GcnoMatches[0]
+        $Gcda = [System.IO.Path]::ChangeExtension($Gcno.FullName, '.gcda')
+        if (-not (Test-Path -LiteralPath $Gcda -PathType Leaf)) { throw "Missing matching .gcda: $Gcda" }
+        if ((Get-Item -LiteralPath $Gcda).Length -le 0) { throw "Coverage data is empty: $Gcda" }
+        if ((Get-Item -LiteralPath $CTestLog).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Gcda).LastWriteTimeUtc) { throw 'The required CTest record predates its matching gcda file' }
+        New-Item -ItemType Directory -Force -Path $Report, $Logs | Out-Null
+        Push-Location $Report
+        try {
+          $GcovOutput = & $Gcov --json-format --branch-counts --preserve-paths -o $Gcno.FullName $Source 2>&1
+          $GcovExit = $LASTEXITCODE
+          $GcovText = $GcovOutput -join [Environment]::NewLine
+          $GcovText | Set-Content -LiteralPath (Join-Path $Logs 'CoverageCommand.log')
+          if ($GcovExit -ne 0 -or $GcovText -match '(?i)(warning|error|libgcov|checksum|overwrit)') { throw "gcov failed or warned (exit $GcovExit): $GcovText" }
+        } finally { Pop-Location }
+        $Backslash = [string][char]92
+        $Expected = $Source.Replace($Backslash, '/').ToLowerInvariant()
+        $MatchesForSource = @()
+        foreach ($JsonFile in @(Get-ChildItem -LiteralPath $Report -Filter '*.gcov.json.gz')) {
+          $CoverageStream = [System.IO.File]::OpenRead($JsonFile.FullName)
+          try {
+            $Zip = [System.IO.Compression.GzipStream]::new($CoverageStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try { $Reader = [System.IO.StreamReader]::new($Zip); try { $Document = ConvertFrom-Json -InputObject $Reader.ReadToEnd() -ErrorAction Stop } finally { $Reader.Dispose() } } finally { $Zip.Dispose() }
+          } finally { $CoverageStream.Dispose() }
+          if ([string]$Document.format_version -notmatch '^2(?:\.0)?$') { throw "Unexpected gcov JSON format: $($Document.format_version)" }
+          foreach ($File in $Document.files) { if (([System.IO.Path]::GetFullPath([string]$File.file)).Replace($Backslash, '/').ToLowerInvariant() -eq $Expected) { $MatchesForSource += [PSCustomObject]@{ JsonFile = $JsonFile.FullName; File = $File; Document = $Document } } }
+        }
+        if ($MatchesForSource.Count -ne 1) { throw "Expected exactly one gcov file record for $SourceRelative, found $($MatchesForSource.Count)" }
+        $UniqueLines = @($MatchesForSource[0].File.lines | Group-Object { [int]$_.line_number })
+        $Total = $UniqueLines.Count
+        $Covered = 0
+        foreach ($LineGroup in $UniqueLines) { if (@($LineGroup.Group | Where-Object { [long]$_.count -gt 0 }).Count -gt 0) { $Covered++ } }
+        if ($Total -eq 0 -or (100.0 * $Covered / $Total) -lt 80.0) { throw "Coverage below 80 percent: $Covered/$Total" }
+        Write-Output "SOURCE=$SourceRelative COVERED=$Covered TOTAL=$Total PERCENT=$([Math]::Round(100*$Covered/$Total,2)) FORMAT=$($MatchesForSource[0].Document.format_version) GCC=$($MatchesForSource[0].Document.gcc_version) GCNO=$($Gcno.FullName) Gcda=$Gcda REPORT=$($MatchesForSource[0].JsonFile)"
+      StaticChecks:
+        - "On the assigned worktree, WorkflowController queries must report State=Merged for P2/ED-0120/5, P3/ED-0121/2, P2/ED-0131/2, P2/ED-0146/6, P3/ED-0147/9, and P3/ED-0149/2. After TaskSpec merge, bind AssignmentBaseCommit from the accepted post-merge assignment ledger; do not dispatch while Worker02 remains assigned to ED-0149."
+        - "After the product PR is created, bind PRBaseCommit and PRHeadCommit from GitHub base.sha and head.sha; run git diff --check PRBaseCommit...PRHeadCommit and require git diff --name-only PRBaseCommit...PRHeadCommit to equal exactly the six-path WriteSet."
+        - "Verify BaselineCommit is an ancestor of AssignmentBaseCommit, PRBaseCommit, and PRHeadCommit; separately audit BaselineCommit..PRBaseCommit as inherited main changes with no product WriteSet overlap."
+        - "The new AsyncHttpTransportContract V1 is additive; existing HttpTransportContract V1, CoreEndpointGrantContract V1, ADR-0003, synchronous public declarations, and synchronous implementation are not changed."
+        - "No lock is held across co_await or a user sink; callback data is copied before WinHTTP callback return and bounded before posting to the Asio executor."
+        - "The standalone CMake project includes CMake/BoostAsioDependency.cmake using the repository root derived from its own directory; its target depends on EmulativeDialogBoostAsioVerify and links EmulativeDialogBoostAsio and system winhttp."
+        - "Only the exact six-path product WriteSet is changed; no ED-0149/R2, provider, root CMake, or shared Network test CMake path appears in the PR diff."
+        - "The named offline CTest passes; the gcov JSON v2 report contains the exact source once, uses its unique paired .gcno/.gcda, reaches 80 percent, and has no checksum/overwrite warning."
+      LiveSideEffects: Forbidden
+      NotRunReason: "The test target uses a scripted fake WinHTTP callback API; validation performs no DNS, socket, TLS, credential, or external-account access."
+    RiskLevel: High
+    RiskOwnerRole: NetworkOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
