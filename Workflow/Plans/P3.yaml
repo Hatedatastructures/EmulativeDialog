@@ -434,10 +434,13 @@ ChangeRequests:
     ProposedTaskRevision: 6
     RequestedByRole: MemoryOwner
     RequestedByAgentId: /root/luna05_async_runtime_taskroute
-    Decision: ProposedAwaitingOwnerAndReviewerReview
+    Decision: Accepted
     OwnerAgentId: /root/luna05_async_runtime_taskroute
+    OwnerCRDecision: Approve
+    OwnerCRDecisionEvidence: "Worker05 approved CR at fixed Head b35ba534c069750466b3dfea0bde0b12ce46ae74."
     IndependentReviewerAgentId: /root/luna06_capability_status_audit
-    IndependentReviewerDecision: Pending
+    IndependentReviewerDecision: Approve
+    IndependentReviewerReviewHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
     ReviewerIndependence: Required
     Scope: >-
       Preserve ED-0148 Goal, exact two-path product WriteSet, dependencies, MemoryContract V1, Acceptance,
@@ -464,7 +467,8 @@ ChangeRequests:
       - Tests/Contract/Memory/ConversationMemoryTests.cpp
     OwnerCRDecision: Pending
     IndependentReviewerDecision: Pending
-    CoordinatorDecision: Pending
+    CoordinatorDecision: Accepted
+    CoordinatorDecisionHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
     PreserveGoalWriteSetDependenciesContractsAcceptanceAndProductBehavior: true
     ProductWriteSetChanged: false
     NoProductSourceWriteAuthorizedBeforeMergeAndAssignmentValidation: true
@@ -3184,7 +3188,15 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: /root/luna06_capability_status_audit
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: AwaitingOwnerAndReviewerFixedHeadReview
+    TaskSpecReviewStatus: ApprovedAwaitingMainMerge
+    TaskSpecHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
+    TaskSpecOwnerDecision: Approve
+    TaskSpecReviewerDecision: Approve
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecOwnerReviewHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
+    TaskSpecReviewerReviewHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
+    TaskSpecCoordinatorDecisionHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
+    TaskSpecMergedToMainCommit: ""
     ProposedTaskSpecBaseCommit: b638925fed2355ed44c978abe1bc635ba6b1d9b4
 
     BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
@@ -3266,18 +3278,21 @@ Tasks:
       ProposedTaskRevision: 6
       RequestedByRole: MemoryOwner
       RequestedByAgentId: /root/luna05_async_runtime_taskroute
-      Decision: ProposedAwaitingOwnerAndReviewerReview
+      Decision: Accepted
       OwnerAgentId: /root/luna05_async_runtime_taskroute
-      OwnerDecision: Pending
+      OwnerDecision: Approve
+      OwnerDecisionHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
       IndependentReviewerAgentId: /root/luna06_capability_status_audit
-      IndependentReviewerDecision: Pending
+      IndependentReviewerDecision: Approve
+      IndependentReviewerDecisionHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
       ReviewerIndependence: Required
       Scope: "Preserve Goal, exact two-path WriteSet, dependencies, MemoryContract V1, product Acceptance, behavior, and product branch/worktree. Change only the consumed R5 build/report paths to the unique R6 path and rebind Owner/Reviewer AgentIds to current Worker05/Worker06. Record each already-listed validation command as CommandExecuted in the existing P3 event shard with exact command, working directory, exit code, correlation ID, and evidence refs; this adds execution evidence only and does not change product Acceptance or WriteSet. Require post-merge assignment validation before R6 commands or product writes."
       ProposedTaskSpecBaseCommit: b638925fed2355ed44c978abe1bc635ba6b1d9b4
       ProposedValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory
       ProposedOwnerSlotId: Worker05
       ProposedReviewerSlotId: Worker06
-      CoordinatorDecision: Pending
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionHeadCommit: b35ba534c069750466b3dfea0bde0b12ce46ae74
       PreserveGoalWriteSetDependenciesContractsAcceptance: true
       ProductWriteSetChanged: false
       NoProductSourceWriteAuthorizedBeforeMergeAndAssignmentValidation: true
