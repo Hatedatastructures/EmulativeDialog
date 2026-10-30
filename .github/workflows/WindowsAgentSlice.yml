@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Build and Test
+    name: WindowsAgentSlice / Build and Test
     runs-on: windows-2022
     timeout-minutes: 45
     defaults:
