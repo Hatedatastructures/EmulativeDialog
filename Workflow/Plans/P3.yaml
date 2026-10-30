@@ -3823,37 +3823,68 @@ Tasks:
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 到 Mock Channel 回执的 C++ 纵向切片
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Assigned
     BlockedBy: >-
-      R4 is a proposed validation-only revision awaiting Owner and independent fixed-head review and Coordinator
-      acceptance. R2 assignment evidence and the unaccepted R3 proposal remain historical; neither authorizes R4
-      validation. No configure, build, CTest, gcov, or product write is authorized until the Coordinator records
-      acceptance and the required assignment/readiness gates.
+      R4 was accepted after fixed-head Owner/Reviewer approval and PR #93 merge. This assignment is still a candidate;
+      no configure, build, CTest, or gcov may run until this assignment ledger merges and the post-merge
+      WorkflowController validate-assignment returns AssignmentAccepted for the exact PR #85 source checkout.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    Branch: Task/ED-0150-AsyncRuntimeVerticalSlice
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W
     ReviewerRole: IndependentReviewer
     ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     TaskSpecProposalBaseCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
     ProposedTaskSpecBranch: Task/ED-0150-R4-CoveragePreflight
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R4-TaskSpec/Worktree
-    TaskSpecReviewStatus: PendingFixedHeadReview
-    TaskSpecOwnerDecision: PendingFixedHeadReview
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecision: APPROVE
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
-    TaskSpecReviewerDecision: PendingFixedHeadReview
+    TaskSpecOwnerReviewBaseCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
+    TaskSpecOwnerReviewHeadCommit: e846ad822648c1931b04e55873f4c7af12cae97d
+    TaskSpecOwnerDecisionAtUtc: '2026-10-30T20:02:39Z'
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R4-TaskSpec/Worker02-Owner-FixedHeadReview-e846ad8-20261031.md
+    TaskSpecOwnerReviewBundleSha256: D4328B09F1E5C45E9E55743F30CC618DDAEBAFD1D821BD9F233EA3F495D12D78
+    TaskSpecOwnerReviewMetadataNote: >-
+      The Owner bundle says its GitHub query found no PR for this head, but PR #93 was created at 20:00:35Z before
+      the review at 20:02:39Z. This metadata statement is stale; the Owner decision and F001/F002 review remain bound
+      to the exact Base/Head shown above and are independently recorded here.
+    TaskSpecReviewerDecision: APPROVE
     TaskSpecReviewerSlotId: Worker06
     TaskSpecReviewerAgentId: /root/luna06_capability_status_audit
-    TaskSpecCoordinatorDecision: Pending
-    TaskSpecReviewSource: LocalFixedHeadCandidate
+    TaskSpecReviewerReviewBaseCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
+    TaskSpecReviewerReviewHeadCommit: e846ad822648c1931b04e55873f4c7af12cae97d
+    TaskSpecReviewerDecisionAtUtc: '2026-10-30T20:02:11Z'
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R4-TaskSpec/Worker06-FixedHeadReview-e846ad8-20261031.md
+    TaskSpecReviewerReviewBundleSha256: 1F288465A91D7D1A0A926598CE3A2A0FEB215E1F04B6DD29BA936F3747FC4C15
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionAtUtc: '2026-10-30T20:07:25Z'
+    TaskSpecReviewSource: PR93FixedHeadReview
+    TaskSpecHeadCommit: e846ad822648c1931b04e55873f4c7af12cae97d
+    TaskSpecFinalPullRequestHeadCommit: e846ad822648c1931b04e55873f4c7af12cae97d
+    TaskSpecMergedToMainCommit: 2a72fec75a413a249005c74bc03ba95062c19f12
+    TaskSpecMergePullRequestNumber: 93
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/93
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAtUtc: '2026-10-30T20:04:14Z'
     TaskSpecStatusNote: >-
-      R4 preserves the R3 diagnostic predicate and short fresh validation paths, adding the two Owner-required
-      safety checks: reject a dirty PR #85 checkout at both preflight and coverage time, and create B/Logs before
-      appending command output. PR #92 merged R3 before its Owner fixed-head review; that post-merge review returned
-      CHANGES_REQUESTED, so R3 was never accepted and no validation was authorized. R4 remains Proposed until its
-      Owner and independent Reviewer approve the exact Head and the Coordinator records acceptance. R2 assignment
-      fields remain historical and do not assign or activate R4.
+      PR #93 merged after Worker02 Owner and Worker06 independent fixed-head APPROVE on Base 08e2585 and Head
+      e846ad8; the Coordinator accepted CR-ED-0150-R3-COVERAGE-PREFLIGHT-001. R4 adds only the two fail-closed
+      preflight fixes. Worker02 is assigned to validate the exact PR #85 Base 19ddbfd and Head de1ec7c checkout;
+      coverage remains blocked until this assignment PR merges and post-merge Controller validation accepts it.
+    GitHubNativeReviewSubmissionCount: 0
+    OwnerReviewEventId: f4933e0f-c517-40da-a12c-6ad6288f41fc
+    ReviewerReviewEventId: 1a5e0e9c-2f23-45fe-ab0e-84678afaafed
+    ChangeRequestAcceptedEventId: e11bc103-4a33-4d1e-8e3f-c4c86d8cea76
+    TaskReadinessValidatedEventId: a07fa166-d83c-4151-8843-e77ef04fcb25
+    AssignmentValidationEventId: 3aa6feaf-d264-4ac3-8041-294d66c6a739
+    TaskAssignedEventId: 79bdd803-71af-4103-aa72-589229e83dec
+    AgentSlotAssignedEventId: 3f2daf63-6eee-4dfd-87dd-c29a688e2ef2
     PreviousRevision3:
       TaskRevision: 3
       Disposition: SupersededByOwnerFindingsBeforeValidation
@@ -4067,12 +4098,33 @@ Tasks:
       ProposedTaskRevision: 4
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      Decision: PendingCoordinatorAcceptance
-      OwnerDecision: PendingFixedHeadReview
+      Decision: Accepted
+      OwnerDecision: APPROVE
       OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
-      IndependentReviewerDecision: PendingFixedHeadReview
+      OwnerDecisionAtUtc: '2026-10-30T20:02:39Z'
+      OwnerReviewedBaseCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
+      OwnerReviewedHeadCommit: e846ad822648c1931b04e55873f4c7af12cae97d
+      OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R4-TaskSpec/Worker02-Owner-FixedHeadReview-e846ad8-20261031.md
+      OwnerReviewBundleSha256: D4328B09F1E5C45E9E55743F30CC618DDAEBAFD1D821BD9F233EA3F495D12D78
+      IndependentReviewerDecision: APPROVE
       IndependentReviewerSlotId: Worker06
       IndependentReviewerAgentId: /root/luna06_capability_status_audit
+      IndependentReviewerDecisionAtUtc: '2026-10-30T20:02:11Z'
+      IndependentReviewerReviewedBaseCommit: 08e25850a90a60c7ae7ccf3f487c9dc589c5c52d
+      IndependentReviewerReviewedHeadCommit: e846ad822648c1931b04e55873f4c7af12cae97d
+      IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R4-TaskSpec/Worker06-FixedHeadReview-e846ad8-20261031.md
+      IndependentReviewerReviewBundleSha256: 1F288465A91D7D1A0A926598CE3A2A0FEB215E1F04B6DD29BA936F3747FC4C15
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionAgentId: /root
+      CoordinatorDecisionAtUtc: '2026-10-30T20:07:25Z'
+      CoordinatorDecisionScope: >-
+        Accept the validation-only R4 correction after both fixed-head approvals and PR #93 merge. Do not run
+        configure/build/CTest/gcov until the assignment ledger merges and post-merge Controller validation accepts
+        the binding to PR #85 Base 19ddbfd and Head de1ec7c.
+      TaskSpecPullRequestNumber: 93
+      TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/93
+      TaskSpecPullRequestMergeCommit: 2a72fec75a413a249005c74bc03ba95062c19f12
+      TaskSpecPullRequestMergedAtUtc: '2026-10-30T20:04:14Z'
       Scope: >-
         Preserve the R3 diagnostic predicate, all gcov flags/order, short fresh paths, PR #85 Base/Head binding,
         source identity, CTest freshness, paired .gcno/.gcda validation, JSON v2 parsing, unique executable-line
@@ -4099,12 +4151,23 @@ Tasks:
         - "PR #92 Owner review: Worker02 CHANGES_REQUESTED on fixed Head 4fbc3385b5ef80762ebf42f8e4ece74e973946ad; findings F001/F002."
         - "PR #92 Worker06 review: APPROVE on Base 19ddbfd161b4db76614fd625203c68cfcc86360e -> Head 4fbc3385b5ef80762ebf42f8e4ece74e973946ad; no other concrete coverage-command blocker."
         - "PR #85 fixed coverage target remains Base 19ddbfd161b4db76614fd625203c68cfcc86360e -> Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586."
+        - "R4 Owner bundle's PR-existence note is corrected by TaskSpecOwnerReviewMetadataNote; review scope and decision are unchanged."
       ProductWriteAuthorization: None
+      OwnerReviewEventId: f4933e0f-c517-40da-a12c-6ad6288f41fc
+      IndependentReviewerReviewEventId: 1a5e0e9c-2f23-45fe-ab0e-84678afaafed
+      CoordinatorAcceptanceEventId: e11bc103-4a33-4d1e-8e3f-c4c86d8cea76
+      TaskSpecPullRequestCreatedAtUtc: '2026-10-30T20:00:35Z'
       CoordinatorActionRequired: >-
-        After final R4 Owner and Worker06 fixed-head review, the Coordinator must record the CR proposal, review and
-        acceptance/rejection events against the exact R4 Base/Head, then reconcile ED-0150 revision/assignment state.
-        No R4 validation is authorized before that record and required Controller assignment gates. The existing clean
-        PR #85 checkout at E15R3/W is a prepared input only; do not run it until the accepted R4 command is active.
+        The Coordinator accepted the R4 CR after the exact fixed-head Owner/Reviewer approvals and PR #93 merge, and
+        recorded the decision below and in P3 events. The R4 assignment is now a candidate; do not run validation until
+        this assignment ledger merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted.
+    AssignmentStatus: AssignedCandidatePendingPostMergeControllerAcceptance
+    AssignedBranch: Task/ED-0150-AsyncRuntimeVerticalSlice
+    AssignedWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W
+    AssignedBaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+    ProductValidationBaseCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
+    ProductValidationHeadCommit: de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586
+    ProductWriteAuthorization: None
     BaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
