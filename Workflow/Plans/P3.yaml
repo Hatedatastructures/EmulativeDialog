@@ -2344,8 +2344,8 @@ Tasks:
     Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
     State: Blocked
-    BlockedBy: "P3 EntryGate is Passed and ED-0148/R6 exact ProposalId consent matching is merged. ED-0144/R3 remains blocked because its accepted TTL-preservation TaskSpec has not been merged/assigned and PR #25 is still open with the R2 backup-recall ExpiresAt-loss Major finding; complete the R3 fix and fresh R3 validation before resuming durable Memory integration."
-    AssignmentNote: "Dependencies ED-0113 and ED-0123 are merged; root CMake ownership is reserved to ED-0145 to avoid WriteSet conflict."
+    BlockedBy: "P3 EntryGate is Passed and ED-0148/R6 exact ProposalId consent matching is merged. ED-0144/R3 remains blocked until this R3 TaskSpec is independently reviewed and merged, then a separate post-merge assignment ledger is accepted by WorkflowController; PR #25 remains open at the R2 head with the ExpiresAt-loss Major finding. No R3 product edits or validation are authorized before AssignmentAccepted."
+    AssignmentNote: "Dependencies ED-0113 and ED-0123 are merged; P3 EntryGate and ED-0148/R6 are complete; root CMake ownership remains reserved to ED-0145. PR #25 R2 fixed Head 9dc44d37efd27b67296c373dcf23731c9fe44173 requires the accepted R3 TTL-preservation behavior and fresh validation."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0144-002
       Decision: Accepted
@@ -2449,10 +2449,10 @@ Tasks:
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
-    OwnerAgentId: /root/worker05_ed0144_memory
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
     ReviewerRole: BuildAndWorkflowOwner
     ReviewerSlotId: Worker06
-    ReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerAgentId: /root/luna06_capability_status_audit
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0144-MemorySqliteAdapter
@@ -2483,29 +2483,149 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "独立 Memory 合同目标可编译并运行；根 CMake/CTest 注册由 ED-0145 统一完成。", Evidence: "Standalone CMake target and CTest pass; ED-0145 later verifies the root suite."}
       - {AcceptanceId: AC-4, Description: "SQLite adapter losslessly preserves valid optional ProposalId while keeping existing V1 rows readable and rejecting malformed/future encodings; exact proposal-bound consent survives recall and backup restore.", Evidence: "Real SQLite tests cover nullopt V1 with no inferred ProposalId and non-empty delimiter-containing, embedded-NUL and non-UTF-8 ProposalId byte sequences through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup; empty and mismatched proposal-bound IDs fail closed; malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future values fail closed on active and backup reads."}
       - {AcceptanceId: AC-5, Description: "Backup recall and authorized restore preserve each record's optional ExpiresAt; an expired record is unavailable after its original expiry and cannot become permanent through restore.", Evidence: "Real SQLite test stores a future-expiring record, recalls backup and restarts the database, restores through ConversationMemory, verifies exact expiry equality, then verifies no Recall/ListActive result at or after the original expiry."}
+    AssignmentStatus: AwaitingTaskSpecReviewAndPostMergeControllerAcceptance
+    ProductWriteAuthorization: None
+    AssignmentGate: >-
+      Do not edit product paths or run R3 configure/build/CTest/gcov until this R3 TaskSpec PR is independently
+      reviewed and merged. The Coordinator must then merge a separate assignment-ledger update binding the current
+      main baseline, Worker05 owner and Worker06 reviewer, exact product branch/worktree, and this four-path WriteSet;
+      WorkflowController validate-assignment must return AssignmentAccepted and the matching TaskStarted event must
+      be recorded before implementation or validation begins.
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory
       Coverage:
         Required: true
         ProductionSources: [Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory/Reports
       RequiredTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
+      FreshBuildPreflight: |-
+        $ErrorActionPreference = 'Stop'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory'
+        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+        Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.ED-0144.build/Dependencies -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone --target SqliteMemoryStorageAdapterTests --parallel 4"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone --output-on-failure --no-tests=error"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --target SqliteMemoryStorageAdapterTests --parallel 4"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --output-on-failure --no-tests=error"
+        - "C:/msys64/ucrt64/bin/g++.exe --version"
+        - "C:/msys64/ucrt64/bin/gcov.exe --version"
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen WriteSet"
         - "The fresh CTest and gcov logs contain no libgcov profiling checksum or overwrite warnings; any such warning invalidates coverage evidence and requires a new fresh build directory."
         - "Encoded MemoryKind bytes stay <= INT_MAX before SqliteStore binding; decoded V2 payload bytes exactly equal the declared length before buffer allocation"
         - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
-        - "C:/msys64/ucrt64/bin/gcov.exe --version"
-        - "Generate a gcov JSON v2 report for SqliteMemoryStorageAdapter.cpp under TaskBuildDirectory/Reports and verify at least 80 percent line coverage with numerator and denominator."
-      CoverageCommand: >-
-        $ErrorActionPreference='Stop'; $build='H:/Qbot/EmulativeDialog.ED-0144-R3.build/Standalone'; $report=Join-Path $build 'Reports'; New-Item -ItemType Directory -Force -Path $report | Out-Null; $gcno=Get-ChildItem -LiteralPath $build -Recurse -Filter 'SqliteMemoryStorageAdapter.cpp.gcno' | Select-Object -First 1; if($null -eq $gcno){throw 'Missing SqliteMemoryStorageAdapter.cpp.gcno'}; Push-Location $report; try { & 'C:/msys64/ucrt64/bin/gcov.exe' --json-format --branch-counts --preserve-paths -o $gcno.FullName 'H:/Qbot/EmulativeDialog.ED-0144/Source/Memory/SqliteMemoryStorageAdapter.cpp'; if($LASTEXITCODE -ne 0){throw 'gcov failure'} } finally { Pop-Location }; $gz=Get-ChildItem -LiteralPath $report -Filter 'SqliteMemoryStorageAdapter*.gcov.json.gz' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if($null -eq $gz){throw 'Missing gcov JSON output'}; $inputStream=[System.IO.File]::OpenRead($gz.FullName); try { $zip=[System.IO.Compression.GzipStream]::new($inputStream,[System.IO.Compression.CompressionMode]::Decompress); try { $reader=[System.IO.StreamReader]::new($zip); try { $json=ConvertFrom-Json -InputObject $reader.ReadToEnd() } finally {$reader.Dispose()} } finally {$zip.Dispose()} } finally {$inputStream.Dispose()}; $file=$json.files | Where-Object { $_.file -match 'SqliteMemoryStorageAdapter\.cpp$' } | Select-Object -First 1; if($null -eq $file){throw 'Adapter source not found in gcov JSON'}; $lines=@($file.lines); $executed=@($lines | Where-Object { $_.count -gt 0 }).Count; Write-Output "FORMAT=$($json.format_version) GCC=$($json.gcc_version) COVERED=$executed TOTAL=$($lines.Count) PERCENT=$([Math]::Round(100*$executed/$lines.Count,2)) REPORT=$($gz.FullName)"; & 'C:/msys64/ucrt64/bin/gcov.exe' --version | Select-Object -First 1
+
+        - "The CMake cache identifies the EmulativeDialogMemoryContract source and the frozen C++20 MinGW compiler."
+        - "The standalone CTest run proves both ConversationMemoryTests and SqliteMemoryStorageAdapterTests passed and contains no libgcov profiling checksum or overwrite warning."
+        - "CoverageCommand uses the unique fresh R3 .gcno/.gcda pair and exact source identity, emits gcov JSON v2, and reports at least 80 percent unique executable-line coverage with numerator and denominator."
+        - "Every listed validation command has a CommandExecuted event with exact command, working directory, exit code, correlation ID, and output evidence reference; missing command evidence invalidates acceptance."
+      CoverageCommand: |-
+        $ErrorActionPreference = 'Stop'
+        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0144'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory'
+        $Reports = Join-Path $Build 'Reports'
+        $Source = Join-Path $Worktree 'Source/Memory/SqliteMemoryStorageAdapter.cpp'
+        $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
+        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+        $ExpectedVersion = '16.1.0'
+        $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
+
+        function Normalize-Path([string]$Path, [string]$BaseDirectory) {
+          $Value = $Path.Replace('/', '\')
+          if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
+          return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
+        }
+
+        function Read-GcovJson([string]$Path) {
+          $InputStream = [System.IO.File]::OpenRead($Path)
+          try {
+            $ZipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+            try {
+              $Reader = [System.IO.StreamReader]::new($ZipStream)
+              try { $JsonText = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+            } finally { $ZipStream.Dispose() }
+          } finally { $InputStream.Dispose() }
+          return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
+        }
+
+        try {
+          if (-not (Test-Path -LiteralPath $Build -PathType Container)) { throw "Missing fresh task build directory: $Build" }
+          $Cache = Join-Path $Build 'CMakeCache.txt'
+          if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
+          $CacheText = [System.IO.File]::ReadAllText($Cache).Replace(([string][char]13 + [string][char]10), [string][char]10).Replace([string][char]13, [string][char]10)
+          if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogMemoryContract$') { throw 'Wrong CMake project in task build directory' }
+          if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0144/Tests/Contract/Memory$') { throw 'CMake source directory does not match the assigned Memory worktree' }
+          if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
+          if ($CacheText -notmatch '(?m)^CMAKE_CXX_FLAGS:STRING=.*--coverage') { throw 'CMAKE_CXX_FLAGS is missing --coverage' }
+          if ($CacheText -notmatch '(?m)^CMAKE_EXE_LINKER_FLAGS:STRING=.*--coverage') { throw 'CMAKE_EXE_LINKER_FLAGS is missing --coverage' }
+
+          $CompilerText = (& $Gxx --version 2>&1 | Out-String)
+          $VersionPattern = "(?<![0-9.])$([regex]::Escape($ExpectedVersion))(?![0-9.])"
+          if ($LASTEXITCODE -ne 0 -or $CompilerText -notmatch $VersionPattern) { throw "Expected GCC $ExpectedVersion; $CompilerText" }
+          $GcovText = (& $Gcov --version 2>&1 | Out-String)
+          if ($LASTEXITCODE -ne 0 -or $GcovText -notmatch $VersionPattern -or $GcovText -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2; $GcovText" }
+
+          $OldJson = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter '*.gcov.json.gz')
+          if ($OldJson.Count -ne 0) { throw 'Task build must be fresh; gcov JSON already exists' }
+          $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter 'SqliteMemoryStorageAdapter.cpp.gcno')
+          if ($Notes.Count -ne 1) { throw "Expected one SqliteMemoryStorageAdapter.cpp.gcno; found $($Notes.Count)" }
+          $Data = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
+          if (-not (Test-Path -LiteralPath $Data -PathType Leaf)) { throw "Missing paired coverage data: $Data" }
+          if ((Get-Item -LiteralPath $Data).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) { throw 'gcda predates gcno; rebuild and rerun CTest' }
+          $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+          if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw 'Missing CTest LastTest.log' }
+          $TestLogText = [System.IO.File]::ReadAllText($TestLog)
+          foreach ($TestName in @('ConversationMemoryTests', 'SqliteMemoryStorageAdapterTests')) {
+            $Pattern = "(?ms)^\d+/\d+ Test: $([regex]::Escape($TestName))\r?\n.*?(?=^\d+/\d+ Testing:|\z)"
+            $TestBlocks = @([regex]::Matches($TestLogText, $Pattern))
+            if ($TestBlocks.Count -ne 1) { throw "Expected one CTest result block for $TestName; found $($TestBlocks.Count)" }
+            if ($TestBlocks[0].Value -notmatch '(?im)^Test Passed\.\r?$') { throw "The CTest result block for $TestName did not pass" }
+          }
+          if ($TestLogText -match $WarningPattern) { throw 'CTest log contains a libgcov checksum/overwrite warning' }
+          if ((Get-Item -LiteralPath $TestLog).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Data).LastWriteTimeUtc) { throw 'CTest log predates gcda execution data' }
+
+          New-Item -ItemType Directory -Force -Path $Reports | Out-Null
+          $RunRoot = Join-Path $Reports ('Run-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Path $RunRoot | Out-Null
+          Push-Location -LiteralPath $RunRoot
+          try { $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Notes[0].FullName $Source 2>&1); $ExitCode = $LASTEXITCODE }
+          finally { Pop-Location }
+          $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
+          if ($ExitCode -ne 0) { throw "gcov failed with exit ${ExitCode}: $OutputText" }
+          if ($OutputText -match $WarningPattern) { throw "gcov reported stale/conflicting data: $OutputText" }
+
+          $JsonFiles = @(Get-ChildItem -LiteralPath $RunRoot -File -Filter '*.gcov.json.gz')
+          if ($JsonFiles.Count -ne 1) { throw "Expected one gcov JSON report; found $($JsonFiles.Count)" }
+          $Json = Read-GcovJson $JsonFiles[0].FullName
+          if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw 'Wrong gcov JSON format/GCC version' }
+          $ExpectedSource = Normalize-Path $Source $Worktree
+          $SourceRecords = @($Json.files | Where-Object { (Normalize-Path ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSource })
+          if ($SourceRecords.Count -ne 1) { throw "Expected one exact SqliteMemoryStorageAdapter.cpp files[] record; found $($SourceRecords.Count)" }
+
+          $LineCoverage = @{}
+          foreach ($Line in @($SourceRecords[0].lines)) {
+            if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw 'Missing line_number/count in gcov JSON' }
+            $Number = [int]$Line.line_number
+            $Count = [long]$Line.count
+            if ($Number -le 0 -or $Count -lt 0) { throw 'Invalid executable-line record' }
+            if (-not $LineCoverage.ContainsKey($Number)) { $LineCoverage[$Number] = $false }
+            if ($Count -gt 0) { $LineCoverage[$Number] = $true }
+          }
+          $Total = $LineCoverage.Count
+          if ($Total -eq 0) { throw 'Executable-line denominator is empty' }
+          $Covered = 0
+          foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
+          $Percent = 100.0 * $Covered / $Total
+          $PercentText = $Percent.ToString('F2', [System.Globalization.CultureInfo]::InvariantCulture)
+          Write-Output "SqliteMemoryStorageAdapter.cpp COVERED=$Covered EXECUTABLE=$Total PERCENT=$PercentText GCC=$($Json.gcc_version) GCOV=$ExpectedVersion JSON=2 REPORT=$($JsonFiles[0].FullName)"
+          if (($Covered * 100) -lt ($Total * 80)) { throw "Coverage $PercentText% is below 80%" }
+        } catch {
+          [Console]::Error.WriteLine($_.Exception.Message)
+          exit 1
+        }
       LiveSideEffects: Forbidden
       NotRunReason: "使用任务构建目录内的隔离 SQLite 文件。"
     RiskLevel: High
