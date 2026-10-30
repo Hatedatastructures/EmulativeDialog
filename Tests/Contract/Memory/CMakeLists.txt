@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  project(EmulativeDialogMemoryContract LANGUAGES C CXX)
+  project(EmulativeDialogConversationMemoryContract LANGUAGES C CXX)
   include(CTest)
   get_filename_component(_EmulativeDialogRepoRoot
       "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)

@@ -442,24 +442,6 @@ MemoryStorageResult<StoredMemory> FromStorageRecord(
   return Result;
 }
 
-Storage::MemoryRecord ToStorageRecord(
-    const Storage::BackupRecallRecord& Record) {
-  Storage::MemoryRecord Result;
-  Result.MemoryId = Record.MemoryId;
-  Result.MemoryKind = Record.MemoryKind;
-  Result.Scope = Record.Scope;
-  Result.SubjectId = Record.SubjectId;
-  Result.Content = Record.Content;
-  Result.SourceReference = Record.SourceReference;
-  Result.CreatedAtUnixSeconds = Record.CreatedAtUnixSeconds;
-  Result.UpdatedAtUnixSeconds = Record.CreatedAtUnixSeconds;
-  Result.Provenance = Record.Provenance;
-  Result.ConsentId = Record.ConsentId;
-  Result.DeleteState = Storage::MemoryDeleteState::Active;
-  Result.Version = Record.Version;
-  return Result;
-}
-
 void Rollback(Storage::SqliteStoreTransaction& Transaction) {
   const auto Result = Transaction.Rollback();
   static_cast<void>(Result);
@@ -582,19 +564,17 @@ SqliteMemoryStorageAdapter::RecallBackup(
     return InvalidArgument();
   }
 
-  auto Recalled = Store_.RecallBackupForScope(
-      *StorageScope, UnixSeconds(Now));
+  auto Recalled = Store_.ListActiveRecords(*StorageScope, UnixSeconds(Now));
   if (const auto* Error = std::get_if<Storage::SqliteStoreError>(&Recalled)) {
     return MapStorageError(*Error);
   }
 
   std::vector<StoredMemory> Result;
-  const auto& Records =
-      std::get<std::vector<Storage::BackupRecallRecord>>(Recalled);
+  const auto& Records = std::get<std::vector<Storage::MemoryRecord>>(Recalled);
   Result.reserve(Records.size());
-  for (const Storage::BackupRecallRecord& Backup : Records) {
-    auto Converted = FromStorageRecord(ToStorageRecord(Backup),
-                                       ScopeTemplate, *StorageScope);
+  for (const Storage::MemoryRecord& Record : Records) {
+    auto Converted =
+        FromStorageRecord(Record, ScopeTemplate, *StorageScope);
     if (const auto* Error = std::get_if<MemoryStorageError>(&Converted)) {
       return *Error;
     }

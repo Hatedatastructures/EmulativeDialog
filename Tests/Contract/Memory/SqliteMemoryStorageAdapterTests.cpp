@@ -505,6 +505,116 @@ void TestProposalIdRoundTripAndBackupRestore() {
         "present but empty ProposalId is rejected before SQLite write");
 }
 
+void TestBackupRestorePreservesExpiryAcrossRestart() {
+  TemporaryDatabase SourceDatabase{"ExpirySource"};
+  TemporaryDatabase DestinationDatabase{"ExpiryDestination"};
+  if (!SourceDatabase.IsReady() || !DestinationDatabase.IsReady()) {
+    Check(false, "expiry backup databases are available");
+    return;
+  }
+
+  const AuthorizedMemoryContext ContextValue = Context();
+  const StoredMemory Scope = ScopeTemplate(ContextValue);
+  const std::chrono::sys_seconds WrittenAt = Now();
+  const std::chrono::sys_seconds BeforeExpiry =
+      WrittenAt + std::chrono::hours{1};
+  const std::chrono::sys_seconds ExpiresAt =
+      WrittenAt + std::chrono::hours{24};
+
+  {
+    auto Store = OpenStore(SourceDatabase.Path());
+    if (!Store) {
+      return;
+    }
+    SqliteMemoryStorageAdapter Adapter{*Store};
+    ConversationMemory Memory{Adapter};
+    ConsentGrant Grant = MakeGrant(ContextValue);
+    Check(std::holds_alternative<std::monostate>(Memory.RegisterConsent(Grant)),
+          "expiry consent registers for SQLite backup source");
+
+    MemoryWriteRequest Request = MakeWriteRequest("expiring-memory", true);
+    Request.CreatedAt = WrittenAt;
+    Request.ExpiresAt = ExpiresAt;
+    Check(std::holds_alternative<std::monostate>(
+              Memory.Write(ContextValue, Request, WrittenAt)),
+          "future-expiring memory is written to the real SQLite source");
+
+    const auto Backup = Adapter.RecallBackup(Scope, BeforeExpiry);
+    const auto* BackupRecords = StorageValue(Backup);
+    Check(BackupRecords != nullptr && BackupRecords->size() == 1U,
+          "future-expiring memory is available to backup recall");
+    if (BackupRecords != nullptr && BackupRecords->size() == 1U) {
+      Check(BackupRecords->front().ExpiresAt == ExpiresAt,
+            "backup recall preserves the exact future expiry timestamp");
+    }
+  }
+
+  std::unique_ptr<SqliteStore> SourceStore =
+      OpenStore(SourceDatabase.Path());
+  std::unique_ptr<SqliteStore> DestinationStore =
+      OpenStore(DestinationDatabase.Path());
+  if (!SourceStore || !DestinationStore) {
+    return;
+  }
+  SqliteMemoryStorageAdapter SourceAdapter{*SourceStore};
+  SqliteMemoryStorageAdapter DestinationAdapter{*DestinationStore};
+  const auto ReopenedBackup = SourceAdapter.RecallBackup(Scope, BeforeExpiry);
+  const auto* ReopenedRecords = StorageValue(ReopenedBackup);
+  Check(ReopenedRecords != nullptr && ReopenedRecords->size() == 1U,
+        "backup recall remains available after closing and reopening SQLite");
+  if (ReopenedRecords != nullptr && ReopenedRecords->size() == 1U) {
+    Check(ReopenedRecords->front().ExpiresAt == ExpiresAt,
+          "reopened SQLite backup retains the original expiry timestamp");
+  }
+
+  SplitSqliteBackupStorage RestoreStorage{DestinationAdapter, SourceAdapter};
+  ConversationMemory Restorer{RestoreStorage};
+  ConsentGrant Grant = MakeGrant(ContextValue);
+  Check(std::holds_alternative<std::monostate>(Restorer.RegisterConsent(Grant)),
+        "authorized restore consent registers for the exact memory scope");
+  const auto Restore = Restorer.RestoreBackup(ContextValue, BeforeExpiry);
+  const auto* RestoredCount = std::get_if<std::size_t>(&Restore);
+  Check(RestoredCount != nullptr && *RestoredCount == 1U,
+        "authorized ConversationMemory restore copies the future-expiring row");
+
+  const auto ActiveBeforeExpiry =
+      DestinationAdapter.ListActive(Scope, BeforeExpiry);
+  const auto* ActiveRecords = StorageValue(ActiveBeforeExpiry);
+  Check(ActiveRecords != nullptr && ActiveRecords->size() == 1U,
+        "restored SQLite row is active before its original expiry");
+  if (ActiveRecords != nullptr && ActiveRecords->size() == 1U) {
+    Check(ActiveRecords->front().ExpiresAt == ExpiresAt,
+          "restore preserves exact expiry in the destination SQLite record");
+  }
+
+  const auto ActiveSourceBackup = SourceAdapter.RecallBackup(Scope, ExpiresAt);
+  const auto* ActiveSourceBackupRecords = StorageValue(ActiveSourceBackup);
+  Check(ActiveSourceBackupRecords != nullptr &&
+            ActiveSourceBackupRecords->empty(),
+        "source backup recall hides the record at its original expiry");
+  const auto ActiveDestinationBackup =
+      DestinationAdapter.RecallBackup(Scope, ExpiresAt);
+  const auto* ActiveDestinationBackupRecords =
+      StorageValue(ActiveDestinationBackup);
+  Check(ActiveDestinationBackupRecords != nullptr &&
+            ActiveDestinationBackupRecords->empty(),
+        "destination backup recall hides the record at its original expiry");
+
+  const auto ActiveAtExpiry = DestinationAdapter.ListActive(Scope, ExpiresAt);
+  const auto* ActiveAtExpiryRecords = StorageValue(ActiveAtExpiry);
+  Check(ActiveAtExpiryRecords != nullptr && ActiveAtExpiryRecords->empty(),
+        "ListActive hides the restored record at its original expiry");
+  const auto RecallAtExpiry = Restorer.Recall(ContextValue, ExpiresAt, 256U);
+  const auto* RecalledAtExpiry = std::get_if<std::vector<
+      EmulativeDialog::Context::ContextCandidate>>(&RecallAtExpiry);
+  Check(RecalledAtExpiry != nullptr && RecalledAtExpiry->empty(),
+        "authorized ConversationMemory recall hides the expired row");
+  const auto RestoreAtExpiry = Restorer.RestoreBackup(ContextValue, ExpiresAt);
+  const auto* ExpiredRestoredCount = std::get_if<std::size_t>(&RestoreAtExpiry);
+  Check(ExpiredRestoredCount != nullptr && *ExpiredRestoredCount == 0U,
+        "backup restore cannot resurrect a row at or after expiry");
+}
+
 void TestCategoryAndProvenanceRoundTrip() {
   TemporaryDatabase Database{"CategoryProvenance"};
   if (!Database.IsReady()) {
@@ -1035,6 +1145,7 @@ void TestMalformedStoredKindsFailClosed() {
 int main() {
   TestV1MemoryKindCompatibility();
   TestProposalIdRoundTripAndBackupRestore();
+  TestBackupRestorePreservesExpiryAcrossRestart();
   TestCategoryAndProvenanceRoundTrip();
   TestScopeKindIsolation();
   TestTransactionalRollbackAndVersionConflict();
