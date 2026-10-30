@@ -26,6 +26,8 @@ set(CORE_CHAT_SERVICE_SOURCE
     "${PROJECT_ROOT}/Source/Core/CoreChatService.cpp")
 add_library(CoreChatServiceObject OBJECT "${CORE_CHAT_SERVICE_SOURCE}")
 target_include_directories(CoreChatServiceObject PUBLIC "${PROJECT_ROOT}")
+target_link_libraries(CoreChatServiceObject PUBLIC EmulativeDialogBoostAsio)
+add_dependencies(CoreChatServiceObject EmulativeDialogBoostAsioVerify)
 target_compile_options(CoreChatServiceObject PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 
