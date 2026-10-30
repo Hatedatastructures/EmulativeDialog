@@ -3976,8 +3976,8 @@ Tasks:
       Decision: PendingCoordinatorAcceptance
       OwnerDecision: APPROVE
       OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
-      OwnerDecisionAtUtc: '2026-10-30T17:54:27Z'
-      OwnerDecisionScope: "Approve the diagnostic-filter correction and short fresh validation-path/preflight clarification below; fixed-head TaskSpec review and Coordinator acceptance remain pending, and no validation or product-write authorization is granted."
+      OwnerDecisionAtUtc: '2026-10-30T19:33:05Z'
+      OwnerDecisionScope: "Approve the diagnostic-filter correction, short fresh validation paths/preflight, and explicit PR #85 product Head binding described below; fixed-head TaskSpec review and Coordinator acceptance remain pending, and this does not authorize validation or product writes."
       IndependentReviewerDecision: PendingFixedHeadReview
       IndependentReviewerSlotId: Worker06
       IndependentReviewerAgentId: /root/luna06_capability_status_audit
@@ -3991,9 +3991,11 @@ Tasks:
         Freeze a proposal-time path-availability preflight for those targets, plus an execution-time fresh preflight
         that requires the assigned W worktree to exist while B, B/Reports, and D remain absent. Preserve the CTest
         binding, exact source identity and unique .gcno/.gcda freshness checks, gcov JSON v2 requirement, unique
-        executable-line calculation, and the 80 percent threshold. Preserve the Goal, Acceptance, ReadSet,
-        dependencies, contracts, product branch identity and owner/reviewer bindings, and the exact five-path product
-        WriteSet; only the R3 validation worktree path is relocated as specified above.
+        executable-line calculation, and the 80 percent threshold. Bind the R3 coverage inputs to the observed PR #85
+        base 19ddbfd161b4db76614fd625203c68cfcc86360e and exact product Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586;
+        FreshBuildPreflight and CoverageCommand must reject a different branch or Head. Preserve the Goal, Acceptance,
+        ReadSet, dependencies, contracts, product branch identity and owner/reviewer bindings, and the exact five-path
+        product WriteSet; only the R3 validation worktree path and source-revision binding are clarified above.
         No product source, test, build, or event file is changed by this TaskSpec draft.
       Reason: >-
         ED-0150/R2 F004 re-ran the frozen CoverageCommand on a fresh short-path Windows build. Configure, target build,
@@ -4003,7 +4005,8 @@ Tasks:
         stopped before CoreChatService.cpp, so this is not complete coverage acceptance. The previous R2 build path
         has already been consumed, and --preserve-paths produces output names derived from absolute source paths;
         the new short central paths keep fresh reports safely below the Windows component/path limit without changing
-        the coverage measurement or source identity rules.
+        the coverage measurement or source identity rules. The validation target is the current PR #85 product Head,
+        so build/CTest and coverage evidence cannot be attached to a different product snapshot.
       ImpactPaths: [Workflow/Plans/P3.yaml]
       CompatibilityAndSecurityImpact: >-
         Task validation metadata only. No runtime/API/security behavior changes. --preserve-paths, fatal gcov checks,
