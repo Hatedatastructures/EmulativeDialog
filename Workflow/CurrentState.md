@@ -612,4 +612,7 @@
 - Assignment activation PR #94 is open from Base `2a72fec75a413a249005c74bc03ba95062c19f12`; it was created at `2026-10-30T20:11:55Z` on branch `Task/ED-0150-R4-CoverageActivation`. Worker04's fixed-head review of initial Head `ec803fc89f9eefcb583f8f3abeacee980bd982d3` requested two moderate audit corrections: append the PR-created event/update this summary, and replace placeholder Controller command strings with the actual invocations. Append-only corrections are prepared for fixed-head re-review. Coverage remains gated until PR #94 merges and post-merge `validate-assignment` returns `AssignmentAccepted`; the R4 product branch is unchanged.
 
 ## PR #98 closeout review
-- PR #98 is open at creation Head 64fd804dcae30dd81ceab613611833f8f2c1f189. The required Windows check and Worker06 fixed-head review are pending. The remote branch count is 3/4.
+- PR #98 was created at Head 64fd804dcae30dd81ceab613611833f8f2c1f189. Its first WindowsAgentSlice run 41135268981 passed on Head 7f9140299c4cc039ee53373b5686287ea7d80381; Worker06 requested an append-only Branch metadata correction, so CI and fixed-head review are pending on the corrected head. Remote branch count is 3/4.
+
+## PR #98 review correction
+- Worker06 found that the three closeout events omitted their Branch field. The original events are retained; append-only ProjectStateCorrection events bind their EventIds to Task/ED-0148-R4ConsentMatchingImpl: eae21ddc-71bd-467f-be3c-641fee1dd8be, 09700bce-01f5-4983-b114-d4ca432e6376, 0d9989c5-3de4-48d5-8cf3-fd42068dac4c.

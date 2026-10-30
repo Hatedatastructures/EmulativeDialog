@@ -3236,6 +3236,10 @@ Tasks:
     CloseoutPullRequestCreatedEventId: 13e7941c-dd9c-4cc8-bce0-578cc88594af
     CloseoutPullRequestBaseCommit: 12f07df97ef50e0d8b9f944e318d506dc8328b52
     CloseoutPullRequestCreationHeadCommit: 64fd804dcae30dd81ceab613611833f8f2c1f189
+    CloseoutEventBranchCorrectionEventIds: [eae21ddc-71bd-467f-be3c-641fee1dd8be, 09700bce-01f5-4983-b114-d4ca432e6376, 0d9989c5-3de4-48d5-8cf3-fd42068dac4c]
+    CloseoutPullRequestInitialWindowsRunId: 41135268981
+    CloseoutPullRequestInitialWindowsRunHeadCommit: 7f9140299c4cc039ee53373b5686287ea7d80381
+    CloseoutPullRequestInitialWindowsConclusion: success
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
