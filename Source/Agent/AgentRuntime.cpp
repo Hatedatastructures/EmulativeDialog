@@ -1,4 +1,5 @@
 #include "Source/Agent/AgentRuntime.h"
+#include "Source/Agent/OutputBudgetController.hpp"
 
 #include <chrono>
 #include <limits>
@@ -222,6 +223,11 @@ Core::AgentRunResult AgentRuntime::RunTurn(
         ":" + Context.AgentTurn.Value + ":" +
         std::to_string(RequestSequence);
     const Providers::RequestId RequestId{RequestValue};
+    OutputBudgetController& Budget = OutputBudgetController::Shared();
+    if (Budget.BeginRequest(Context.AgentTurn, RequestId) !=
+        OutputBudgetRequestResult::Accepted) {
+      return AgentRunResult::Failed(AgentRunFailureCode::OutputLimitReached);
+    }
 
     Providers::CanonicalModelRequest Request;
     Request.Id = RequestId;
@@ -235,10 +241,18 @@ Core::AgentRunResult AgentRuntime::RunTurn(
 
     StreamAccumulator Accumulator;
     const Providers::EventSink Sink =
-        [&Accumulator, &RequestId, &Context](
+        [&Accumulator, &RequestId, &Context, &Budget](
             const Providers::CanonicalNonTerminalEvent& Event) {
-          static_cast<void>(Accumulator.Accept(
-              Event, RequestId, Context.AgentTurn));
+          if (!Accumulator.Accept(Event, RequestId, Context.AgentTurn)) {
+            return;
+          }
+          if (const auto* Usage =
+                  std::get_if<Providers::UsageUpdatedEvent>(&Event)) {
+            if (!Budget.ObserveUsage(Context.AgentTurn, RequestId,
+                                     Usage->Usage)) {
+              Accumulator.Invalid = true;
+            }
+          }
         };
 
     Providers::CanonicalTerminalEvent Terminal;
@@ -246,13 +260,38 @@ Core::AgentRunResult AgentRuntime::RunTurn(
       Terminal = Provider.StreamTurn(Profile, Lease, Request,
                                      CancellationToken, Sink);
     } catch (...) {
+      static_cast<void>(Budget.CompleteRequest(
+          Context.AgentTurn, RequestId, std::nullopt, false, false));
       return AgentRunResult::UnknownOutcome();
     }
 
+    std::optional<Providers::UsageSnapshot> TerminalUsage;
+    bool OutputLimited = false;
+    bool ToolHandoff = false;
+    std::visit(
+        [&TerminalUsage, &OutputLimited, &ToolHandoff](const auto& Event) {
+          using TerminalType = std::decay_t<decltype(Event)>;
+          if constexpr (std::is_same_v<
+                            TerminalType,
+                            Providers::ResponseCompletedEvent>) {
+            TerminalUsage = Event.FinalUsage;
+            ToolHandoff = Event.Kind == Providers::CompletionKind::ToolHandoff;
+          } else if constexpr (std::is_same_v<
+                                   TerminalType,
+                                   Providers::ResponseOutputLimitedEvent>) {
+            TerminalUsage = Event.Usage;
+            OutputLimited = true;
+          }
+        },
+        Terminal);
     const auto& Metadata = GetTerminalMetadata(Terminal);
     static_cast<void>(Accumulator.AcceptTerminal(Metadata, RequestId,
                                                  Context.AgentTurn));
     if (Accumulator.Invalid) {
+      return AgentRunResult::Failed(AgentRunFailureCode::InvalidStream);
+    }
+    if (!Budget.CompleteRequest(Context.AgentTurn, RequestId, TerminalUsage,
+                                OutputLimited, ToolHandoff)) {
       return AgentRunResult::Failed(AgentRunFailureCode::InvalidStream);
     }
 

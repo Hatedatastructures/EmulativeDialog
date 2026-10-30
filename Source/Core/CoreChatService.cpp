@@ -1,5 +1,7 @@
 #include "Source/Core/CoreChatService.h"
 
+#include "Source/Agent/OutputBudgetController.hpp"
+
 #include <algorithm>
 #include <chrono>
 #include <cctype>
@@ -11,6 +13,21 @@
 
 namespace EmulativeDialog::Core {
 namespace {
+
+class TurnBudgetCleanup final {
+public:
+  TurnBudgetCleanup(Agent::OutputBudgetController& ControllerValue,
+                    const Providers::AgentTurnId& TurnValue) noexcept
+      : Controller(ControllerValue), Turn(TurnValue) {}
+  ~TurnBudgetCleanup() { Controller.EndTurn(Turn); }
+
+  TurnBudgetCleanup(const TurnBudgetCleanup&) = delete;
+  TurnBudgetCleanup& operator=(const TurnBudgetCleanup&) = delete;
+
+private:
+  Agent::OutputBudgetController& Controller;
+  const Providers::AgentTurnId& Turn;
+};
 
 bool IsNonEmpty(std::string_view Value) noexcept {
   return !Value.empty();
@@ -301,6 +318,25 @@ CoreChatResult CoreChatService::Process(
 
   AuthorizedTurnContext Context{Identity.Principal, Identity.Scope,
                                 MakeAgentTurnId(Message.Envelope), Message.Message};
+  Agent::OutputBudgetController& Budget =
+      Agent::OutputBudgetController::Shared();
+  try {
+    if (!Budget.BeginTurn(Context.AgentTurn,
+                          ProviderProfile.Limit.MaximumOutputTokens)) {
+      return CoreChatResult{CoreChatStatus::Failed,
+                            CoreChatFailureCode::InvalidAgentResult,
+                            AgentRunFailureCode::InternalError,
+                            std::nullopt,
+                            std::nullopt};
+    }
+  } catch (...) {
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::InvalidAgentResult,
+                          AgentRunFailureCode::InternalError,
+                          std::nullopt,
+                          std::nullopt};
+  }
+  const TurnBudgetCleanup BudgetCleanup{Budget, Context.AgentTurn};
   AgentRunResult AgentResult = AgentRunResult::Failed(AgentRunFailureCode::InternalError);
   try {
     AgentResult = AgentRuntime.RunTurn(Context, Provider, ProviderProfile, ProviderLease,
