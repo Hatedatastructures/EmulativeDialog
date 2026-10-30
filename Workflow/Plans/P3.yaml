@@ -705,6 +705,46 @@ ParallelGroups:
     TaskIds: [ED-0114]
     DependsOn: [ED-0101, ED-0103, ED-0104, ED-0105, ED-0106, ED-0107]
 
+  - ChangeRequestId: CR-ED-0149-R1-VALIDATION-001
+    RequestedByRole: AgentRuntimeOwner
+    RequestedByAgentId: /root/luna02_ed0148_pr_ready
+    OwnerRole: AgentRuntimeOwner
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    OwnerDecision: Approve
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    IndependentReviewerDecision: Pending
+    CoordinatorDecision: Pending
+    Decision: Proposed
+    TaskIds: [ED-0149]
+    TargetTaskRevision: 1
+    ProposedTaskRevision: 2
+    TaskRevisionTransitions:
+      - {TaskId: ED-0149, FromRevision: 1, ToRevision: 2}
+    Scope: >-
+      Preserve Goal, Acceptance meaning, seven-path product WriteSet, dependencies, contracts, Owner, Reviewer, and
+      BaselineCommit. Clarify the product-diff checks in Validation: after the product PR is created, bind PRBaseCommit
+      and PRHeadCommit from GitHub metadata; compare git diff --check and git diff --name-only over PRBaseCommit...PRHeadCommit,
+      requiring the changed paths to equal the frozen seven-path WriteSet. Separately verify BaselineCommit is an ancestor
+      of PRBaseCommit and PRHeadCommit, and audit BaselineCommit..PRBaseCommit as inherited merged governance changes
+      that do not overlap the product WriteSet. Do not populate future PR metadata before the product PR exists.
+    Reason: >-
+      R1 freezes BaselineCommit at 72fa92d, while the post-assignment PR #69 and PR #70 merge commits add four inherited
+      workflow paths by main@a4f9b3d. A BaselineCommit..HEAD exact-seven-path check would count those inherited paths
+      alongside the seven product paths and cannot pass despite a correct product PR diff.
+    Impact: "Validation baseline clarification only; no product API, protocol, behavior, dependency, or WriteSet changes."
+    Rollback: "If declined, keep R1 assigned and unchanged and do not write product files; revise the proposal or stop before implementation."
+    EvidenceRefs:
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R2-ValidationRangeCR/Logs/PostMergeAndBranchAudit.log
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/69
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/70
+    ChangeRequestProposedEventId: 636f40ab-d54c-46b4-8e3b-f12fb52b1333
+    ChangeRequestPullRequestNumber: 71
+    ChangeRequestPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/71
+    ChangeRequestPullRequestBaseCommit: a4f9b3d6793bf6603a2d1f5d5784764e816f2d52
+    ChangeRequestPullRequestCreatedHeadCommit: fc03bb38e8795dcacac98fddd73410869d84f524
+    ChangeRequestPullRequestCreatedAtUtc: "2026-10-30T02:16:04Z"
+    ChangeRequestPullRequestCreatedEventId: 083163bb-8f6a-48b2-8f7d-00d02b12fba1
+
 Tasks:
   - TaskId: ED-0104
     TaskRevision: 3
@@ -2998,8 +3038,8 @@ Tasks:
     TaskKind: IntegrationTask
     State: Assigned
     BlockedBy: >-
-      PR #69 is merged and post-merge Controller query/validate-assignment plus worktree verification passed.
-      Await the Coordinator TaskStarted transition before any product WriteSet edits.
+      PR #69/#70 lifecycle is closed and post-merge validation passed. CR-ED-0149-R1-VALIDATION-001 is pending
+      fixed-head independent review and coordinator acceptance; no product WriteSet edits before R2 reassignment.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3045,6 +3085,19 @@ Tasks:
     PostMergeAssignmentValidationEventId: a0278f65-16b9-4ed1-83dc-b727dd3a526e
     WorktreeVerifiedEventId: 289248527896300-1
     PullRequestMergeCommit: 27f74200fbd9741949b319bf89e09080fa668571
+    PostMergeCloseoutMergeEventId: 0198deac-28f1-4341-b968-6399e35e0327
+    PostMergeCloseoutMergeCommit: a4f9b3d6793bf6603a2d1f5d5784764e816f2d52
+    PostMergeCloseoutMergedAtUtc: "2026-10-30T02:05:08Z"
+    PostMergeCloseoutPostMergeQueryEventId: dddc35f2-660c-4d1c-bc0b-0d1307a99100
+    PostMergeCloseoutPostMergeValidationEventId: 9dbed007-076b-456c-91d1-b6b0184f6f58
+    PostMergeCloseoutBranchAuditEventId: 4f25dcb3-f029-4132-b7ec-0b494490f83c
+    ValidationRangeChangeRequestId: CR-ED-0149-R1-VALIDATION-001
+    ValidationRangeChangeRequestEventId: 636f40ab-d54c-46b4-8e3b-f12fb52b1333
+    ValidationRangePrePRAuditEventId: 175a3841-051c-4665-ad86-6ae83d65f8b8
+    ValidationRangeChangeRequestPullRequestNumber: 71
+    ValidationRangeChangeRequestPullRequestBaseCommit: a4f9b3d6793bf6603a2d1f5d5784764e816f2d52
+    ValidationRangeChangeRequestPullRequestCreatedEventId: 083163bb-8f6a-48b2-8f7d-00d02b12fba1
+    ValidationRangeFinalAuditEventId: a0f850fc-35aa-49ee-a5dd-4425f5fbdaf5
     PullRequestMergedAtUtc: "2026-10-30T01:39:58Z"
     PostMergeCloseoutPullRequestNumber: 70
     PostMergeCloseoutPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/70

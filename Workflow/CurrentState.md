@@ -482,3 +482,14 @@
 - On clean assigned worktree HEAD 27f74200fbd9741949b319bf89e09080fa668571, WorkflowController query returned State=Assigned and validate-assignment returned AssignmentAccepted. Evidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0149-R1-PostMergeCloseout/Logs/PostMergeValidation-current.log.
 - Coordinator closeout PR #70 is open at base 27f74200fbd9741949b319bf89e09080fa668571 and creation Head c10291ba05bef7ce19387f3afd06ea0ec4de05e5; its PRCreated event is ac4ffa95-d037-4add-a24f-abe4fe0e2d69. Final audit event 94b9c1f8-fa34-4ad7-b5d3-306655f9e3fc records exit 0; see CandidateAudit-final.log. Corrected final audit event 0cd06e06-cbe7-4a50-9cb1-18c90ecfeb3c verifies the append-only branch correction; see CandidateAudit-corrected.log. Existing isolated product worktree passed verification event 289248527896300-1. ED-0149 remains Assigned pending the Coordinator TaskStarted transition; Worker02 completed read-only preflight and has not changed product files.
 - ED-0149 authorizes seven async contract/compile-contract paths only; it does not implement AgentRuntime turn behavior. Codex rewrite remains Incomplete; PR #25 remains open with its separate ExpiresAt restore finding.
+
+## 2026-10-30 ED-0149/R1 PR #70 merge and validation-range CR
+
+- PR #70 merged at 2026-10-30T02:05:08Z as a4f9b3d6793bf6603a2d1f5d5784764e816f2d52 after Worker04 approved fixed Base/Head; its remote branch was deleted after exact-SHA verification. PR #70 contained only the post-merge assignment ledger.
+- On clean main@a4f9b3d, WorkflowController query returned Assigned and validate-assignment returned AssignmentAccepted. The existing R1 product worktree remains clean at 27f74200; no product code was written.
+- Worker02, as ED-0149 Owner, approved ChangeRequest CR-ED-0149-R1-VALIDATION-001 option B: preserve the R1 historical baseline and compare the product PR using actual GitHub base/head metadata, auditing inherited changes separately. Worker04 fixed-head review is pending. The pre-PR proposal audit event is 175a3841-051c-4665-ad86-6ae83d65f8b8; see PreProposalAudit.log. This is a validation clarification only.
+
+## 2026-10-30 ED-0149/R1 validation-range ChangeRequest PR
+
+- PR #71 is open at base a4f9b3d6793bf6603a2d1f5d5784764e816f2d52 and creation Head fc03bb38e8795dcacac98fddd73410869d84f524. Its PRCreated event is 083163bb-8f6a-48b2-8f7d-00d02b12fba1.
+- Worker02 approved preserving the historical R1 baseline and comparing the eventual product PR at GitHub base.sha..head.sha; inherited Baseline..PRBase changes will be audited separately. Worker04 fixed-head review is pending. Final audit event a0f850fc-35aa-49ee-a5dd-4425f5fbdaf5 records exit 0; see FinalAudit.log. R1 remains Assigned with no TaskStarted and no product code.
