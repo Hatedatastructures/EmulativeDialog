@@ -39,7 +39,7 @@ EntryGate:
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
-  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154]
   AllTaskSpecsFrozenBeforeAssignment: true
   ValidationCommandChangeRequestId: CR-ED-0126-001
 
@@ -2338,6 +2338,95 @@ Tasks:
     RequiresCredentials: false
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0154
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 配置 Windows Agent Slice 必需检查
+    TaskKind: Build
+    State: Active
+    Phase: P3
+    OwnerRole: BuildAndWorkflowOwner
+    OwnerSlotId: Worker01
+    OwnerAgentId: "/root/luna01_ed0112_r8_audit"
+    ReviewerRole: IndependentValidator
+    ReviewerSlotId: Worker06
+    ReviewerAgentId: "/root/luna06_capability_status_audit"
+    ReviewerIndependence: Required
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerReviewedBaseCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
+    TaskSpecOwnerReviewedP3Blob: 5ab83c293c951ce1f6038d1af99339457b686822
+    TaskSpecOwnerFindingClosed: ED-0154-R1-OWNER-F001
+    CreatedBy: Coordinator
+    CreatedAt: "2026-10-30"
+    ParallelGroup: PRPlatformAndBranchProtection
+    Goal: >-
+      Add a Windows-native C++20 GitHub Actions check with SHA-pinned workflow actions for the existing
+      AgentRuntime/WorkflowController slice, establishing a stable required status check before large-scale product implementation.
+    OutOfScope:
+      - Product C++ source, tests, CMake targets, dependency pins, and protocol contracts
+      - Branch protection mutation (Coordinator-owned after the first verified check run)
+      - QQ/WeChat credentials or live channel/provider traffic
+    DependsOn: [ED-0124, ED-0131]
+    ContractVersion: NotApplicable
+    BaselineCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
+    Branch: Task/ED-0154-WindowsRequiredChecks
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Worktree
+    PullRequest: ""
+    Context:
+      ModuleId: RootBuildAndDependencies
+      AlwaysLoad: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml]
+      ReadSet:
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Workflow/AgentPool.yaml#Worker01
+        - Workflow/AgentPool.yaml#Worker06
+        - Workflow/EnforcementMatrix.yaml#PR-Platform-And-Branch-Protection
+        - Standards/DependencyPolicy.md
+        - CMakePresets.json
+        - CMakeLists.txt
+        - CMake/BoostAsioDependency.cmake
+      OnDemandSet: []
+      ForbiddenSet: ["Source/**", "Tests/**", "CMakeLists.txt", "CMake/**", "Architecture/Contracts/**", "Secrets/**"]
+      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet: [.github/workflows/WindowsAgentSlice.yml]
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "The workflow runs on pull requests targeting main and pushes to main or Task/** branches on Windows Server 2022.", Evidence: "A GitHub Actions run exists for the task branch and PR; the job is green."}
+      - {AcceptanceId: AC-2, Description: "The job provisions the UCRT64 MinGW GCC/make toolchain through the SHA-pinned setup action and invokes the existing windows-agent-slice configure/build/test presets.", Evidence: "Successful run logs show the resolved GCC/make versions, compiler/make validation, configure, the three registered build targets, and both CTest cases."}
+      - {AcceptanceId: AC-3, Description: "The stable check context is WindowsAgentSlice / Build and Test and fails when configure, build, or tests fail or no tests are found.", Evidence: "GitHub check run name and nonzero failure behavior are verified from workflow configuration and run."}
+      - {AcceptanceId: AC-4, Description: "The workflow uses contents:read only, SHA-pinned actions, and no repository secrets or product side effects.", Evidence: "Fixed-head diff and workflow definition review."}
+    Validation:
+      RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
+      RequiredCTestTests: [AgentRuntime.VerticalSlice, WorkflowController.Contract]
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Windows
+      TargetedBuild:
+        - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=<RUNNER_TEMP>/EmulativeDialog/Dependencies"
+        - "cmake --build --preset windows-agent-slice --parallel 4"
+        - "ctest --preset windows-agent-slice --no-tests=error --output-on-failure"
+      ContractFixtures: []
+      StaticChecks:
+        - "GitHub Actions check context equals WindowsAgentSlice / Build and Test."
+        - "Workflow triggers and branch filters match AC-1; actions use the frozen 40-character upstream commit SHAs."
+        - "No product paths, credentials, or secrets are referenced; permissions are restricted to contents:read."
+      Coverage: {Required: false, ProductionSources: [], MinimumLinePercent: 80, ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Windows/Reports}
+      LiveSideEffects: Forbidden
+      NotRunReason: "No product C++ source or test behavior changes; the workflow's own native build and CTest evidence is required on the GitHub task branch."
+    RiskLevel: Medium
+    RiskOwnerRole: BuildAndWorkflowOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Checkpoint:
+      LastCompletedAcceptance: "Workflow file created in the isolated task worktree; local static checks reported exit 0."
+      CurrentFindingOrFailure: "Awaiting Coordinator task-ledger completion, independent fixed-head review, and first GitHub Actions run; no build or CTest result is claimed yet."
+      TriedApproaches: []
+      NextAction: "Record controller assignment validation, review the fixed PR head, push and verify the native Windows check, then configure main protection using the observed check name."
+      OpenMessageIds: []
+      LastValidationResult: "Worker01 reported static verification exit 0; Coordinator will reproduce the checks and verify the remote workflow run before treating AC-1 through AC-4 as passed."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
   - TaskId: ED-0145

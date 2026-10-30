@@ -56,7 +56,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ""
+    CurrentTaskId: ED-0154/R1
     Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
