@@ -27,9 +27,9 @@ jobs:
           persist-credentials: false
 
       - name: Set up UCRT64 MinGW
+        id: msys2
         uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
         with:
-          location: 'C:\msys64'
           msystem: UCRT64
           update: true
           install: >-
@@ -37,17 +37,27 @@ jobs:
             mingw-w64-ucrt-x86_64-make
 
       - name: Verify Windows C++20 toolchain
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
           cmake --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-          $compiler = 'C:\msys64\ucrt64\bin\g++.exe'
-          $make = 'C:\msys64\ucrt64\bin\mingw32-make.exe'
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $ucrtBin -PathType Container)) {
+            throw "UCRT64 binary directory is missing: $ucrtBin"
+          }
           foreach ($tool in @($compiler, $make)) {
             if (-not (Test-Path -LiteralPath $tool -PathType Leaf)) {
               throw "Required UCRT64 tool is missing: $tool"
             }
           }
+          $env:PATH = "$ucrtBin;$env:PATH"
           & $compiler --version
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -55,10 +65,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Configure Windows agent slice
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
           $dependencyCache = Join-Path $env:RUNNER_TEMP 'EmulativeDialog\Dependencies'
-          $compiler = 'C:\msys64\ucrt64\bin\g++.exe'
-          $make = 'C:\msys64\ucrt64\bin\mingw32-make.exe'
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf) -or -not (Test-Path -LiteralPath $make -PathType Leaf)) {
+            throw "Required UCRT64 tools are missing under $ucrtBin"
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
           $configureArgs = @(
             "-DCMAKE_CXX_COMPILER=$compiler"
             "-DCMAKE_MAKE_PROGRAM=$make"
@@ -68,11 +88,35 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build Windows agent slice
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf) -or -not (Test-Path -LiteralPath $make -PathType Leaf)) {
+            throw "Required UCRT64 tools are missing under $ucrtBin"
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
           cmake --build --preset windows-agent-slice --parallel 4
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run Windows agent slice tests
+        env:
+          MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
         run: |
+          if ([string]::IsNullOrWhiteSpace($env:MSYS2_LOCATION) -or -not [System.IO.Path]::IsPathRooted($env:MSYS2_LOCATION)) {
+            throw "MSYS2 setup action returned an invalid install root: $env:MSYS2_LOCATION"
+          }
+          $ucrtBin = Join-Path $env:MSYS2_LOCATION 'ucrt64\bin'
+          $compiler = Join-Path $ucrtBin 'g++.exe'
+          $make = Join-Path $ucrtBin 'mingw32-make.exe'
+          if (-not (Test-Path -LiteralPath $compiler -PathType Leaf) -or -not (Test-Path -LiteralPath $make -PathType Leaf)) {
+            throw "Required UCRT64 tools are missing under $ucrtBin"
+          }
+          $env:PATH = "$ucrtBin;$env:PATH"
           ctest --preset windows-agent-slice --no-tests=error --output-on-failure
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
