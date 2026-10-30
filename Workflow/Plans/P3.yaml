@@ -4015,6 +4015,9 @@ Tasks:
       EvidenceRefs:
         - "PR #85 Worker04 F004 fixed-head finding on product Head 8548fdb1e208e0c5aa6cb4ec6bf750e21910b7dc"
         - "GitHub PR #85 metadata fetched at 2026-10-30T19:27:18Z: open, base 19ddbfd161b4db76614fd625203c68cfcc86360e, current head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586."
+        - "R3 coverage target is PR #85 product branch Task/ED-0150-AsyncRuntimeVerticalSlice at fixed Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586, based on main 19ddbfd161b4db76614fd625203c68cfcc86360e."
+        - "GitHub WindowsAgentSlice check runs 41115022305 and 41115014423 for PR #85 Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586 completed successfully; they are build/CTest evidence, not coverage acceptance."
+        - "ED-0156/R1 Boost.WinAPI closure PR #91 merged as 19ddbfd161b4db76614fd625203c68cfcc86360e; prior run #71 missing-libs/winapi failure predates that merge."
         - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/Logs/FrozenCoverageAttemptSummary.txt"
         - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED0150/F004-Run3/Windows/Logs/CoverageCommand.log"
         - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/CoverageCommand-Frozen-ShortPath-Run3.ps1"
@@ -4028,10 +4031,11 @@ Tasks:
         authorized. The proposal-time path preflight below records that E15R3/W, E15R3/B, E15R3/B/Reports, and E15R3/D
         were absent; the eventual assigned worktree is expected to exist before the execution-time FreshBuildPreflight.
         Preserve the consumed R2 directories and do not claim the existing Run3 partial coverage artifact satisfies
-        the two-source Coverage acceptance. GitHub Windows run #71 also found the clean pinned Boost checkout missing
-        libs/winapi; do not authorize the R3 build until the separate ED-0131 dependency correction is integrated and
-        the required submodule closure is verified. If that correction is not covered by the current dependency state,
-        obtain the required Coordinator ChangeRequest before assignment.
+        the two-source Coverage acceptance. PR #91 is merged into this TaskSpec's main base and closes the earlier
+        missing-libs/winapi dependency failure. PR #85 Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586 now has two
+        successful WindowsAgentSlice checks, which establish build/CTest status only. The fresh R3 dependency cache
+        must still pass EmulativeDialogBoostAsioVerify at the pinned commit and complete submodule closure; this TaskSpec
+        candidate does not authorize that validation run or claim either source has met 80 percent.
     BaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
@@ -4161,6 +4165,13 @@ Tasks:
         ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
+      ProductCoverageTarget:
+        PullRequestNumber: 85
+        ProductBranch: Task/ED-0150-AsyncRuntimeVerticalSlice
+        ProductBaseCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
+        ProductHeadCommit: de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586
+        SuccessfulWindowsAgentSliceCheckRuns: [41115022305, 41115014423]
+        CheckRunScope: "Build and CTest only; these checks do not satisfy either source's coverage acceptance."
       RequiredBuildTargets: [AsyncRuntimeVerticalSliceTests]
       RequiredCTestTests: [Agent.AsyncRuntimeVerticalSlice]
       DependencyCache:
@@ -4194,7 +4205,17 @@ Tasks:
         $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B'
         $Reports = Join-Path $Build 'Reports'
         $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D'
+        $ExpectedBranch = 'Task/ED-0150-AsyncRuntimeVerticalSlice'
+        $ExpectedHead = 'de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586'
         if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
+        $BranchOutput = & git -C $Worktree branch --show-current
+        $GitExit = $LASTEXITCODE
+        $ActualBranch = ($BranchOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualBranch -ne $ExpectedBranch) { throw "Expected product branch $ExpectedBranch, found $ActualBranch" }
+        $HeadOutput = & git -C $Worktree rev-parse HEAD
+        $GitExit = $LASTEXITCODE
+        $ActualHead = ($HeadOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Expected PR #85 product Head $ExpectedHead, found $ActualHead" }
         foreach ($FreshPath in @($Build, $Reports, $BoostCache)) { if (Test-Path -LiteralPath $FreshPath) { throw "Fresh validation path already exists; preserve it and stop: $FreshPath" } }
         Write-Output 'FRESH_BUILD_AND_EMPTY_PINNED_CACHE_PREFLIGHT_OK=1'
       TargetedBuild:
@@ -4207,6 +4228,16 @@ Tasks:
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W'
         $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B'
+        $ExpectedBranch = 'Task/ED-0150-AsyncRuntimeVerticalSlice'
+        $ExpectedHead = 'de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586'
+        $BranchOutput = & git -C $Worktree branch --show-current
+        $GitExit = $LASTEXITCODE
+        $ActualBranch = ($BranchOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualBranch -ne $ExpectedBranch) { throw "Expected product branch $ExpectedBranch, found $ActualBranch" }
+        $HeadOutput = & git -C $Worktree rev-parse HEAD
+        $GitExit = $LASTEXITCODE
+        $ActualHead = ($HeadOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Expected PR #85 product Head $ExpectedHead, found $ActualHead" }
         $Report = Join-Path $Build 'Reports'
         $Logs = Join-Path $Build 'Logs'
         $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
@@ -4283,6 +4314,8 @@ Tasks:
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen five-path WriteSet."
+        - "R3 coverage inputs are bound to PR #85 base 19ddbfd161b4db76614fd625203c68cfcc86360e and exact product Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586; the fresh preflight and CoverageCommand reject another branch or Head."
+        - "WindowsAgentSlice check runs 41115022305 and 41115014423 passed on that Head; their build/CTest result is not coverage evidence."
         - "P3 EntryGate is Passed and ED-0114 is complete/merged before assignment; WorkflowController validate-assignment accepts the exact task revision."
         - "CoreChatService::Process and ProcessAsync use one shared Core preflight and the same per-instance policy/dedup/action/operation/receipt state; no duplicate AsyncCoreChatService exists."
         - "ED-0149 public async headers/contracts are consumed without editing them or any V1 synchronous interface."
