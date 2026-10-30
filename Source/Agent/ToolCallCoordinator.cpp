@@ -1,4 +1,5 @@
 #include "Source/Agent/ToolCallCoordinator.hpp"
+#include "Source/Agent/OutputBudgetController.hpp"
 
 #include <algorithm>
 #include <string>
@@ -62,6 +63,16 @@ std::optional<ToolCoordinatorError> ToolCallCoordinator::Accept(
           .Code = ToolCoordinatorErrorCode::RequestMismatch};
     }
     TerminalSeen = true;
+    OutputBudgetController& Budget = OutputBudgetController::Shared();
+    if (!Budget.CanDispatchTool(Context.ActiveTurn,
+                                Context.AuthorizedRequest)) {
+      for (const AgentToolCallReadyEvent& Call : Pending) {
+        Emit(Call, ToolCallReceiptStatus::Rejected,
+             "UsageBudgetNotAuthoritative");
+      }
+      DiscardPending();
+      return std::nullopt;
+    }
     ProcessPending();
     return std::nullopt;
   }

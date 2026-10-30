@@ -1,4 +1,5 @@
 #include "Source/Agent/AgentEventProjector.hpp"
+#include "Source/Agent/OutputBudgetController.hpp"
 #include "Source/Agent/ToolCallCoordinator.hpp"
 #include "Source/Core/BusinessActionRegistry.hpp"
 
@@ -124,6 +125,40 @@ struct ReceiptCollector final {
       Receipts.push_back(Receipt);
     };
   }
+};
+
+class FinalUsageBudgetScope final {
+public:
+  FinalUsageBudgetScope()
+      : Controller(Agent::OutputBudgetController::Shared()) {
+    Check(Controller.BeginTurn(Turn, 64),
+          "tool round-trip fixture must establish a Core turn budget");
+    Check(Controller.BeginRequest(Turn, Request) ==
+              Agent::OutputBudgetRequestResult::Accepted,
+          "tool round-trip fixture must bind its provider request");
+    Check(Controller.CompleteRequest(
+              Turn, Request,
+              Providers::UsageSnapshot{
+                  .InputTokens = std::nullopt,
+                  .OutputTokens = 8,
+                  .TotalTokens = std::nullopt,
+                  .CachedInputReadTokens = std::nullopt,
+                  .CachedInputWriteTokens = std::nullopt,
+                  .ReasoningOutputTokens = std::nullopt,
+                  .Completeness = Providers::UsageCompleteness::Final},
+              false, true),
+          "tool round-trip fixture must provide final authoritative usage");
+  }
+
+  ~FinalUsageBudgetScope() { Controller.EndTurn(Turn); }
+
+  FinalUsageBudgetScope(const FinalUsageBudgetScope&) = delete;
+  FinalUsageBudgetScope& operator=(const FinalUsageBudgetScope&) = delete;
+
+private:
+  Agent::OutputBudgetController& Controller;
+  const Providers::AgentTurnId Turn{"turn-1"};
+  const Providers::RequestId Request{"request-1"};
 };
 
 void RegistryRejectsUnsafeOrInvalidDefinitions() {
@@ -258,6 +293,7 @@ void ArgumentValidationAcceptsOnlyStrictObjects() {
 }
 
 void FullRoundTripThroughProjectorExecutesOnce() {
+  FinalUsageBudgetScope Budget;
   int HandlerCalls = 0;
   std::vector<Core::BusinessActionInvocation> Invocations;
   Core::BusinessActionRegistry Registry;
@@ -351,6 +387,7 @@ void FullRoundTripThroughProjectorExecutesOnce() {
 }
 
 void NonHandoffTerminalsDiscardPendingCalls() {
+  FinalUsageBudgetScope Budget;
   const std::vector<std::pair<const char*, Agent::AgentLifecycleEvent>>
       Cases = {
           {"final",
@@ -429,6 +466,7 @@ void NonHandoffTerminalsDiscardPendingCalls() {
 }
 
 void HandoffCorrelationIsAuthoritative() {
+  FinalUsageBudgetScope Budget;
   int HandlerCalls = 0;
   Core::BusinessActionRegistry Registry;
   Check(!Registry.Register(MakeLookupAction(
@@ -501,6 +539,7 @@ void HandoffCorrelationIsAuthoritative() {
 }
 
 void BusinessValidationRejectsBeforeDispatch() {
+  FinalUsageBudgetScope Budget;
   const auto RunRejected = [](
       Core::BusinessActionDefinition Definition,
       Agent::ToolCallAuthorizationContext Authorization,
@@ -567,6 +606,7 @@ void BusinessValidationRejectsBeforeDispatch() {
 }
 
 void ReplaysAndDuplicateCallsExecuteAtMostOnce() {
+  FinalUsageBudgetScope Budget;
   int HandlerCalls = 0;
   Core::BusinessActionRegistry Registry;
   Check(!Registry.Register(MakeLookupAction(
@@ -599,6 +639,7 @@ void ReplaysAndDuplicateCallsExecuteAtMostOnce() {
 }
 
 void ModelArgumentsCannotSpoofIdentity() {
+  FinalUsageBudgetScope Budget;
   std::string ObservedPrincipal;
   Core::BusinessActionRegistry Registry;
   Check(!Registry.Register(MakeLookupAction(
@@ -625,6 +666,7 @@ void ModelArgumentsCannotSpoofIdentity() {
 }
 
 void HandlerOutcomesProduceCorrelatedReceipts() {
+  FinalUsageBudgetScope Budget;
   {
     Core::BusinessActionRegistry Registry;
     Check(!Registry.Register(MakeLookupAction(
@@ -724,6 +766,7 @@ void HandlerOutcomesProduceCorrelatedReceipts() {
 }
 
 void TurnMismatchAndEmptySinkAreHandled() {
+  FinalUsageBudgetScope Budget;
   Core::BusinessActionRegistry Registry;
   int Calls = 0;
   Check(!Registry.Register(MakeLookupAction(
@@ -763,6 +806,7 @@ void TurnMismatchAndEmptySinkAreHandled() {
 }
 
 void DuplicateTerminalsFailClosed() {
+  FinalUsageBudgetScope Budget;
   Core::BusinessActionRegistry Registry;
   ReceiptCollector Collected;
   Agent::ToolCallCoordinator Coordinator(
@@ -775,6 +819,48 @@ void DuplicateTerminalsFailClosed() {
         "second terminal must fail closed");
   Check(Collected.Receipts.empty(),
         "terminal-only handoffs must not fabricate receipts");
+}
+
+void MissingUsageCannotAuthorizeBufferedToolDispatch() {
+  Core::BusinessActionRegistry Registry;
+  std::size_t HandlerCalls = 0;
+  Check(!Registry.Register(MakeLookupAction(
+              [&HandlerCalls](const Core::BusinessActionInvocation&) {
+                ++HandlerCalls;
+                return Succeeded();
+              })).has_value(),
+        "the synthetic lookup action should register");
+
+  auto& Budget = Agent::OutputBudgetController::Shared();
+  const Providers::AgentTurnId Turn{"turn-1"};
+  const Providers::RequestId Request{"request-1"};
+  Check(Budget.BeginTurn(Turn, 64),
+        "Core must establish the turn budget before provider execution");
+  Check(Budget.BeginRequest(Turn, Request) ==
+            Agent::OutputBudgetRequestResult::Accepted,
+        "the first provider request should be associated with the turn");
+  Check(Budget.CompleteRequest(Turn, Request, std::nullopt, false, true),
+        "a ToolHandoff with no usage must be recorded as unknown usage");
+
+  ReceiptCollector Collected;
+  Agent::ToolCallCoordinator Coordinator(
+      Registry, MakeAuthorization(), Collected.Sink());
+  Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{
+                ReadyCall("call-no-usage", "LookupProfile",
+                          R"({"query":"private profile"})")})
+             .has_value(),
+        "complete tool arguments should buffer pending the provider terminal");
+  Check(!Coordinator.Accept(Agent::AgentLifecycleEvent{Handoff()}).has_value(),
+        "unknown usage should fail closed without an event protocol error");
+  Check(HandlerCalls == 0 && Coordinator.HandlerExecutionCount() == 0,
+        "missing usage must prevent business action dispatch");
+  Check(Collected.Receipts.size() == 1 &&
+            Collected.Receipts[0].Status ==
+                Agent::ToolCallReceiptStatus::Rejected &&
+            Collected.Receipts[0].ResultCode ==
+                "UsageBudgetNotAuthoritative",
+        "rejected tool call should report a correlated budget-gate receipt");
+  Budget.EndTurn(Turn);
 }
 
 } // namespace
@@ -791,6 +877,7 @@ int main() {
   HandlerOutcomesProduceCorrelatedReceipts();
   TurnMismatchAndEmptySinkAreHandled();
   DuplicateTerminalsFailClosed();
+  MissingUsageCannotAuthorizeBufferedToolDispatch();
   std::cout << "ToolCallRoundTrip contract tests passed\n";
   return 0;
 }
