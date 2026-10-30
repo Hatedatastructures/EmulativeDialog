@@ -3882,9 +3882,25 @@ Tasks:
     ReviewerReviewEventId: 1a5e0e9c-2f23-45fe-ab0e-84678afaafed
     ChangeRequestAcceptedEventId: e11bc103-4a33-4d1e-8e3f-c4c86d8cea76
     TaskReadinessValidatedEventId: a07fa166-d83c-4151-8843-e77ef04fcb25
+    ControllerQueryEventId: 33127606-5ee8-45a0-baf8-bf2a2d46ca12
     AssignmentValidationEventId: 3aa6feaf-d264-4ac3-8041-294d66c6a739
     TaskAssignedEventId: 79bdd803-71af-4103-aa72-589229e83dec
     AgentSlotAssignedEventId: 3f2daf63-6eee-4dfd-87dd-c29a688e2ef2
+    AssignmentCandidatePullRequestNumber: 94
+    AssignmentCandidatePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/94
+    AssignmentCandidatePullRequestCreatedAtUtc: '2026-10-30T20:11:55Z'
+    AssignmentLedgerReview:
+      PullRequestNumber: 94
+      ReviewBaseCommit: 2a72fec75a413a249005c74bc03ba95062c19f12
+      ReviewHeadCommit: ec803fc89f9eefcb583f8f3abeacee980bd982d3
+      ReviewerSlotId: Worker04
+      ReviewerAgentId: /root/luna04_ed0144_branch_review
+      Decision: CHANGES_REQUESTED
+      DecisionAtUtc: '2026-10-30T20:16:11Z'
+      ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R4-Activation/Worker04-FixedHeadReview-PR94-ec803fc-20261031.md
+      ReviewBundleSha256: 096ADA39CCE3BDE20824BE201391A3D4B7C6C55F98BA19B2E72546EC3D9B2750
+      FindingIds: [F001, F002]
+      ReworkStatus: AppendOnlyCorrectionsPreparedPendingFixedHeadReReview
     PreviousRevision3:
       TaskRevision: 3
       Disposition: SupersededByOwnerFindingsBeforeValidation
