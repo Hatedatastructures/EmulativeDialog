@@ -56,8 +56,8 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0155/R1-AgentAsioPropagation
-    Status: Assigned
+    CurrentTaskId: ""
+    Status: Active
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
     AgentId: "/root/luna02_ed0148_pr_ready"

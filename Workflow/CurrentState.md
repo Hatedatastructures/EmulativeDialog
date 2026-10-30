@@ -588,3 +588,10 @@
 ## 2026-10-30 ED-0155/R1 assignment ledger PR created (15:59 UTC)
 
 - PR #87 is open for the assignment ledger; remote branches are now at 4/4. Worker06 fixed-head review and Coordinator merge remain pending.
+
+## 2026-10-31 ED-0155 closeout and ED-0156 current gate
+
+- ED-0155/R1 implementation PR #88 merged to main at `aab5e24524270379b7b5149511a88db6381fe547` after Worker06 fixed-head APPROVE and WindowsAgentSlice run `41095959086` passed. Its task state is Merged, the closeout event is recorded in P3, and Worker01 is available.
+- ED-0156/R1 registers the separate fix for the pinned Boost 1.92.0 checkout missing `libs/winapi/include/boost/winapi/error_handling.hpp`. TaskSpec PR #89 is open, based on `aab5e24524270379b7b5149511a88db6381fe547`; Owner Worker01 approved and WindowsAgentSlice run #73 passed. Worker06 requested that the missing PRCreated event be recorded before final fixed-head approval. State remains Proposed and no ED-0156 product code is authorized yet.
+- PR #85 remains open at Base `aab5e24524270379b7b5149511a88db6381fe547` / Head `7c62ebb38f56ea9087ab56baedb60d5c10ba0373`. WindowsAgentSlice run `41099158833` reaches `CoreChatServiceObject` and fails because the pinned Boost dependency closure omits WinAPI; CTest is skipped. The next implementation changes only `CMake/BoostAsioDependency.cmake`, then reruns the isolated PR #85 integration build.
+- The remote currently has three branches: `main`, `Task/ED-0144-MemorySqliteAdapter`, and `Task/ED-0150-AsyncRuntimeVerticalSlice`. The original root worktree still contains protected user changes and remains untouched.
