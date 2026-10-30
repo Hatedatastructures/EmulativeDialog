@@ -2344,7 +2344,7 @@ Tasks:
     Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
     State: Blocked
-    BlockedBy: "P3 EntryGate remains pending ED-0146/ED-0147; ED-0148 Core/Memory consent matching must also pass before durable Memory implementation/activation, and the R3 TaskSpec is not yet merged to main."
+    BlockedBy: "P3 EntryGate is Passed and ED-0148/R6 exact ProposalId consent matching is merged. ED-0144/R3 remains blocked because its accepted TTL-preservation TaskSpec has not been merged/assigned and PR #25 is still open with the R2 backup-recall ExpiresAt-loss Major finding; complete the R3 fix and fresh R3 validation before resuming durable Memory integration."
     AssignmentNote: "Dependencies ED-0113 and ED-0123 are merged; root CMake ownership is reserved to ED-0145 to avoid WriteSet conflict."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0144-002
@@ -3178,7 +3178,7 @@ Tasks:
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Merged
     Phase: P3
     ChangeRequestId: CR-ED-0148-R6-VALIDATION-001
     OwnerRole: MemoryOwner
@@ -3208,7 +3208,34 @@ Tasks:
 
     AssignedToSlot: Worker05
     AssignmentEventId: 7d722191-9354-495c-abe9-f79b120f644c
-    AssignmentNote: "PR #95 merged R6 TaskSpec to main at 9b1504acc168887e1e1eb900f115da94d74c349e. This Worker05 assignment is only a candidate until its ledger PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted. Then run the frozen R6 validation on the existing product branch/worktree at baseline d8e918bd812f55b82babd3ef8df6a9b1b08f1eda; no product source writes are in scope."
+    AssignmentNote: "PR #96 merged the R6 assignment ledger at 492a945954dc69e376a14c27a768dc631da52687; post-merge WorkflowController validate-assignment returned AssignmentAccepted. The frozen R6 Windows C++20 validation passed on product Base 492a945954dc69e376a14c27a768dc631da52687 / Head 6452c448ecb7ad86b7dacafc21a3d2b11080875f: ConversationMemoryTests 1/1, GCC/gcov 16.1.0, gcov JSON v2 414/463 (89.42%). Worker06 approved that fixed Head. Product PR #97 merged at 12f07df97ef50e0d8b9f944e318d506dc8328b52; ED-0148/R6 is closed as Merged and Worker05 is recovered. This validation task does not mean the Codex Agent rewrite is complete."
+    AssignmentValidationEventId: 9ef7ad43-ab33-464f-a586-ecc7751ebb2a
+    TaskStartedEventId: 5f8de075-b197-4184-9385-892516e4ce2c
+    AssignmentLedgerPullRequestNumber: 96
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/96
+    AssignmentLedgerPullRequestCreatedEventId: 879bc085-da6c-489c-8790-30cb6d08745b
+    AssignmentLedgerPullRequestBaseCommit: 9b1504acc168887e1e1eb900f115da94d74c349e
+    AssignmentLedgerPullRequestHeadCommit: 982b67593e7740d20da078a32589c7bdaf113854
+    AssignmentLedgerPullRequestMergeCommit: 492a945954dc69e376a14c27a768dc631da52687
+    AssignmentLedgerPullRequestMergedEventId: 13033d93-5263-48cf-a2b1-5f827b80b87e
+    ProductPullRequestNumber: 97
+    ProductPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/97
+    ProductPullRequestCreatedEventId: 8309c399-c9a6-4cf7-a3b3-a1f44053b616
+    ProductPullRequestBaseCommit: 492a945954dc69e376a14c27a768dc631da52687
+    ProductPullRequestHeadCommit: 6452c448ecb7ad86b7dacafc21a3d2b11080875f
+    ProductPullRequestMergeCommit: 12f07df97ef50e0d8b9f944e318d506dc8328b52
+    ProductPullRequestMergedAtUtc: '2026-10-30T21:41:47Z'
+    ProductPullRequestMergedEventId: 027f9e11-fd88-43ed-a400-ccc2eb89ace8
+    TaskValidationCompletedEventId: 376db076-6a45-4994-ac05-6572d01f96f8
+    Worker06FixedHeadReviewEventId: bcb5bd33-0c71-4117-9ed7-a1ac4381b401
+    TaskClosedEventId: 5c5ec4dd-0341-4b0c-939e-40e066d2873a
+    AgentSlotRecoveredEventId: 656b7a6e-85ae-499b-94c1-978f4deeabee
+    CloseoutPullRequestNumber: 98
+    CloseoutPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/98
+    CloseoutPullRequestCreatedAtUtc: '2026-10-30T22:00:26Z'
+    CloseoutPullRequestCreatedEventId: 13e7941c-dd9c-4cc8-bce0-578cc88594af
+    CloseoutPullRequestBaseCommit: 12f07df97ef50e0d8b9f944e318d506dc8328b52
+    CloseoutPullRequestCreationHeadCommit: 64fd804dcae30dd81ceab613611833f8f2c1f189
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
