@@ -1,5 +1,7 @@
 #include "Source/Core/CoreChatService.h"
 
+#include "Source/Agent/OutputBudgetController.hpp"
+
 #include <algorithm>
 #include <chrono>
 #include <cctype>
@@ -11,6 +13,21 @@
 
 namespace EmulativeDialog::Core {
 namespace {
+
+class TurnBudgetCleanup final {
+public:
+  TurnBudgetCleanup(Agent::OutputBudgetController& ControllerValue,
+                    const Providers::AgentTurnId& TurnValue) noexcept
+      : Controller(ControllerValue), Turn(TurnValue) {}
+  ~TurnBudgetCleanup() { Controller.EndTurn(Turn); }
+
+  TurnBudgetCleanup(const TurnBudgetCleanup&) = delete;
+  TurnBudgetCleanup& operator=(const TurnBudgetCleanup&) = delete;
+
+private:
+  Agent::OutputBudgetController& Controller;
+  const Providers::AgentTurnId& Turn;
+};
 
 bool IsNonEmpty(std::string_view Value) noexcept {
   return !Value.empty();
@@ -223,15 +240,17 @@ CoreChatService::CoreChatService(
       ChannelLease(ChannelLease), ActionIdSource(ActionIdSource),
       RecordObserver(RecordObserver) {}
 
-CoreChatResult CoreChatService::Process(
+std::optional<CoreChatResult> CoreChatService::PrepareTurn(
     const Channels::InboundChannelMessage& Message,
-    std::stop_token CancellationToken) {
+    std::stop_token CancellationToken,
+    std::optional<ResolvedIdentity>& Identity,
+    std::optional<AuthorizedTurnContext>& Context) {
   if (CancellationToken.stop_requested()) {
     return CoreChatResult{CoreChatStatus::Cancelled, CoreChatFailureCode::None,
                           std::nullopt, std::nullopt, std::nullopt};
   }
 
-  const IdentityResolution Resolution = Policy.Resolve(Message.Envelope);
+  auto Resolution = Policy.Resolve(Message.Envelope);
   if (const auto* Failure = std::get_if<IdentityPolicyFailure>(&Resolution)) {
     CoreChatFailureCode FailureCode = CoreChatFailureCode::InvalidEnvelope;
     switch (Failure->Code) {
@@ -252,67 +271,111 @@ CoreChatResult CoreChatService::Process(
                           std::nullopt, std::nullopt};
   }
 
-  const ResolvedIdentity& Identity = std::get<ResolvedIdentity>(Resolution);
-  const std::string DeduplicationKey = ScopedDeduplicationKey(Message.Envelope);
-  if (!ProcessedDeduplicationIds.emplace(DeduplicationKey).second) {
-    return CoreChatResult{CoreChatStatus::Duplicate,
-                          CoreChatFailureCode::None,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+  Identity.emplace(std::get<ResolvedIdentity>(std::move(Resolution)));
+  std::string DeduplicationKey;
+  try {
+    DeduplicationKey = ScopedDeduplicationKey(Message.Envelope);
+  } catch (...) {
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::InvalidAgentResult,
+                          AgentRunFailureCode::InternalError,
+                          std::nullopt, std::nullopt};
   }
 
-  TextExtraction InputText = ExtractInboundText(Message.Message);
+  {
+    std::lock_guard<std::mutex> Lock(StateMutex);
+    try {
+      if (!ProcessedDeduplicationIds.emplace(std::move(DeduplicationKey)).second) {
+        return CoreChatResult{CoreChatStatus::Duplicate,
+                              CoreChatFailureCode::None,
+                              std::nullopt, std::nullopt, std::nullopt};
+      }
+    } catch (...) {
+      return CoreChatResult{CoreChatStatus::Failed,
+                            CoreChatFailureCode::InvalidAgentResult,
+                            AgentRunFailureCode::InternalError,
+                            std::nullopt, std::nullopt};
+    }
+  }
+
+  TextExtraction InputText;
+  try {
+    InputText = ExtractInboundText(Message.Message);
+  } catch (...) {
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::InvalidAgentResult,
+                          AgentRunFailureCode::InternalError,
+                          std::nullopt, std::nullopt};
+  }
   if (InputText.Status == TextExtractionStatus::UnsupportedPart) {
     return CoreChatResult{CoreChatStatus::Unsupported,
                           CoreChatFailureCode::UnsupportedInput,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   }
   if (InputText.Status == TextExtractionStatus::Empty) {
     return CoreChatResult{CoreChatStatus::Rejected,
                           CoreChatFailureCode::InvalidMessage,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   }
 
   const Channels::Timestamp InboundCheckTime = std::chrono::system_clock::now();
   Channels::CapabilitySnapshot InboundCapabilities;
   try {
-    InboundCapabilities = Channel.GetCapabilities(Identity.Account);
+    InboundCapabilities = Channel.GetCapabilities(Identity->Account);
   } catch (...) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::CapabilityUnavailable,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   }
-  if (!SnapshotMatchesAccount(InboundCapabilities, Identity.Account, InboundCheckTime) ||
-      !HasVerifiedCapability(InboundCapabilities, Channels::ChannelCapability::ReceiveText,
+  if (!SnapshotMatchesAccount(InboundCapabilities, Identity->Account,
+                              InboundCheckTime) ||
+      !HasVerifiedCapability(InboundCapabilities,
+                             Channels::ChannelCapability::ReceiveText,
                              InboundCheckTime)) {
     return CoreChatResult{CoreChatStatus::Unsupported,
                           CoreChatFailureCode::CapabilityUnavailable,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   }
 
-  AuthorizedTurnContext Context{Identity.Principal, Identity.Scope,
-                                MakeAgentTurnId(Message.Envelope), Message.Message};
-  AgentRunResult AgentResult = AgentRunResult::Failed(AgentRunFailureCode::InternalError);
   try {
-    AgentResult = AgentRuntime.RunTurn(Context, Provider, ProviderProfile, ProviderLease,
-                                       CancellationToken);
+    Context.emplace(AuthorizedTurnContext{
+        Identity->Principal, Identity->Scope,
+        MakeAgentTurnId(Message.Envelope), Message.Message});
   } catch (...) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::InvalidAgentResult,
                           AgentRunFailureCode::InternalError,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt};
   }
 
+  Agent::OutputBudgetController& Budget = Agent::OutputBudgetController::Shared();
+  try {
+    if (!Budget.BeginTurn(Context->AgentTurn,
+                          ProviderProfile.Limit.MaximumOutputTokens)) {
+      return CoreChatResult{CoreChatStatus::Failed,
+                            CoreChatFailureCode::InvalidAgentResult,
+                            AgentRunFailureCode::InternalError,
+                            std::nullopt, std::nullopt};
+    }
+  } catch (...) {
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::InvalidAgentResult,
+                          AgentRunFailureCode::InternalError,
+                          std::nullopt, std::nullopt};
+  }
+  return std::nullopt;
+}
+
+CoreChatResult CoreChatService::CompleteTurn(
+    const ResolvedIdentity& Identity,
+    const AuthorizedTurnContext& Context,
+    AgentRunResult AgentResult,
+    std::stop_token CancellationToken) {
+  if (AgentResult.GetStatus() == AgentRunStatus::UnknownOutcome) {
+    return CoreChatResult{CoreChatStatus::UnknownOutcome,
+                          CoreChatFailureCode::None,
+                          std::nullopt, std::nullopt, std::nullopt};
+  }
   if (CancellationToken.stop_requested()) {
     return CoreChatResult{CoreChatStatus::Cancelled, CoreChatFailureCode::None,
                           std::nullopt, std::nullopt, std::nullopt};
@@ -323,14 +386,10 @@ CoreChatResult CoreChatService::Process(
     if (!AgentResult.GetFailureCode().has_value()) {
       return CoreChatResult{CoreChatStatus::Failed,
                             CoreChatFailureCode::InvalidAgentResult,
-                            std::nullopt,
-                            std::nullopt,
-                            std::nullopt};
+                            std::nullopt, std::nullopt, std::nullopt};
     }
-    return CoreChatResult{CoreChatStatus::Failed,
-                          CoreChatFailureCode::None,
-                          AgentResult.GetFailureCode(),
-                          std::nullopt,
+    return CoreChatResult{CoreChatStatus::Failed, CoreChatFailureCode::None,
+                          AgentResult.GetFailureCode(), std::nullopt,
                           std::nullopt};
   case AgentRunStatus::Cancelled:
     return CoreChatResult{CoreChatStatus::Cancelled, CoreChatFailureCode::None,
@@ -338,15 +397,11 @@ CoreChatResult CoreChatService::Process(
   case AgentRunStatus::Unsupported:
     return CoreChatResult{CoreChatStatus::Unsupported,
                           CoreChatFailureCode::None,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   case AgentRunStatus::UnknownOutcome:
     return CoreChatResult{CoreChatStatus::UnknownOutcome,
                           CoreChatFailureCode::None,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   case AgentRunStatus::ResponseReady:
     break;
   }
@@ -357,9 +412,7 @@ CoreChatResult CoreChatService::Process(
       AgentResult.GetFinalText().empty()) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::InvalidAgentResult,
-                          std::nullopt,
-                          std::nullopt,
-                          std::nullopt};
+                          std::nullopt, std::nullopt, std::nullopt};
   }
 
   const Channels::Timestamp SendCheckTime = std::chrono::system_clock::now();
@@ -369,60 +422,72 @@ CoreChatResult CoreChatService::Process(
   } catch (...) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::CapabilityUnavailable,
-                          std::nullopt,
-                          Completion,
-                          std::nullopt};
+                          std::nullopt, Completion, std::nullopt};
   }
-  if (!SnapshotMatchesAccount(SendCapabilities, Identity.Account, SendCheckTime) ||
-      !HasVerifiedCapability(SendCapabilities, Channels::ChannelCapability::SendText, SendCheckTime)) {
+  if (!SnapshotMatchesAccount(SendCapabilities, Identity.Account,
+                              SendCheckTime) ||
+      !HasVerifiedCapability(SendCapabilities,
+                             Channels::ChannelCapability::SendText,
+                             SendCheckTime)) {
     return CoreChatResult{CoreChatStatus::Unsupported,
                           CoreChatFailureCode::CapabilityUnavailable,
-                          std::nullopt,
-                          Completion,
-                          std::nullopt};
+                          std::nullopt, Completion, std::nullopt};
   }
 
   const std::uint64_t CurrentPolicyVersion = Policy.GetPolicyVersion();
   const std::uint64_t CapabilityVersion = SendCapabilities.SnapshotVersion;
   CoreActionIdentifiers Identifiers;
   try {
+    // This call is intentionally outside StateMutex. The injected source's
+    // contract requires concurrent calls for distinct messages to be safe.
     Identifiers = ActionIdSource.Next();
   } catch (...) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::InvalidActionIdentifiers,
-                          std::nullopt,
-                          Completion,
-                          std::nullopt};
+                          std::nullopt, Completion, std::nullopt};
   }
-  if (!IsValidIdentifiers(Identifiers) ||
-      IssuedActionIds.contains(Identifiers.ActionId.Value) ||
-      IssuedOperationIds.contains(Identifiers.OperationId.Value) ||
-      IssuedIdempotencyKeys.contains(Identifiers.IdempotencyKey.Value)) {
+  if (!IsValidIdentifiers(Identifiers)) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::InvalidActionIdentifiers,
-                          std::nullopt,
-                          Completion,
-                          std::nullopt};
+                          std::nullopt, Completion, std::nullopt};
   }
-  IssuedActionIds.emplace(Identifiers.ActionId.Value);
-  IssuedOperationIds.emplace(Identifiers.OperationId.Value);
-  IssuedIdempotencyKeys.emplace(Identifiers.IdempotencyKey.Value);
+  {
+    std::lock_guard<std::mutex> Lock(StateMutex);
+    if (IssuedActionIds.contains(Identifiers.ActionId.Value) ||
+        IssuedOperationIds.contains(Identifiers.OperationId.Value) ||
+        IssuedIdempotencyKeys.contains(Identifiers.IdempotencyKey.Value)) {
+      return CoreChatResult{CoreChatStatus::Failed,
+                            CoreChatFailureCode::InvalidActionIdentifiers,
+                            std::nullopt, Completion, std::nullopt};
+    }
+    try {
+      IssuedActionIds.emplace(Identifiers.ActionId.Value);
+      IssuedOperationIds.emplace(Identifiers.OperationId.Value);
+      IssuedIdempotencyKeys.emplace(Identifiers.IdempotencyKey.Value);
+    } catch (...) {
+      // Any identifiers inserted before allocation failed stay consumed. This
+      // is fail-closed and prevents reuse after an incomplete reservation.
+      return CoreChatResult{CoreChatStatus::Failed,
+                            CoreChatFailureCode::InvalidActionIdentifiers,
+                            std::nullopt, Completion, std::nullopt};
+    }
+  }
 
   OperationRecord Record{Identifiers.OperationId, Identifiers.IdempotencyKey,
                          Context.AgentTurn, Identifiers.ActionId, Identity.Scope,
                          CurrentPolicyVersion, CapabilityVersion};
   if (RecordObserver != nullptr) {
-    RecordObserver->OnOperationRecordChanged(Record);
+    const OperationRecord Snapshot = Record;
+    RecordObserver->OnOperationRecordChanged(Snapshot);
   }
   if (!Record.Authorize()) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::OperationTransitionFailure,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
   if (RecordObserver != nullptr) {
-    RecordObserver->OnOperationRecordChanged(Record);
+    const OperationRecord Snapshot = Record;
+    RecordObserver->OnOperationRecordChanged(Snapshot);
   }
 
   std::string AuthorizationValue{"CoreAuthorization:"};
@@ -445,94 +510,97 @@ CoreChatResult CoreChatService::Process(
   try {
     DispatchCapabilities = Channel.GetCapabilities(Identity.Account);
   } catch (...) {
-    (void)Record.FailBeforeDispatch(Channels::ChannelErrorCode::InvalidProfile);
+    static_cast<void>(Record.FailBeforeDispatch(
+        Channels::ChannelErrorCode::InvalidProfile));
     if (RecordObserver != nullptr) {
-      RecordObserver->OnOperationRecordChanged(Record);
+      const OperationRecord Snapshot = Record;
+      RecordObserver->OnOperationRecordChanged(Snapshot);
     }
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::CapabilityUnavailable,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
   if (Policy.GetPolicyVersion() != Action.GetPolicyVersion()) {
-    (void)Record.FailBeforeDispatch(Channels::ChannelErrorCode::Forbidden);
+    static_cast<void>(Record.FailBeforeDispatch(Channels::ChannelErrorCode::Forbidden));
     if (RecordObserver != nullptr) {
-      RecordObserver->OnOperationRecordChanged(Record);
+      const OperationRecord Snapshot = Record;
+      RecordObserver->OnOperationRecordChanged(Snapshot);
     }
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::PolicyVersionChanged,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
-  if (!SnapshotMatchesAccount(DispatchCapabilities, Identity.Account, DispatchCheckTime) ||
-      DispatchCapabilities.SnapshotVersion != Action.GetCapabilitySnapshotVersion() ||
+  if (!SnapshotMatchesAccount(DispatchCapabilities, Identity.Account,
+                              DispatchCheckTime) ||
+      DispatchCapabilities.SnapshotVersion !=
+          Action.GetCapabilitySnapshotVersion() ||
       !HasVerifiedCapability(DispatchCapabilities,
                              Channels::ChannelCapability::SendText,
                              DispatchCheckTime)) {
-    (void)Record.FailBeforeDispatch(Channels::ChannelErrorCode::UnsupportedCapability);
+    static_cast<void>(Record.FailBeforeDispatch(
+        Channels::ChannelErrorCode::UnsupportedCapability));
     if (RecordObserver != nullptr) {
-      RecordObserver->OnOperationRecordChanged(Record);
+      const OperationRecord Snapshot = Record;
+      RecordObserver->OnOperationRecordChanged(Snapshot);
     }
     return CoreChatResult{CoreChatStatus::Unsupported,
                           CoreChatFailureCode::CapabilityVersionChanged,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
 
   if (!Record.MarkDispatched()) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::OperationTransitionFailure,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
   if (RecordObserver != nullptr) {
-    RecordObserver->OnOperationRecordChanged(Record);
+    const OperationRecord Snapshot = Record;
+    RecordObserver->OnOperationRecordChanged(Snapshot);
   }
 
   Channels::ChannelReceipt Receipt;
   try {
     Receipt = Channel.SendAction(Action, ChannelLease);
   } catch (...) {
-    (void)Record.MarkUnknownOutcome(Channels::ChannelErrorCode::OutcomeUnknown);
+    static_cast<void>(Record.MarkUnknownOutcome(
+        Channels::ChannelErrorCode::OutcomeUnknown));
     if (RecordObserver != nullptr) {
-      RecordObserver->OnOperationRecordChanged(Record);
+      const OperationRecord Snapshot = Record;
+      RecordObserver->OnOperationRecordChanged(Snapshot);
     }
     return CoreChatResult{CoreChatStatus::UnknownOutcome,
                           CoreChatFailureCode::ChannelException,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
 
   const bool ReceiptMatches = Record.ApplyReceipt(Receipt);
   if (RecordObserver != nullptr) {
-    RecordObserver->OnOperationRecordChanged(Record);
+    const OperationRecord Snapshot = Record;
+    RecordObserver->OnOperationRecordChanged(Snapshot);
   }
   if (!ReceiptMatches || Record.GetState() == OperationState::UnknownOutcome) {
     return CoreChatResult{CoreChatStatus::UnknownOutcome,
                           CoreChatFailureCode::None,
-                          std::nullopt,
-                          Completion,
-                          Record.GetState()};
+                          std::nullopt, Completion, Record.GetState()};
   }
 
   switch (Record.GetState()) {
   case OperationState::Succeeded:
-    return CoreChatResult{CoreChatStatus::Completed, CoreChatFailureCode::None,
-                          std::nullopt, Completion, Record.GetState()};
+    return CoreChatResult{CoreChatStatus::Completed,
+                          CoreChatFailureCode::None, std::nullopt,
+                          Completion, Record.GetState()};
   case OperationState::Rejected:
-    return CoreChatResult{CoreChatStatus::Rejected, CoreChatFailureCode::None,
-                          std::nullopt, Completion, Record.GetState()};
+    return CoreChatResult{CoreChatStatus::Rejected,
+                          CoreChatFailureCode::None, std::nullopt,
+                          Completion, Record.GetState()};
   case OperationState::Unsupported:
-    return CoreChatResult{CoreChatStatus::Unsupported, CoreChatFailureCode::None,
-                          std::nullopt, Completion, Record.GetState()};
+    return CoreChatResult{CoreChatStatus::Unsupported,
+                          CoreChatFailureCode::None, std::nullopt,
+                          Completion, Record.GetState()};
   case OperationState::Failed:
-    return CoreChatResult{CoreChatStatus::Failed, CoreChatFailureCode::None,
-                          std::nullopt, Completion, Record.GetState()};
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::None, std::nullopt,
+                          Completion, Record.GetState()};
   case OperationState::Prepared:
   case OperationState::Authorized:
   case OperationState::Dispatched:
@@ -542,9 +610,65 @@ CoreChatResult CoreChatService::Process(
 
   return CoreChatResult{CoreChatStatus::Failed,
                         CoreChatFailureCode::OperationTransitionFailure,
-                        std::nullopt,
-                        Completion,
-                        Record.GetState()};
+                        std::nullopt, Completion, Record.GetState()};
+}
+
+CoreChatResult CoreChatService::Process(
+    const Channels::InboundChannelMessage& Message,
+    std::stop_token CancellationToken) {
+  std::optional<ResolvedIdentity> Identity;
+  std::optional<AuthorizedTurnContext> Context;
+  if (const std::optional<CoreChatResult> Failure =
+          PrepareTurn(Message, CancellationToken, Identity, Context)) {
+    return *Failure;
+  }
+
+  const TurnBudgetCleanup BudgetCleanup{
+      Agent::OutputBudgetController::Shared(), Context->AgentTurn};
+  AgentRunResult AgentResult =
+      AgentRunResult::Failed(AgentRunFailureCode::InternalError);
+  try {
+    AgentResult = AgentRuntime.RunTurn(*Context, Provider, ProviderProfile,
+                                       ProviderLease, CancellationToken);
+  } catch (...) {
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::InvalidAgentResult,
+                          AgentRunFailureCode::InternalError,
+                          std::nullopt, std::nullopt};
+  }
+  return CompleteTurn(*Identity, *Context, std::move(AgentResult),
+                      CancellationToken);
+}
+
+boost::asio::awaitable<CoreChatResult> CoreChatService::ProcessAsync(
+    Channels::InboundChannelMessage Message,
+    AsyncAgentRuntimePort& AsyncAgentRuntime,
+    Providers::AsyncModelProviderPort& AsyncProvider,
+    std::stop_token CancellationToken) {
+  std::optional<ResolvedIdentity> Identity;
+  std::optional<AuthorizedTurnContext> Context;
+  if (const std::optional<CoreChatResult> Failure =
+          PrepareTurn(Message, CancellationToken, Identity, Context)) {
+    co_return *Failure;
+  }
+
+  const TurnBudgetCleanup BudgetCleanup{
+      Agent::OutputBudgetController::Shared(), Context->AgentTurn};
+  AgentRunResult AgentResult =
+      AgentRunResult::Failed(AgentRunFailureCode::InternalError);
+  try {
+    AgentResult = co_await AsyncAgentRuntime.RunTurnAsync(
+        *Context, AsyncProvider, ProviderProfile, ProviderLease,
+        CancellationToken);
+  } catch (...) {
+    // A thrown coroutine may have dispatched a remote request. Do not turn an
+    // unobserved terminal into a definite failure or a replayable result.
+    co_return CoreChatResult{CoreChatStatus::UnknownOutcome,
+                             CoreChatFailureCode::None,
+                             std::nullopt, std::nullopt, std::nullopt};
+  }
+  co_return CompleteTurn(*Identity, *Context, std::move(AgentResult),
+                         CancellationToken);
 }
 
 } // namespace EmulativeDialog::Core

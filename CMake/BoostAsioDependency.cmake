@@ -26,7 +26,8 @@ set(EmulativeDialogBoostRequiredSubmodules
     libs/static_assert
     libs/system
     libs/throw_exception
-    libs/type_traits)
+    libs/type_traits
+    libs/winapi)
 
 set(EmulativeDialogBoostCheckoutDir
     "${FETCHCONTENT_BASE_DIR}/EmulativeDialogBoostAsioSource")
@@ -86,6 +87,10 @@ if(NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/asio/include/boost/asio.hp
    NOT EXISTS \"${EmulativeDialogBoostSourceDir}/LICENSE_1_0.txt\")
   message(FATAL_ERROR
     \"Pinned Boost source tree is incomplete: ${EmulativeDialogBoostSourceDir}\")
+endif()
+if(NOT EXISTS \"${EmulativeDialogBoostSourceDir}/libs/winapi/include/boost/winapi/error_handling.hpp\")
+  message(FATAL_ERROR
+    \"Pinned Boost.WinAPI header is missing: ${EmulativeDialogBoostSourceDir}/libs/winapi/include/boost/winapi/error_handling.hpp\")
 endif()
 message(STATUS \"Verified pinned Boost.Asio checkout ${EmulativeDialogBoostCommit}\")
 ")

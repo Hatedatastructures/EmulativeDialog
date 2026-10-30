@@ -496,7 +496,13 @@ Capabilities:
     ImplementationTask:
       ProposedTaskId: ED-0112
       CandidateWorkstream: RecoverableTurnAndOperationOutcome
-      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
+      TaskRegistration: Revision5ProposedAwaitingFixedHeadReview
+    ImplementationProgress:
+      State: PartialUnmergedCheckpoint
+      CurrentTaskRevision: ED-0112/R5-Proposed
+      ProvesWhenAccepted: "Scoped checkpoint persistence and deterministic recovery decisions, including fail-closed handling of unknown side effects."
+      DoesNotProve: "Conversation message/session rehydration, a production Core startup call site, or resumption through AgentRuntime."
+      CompletionRule: "Keep this capability incomplete until a separately reviewed implementation task connects rehydrated scoped context to Core/AgentRuntime and proves safe resumption without replaying UnknownOutcome."
     AcceptanceEvidencePlan:
       - Artifact: Tests/Contract/Core/UnknownOutcomeRecovery
         State: Planned

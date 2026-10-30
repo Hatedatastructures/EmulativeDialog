@@ -1,6 +1,6 @@
 # ADR-0003：Windows 原生 HTTPS Provider Transport 采用 WinHTTP + 系统 Schannel 信任
 
-状态：Accepted（2026-10-28，ED-0120/R2；独立评审通过后随 HttpTransportContract V1 一起生效）。
+状态：Accepted（2026-10-28，ED-0120/R2；独立评审通过后随 HttpTransportContract V1 一起生效）。ED-0120/R5 保留该 ADR 的其余已接受决策，并经 Worker06 对 PR #60 固定 Base `79f94a4fa9c9dd41a4ad8187e878683f9c9808c7` / Head `f4c3203061c9ff5680fbc407695ad31d8805453e` 独立批准后随合并提交 `f4c21b67591548b33a09f9c3b03d4c03ce2e5f28` 生效；P3 EntryGate 仍为 Pending。
 
 ## 背景
 
@@ -18,7 +18,7 @@
 6. **重定向默认拒绝**：使用 `WINHTTP_OPTION_REDIRECT_POLICY_NEVER` 等价策略。3xx 响应返回 `RedirectDenied`，只携带状态码和脱敏 Location host，不跟随到任何新 host，也不把 Location 原样透出。ED-0121 实现时不得通过 `WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS/DISALLOW_HTTPS_TO_HTTP` 放宽。
 7. **取消语义**：请求字节写出前的取消是 `Cancelled{RequestMayHaveReachedEndpoint=false}`；写出后或流已开始后的取消为 `Cancelled{RequestMayHaveReachedEndpoint=true}`，禁止声称远端已停止，禁止自动重发。
 8. **未知结果**：请求已发出但流在终态前中断，返回 `UnknownOutcome`；Core 侧不得盲目重试，Provider 重试只能发生在明确分类为可重试的终态上。
-9. **凭据与日志**：Authorization 等敏感头只存在于请求对象与内存中。Transport 终态类型只含状态码、脱敏 host、字节数与错误码；诊断日志只记录请求 ID、endpoint grant ID、状态码、错误码、耗时，绝不记录 header、body 或完整 URL。
+9. **凭据与日志**：Authorization 等敏感头只存在于请求对象与内存中。`EndpointGrantId` 是 bearer capability；它不得进入日志、结构化事件、telemetry、diagnostics、持久化记录、命令输出或用户可见输出，也不得发送给远端。Transport 终态类型只含状态码、脱敏 host、字节数与错误码；诊断记录只可用本地 `TransportRequestId` 关联状态码、错误码、耗时和脱敏 host/字节数，不得记录 `EndpointGrantId`、header、body 或完整 URL。`TransportRequestId` 只用于本地传输相关性，禁止放入远端请求的 header、query 或 body；它不是授权引用，也不得替代 `EndpointGrantId`。
 10. **endpoint 来源**：Transport 不接受任意 URL 字符串。请求必须引用 Core endpoint policy 签发的 `EndpointGrantId` 与已解析的 `HttpsDestination`（scheme 固定 HTTPS，含 host/port/path）。HttpTransport 在构造时注入 Core 提供的只读 `EndpointGrantResolver`，`Stream` 必须在 DNS/connect 前调用 `Validate`，并把 `Missing`/`Expired`/`DestinationMismatch` 统一映射为 `EndpointNotGranted`；ED-0121 实现还必须拒绝未登记端口、含 userinfo 的 host、CR/LF 注入 header、hop-by-hop 或 `Proxy-Authorization` header 与超限请求。`Host` 与 `Content-Length` 由 Transport 依据 `HttpsDestination` 和 `BodyUtf8` 生成，Adapter 传入值不得生效。
 
 ## 备选方案

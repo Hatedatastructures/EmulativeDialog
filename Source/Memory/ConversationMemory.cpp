@@ -235,8 +235,7 @@ bool ConversationMemory::ConsentMatches(
       Consent.Grant.IdentityPolicyVersion != Context.IdentityPolicyVersion) {
     return false;
   }
-  if (Consent.Grant.ProposalId.has_value() &&
-      (!ProposalId.has_value() || *ProposalId != *Consent.Grant.ProposalId)) {
+  if (Consent.Grant.ProposalId != ProposalId) {
     return false;
   }
   return true;

@@ -1,4 +1,5 @@
 #include "Source/Agent/AgentRuntime.h"
+#include "Source/Agent/OutputBudgetController.hpp"
 #include "Source/Core/CoreChatService.h"
 #include "Source/Core/IdentityPolicy.h"
 #include "Tests/Contract/Channels/Contracts/MockChannelAdapter.h"
@@ -10,6 +11,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -316,11 +318,15 @@ public:
 
   CoreActionIdentifiers Next() override {
     ++Calls;
+    if (ThrowOnNext) {
+      throw std::runtime_error("synthetic identifier failure");
+    }
     return Identifiers;
   }
 
   CoreActionIdentifiers Identifiers;
   std::size_t Calls = 0;
+  bool ThrowOnNext = false;
 };
 
 class CollectingSink final : public ChannelEventSink {
@@ -331,6 +337,20 @@ public:
 
   std::vector<InboundChannelMessage> Events;
 };
+
+EmulativeDialog::Providers::AgentTurnId BudgetTurnId(
+    const ChannelEnvelope& Envelope) {
+  std::string Value{"CoreTurn:"};
+  const auto Append = [&Value](std::string_view Part) {
+    Value.append(std::to_string(Part.size()));
+    Value.push_back(':');
+    Value.append(Part);
+  };
+  Append(Envelope.Channel.Value);
+  Append(Envelope.Account.Value);
+  Append(Envelope.StableDeduplication.Value);
+  return EmulativeDialog::Providers::AgentTurnId{std::move(Value)};
+}
 
 AccountProfile MakeChannelProfile() {
   return AccountProfile{
@@ -512,6 +532,9 @@ public:
 void TestSuccessfulMockToMockVerticalSlice() {
   Fixture TestFixture(ProviderScenario::FinalAnswer);
   const CoreChatResult Result = TestFixture.Process();
+  Check(!EmulativeDialog::Agent::OutputBudgetController::Shared()
+             .HasActiveTurn(BudgetTurnId(TestFixture.Sink.Events.at(0).Envelope)),
+        "completed Core turn must release its budget ledger state");
   Check(Result.Status == CoreChatStatus::Completed &&
             Result.Completion ==
                 EmulativeDialog::Providers::CompletionKind::FinalAnswer,
@@ -534,6 +557,9 @@ void TestSuccessfulMockToMockVerticalSlice() {
 void TestRefusalCanCompleteOnlyWithFinalNonEmptyText() {
   Fixture TestFixture(ProviderScenario::Refusal);
   const auto Result = TestFixture.Process();
+  Check(!EmulativeDialog::Agent::OutputBudgetController::Shared()
+             .HasActiveTurn(BudgetTurnId(TestFixture.Sink.Events.at(0).Envelope)),
+        "completed refusal turn must release its budget ledger state");
   Check(Result.Status == CoreChatStatus::Completed &&
             Result.Completion ==
                 EmulativeDialog::Providers::CompletionKind::Refusal,
@@ -556,6 +582,9 @@ void TestEveryNonFinalOutcomeHasNoActionOrChannelSend() {
   for (const ProviderScenario Scenario : Scenarios) {
     Fixture TestFixture(Scenario);
     const CoreChatResult Result = TestFixture.Process();
+    Check(!EmulativeDialog::Agent::OutputBudgetController::Shared()
+               .HasActiveTurn(BudgetTurnId(TestFixture.Sink.Events.at(0).Envelope)),
+          "terminal Core outcome must release its budget ledger state");
     const bool NoActionOrSend =
         TestFixture.Channel.GetSendActionCallCount() == 0 &&
         TestFixture.ActionIdSource.Calls == 0;
@@ -600,6 +629,28 @@ void TestSupportedCapabilitiesAllowVerticalSlice() {
         "supported synthetic capabilities allow the complete vertical path");
 }
 
+void TestRejectedAndExceptionTurnsDoNotRetainBudgetState() {
+  {
+    Fixture TestFixture(ProviderScenario::FinalAnswer);
+    auto Message = TestFixture.Sink.Events.at(0);
+    Message.Envelope.Sender.Value = "unregistered-sender";
+    const auto Result = TestFixture.Service.Process(Message);
+    Check(Result.Status == CoreChatStatus::Rejected &&
+              !EmulativeDialog::Agent::OutputBudgetController::Shared()
+                   .HasActiveTurn(BudgetTurnId(Message.Envelope)),
+          "identity rejection must leave no budget ledger state");
+  }
+  {
+    Fixture TestFixture(ProviderScenario::FinalAnswer);
+    TestFixture.ActionIdSource.ThrowOnNext = true;
+    const auto Result = TestFixture.Process();
+    Check(Result.Status == CoreChatStatus::Failed &&
+              !EmulativeDialog::Agent::OutputBudgetController::Shared()
+                   .HasActiveTurn(BudgetTurnId(TestFixture.Sink.Events.at(0).Envelope)),
+          "nested Core exception path must release the active turn budget");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -607,5 +658,6 @@ int main() {
   TestRefusalCanCompleteOnlyWithFinalNonEmptyText();
   TestEveryNonFinalOutcomeHasNoActionOrChannelSend();
   TestSupportedCapabilitiesAllowVerticalSlice();
+  TestRejectedAndExceptionTurnsDoNotRetainBudgetState();
   return 0;
 }

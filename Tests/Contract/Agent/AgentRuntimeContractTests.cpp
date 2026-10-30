@@ -1,4 +1,5 @@
 #include "Source/Agent/AgentRuntime.h"
+#include "Source/Agent/OutputBudgetController.hpp"
 #include "Source/Core/AgentRuntimePort.h"
 #include "Tests/Contract/Providers/Contracts/FakeProvider.h"
 
@@ -147,17 +148,29 @@ Providers::CanonicalNonTerminalEvent RefusalEvent(
   };
 }
 
+Providers::CanonicalNonTerminalEvent UsageEvent(
+    const Providers::RequestId& Request,
+    const Providers::AgentTurnId& Turn,
+    std::uint64_t Sequence,
+    Providers::UsageSnapshot Usage) {
+  return Providers::UsageUpdatedEvent{
+      .Metadata = Metadata(Request, Turn, Sequence),
+      .Usage = std::move(Usage),
+  };
+}
+
 Providers::ResponseCompletedEvent Completed(
     const Providers::RequestId& Request,
     const Providers::AgentTurnId& Turn,
     std::uint64_t Sequence,
     Providers::CompletionKind Kind,
-    std::optional<Providers::RefusalStopDetails> StopDetails = std::nullopt) {
+    std::optional<Providers::RefusalStopDetails> StopDetails = std::nullopt,
+    std::optional<Providers::UsageSnapshot> FinalUsage = std::nullopt) {
   return Providers::ResponseCompletedEvent{
       .Metadata = Metadata(Request, Turn, Sequence),
       .Kind = Kind,
       .StopSequenceCode = std::nullopt,
-      .FinalUsage = std::nullopt,
+      .FinalUsage = std::move(FinalUsage),
       .StopDetails = std::move(StopDetails),
   };
 }
@@ -214,6 +227,16 @@ Core::AgentRunResult RunScript(
     Providers::ModelProviderPort& Provider) {
   Agent::AgentRuntime Runtime;
   TestProviderCredential Credential;
+  Agent::OutputBudgetController& Budget =
+      Agent::OutputBudgetController::Shared();
+  Check(Budget.BeginTurn(Context.AgentTurn,
+                         Profile.Limit.MaximumOutputTokens),
+        "direct AgentRuntime test must establish a Core-owned turn budget");
+  struct Cleanup final {
+    Agent::OutputBudgetController& Controller;
+    const Providers::AgentTurnId& Turn;
+    ~Cleanup() { Controller.EndTurn(Turn); }
+  } Guard{Budget, Context.AgentTurn};
   return Runtime.RunTurn(Context, Provider, Profile, Credential, {});
 }
 
@@ -1022,6 +1045,149 @@ void TestTypedRefusalsCompleteForTheirProtocols() {
   }
 }
 
+void TestRuntimeRecordsCanonicalUsageAndBlocksUnknownHandoff() {
+  {
+    const auto Context = MakeContext("contract-usage-final");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {UsageEvent(Request, Context.AgentTurn, 1,
+                    Providers::UsageSnapshot{
+                        .InputTokens = 42,
+                        .OutputTokens = 9,
+                        .TotalTokens = 51,
+                        .CachedInputReadTokens = std::nullopt,
+                        .CachedInputWriteTokens = std::nullopt,
+                        .ReasoningOutputTokens = std::nullopt,
+                        .Completeness = Providers::UsageCompleteness::Partial})},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::ToolHandoff,
+                  std::nullopt,
+                  Providers::UsageSnapshot{
+                      .InputTokens = 42,
+                      .OutputTokens = 12,
+                      .TotalTokens = 54,
+                      .CachedInputReadTokens = std::nullopt,
+                      .CachedInputWriteTokens = std::nullopt,
+                      .ReasoningOutputTokens = std::nullopt,
+                      .Completeness = Providers::UsageCompleteness::Final})));
+
+    Agent::AgentRuntime Runtime;
+    TestProviderCredential Credential;
+    Agent::OutputBudgetController& Budget =
+        Agent::OutputBudgetController::Shared();
+    Check(Budget.BeginTurn(Context.AgentTurn, 64),
+          "usage capture turn should register with its budget");
+    const auto Result = Runtime.RunTurn(Context, Provider, MakeProfile(),
+                                        Credential, {});
+    Check(Result.GetStatus() == Core::AgentRunStatus::Unsupported,
+          "tool handoff remains non-executable without Core action dispatch");
+    const auto Snapshot = Budget.Inspect(Context.AgentTurn);
+    Check(Snapshot.has_value() && Snapshot->RequestCompleted &&
+              Snapshot->UsageCompleteness ==
+                  Providers::UsageCompleteness::Final &&
+              Snapshot->OutputTokens == 12,
+          "terminal final usage must replace the prior partial snapshot");
+    Check(Budget.CanDispatchTool(Context.AgentTurn, Request),
+          "authoritative final usage below the limit should pass only the budget gate");
+    Check(!Budget.CanContinue(Context.AgentTurn),
+          "usage state cannot create a Core continuation authorization");
+    Budget.EndTurn(Context.AgentTurn);
+  }
+  {
+    const auto Context = MakeContext("contract-usage-missing-handoff");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    FakeProvider Provider;
+    Provider.EnqueueScript(MakeScript(
+        {Providers::ToolCallReadyEvent{
+            .Metadata = Metadata(Request, Context.AgentTurn, 1),
+            .Item = Providers::ItemId{"item-tool"},
+            .Call = Providers::ToolCallId{"call-usage-missing"},
+            .ToolName = "unsupported-tool",
+            .Arguments = Providers::JsonValue{"{}"}}},
+        Completed(Request, Context.AgentTurn, 2,
+                  Providers::CompletionKind::ToolHandoff)));
+
+    Agent::AgentRuntime Runtime;
+    TestProviderCredential Credential;
+    Agent::OutputBudgetController& Budget =
+        Agent::OutputBudgetController::Shared();
+    Check(Budget.BeginTurn(Context.AgentTurn, 64),
+          "missing-usage turn should register");
+    const auto Result = Runtime.RunTurn(Context, Provider, MakeProfile(),
+                                        Credential, {});
+    const auto Snapshot = Budget.Inspect(Context.AgentTurn);
+    Check(Result.GetStatus() == Core::AgentRunStatus::Unsupported &&
+              Snapshot.has_value() &&
+              Snapshot->UsageCompleteness ==
+                  Providers::UsageCompleteness::Unavailable &&
+              !Snapshot->UsageObserved,
+          "missing usage on ToolHandoff must remain unavailable and unsupported");
+    Check(!Budget.CanDispatchTool(Context.AgentTurn, Request),
+          "missing usage cannot authorize a ToolHandoff dispatch");
+    Budget.EndTurn(Context.AgentTurn);
+  }
+  {
+    const auto Context = MakeContext("contract-usage-invalid-terminal");
+    const auto Request = ExpectedRequestId(Context.AgentTurn);
+    const Providers::RequestId ForeignRequest{"foreign-terminal-request"};
+    RawScriptProvider Provider(
+        {UsageEvent(Request, Context.AgentTurn, 1,
+                    Providers::UsageSnapshot{
+                        .InputTokens = 2,
+                        .OutputTokens = 3,
+                        .TotalTokens = 5,
+                        .CachedInputReadTokens = std::nullopt,
+                        .CachedInputWriteTokens = std::nullopt,
+                        .ReasoningOutputTokens = std::nullopt,
+                        .Completeness = Providers::UsageCompleteness::Final})},
+        Providers::ResponseCompletedEvent{
+            .Metadata = Metadata(ForeignRequest, Context.AgentTurn, 2),
+            .Kind = Providers::CompletionKind::ToolHandoff,
+            .StopSequenceCode = std::nullopt,
+            .FinalUsage = Providers::UsageSnapshot{
+                .InputTokens = 2,
+                .OutputTokens = 3,
+                .TotalTokens = 5,
+                .CachedInputReadTokens = std::nullopt,
+                .CachedInputWriteTokens = std::nullopt,
+                .ReasoningOutputTokens = std::nullopt,
+                .Completeness = Providers::UsageCompleteness::Final},
+            .StopDetails = std::nullopt});
+
+    Agent::AgentRuntime Runtime;
+    TestProviderCredential Credential;
+    Agent::OutputBudgetController& Budget =
+        Agent::OutputBudgetController::Shared();
+    Check(Budget.BeginTurn(Context.AgentTurn, 64),
+          "invalid-terminal turn should register");
+    const auto Result = Runtime.RunTurn(Context, Provider, MakeProfile(),
+                                        Credential, {});
+    const auto Snapshot = Budget.Inspect(Context.AgentTurn);
+    const auto Failure = Result.GetFailureCode();
+    std::cerr << "FOREIGN_TERMINAL_DIAGNOSTIC status="
+              << static_cast<int>(Result.GetStatus()) << " failure="
+              << (Failure.has_value()
+                      ? std::to_string(static_cast<int>(*Failure))
+                      : std::string{"none"})
+              << " request_completed="
+              << (Snapshot.has_value() && Snapshot->RequestCompleted)
+              << " agent_request=" << Request.Value
+              << " terminal_request=" << ForeignRequest.Value << '\n';
+    Check(Result.GetStatus() == Core::AgentRunStatus::Failed,
+          "foreign terminal metadata must fail the AgentRuntime turn");
+    Check(Failure == Core::AgentRunFailureCode::InvalidStream,
+          "foreign terminal metadata must map to InvalidStream");
+    Check(Snapshot.has_value(),
+          "invalid terminal metadata must leave the turn snapshot inspectable");
+    Check(!Snapshot->RequestCompleted,
+          "foreign terminal metadata must not complete the budget request");
+    Check(!Budget.CanDispatchTool(Context.AgentTurn, Request),
+          "invalid ToolHandoff metadata cannot authorize dispatch");
+    Budget.EndTurn(Context.AgentTurn);
+  }
+}
+
 } // namespace
 
 int main() {
@@ -1043,5 +1209,6 @@ int main() {
   TestVisionRequestMapsApprovedImageReference();
   TestUnknownFailureCodesFailClosed();
   TestTypedRefusalsCompleteForTheirProtocols();
+  TestRuntimeRecordsCanonicalUsageAndBlocksUnknownHandoff();
   return 0;
 }

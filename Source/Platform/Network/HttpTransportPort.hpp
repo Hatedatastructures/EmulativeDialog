@@ -248,6 +248,13 @@ enum class TransportHealthState : std::uint8_t {
 // see Architecture/Contracts/HttpTransportContract.md V1.
 class HttpTransportPort {
 public:
+    // GrantResolver is borrowed and must outlive this port. Taking an lvalue
+    // reference rejects temporary resolver objects at every derived boundary.
+    explicit HttpTransportPort(const EndpointGrantResolver& GrantResolver)
+        : GrantResolver(GrantResolver) {}
+    HttpTransportPort(EndpointGrantResolver&&) = delete;
+    HttpTransportPort(const EndpointGrantResolver&&) = delete;
+
     virtual ~HttpTransportPort() = default;
 
     HttpTransportPort(const HttpTransportPort&) = delete;
@@ -257,17 +264,33 @@ public:
     // result. The head sink runs at most once before body chunks. Sink
     // exceptions are treated as an implementation fault and never propagated
     // as transport success.
-    [[nodiscard]] virtual TransportTerminal Stream(
+    // This non-virtual entry is the only public request path. Implementations
+    // provide DoStream after the shared endpoint grant guard succeeds.
+    [[nodiscard]] TransportTerminal Stream(
         const TransportRequest& Request,
         const ResponseHeadSink& OnHead,
         const ResponseChunkSink& OnChunk,
-        std::stop_token CancellationToken) = 0;
+        std::stop_token CancellationToken) {
+        if (GrantResolver.Validate(Request.Grant, Request.Destination) !=
+            EndpointGrantStatus::Valid) {
+            return FailedTransport{
+                .Code = TransportFailureCode::EndpointNotGranted};
+        }
+        return DoStream(Request, OnHead, OnChunk, CancellationToken);
+    }
 
     [[nodiscard]] virtual TransportHealthState Health(
         std::stop_token CancellationToken) noexcept = 0;
 
 protected:
-    HttpTransportPort() = default;
+    [[nodiscard]] virtual TransportTerminal DoStream(
+        const TransportRequest& Request,
+        const ResponseHeadSink& OnHead,
+        const ResponseChunkSink& OnChunk,
+        std::stop_token CancellationToken) = 0;
+
+private:
+    const EndpointGrantResolver& GrantResolver;
 };
 
 } // namespace EmulativeDialog::Platform::Network

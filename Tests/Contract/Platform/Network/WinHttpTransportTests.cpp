@@ -8,12 +8,32 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace {
 
 using namespace EmulativeDialog::Platform::Network;
+
+static_assert(!std::is_constructible_v<WinHttpTransport,
+                                      EndpointGrantResolver&&, WinHttpApi&>);
+static_assert(std::is_constructible_v<WinHttpTransport,
+                                     const EndpointGrantResolver&,
+                                     WinHttpApi&>);
+static_assert(!std::is_constructible_v<WinHttpTransport,
+                                      const EndpointGrantResolver&&,
+                                      WinHttpApi&>);
+
+template <typename Resolver>
+constexpr bool CanCreateSystemTransport = requires(Resolver&& Grants) {
+    CreateSystemWinHttpTransport(std::forward<Resolver>(Grants));
+};
+
+static_assert(CanCreateSystemTransport<EndpointGrantResolver&>);
+static_assert(CanCreateSystemTransport<const EndpointGrantResolver&>);
+static_assert(!CanCreateSystemTransport<EndpointGrantResolver>);
+static_assert(!CanCreateSystemTransport<const EndpointGrantResolver>);
 
 void Expect(bool Condition) {
     if (!Condition) {
@@ -330,9 +350,9 @@ struct Capture final {
     std::vector<std::string> Chunks;
 };
 
-TransportTerminal RunOkCase(FakeWinHttpApi& Api, FixedGrantResolver& Grants,
-                            const TransportRequest& Request,
-                            Capture& Captured,
+TransportTerminal RunOkCase(FakeWinHttpApi& Api,
+                            const FixedGrantResolver& Grants,
+                            const TransportRequest& Request, Capture& Captured,
                             std::stop_token Token = {}) {
     WinHttpTransport Transport(Grants, Api);
     return Transport.Stream(
@@ -406,7 +426,21 @@ void TestGrantRejectionNeverTouchesWinHttp() {
         Expect(std::holds_alternative<FailedTransport>(Terminal));
         Expect(std::get<FailedTransport>(Terminal).Code ==
                TransportFailureCode::EndpointNotGranted);
+        Expect(Grants.CallCount == 1);
         Expect(Api.OpenSessionCalls == 0);
+        Expect(Api.SetTimeoutCalls == 0);
+        Expect(Api.DisableRedirectCalls == 0);
+        Expect(Api.ConnectCalls == 0);
+        Expect(Api.OpenRequestCalls == 0);
+        Expect(Api.AddHeaderCalls == 0);
+        Expect(Api.SendCalls == 0);
+        Expect(Api.ReceiveCalls == 0);
+        Expect(Api.StatusCalls == 0);
+        Expect(Api.QueryHeaderCalls == 0);
+        Expect(Api.QueryDataCalls == 0);
+        Expect(Api.ReadCalls == 0);
+        Expect(Api.HttpDateCalls == 0);
+        Expect(Api.CloseCalls == 0);
         Expect(Captured.HeadCalls == 0);
         Expect(Captured.Chunks.empty());
     }

@@ -86,21 +86,23 @@ protected:
 class WinHttpTransport final : public HttpTransportPort {
 public:
     WinHttpTransport(const EndpointGrantResolver& Grants, WinHttpApi& Api);
+    WinHttpTransport(EndpointGrantResolver&&, WinHttpApi&) = delete;
+    WinHttpTransport(const EndpointGrantResolver&&, WinHttpApi&) = delete;
     ~WinHttpTransport() override;
 
     WinHttpTransport(const WinHttpTransport&) = delete;
     WinHttpTransport& operator=(const WinHttpTransport&) = delete;
 
-    [[nodiscard]] TransportTerminal Stream(
+    [[nodiscard]] TransportHealthState Health(
+        std::stop_token CancellationToken) noexcept override;
+
+protected:
+    [[nodiscard]] TransportTerminal DoStream(
         const TransportRequest& Request, const ResponseHeadSink& OnHead,
         const ResponseChunkSink& OnChunk,
         std::stop_token CancellationToken) override;
 
-    [[nodiscard]] TransportHealthState Health(
-        std::stop_token CancellationToken) noexcept override;
-
 private:
-    const EndpointGrantResolver& GrantResolver;
     WinHttpApi& Api;
 };
 
@@ -108,5 +110,9 @@ private:
 // the returned port and must keep Grants alive for its lifetime.
 [[nodiscard]] std::unique_ptr<HttpTransportPort> CreateSystemWinHttpTransport(
     const EndpointGrantResolver& Grants);
+[[nodiscard]] std::unique_ptr<HttpTransportPort> CreateSystemWinHttpTransport(
+    EndpointGrantResolver&& Grants) = delete;
+[[nodiscard]] std::unique_ptr<HttpTransportPort> CreateSystemWinHttpTransport(
+    const EndpointGrantResolver&& Grants) = delete;
 
 } // namespace EmulativeDialog::Platform::Network

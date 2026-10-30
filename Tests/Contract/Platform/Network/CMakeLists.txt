@@ -31,6 +31,18 @@ if(WIN32)
   target_link_libraries(EmulativeDialogWinHttpTransport PRIVATE winhttp)
 endif()
 
+add_executable(HttpTransportPortTests HttpTransportPortTests.cpp)
+target_include_directories(HttpTransportPortTests
+  PRIVATE "${EMULATIVE_DIALOG_ROOT}")
+target_compile_features(HttpTransportPortTests PRIVATE cxx_std_20)
+target_compile_options(HttpTransportPortTests
+  PRIVATE -Wall -Wextra -Wpedantic -Werror)
+set_target_properties(HttpTransportPortTests
+  PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF)
+
 add_executable(WinHttpTransportTests WinHttpTransportTests.cpp)
 target_link_libraries(WinHttpTransportTests
   PRIVATE EmulativeDialogWinHttpTransport)
@@ -42,6 +54,9 @@ set_target_properties(WinHttpTransportTests
     CXX_EXTENSIONS OFF)
 
 if(BUILD_TESTING)
+  add_test(
+    NAME Platform.Network.HttpTransportPort
+    COMMAND $<TARGET_FILE:HttpTransportPortTests>)
   add_test(
     NAME Platform.Network.WinHttpTransport
     COMMAND $<TARGET_FILE:WinHttpTransportTests>)

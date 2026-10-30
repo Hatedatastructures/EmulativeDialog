@@ -141,12 +141,28 @@ struct FakeResponse final {
         .StatusCode = 200, .ReceivedBodyBytes = 0}};
 };
 
+class ValidEndpointGrantResolver final : public Net::EndpointGrantResolver {
+public:
+    [[nodiscard]] Net::EndpointGrantStatus Validate(
+        const Net::EndpointGrantId&,
+        const Net::HttpsDestination&) const noexcept override {
+        return Net::EndpointGrantStatus::Valid;
+    }
+};
+
+Net::EndpointGrantResolver& DefaultEndpointGrantResolver() {
+    static ValidEndpointGrantResolver Resolver;
+    return Resolver;
+}
+
 class FakeHttpTransport final : public Net::HttpTransportPort {
 public:
     explicit FakeHttpTransport(FakeResponse Response)
-        : Script(std::move(Response)) {}
+        : Net::HttpTransportPort(DefaultEndpointGrantResolver()),
+          Script(std::move(Response)) {}
 
-    [[nodiscard]] Net::TransportTerminal Stream(
+protected:
+    [[nodiscard]] Net::TransportTerminal DoStream(
         const Net::TransportRequest& Request, const Net::ResponseHeadSink& OnHead,
         const Net::ResponseChunkSink& OnChunk,
         std::stop_token CancellationToken) override {
@@ -176,6 +192,7 @@ public:
         return Script.Terminal;
     }
 
+public:
     [[nodiscard]] Net::TransportHealthState Health(
         std::stop_token) noexcept override {
         return Net::TransportHealthState::Ready;
