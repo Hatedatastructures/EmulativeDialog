@@ -1440,8 +1440,12 @@ Tasks:
       ReviewerAgentId: /root/worker04_reviewer_queue
       Branch: Task/ED-0114-R2-UsageLimits
       Worktree: H:/Qbot/EmulativeDialog.ED-0114-R2
-      PullRequestNumber: 20
-      PullRequestState: ClosedWithoutMerge
+      HistoricalPullRequest:
+        TaskRevision: 2
+        Number: 20
+        Url: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
+        State: ClosedWithoutMerge
+        ReviewStatus: Rework
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.ED-0114-R4.build/Standalone
       Reason: >-
         PR #20 was not merged and is not completion evidence. The old assigned source tree and sibling build
@@ -1483,6 +1487,15 @@ Tasks:
         - "PR #77 merged 2026-10-30T08:12:11Z as 47ead8f452b9963778ae33ded8447541dfe64e67; P3 EntryGate and ED-0149/R2 closeout are on main"
       ChangeRequestProposedEventId: cd6039a2-fdf7-482f-b261-c22f44b5911b
       CandidatePreReviewAuditEventId: 6d95a869-612f-49a4-9262-c7828f2ea422
+      PriorFixedHeadReviewRound:
+        ReviewedBaseCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
+        ReviewedHeadCommit: a26693054e0f53312fcd6964786b016e6d197177
+        OwnerDecision: ChangesRequested
+        OwnerFindings: [ED0114-R5-OWNER-F001, ED0114-R5-OWNER-F002]
+        OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Owner-FixedHeadReview-ED0114-R5-a2669305-20261030.md
+        IndependentReviewerDecision: ChangesRequested
+        IndependentReviewerFindings: [ED0114-R5-REVIEWER-F001]
+        IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0114-R5-TaskSpec/Worker04-FixedHeadReview-ED0114-R5-TaskSpec-a2669305-20261030.md
       NoProductWriteAuthorization: true
       ProductWriteSetPathCount: 17
     PreviousRevision3:
@@ -1541,12 +1554,10 @@ Tasks:
     BaselineCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
     AssignedWorktree: ""
     AssignedBranch: ""
-    PullRequestCreated: true
-    PullRequestNumber: 20
-    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/20
+    PullRequestCreated: false
     Revision2ReviewBaseCommit: 5531594dfeb36b9419cda7a5a8faca6f6f3e4c0a
     Revision2ReviewHeadCommit: a23f252268d32a8b7315797f74a2562b72772d2c
-    ReviewStatus: Rework
+    ReviewStatus: NotStarted
     ReviewRound2PriorHead: 82c5c0c3fb51139a146d6bab9d4801a0e323bc78
     ReviewRound2Status: ChangesRequested
     ReviewRound3Status: ChangesRequested
@@ -3338,17 +3349,6 @@ Tasks:
     TaskClosedEventId: 0e4c8ac7-725d-4fc8-b732-9c467765a716
     OwnerSlotRecoveredEventId: 27978dc9-2e53-4c5b-906c-c9707fb9abc4
     TaskStatusNote: "PR #75 merged after independent Worker04 approval and Windows C++20 compile-contract validation. ED-0149/R2 is closed as Merged for its contract-only scope. AsyncAgentRuntime::RunTurnAsync product behavior remains unimplemented and is tracked by ED-0150."
-    LifecycleCloseoutPullRequestNumber: 77
-    LifecycleCloseoutPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/77
-    LifecycleCloseoutPullRequestBaseCommit: 2e6fdadc6d5fb3bb25bd0ed5229ec700bb60b070
-    LifecycleCloseoutPullRequestHeadCommit: 9a209b2b4b28850eb32d52f9f77065fbed11b4b8
-    LifecycleCloseoutMergeCommit: 47ead8f452b9963778ae33ded8447541dfe64e67
-    LifecycleCloseoutMergedAtUtc: "2026-10-30T08:12:11Z"
-    LifecycleCloseoutMergedEventId: 4e396f50-07fe-43e6-91ad-98e0c98ec616
-    LifecycleCloseoutBranchRetirementEventId: 4c8a2b4a-6841-463d-b9cd-2cde45a11bcf
-    LifecycleCloseoutBranchRetired: true
-    LifecycleCloseoutReviewerDecision: APPROVE
-    LifecycleCloseoutReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0149-R2-LifecycleCloseout/Worker04-FixedHeadReview-ED0149-R2-LifecycleCloseout-9a209b2b-20261030.md
 
 
 
