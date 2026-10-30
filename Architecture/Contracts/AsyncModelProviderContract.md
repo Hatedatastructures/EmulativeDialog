@@ -1,6 +1,6 @@
 # Async Model Provider Contract V1
 
-Status: Proposed. This contract becomes frozen only when the independently reviewed ED-0149/R2 product PR is merged. It adds awaitable operations alongside ModelProviderContract V1.2 and does not modify or replace the synchronous ModelProviderPort.
+Status: Frozen. It adds awaitable operations alongside ModelProviderContract V1.2 and does not modify or replace the synchronous ModelProviderPort.
 
 ## Purpose and boundary
 

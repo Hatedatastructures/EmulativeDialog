@@ -1,6 +1,6 @@
 # Async Agent Runtime Contract V1
 
-Status: Proposed. This contract becomes frozen only when the independently reviewed ED-0149/R2 product PR is merged. It is additive to CoreAgentContract V1 and the existing synchronous AgentRuntimePort.
+Status: Frozen. It is additive to CoreAgentContract V1 and the existing synchronous AgentRuntimePort.
 
 ## Purpose and ownership
 
