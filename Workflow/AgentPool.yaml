@@ -68,7 +68,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0150/R2-AsyncRuntimeVerticalSlice
+    CurrentTaskId: ED-0150/R4-CoverageValidation
     Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
