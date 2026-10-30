@@ -3816,28 +3816,19 @@ Tasks:
 
 
   - TaskId: ED-0150
-    TaskRevision: 2
-    SupersedesTaskRevision: 1
-    RevisionTransition: {FromRevision: 1, ToRevision: 2}
-    ChangeRequestId: CR-ED-0150-R2-DEPENDENCY-STATUS-001
+    TaskRevision: 3
+    SupersedesTaskRevision: 2
+    RevisionTransition: {FromRevision: 2, ToRevision: 3}
+    ChangeRequestId: CR-ED-0150-R2-COVERAGE-DIAGNOSTIC-001
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 到 Mock Channel 回执的 C++ 纵向切片
     TaskKind: CapabilitySlice
-    State: Assigned
-    OwnerAgentId: /root/luna02_ed0148_pr_ready
-    Branch: Task/ED-0150-AsyncRuntimeVerticalSlice
-    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree
-    AssignmentBaseCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
-    AssignmentNote: >-
-      Coordinator assignment candidate after merged PR #83 and accepted R2 CR. Worker02 may begin
-      product writes only after this assignment PR merges and post-merge WorkflowController
-      validate-assignment returns AssignmentAccepted.
+    State: Proposed
     BlockedBy: >-
-      PR #83 merged as cfecf3c18e18be4c9a217a452c376e7f5e921d30 after fixed-head Owner and Reviewer approval;
-      CR-ED-0150-R2-DEPENDENCY-STATUS-001 is accepted in this assignment candidate. All four direct
-      product dependencies are merged and the P3 EntryGate is Passed. The candidate binds Worker02
-      on the current main baseline; no product write is authorized until this assignment ledger merges
-      and post-merge WorkflowController validate-assignment returns AssignmentAccepted.
+      R3 is a proposed task-spec revision awaiting fixed-head review and Coordinator acceptance. The R2
+      assignment and its TaskStarted/validation evidence remain historical and do not bind or activate R3.
+      No R3 validation run or product write is authorized until the Coordinator records the accepted revision
+      and any required assignment/readiness gates.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -3845,29 +3836,79 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerIndependence: Required
     CreatedBy: Coordinator
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecOwnerDecision: APPROVE
+    TaskSpecProposalBaseCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
+    ProposedTaskSpecBranch: Task/ED-0150-R3-CoverageDiagnosticTaskSpec
+    ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R3-CoverageTaskSpec/Worktree
+    TaskSpecReviewStatus: PendingFixedHeadReview
+    TaskSpecOwnerDecision: PendingFixedHeadReview
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
-    TaskSpecOwnerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
-    TaskSpecOwnerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
-    TaskSpecOwnerDecisionAtUtc: '2026-10-30T12:39:00Z'
-    TaskSpecOwnerDecisionEventId: cc235010-66f0-46d6-9cd4-19626e6eaa81
-    TaskSpecReviewerDecision: APPROVE
-    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
-    TaskSpecReviewerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
-    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R2-TaskSpec/Worker04-FixedHeadReview-PR83-60b9e60-Final-20261030.md
-    TaskSpecReviewerReviewBundleSha256: BB6D9386D8EE8EB01809A82AEC7A48CDF179C17EEFACAEDBB1A02C1378AE8258
-    TaskSpecReviewSource: PR83FixedHeadReview
-    TaskSpecHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
-    TaskSpecFinalPullRequestHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
-    TaskSpecMergedToMainCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
-    TaskSpecMergePullRequestNumber: 83
-    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/83
-    TaskSpecMergeMethod: squash
-    TaskSpecMergedAt: '2026-10-30T12:42:41Z'
-    GitHubNativeReviewSubmissionCount: 0
-    TaskSpecStatusNote: "PR #83 merged after Worker02 Owner and Worker04 fixed-head approval. The Coordinator accepts the dependency-status CR here. ED-0150 is assigned to Worker02; product writes remain gated on this assignment PR merge and post-merge Controller validation."
+    TaskSpecReviewerDecision: PendingFixedHeadReview
+    TaskSpecReviewerSlotId: Worker06
+    TaskSpecReviewerAgentId: /root/luna06_capability_status_audit
+    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewSource: LocalFixedHeadCandidate
+    TaskSpecStatusNote: >-
+      R3 proposes a CoverageCommand diagnostic-filter correction and a short, fresh validation-path reservation.
+      The R2 implementation assignment and its historical approvals remain recorded below; they do not constitute
+      review or acceptance of R3. The task is Proposed; R2 assignment fields are archived below and do not assign or
+      activate R3. R3 has
+      no product-write authorization. Coordinator must record the TaskSpec/CR events and reconcile
+      task revision/assignment state after fixed-head review and acceptance; no validation result is claimed here.
+    PreviousRevision2:
+      TaskRevision: 2
+      Disposition: RetainedAsHistoricalPendingRevision3Acceptance
+      StateAtRevision: Assigned
+      OwnerAgentId: /root/luna02_ed0148_pr_ready
+      Branch: Task/ED-0150-AsyncRuntimeVerticalSlice
+      Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree
+      AssignmentBaseCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+      AssignmentNote: >-
+        Coordinator assignment after PR #84 merge and post-merge Controller AssignmentAccepted; this binds
+        Revision2 only and is not a Revision3 assignment.
+      BlockedBy: >-
+        PR #83 merged as cfecf3c18e18be4c9a217a452c376e7f5e921d30 after fixed-head Owner and Reviewer approval;
+        CR-ED-0150-R2-DEPENDENCY-STATUS-001 was accepted. All four direct product dependencies were merged and
+        the P3 EntryGate was Passed. R2 remained gated on its separate assignment ledger and post-merge
+        WorkflowController validate-assignment.
+      BaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      OwnerDecision: APPROVE
+      OwnerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+      OwnerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+      OwnerDecisionAtUtc: '2026-10-30T12:39:00Z'
+      OwnerDecisionEventId: cc235010-66f0-46d6-9cd4-19626e6eaa81
+      ReviewerDecision: APPROVE
+      ReviewerSlotId: Worker04
+      ReviewerAgentId: /root/luna04_ed0144_branch_review
+      ReviewerReviewBaseCommit: 50d4a1917cdd53254ce4b86516f3b3b657183cb6
+      ReviewerReviewHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+      ReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R2-TaskSpec/Worker04-FixedHeadReview-PR83-60b9e60-Final-20261030.md
+      ReviewerReviewBundleSha256: BB6D9386D8EE8EB01809A82AEC7A48CDF179C17EEFACAEDBB1A02C1378AE8258
+      ReviewSource: PR83FixedHeadReview
+      TaskSpecHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+      TaskSpecFinalPullRequestHeadCommit: 60b9e6047f1714f6705bf90dcae300de0b1c6d75
+      MergedToMainCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
+      MergePullRequestNumber: 83
+      MergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/83
+      MergedAt: '2026-10-30T12:42:41Z'
+      CoordinatorDecision: Accepted
+      CoordinatorDecisionAtUtc: '2026-10-30T12:48:58Z'
+      CoordinatorDecisionScope: "Accept dependency-status correction only; assignment and post-merge validation were separate gates."
+      TaskSpecStatusNote: "PR #83 merged after Worker02 Owner and Worker04 fixed-head approval. The Coordinator accepted the dependency-status CR here. ED-0150 was assigned to Worker02; product writes were gated on the assignment PR merge and post-merge Controller validation."
+      GitHubNativeReviewSubmissionCount: 0
+      ChangeRequestAcceptedEventId: 833baad2-4ced-4c43-8f98-9162a2cf121d
+      TaskReadinessValidatedEventId: 2b36859d-b57a-451e-a79e-87bf9812fe19
+      AssignmentValidationEventId: bfd41947-19bc-4798-ad1c-2baee355d2ec
+      ControllerQueryEventId: 775dfefc-0166-4c85-851b-b1d361da520c
+      TaskAssignedEventId: 2720c2eb-ed1f-4baf-ac65-02421e0a50f3
+      AgentSlotAssignedEventId: 5091e40d-cf1f-4805-8ce4-9e1be1886eff
+      Revision2ChangeRequestId: CR-ED-0150-R2-DEPENDENCY-STATUS-001
+      ProductPullRequestNumber: 85
+      ProductPullRequestHeadAtF004: 8548fdb1e208e0c5aa6cb4ec6bf750e21910b7dc
+      CoverageCommandDiagnosticPredicate: "(?i)(warning|error|libgcov|checksum|overwrit|cannot open notes file)"
+      F004CoverageResult: >-
+        Frozen R2 command exited 1 after gcov exit 0 and generated only AsyncAgentRuntime JSON v2; the broad substring
+        predicate matched Boost dependency paths, then stopped before CoreChatService. This is not complete coverage acceptance.
     Revision2ChangeRequest:
       ChangeRequestId: CR-ED-0150-R2-DEPENDENCY-STATUS-001
       TargetTaskRevision: 1
@@ -3926,13 +3967,79 @@ Tasks:
       IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
       ReviewerMustInspectFixedBaseHead: true
       R2ReviewStatus: AcceptedAndMergedToMain
+    Revision3ChangeRequest:
+      ChangeRequestId: CR-ED-0150-R2-COVERAGE-DIAGNOSTIC-001
+      TargetTaskRevision: 2
+      ProposedTaskRevision: 3
+      RequestedByRole: Coordinator
+      RequestedByAgentId: /root
+      Decision: PendingCoordinatorAcceptance
+      OwnerDecision: APPROVE
+      OwnerDecisionAgentId: /root/luna02_ed0148_pr_ready
+      OwnerDecisionAtUtc: '2026-10-30T19:33:05Z'
+      OwnerDecisionScope: "Approve the diagnostic-filter correction, short fresh validation paths/preflight, and explicit PR #85 product Head binding described below; fixed-head TaskSpec review and Coordinator acceptance remain pending, and this does not authorize validation or product writes."
+      IndependentReviewerDecision: PendingFixedHeadReview
+      IndependentReviewerSlotId: Worker06
+      IndependentReviewerAgentId: /root/luna06_capability_status_audit
+      Scope: >-
+        Change only the ED-0150/R3 CoverageCommand diagnostic predicate and fresh validation-path reservation.
+        Match warning/error only as a diagnostic marker at the start of a line (a bare warning:/error: marker or
+        one immediately following an optional gcov tool prefix); a preserved-path output filename such as
+        error.hpp.gcov.json.gz must not be treated as a diagnostic. Keep --preserve-paths and all gcov argument
+        order and options. Move the future R3 worktree, build, report, log, and FETCHCONTENT_BASE_DIR paths to
+        the previously absent short central paths E15R3/W, E15R3/B, E15R3/B/Reports, E15R3/B/Logs, and E15R3/D.
+        Freeze a proposal-time path-availability preflight for those targets, plus an execution-time fresh preflight
+        that requires the assigned W worktree to exist while B, B/Reports, and D remain absent. Preserve the CTest
+        binding, exact source identity and unique .gcno/.gcda freshness checks, gcov JSON v2 requirement, unique
+        executable-line calculation, and the 80 percent threshold. Bind the R3 coverage inputs to the observed PR #85
+        base 19ddbfd161b4db76614fd625203c68cfcc86360e and exact product Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586;
+        FreshBuildPreflight and CoverageCommand must reject a different branch or Head. Preserve the Goal, Acceptance,
+        ReadSet, dependencies, contracts, product branch identity and owner/reviewer bindings, and the exact five-path
+        product WriteSet; only the R3 validation worktree path and source-revision binding are clarified above.
+        No product source, test, build, or event file is changed by this TaskSpec draft.
+      Reason: >-
+        ED-0150/R2 F004 re-ran the frozen CoverageCommand on a fresh short-path Windows build. Configure, target build,
+        and the named CTest passed. gcov exited 0 and generated the AsyncAgentRuntime JSON v2 report, but the command
+        rejected Boost paths ending in boost/asio/error.hpp, boost/asio/detail/throw_error.hpp, and system_error.hpp
+        because the original predicate searched for warning/error substrings anywhere in captured text. The command
+        stopped before CoreChatService.cpp, so this is not complete coverage acceptance. The previous R2 build path
+        has already been consumed, and --preserve-paths produces output names derived from absolute source paths;
+        the new short central paths keep fresh reports safely below the Windows component/path limit without changing
+        the coverage measurement or source identity rules. The validation target is the current PR #85 product Head,
+        so build/CTest and coverage evidence cannot be attached to a different product snapshot.
+      ImpactPaths: [Workflow/Plans/P3.yaml]
+      CompatibilityAndSecurityImpact: >-
+        Task validation metadata only. No runtime/API/security behavior changes. --preserve-paths, fatal gcov checks,
+        source/report identity checks, test freshness binding, and the coverage threshold remain enforced. The matcher
+        requires a diagnostic marker and colon instead of matching an error substring in a path or output filename.
+      Rollback: >-
+        If the R3 fixed-head review or Coordinator acceptance rejects this correction, retain the R2 CoverageCommand
+        and its failed evidence as historical; do not claim coverage acceptance or alter product code/tests.
+      EvidenceRefs:
+        - "PR #85 Worker04 F004 fixed-head finding on product Head 8548fdb1e208e0c5aa6cb4ec6bf750e21910b7dc"
+        - "GitHub PR #85 metadata fetched at 2026-10-30T19:27:18Z: open, base 19ddbfd161b4db76614fd625203c68cfcc86360e, current head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586."
+        - "R3 coverage target is PR #85 product branch Task/ED-0150-AsyncRuntimeVerticalSlice at fixed Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586, based on main 19ddbfd161b4db76614fd625203c68cfcc86360e."
+        - "GitHub WindowsAgentSlice check runs 41115022305 and 41115014423 for PR #85 Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586 completed successfully; they are build/CTest evidence, not coverage acceptance."
+        - "ED-0156/R1 Boost.WinAPI closure PR #91 merged as 19ddbfd161b4db76614fd625203c68cfcc86360e; prior run #71 missing-libs/winapi failure predates that merge."
+        - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/Logs/FrozenCoverageAttemptSummary.txt"
+        - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED0150/F004-Run3/Windows/Logs/CoverageCommand.log"
+        - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/CoverageCommand-Frozen-ShortPath-Run3.ps1"
+        - "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/Logs/CoverageCommand-Frozen-ShortPath-Run3.log"
+        - "2026-10-30T17:54:58Z candidate path preflight exit 0: E15R3, W, B, B/Reports, and D all absent; recorded in this TaskSpec without creating build artifacts."
+      ProductWriteAuthorization: None
+      CoordinatorActionRequired: >-
+        No event is appended by this TaskSpec candidate. The Coordinator must record the CR proposal/Owner decision
+        using the supported P3 event schema and actual fixed Base/Head, then record acceptance or rejection after
+        Worker06 fixed-head review and reconcile ED-0150 task revision/assignment state before any R3 validation is
+        authorized. The proposal-time path preflight below records that E15R3/W, E15R3/B, E15R3/B/Reports, and E15R3/D
+        were absent; the eventual assigned worktree is expected to exist before the execution-time FreshBuildPreflight.
+        Preserve the consumed R2 directories and do not claim the existing Run3 partial coverage artifact satisfies
+        the two-source Coverage acceptance. PR #91 is merged into this TaskSpec's main base and closes the earlier
+        missing-libs/winapi dependency failure. PR #85 Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586 now has two
+        successful WindowsAgentSlice checks, which establish build/CTest status only. The fresh R3 dependency cache
+        must still pass EmulativeDialogBoostAsioVerify at the pinned commit and complete submodule closure; this TaskSpec
+        candidate does not authorize that validation run or claim either source has met 80 percent.
     BaselineCommit: cfecf3c18e18be4c9a217a452c376e7f5e921d30
-    ChangeRequestAcceptedEventId: 833baad2-4ced-4c43-8f98-9162a2cf121d
-    TaskReadinessValidatedEventId: 2b36859d-b57a-451e-a79e-87bf9812fe19
-    AssignmentValidationEventId: bfd41947-19bc-4798-ad1c-2baee355d2ec
-    ControllerQueryEventId: 775dfefc-0166-4c85-851b-b1d361da520c
-    TaskAssignedEventId: 2720c2eb-ed1f-4baf-ac65-02421e0a50f3
-    AgentSlotAssignedEventId: 5091e40d-cf1f-4805-8ce4-9e1be1886eff
     Goal: >-
       完成实际 C++20 coroutine 产品行为切片：Mock Channel 入站消息 -> 同一个现有 CoreChatService 实例上的
       IdentityPolicy 身份/路由检查 -> co_await AsyncAgentRuntime -> awaitable FakeProvider -> 该 CoreChatService
@@ -4050,42 +4157,90 @@ Tasks:
       - {AcceptanceId: AC-8, Description: "A short std::mutex StateMutex protects every read/write of CoreChatService per-instance dedupe reservations, issued-ID sets, and any stored OperationRecords; each invocation-local OperationRecord remains private to its sync call or coroutine frame. No mutex is held across co_await or external calls.", Evidence: "Fixed-head source review checks every shared-container access and lock scope. Multithreaded sync/async duplicate tests verify one reservation wins, the loser returns Duplicate, and at most one provider/runtime path and exactly one SendAction occur without executor/strand binding."}
       - {AcceptanceId: AC-9, Description: "Two different valid envelopes may enter sync Process and coroutine ProcessAsync concurrently on one CoreChatService instance; the API documents that CoreActionIdSource::Next is thread-safe and produces unique identifiers.", Evidence: "A barrier-start test uses an atomic thread-safe ID source, a synchronized RecordObserver, and a thread-safe MockChannelAdapter fixture. Assert two completed results, distinct ActionId/OperationId/IdempotencyKey triples, and exact per-message correlation among observed OperationRecords, SendAction arguments, and scripted ChannelReceipts with no lost or cross-matched receipt."}
     Validation:
-      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows
-      CommandLogDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows/Logs
+      ExpectedAssignedWorktreePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B
+      CommandLogDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B/Logs
       Coverage:
         Required: true
         ProductionSources: [Source/Agent/AsyncAgentRuntime.cpp, Source/Core/CoreChatService.cpp]
         MinimumLinePercent: 80
         Metric: UniqueExecutableSourceLines
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
+      ProductCoverageTarget:
+        PullRequestNumber: 85
+        ProductBranch: Task/ED-0150-AsyncRuntimeVerticalSlice
+        ProductBaseCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
+        ProductHeadCommit: de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586
+        SuccessfulWindowsAgentSliceCheckRuns: [41115022305, 41115014423]
+        CheckRunScope: "Build and CTest only; these checks do not satisfy either source's coverage acceptance."
       RequiredBuildTargets: [AsyncRuntimeVerticalSliceTests]
       RequiredCTestTests: [Agent.AsyncRuntimeVerticalSlice]
+      DependencyCache:
+        BaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D
+        BoostSourceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D/EmulativeDialogBoostAsioSource
+        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+        UpdatesDisconnected: true
+        RequiredVerificationTarget: EmulativeDialogBoostAsioVerify
+        PinnedCommitVerificationDuringBuildRequired: true
+        Population: "The pinned EmulativeDialogBoostAsio ExternalProject populates this fresh cache during the authorized build; EmulativeDialogBoostAsioVerify must validate the required commit and submodule closure before the test target passes."
+      CandidatePathAvailability:
+        ObservedAtUtc: '2026-10-30T17:54:58Z'
+        ExitCode: 0
+        Result: "All five candidate targets were absent at proposal time. This historical availability observation does not replace the execution-time FreshBuildPreflight."
+        OutputNamingEstimate: "Using the gcov --preserve-paths name format observed in the prior R2 report, the expected full report paths are 198 characters for AsyncAgentRuntime.cpp and 193 characters for CoreChatService.cpp (longest component 126 characters). This static estimate is not coverage evidence."
+        TargetPaths:
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B/Reports
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D
+        Command: |-
+          $ErrorActionPreference='Stop'
+          $paths=@('H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3','H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W','H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B','H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B/Reports','H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D')
+          $existing=@($paths | Where-Object { Test-Path -LiteralPath $_ })
+          if($existing.Count -ne 0){throw "Candidate paths already exist: $($existing -join ', ')"}
+          'all candidate paths absent'
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows'
-        $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies'
-        $BoostSource = Join-Path $BoostCache 'EmulativeDialogBoostAsioSource'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B'
+        $Reports = Join-Path $Build 'Reports'
+        $BoostCache = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D'
+        $ExpectedBranch = 'Task/ED-0150-AsyncRuntimeVerticalSlice'
+        $ExpectedHead = 'de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586'
         if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
-        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
-        if (-not (Test-Path -LiteralPath $BoostSource -PathType Container)) { throw "Pinned Boost source cache is missing: $BoostSource" }
-        $ActualCommit = & git -C $BoostSource rev-parse HEAD
-        if ($LASTEXITCODE -ne 0 -or ($ActualCommit -join '').Trim() -ne 'afdfa32505af73e3d208144b3f623f0096cb62b6') { throw "Pinned Boost source commit check failed: $BoostSource" }
-        foreach ($RequiredPath in @('libs/asio/include/boost/asio.hpp', 'libs/config/include/boost/version.hpp', 'libs/json/include/boost/json.hpp', 'LICENSE_1_0.txt')) { if (-not (Test-Path -LiteralPath (Join-Path $BoostSource $RequiredPath))) { throw "Pinned Boost source is incomplete: $RequiredPath" } }
-        Write-Output 'FRESH_BUILD_AND_PINNED_BOOST_PREFLIGHT_OK=1'
+        $BranchOutput = & git -C $Worktree branch --show-current
+        $GitExit = $LASTEXITCODE
+        $ActualBranch = ($BranchOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualBranch -ne $ExpectedBranch) { throw "Expected product branch $ExpectedBranch, found $ActualBranch" }
+        $HeadOutput = & git -C $Worktree rev-parse HEAD
+        $GitExit = $LASTEXITCODE
+        $ActualHead = ($HeadOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Expected PR #85 product Head $ExpectedHead, found $ActualHead" }
+        foreach ($FreshPath in @($Build, $Reports, $BoostCache)) { if (Test-Path -LiteralPath $FreshPath) { throw "Fresh validation path already exists; preserve it and stop: $FreshPath" } }
+        Write-Output 'FRESH_BUILD_AND_EMPTY_PINNED_CACHE_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows/Reports -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows --target AsyncRuntimeVerticalSliceTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows --output-on-failure --no-tests=error -R '^Agent\\.AsyncRuntimeVerticalSlice$'"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/D -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B/Reports -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B --target AsyncRuntimeVerticalSliceTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B --output-on-failure --no-tests=error -R '^Agent\\.AsyncRuntimeVerticalSlice$'"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
-        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Windows'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/W'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/E15R3/B'
+        $ExpectedBranch = 'Task/ED-0150-AsyncRuntimeVerticalSlice'
+        $ExpectedHead = 'de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586'
+        $BranchOutput = & git -C $Worktree branch --show-current
+        $GitExit = $LASTEXITCODE
+        $ActualBranch = ($BranchOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualBranch -ne $ExpectedBranch) { throw "Expected product branch $ExpectedBranch, found $ActualBranch" }
+        $HeadOutput = & git -C $Worktree rev-parse HEAD
+        $GitExit = $LASTEXITCODE
+        $ActualHead = ($HeadOutput -join '').Trim()
+        if ($GitExit -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Expected PR #85 product Head $ExpectedHead, found $ActualHead" }
         $Report = Join-Path $Build 'Reports'
         $Logs = Join-Path $Build 'Logs'
         $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
@@ -4128,7 +4283,7 @@ Tasks:
             $GcovText = $GcovOutput -join [Environment]::NewLine
             $GcovText | Add-Content -LiteralPath $CoverageLog
             if ($GcovExit -ne 0) { throw "gcov failed for $RelativeSource with exit $GcovExit" }
-            if ($GcovText -match '(?i)(warning|error|libgcov|checksum|overwrit|cannot open notes file)') { throw "gcov reported a warning or error for ${RelativeSource}: $GcovText" }
+            if ($GcovText -match '(?im)^[ \t]*(?:gcov(?:\.exe)?[ \t]*:[ \t]*)?(?:warning|error):|libgcov|checksum|overwrit|cannot open notes file') { throw "gcov reported a warning or error for ${RelativeSource}: $GcovText" }
           } finally { Pop-Location }
         }
         $Backslash = [string][char]92
@@ -4162,6 +4317,8 @@ Tasks:
       StaticChecks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen five-path WriteSet."
+        - "R3 coverage inputs are bound to PR #85 base 19ddbfd161b4db76614fd625203c68cfcc86360e and exact product Head de1ec7c397e9bf5dc0410b9328ecb93c3b2e7586; the fresh preflight and CoverageCommand reject another branch or Head."
+        - "WindowsAgentSlice check runs 41115022305 and 41115014423 passed on that Head; their build/CTest result is not coverage evidence."
         - "P3 EntryGate is Passed and ED-0114 is complete/merged before assignment; WorkflowController validate-assignment accepts the exact task revision."
         - "CoreChatService::Process and ProcessAsync use one shared Core preflight and the same per-instance policy/dedup/action/operation/receipt state; no duplicate AsyncCoreChatService exists."
         - "ED-0149 public async headers/contracts are consumed without editing them or any V1 synchronous interface."
