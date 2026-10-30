@@ -428,6 +428,47 @@ ChangeRequests:
     PreserveGoalAcceptanceDependenciesContractWriteSetOwnerReviewer: true
     NoAdditionalProductSourceWriteAuthorizedBeforeMerge: true
 
+  - ChangeRequestId: CR-ED-0148-R6-VALIDATION-001
+    TargetTaskId: ED-0148
+    TargetTaskRevision: 5
+    ProposedTaskRevision: 6
+    RequestedByRole: MemoryOwner
+    RequestedByAgentId: /root/luna05_async_runtime_taskroute
+    Decision: ProposedAwaitingOwnerAndReviewerReview
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
+    IndependentReviewerAgentId: /root/luna06_capability_status_audit
+    IndependentReviewerDecision: Pending
+    ReviewerIndependence: Required
+    Scope: >-
+      Preserve ED-0148 Goal, exact two-path product WriteSet, dependencies, MemoryContract V1, Acceptance,
+      module boundary, product branch and worktree. Rebind OwnerAgentId and ReviewerAgentId to current
+      Worker05/Worker06 stable-slot identities. Replace the consumed R5 configure/build/CTest/gcov directory
+      and all command/report references with the unique H:/Qbot/EmulativeDialog.integration-port-contract.build/
+      ED-0148-R6/Memory path. Keep R5 artifacts intact and non-acceptance. Require a post-merge assignment
+      ledger and successful validate-assignment before R6 validation or product writes. Record each already-listed
+      validation command as a CommandExecuted event in the existing P3 event shard, with exact command, working
+      directory, exit code, correlation ID and evidence references. This is execution evidence only; it does not
+      change product Acceptance or authorize a product-source WriteSet change.
+    Reason: >-
+      The R5 path contains generated outputs but lacks recorded configure/build/CTest/tool-version/coverage
+      command exit evidence. Its FreshDirectoryRequired path is now consumed and cannot be rerun or overwritten.
+      The recorded 414/463 coverage is diagnostic only. R6 records the existing command results in the event shard; this adds no product Acceptance, Goal, or WriteSet change.
+    ProposedTaskSpecBaseCommit: b638925fed2355ed44c978abe1bc635ba6b1d9b4
+    ProposedOwnerSlotId: Worker05
+    ProposedReviewerSlotId: Worker06
+    ProposedBranch: Task/ED-0148-R4ConsentMatchingImpl
+    ProposedWorktree: H:/Qbot/EmulativeDialog.ED-0148
+    ProposedValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory
+    ProposedWriteSet:
+      - Source/Memory/ConversationMemory.cpp
+      - Tests/Contract/Memory/ConversationMemoryTests.cpp
+    OwnerCRDecision: Pending
+    IndependentReviewerDecision: Pending
+    CoordinatorDecision: Pending
+    PreserveGoalWriteSetDependenciesContractsAcceptanceAndProductBehavior: true
+    ProductWriteSetChanged: false
+    NoProductSourceWriteAuthorizedBeforeMergeAndAssignmentValidation: true
+
   - ChangeRequestId: CR-ED-0147-R7-AGENT-BINDING-001
     TargetTaskId: ED-0147
     TargetTaskRevision: 6
@@ -3128,34 +3169,28 @@ Tasks:
     OpenIntegrationGap: "No production Provider/WinHTTP composition call site exists on main. ED-0147 does not close this gap; do not claim real Provider requests use Core grants until a separately reviewed composition task passes."
 
   - TaskId: ED-0148
-    TaskRevision: 5
+    TaskRevision: 6
+    SupersedesTaskRevision: 5
     EpicId: EP-06
     Title: 按 ProposalId 精确匹配 Memory consent grant
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Proposed
     Phase: P3
-    ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
+    ChangeRequestId: CR-ED-0148-R6-VALIDATION-001
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
-    OwnerAgentId: /root/worker05_ed0144_memory
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
     ReviewerRole: IndependentReviewer
     ReviewerSlotId: Worker06
-    ReviewerAgentId: /root/worker06_ed0105_review
+    ReviewerAgentId: /root/luna06_capability_status_audit
     ReviewerIndependence: Required
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
-    TaskSpecOwnerDecision: Approve
-    TaskSpecReviewerDecision: Approve
-    TaskSpecCoordinatorDecision: Accepted
-    TaskSpecOwnerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
-    TaskSpecReviewerReviewHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
-    TaskSpecCoordinatorDecisionHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
-    TaskSpecMergedToMainCommit: 13f4c94f694b4c89c367aa64fa245bad088bca3f
+    TaskSpecReviewStatus: AwaitingOwnerAndReviewerFixedHeadReview
+    ProposedTaskSpecBaseCommit: b638925fed2355ed44c978abe1bc635ba6b1d9b4
+
     BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
     Branch: Task/ED-0148-R4ConsentMatchingImpl
     Worktree: H:/Qbot/EmulativeDialog.ED-0148
-    AssignedToSlot: Worker05
-    AssignmentNote: "PR #26 merged the approved R4 TaskSpec; PR #32 merged the validation-only R5 TaskSpec/CR at 13f4c94. Existing two-path implementation branch/worktree remain bound to baseline d8e918bd812f55b82babd3ef8df6a9b1b08f1eda. Worker05 may run only the frozen R5 fresh validation after this assignment-ledger PR merges. The scoped pre-gate exception does not pass P3 EntryGate or unblock ED-0114/ED-0144/ED-0145."
+    AssignmentNote: "R6 is validation-only and remains Proposed until its fixed-head reviews and merge. After merge, Coordinator must create a fresh assignment ledger for current Worker05, pass WorkflowController validate-assignment, then synchronize the existing product branch before validation. No R6 source write is authorized before that gate."
     PreviousRevision1:
       TaskRevision: 1
       Disposition: SupersededBeforeImplementation
@@ -3199,6 +3234,47 @@ Tasks:
       DiagnosticCoverage: {Covered: 414, Executable: 463, Percent: 89.42, Acceptance: NotMet}
       Disposition: SupersededByValidationOnlyRevision
       Reason: "R4 targeted configure/build/CTest passed, but its frozen CoverageCommand failed on CMakeCache CRLF and compiler cache type; the diagnostic coverage is not formal acceptance."
+    PreviousRevision5Evidence:
+      TaskRevision: 5
+      Disposition: SupersededByProposedRevision6Validation
+      ChangeRequestId: CR-ED-0148-R5-COVERAGE-001
+      TaskSpecReviewStatus: ApprovedAndMergedToMain
+      TaskSpecHeadCommit: 9b9d95ca887d41d771ad5404d989b367be615c8d
+      TaskSpecMergedToMainCommit: 13f4c94f694b4c89c367aa64fa245bad088bca3f
+      PriorOwnerAgentId: /root/worker05_ed0144_memory
+      PriorReviewerAgentId: /root/worker06_ed0105_review
+      AssignmentEventId: 1189fc88-c416-4d07-862f-885fbe274b0b
+      TaskReadinessValidatedEventId: fa070b93-ab33-4cbb-9984-c3488eebd79d
+      BaselineCommit: d8e918bd812f55b82babd3ef8df6a9b1b08f1eda
+      Branch: Task/ED-0148-R4ConsentMatchingImpl
+      Worktree: H:/Qbot/EmulativeDialog.ED-0148
+      ImplementationHeadCommit: c6f7bbe30700745126cec2b1205b76272404db6a
+      ValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory
+      ValidationDisposition: IncompleteNotAccepted
+      DiagnosticCoverage: "414/463 (89.42 percent); not formal R5 acceptance."
+      MissingEvidence: "No R5 CommandExecuted records for configure, build, CTest, g++/gcov version, or CoverageCommand exit codes."
+      BuildDirectoryConsumed: true
+    Revision6ValidationChangeRequest:
+      ChangeRequestId: CR-ED-0148-R6-VALIDATION-001
+      TargetTaskRevision: 5
+      ProposedTaskRevision: 6
+      RequestedByRole: MemoryOwner
+      RequestedByAgentId: /root/luna05_async_runtime_taskroute
+      Decision: ProposedAwaitingOwnerAndReviewerReview
+      OwnerAgentId: /root/luna05_async_runtime_taskroute
+      OwnerDecision: Pending
+      IndependentReviewerAgentId: /root/luna06_capability_status_audit
+      IndependentReviewerDecision: Pending
+      ReviewerIndependence: Required
+      Scope: "Preserve Goal, exact two-path WriteSet, dependencies, MemoryContract V1, product Acceptance, behavior, and product branch/worktree. Change only the consumed R5 build/report paths to the unique R6 path and rebind Owner/Reviewer AgentIds to current Worker05/Worker06. Record each already-listed validation command as CommandExecuted in the existing P3 event shard with exact command, working directory, exit code, correlation ID, and evidence refs; this adds execution evidence only and does not change product Acceptance or WriteSet. Require post-merge assignment validation before R6 commands or product writes."
+      ProposedTaskSpecBaseCommit: b638925fed2355ed44c978abe1bc635ba6b1d9b4
+      ProposedValidationBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory
+      ProposedOwnerSlotId: Worker05
+      ProposedReviewerSlotId: Worker06
+      CoordinatorDecision: Pending
+      PreserveGoalWriteSetDependenciesContractsAcceptance: true
+      ProductWriteSetChanged: false
+      NoProductSourceWriteAuthorizedBeforeMergeAndAssignmentValidation: true
     Goal: "让 grant、request 和 record 的 optional ProposalId 必须完全相等，避免未绑定具体提议的 consent 写入、召回或恢复提议绑定记忆。"
     OutOfScope: ["修改 Core consent 签发策略", "修改 MemoryContract V1 或 public API", "修改 SQLite schema/adapter", "Provider、Channel、真实网络或微信行为"]
     DependsOn: [ED-0113]
@@ -3243,16 +3319,22 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "The same mismatch is rejected for Recall, Group shared-reader recall, and RestoreBackup.", Evidence: "Tests preseed unbound-consent records carrying ProposalId and prove no recall, no Group exposure, and no backup resurrection; exact matching cases remain recallable/restorable."}
       - {AcceptanceId: AC-4, Description: "Changed production Memory source meets at least 80 percent line coverage.", Evidence: "Fresh gcov JSON v2 for ConversationMemory.cpp records unique executable-line numerator/denominator, compiler and gcov version."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory
       Coverage:
         Required: true
         ProductionSources: [Source/Memory/ConversationMemory.cpp]
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory/Reports
         ReportFormat: gcov JSON v2
         FreshDirectoryRequired: true
       RequiredBuildTargets: [ConversationMemoryTests]
       RequiredCTestTests: [ConversationMemoryTests]
+      CommandEvidence:
+        EventShard: Workflow/Events/CodexRewrite/P3.jsonl
+        EventType: CommandExecuted
+        RequiredCommands: [FreshBuildPreflight, Configure, TargetBuild, CTest, GCCVersion, GCOVVersion, CoverageCommand]
+        RequiredFields: [TaskId, TaskRevision, AgentId, Command, WorkingDirectory, ExitCode, CorrelationId, EvidenceRefs]
+        OutputDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Execution
       CoverageDataFileObservation: "Local MSYS2 GCC/gcov 16.1.0 Rev5 JSON v2 samples are informational only: root data_file points under H:/Qbot/EmulativeDialog while the matching files[].file points under the ED-0124-R9 worktree. The JSON does not record gcov argv; do not use data_file as source identity or require it to equal the expected path."
       CoverageToolchainEvidenceSha256: 6D681AC4BD173BF6ADEDCA12BBB9E95AD2A0F8BE7DEBD9781EDAC3D210B7196E
       CoverageToolchainEvidenceRefs:
@@ -3260,19 +3342,19 @@ Tasks:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/Diagnostics/ED-0146-GcovOptionAudit/ByObj/WorkflowControllerContractTests##H~#Qbot#EmulativeDialog#Tests#Contract#WorkflowController#WorkflowControllerContractTests.gcov.json.gz
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory'
         if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0148/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory --target ConversationMemoryTests --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory --output-on-failure --no-tests=error -R ConversationMemoryTests"
+        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0148/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory --target ConversationMemoryTests --parallel 4"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory --output-on-failure --no-tests=error -R ConversationMemoryTests"
         - "C:/msys64/ucrt64/bin/g++.exe --version"
         - "C:/msys64/ucrt64/bin/gcov.exe --version"
       CoverageCommand: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.ED-0148'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R5/Memory'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0148-R6/Memory'
         $Reports = Join-Path $Build 'Reports'
         $Source = Join-Path $Worktree 'Source/Memory/ConversationMemory.cpp'
         $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
@@ -3370,8 +3452,9 @@ Tasks:
         - "git diff --check BaseCommit HEAD"
         - "Changed paths exactly equal the frozen 2-path WriteSet."
         - "Every Write, Recall, Group shared-reader recall, and RestoreBackup path uses exact ProposalId matching."
-        - "FreshBuildPreflight rejects the unique ED-0148-R4 build path if it already exists; no prior build/profile is deleted or reused."
+        - "FreshBuildPreflight rejects the unique ED-0148-R6 build path if it already exists; no prior build/profile is deleted or reused."
         - "CoverageCommand runs after CTest, passes exact .gcno and absolute source paths, requires the named CTest log newer than paired .gcda, matches ConversationMemory.cpp through exact files[].file, and fails below 80 percent. Root data_file is informational only."
+        - "Every listed validation command has one CommandExecuted event with the exact command, working directory, exit code, correlation ID, and output evidence path; record all tool-version output and do not claim acceptance if any command result is missing."
         - "No Core policy, SQLite schema/adapter, root CMake, Provider, Channel, or live external side effect is changed."
       ContractFixtures: ["unbound grant vs bound request/record, exact bound match, mismatched ID, group shared reader, and backup restore"]
       LiveSideEffects: Forbidden
