@@ -41,6 +41,7 @@ std::string ScopeKey(const StoredMemory& Record) {
 
 class FakeMemoryStorage final : public MemoryStoragePort {
 public:
+  std::size_t ApplyCalls{0};
   bool FailApply{false};
   bool FailList{false};
   bool FailBackup{false};
@@ -49,6 +50,7 @@ public:
 
   MemoryStorageResult<std::monostate> ApplyAtomically(
       const MemoryMutationBatch& Batch) override {
+    ++ApplyCalls;
     if (FailApply) {
       return MemoryStorageError{.Code = MemoryStorageErrorCode::Failure,
                                 .Detail = "injected batch failure"};
@@ -452,6 +454,187 @@ void TestConsentValidationAndProposalBinding() {
   Check(AsError(Memory.RegisterConsent(ProposalGrant))->Code ==
             MemoryErrorCode::InvalidArgument,
         "duplicate consent rejected");
+}
+
+void TestOptionalProposalConsentRequiresExactMatch() {
+  const auto Direct = Context();
+  auto MakeRecord = [](const AuthorizedMemoryContext& Scope,
+                       std::string MemoryId, std::string ConsentId,
+                       std::optional<std::string> ProposalId) {
+    StoredMemory Record = ScopeOf(Scope);
+    Record.MemoryId = std::move(MemoryId);
+    Record.Category = Scope.ScopeKind == ConversationScopeKind::Group
+                          ? MemoryCategory::GroupMemory
+                          : MemoryCategory::IdentityPreference;
+    Record.SubjectId = Scope.PrincipalId;
+    Record.Content = "Synthetic proposal memory";
+    Record.SourceReference = "fixture-message-01";
+    Record.ConsentId = std::move(ConsentId);
+    Record.ProposalId = std::move(ProposalId);
+    Record.CreatedAt = Now() - std::chrono::seconds{100};
+    Record.Version = 1;
+    return Record;
+  };
+
+  {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-unbound-write";
+    Check(std::holds_alternative<std::monostate>(Memory.RegisterConsent(
+              Grant(MemoryCategory::IdentityPreference, Direct,
+                    std::string(ConsentId)))),
+          "unbound consent registers for proposal matching test");
+    auto BoundRequest =
+        Request("memory-unbound-write", MemoryCategory::IdentityPreference,
+                std::string(ConsentId));
+    BoundRequest.ProposalId = "proposal-a";
+    const std::size_t WritesBefore = Storage.ApplyCalls;
+    const auto Rejected = Memory.Write(Direct, BoundRequest, Now());
+    const auto* RejectedError = AsError(Rejected);
+    Check(RejectedError != nullptr &&
+              RejectedError->Code == MemoryErrorCode::ConsentMismatch,
+          "unbound consent cannot write a proposal-bound request");
+    Check(Storage.ApplyCalls == WritesBefore,
+          "proposal mismatch is rejected before storage mutation");
+    Check(Storage.Rows.empty(),
+          "proposal mismatch leaves fake storage unchanged");
+
+    const auto NullNullWrite = Memory.Write(
+        Direct,
+        Request("memory-null-null", MemoryCategory::IdentityPreference,
+                std::string(ConsentId)),
+        Now());
+    Check(std::holds_alternative<std::monostate>(NullNullWrite),
+          "null consent proposal matches null request proposal");
+  }
+
+  {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-unbound-recall";
+    static_cast<void>(Memory.RegisterConsent(
+        Grant(MemoryCategory::IdentityPreference, Direct,
+              std::string(ConsentId))));
+    auto BoundRecord = MakeRecord(Direct, "memory-bound-recall",
+                                  std::string(ConsentId), "proposal-a");
+    Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
+
+    const auto Recalled = Memory.Recall(Direct, Now(), 1000);
+    const auto* Items = std::get_if<
+        std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
+    Check(Items != nullptr && Items->empty(),
+          "unbound consent cannot recall a proposal-bound record");
+  }
+
+  {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-bound-recall";
+    auto BoundGrant =
+        Grant(MemoryCategory::IdentityPreference, Direct,
+              std::string(ConsentId));
+    BoundGrant.ProposalId = "proposal-a";
+    static_cast<void>(Memory.RegisterConsent(BoundGrant));
+    auto BoundRecord = MakeRecord(Direct, "memory-exact-recall",
+                                  std::string(ConsentId), "proposal-a");
+    Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
+
+    const auto Recalled = Memory.Recall(Direct, Now(), 1000);
+    const auto* Items = std::get_if<
+        std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
+    Check(Items != nullptr && Items->size() == 1U &&
+              Items->front().Id.Value == "memory-exact-recall",
+          "exact proposal-bound consent can recall its matching record");
+  }
+
+  {
+    const auto GroupOwner = Context(ConversationScopeKind::Group,
+                                    "principal-02", "group-01");
+    const auto GroupReader = Context(ConversationScopeKind::Group,
+                                     "principal-01", "group-01");
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-unbound-group";
+    auto UnboundGrant = Grant(MemoryCategory::GroupMemory, GroupOwner,
+                              std::string(ConsentId));
+    UnboundGrant.AllowedGroupMembers = {GroupReader.PrincipalId};
+    static_cast<void>(Memory.RegisterConsent(UnboundGrant));
+    auto BoundRecord = MakeRecord(GroupOwner, "memory-bound-group",
+                                  std::string(ConsentId), "proposal-a");
+    Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
+
+    const auto Recalled = Memory.Recall(GroupReader, Now(), 1000);
+    const auto* Items = std::get_if<
+        std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
+    Check(Items != nullptr && Items->empty(),
+          "unbound group consent cannot expose a proposal-bound record");
+  }
+
+  {
+    const auto GroupOwner = Context(ConversationScopeKind::Group,
+                                    "principal-02", "group-01");
+    const auto GroupReader = Context(ConversationScopeKind::Group,
+                                     "principal-01", "group-01");
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-bound-group";
+    auto BoundGrant = Grant(MemoryCategory::GroupMemory, GroupOwner,
+                            std::string(ConsentId));
+    BoundGrant.AllowedGroupMembers = {GroupReader.PrincipalId};
+    BoundGrant.ProposalId = "proposal-a";
+    static_cast<void>(Memory.RegisterConsent(BoundGrant));
+    auto BoundRecord = MakeRecord(GroupOwner, "memory-exact-group",
+                                  std::string(ConsentId), "proposal-a");
+    Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
+
+    const auto Recalled = Memory.Recall(GroupReader, Now(), 1000);
+    const auto* Items = std::get_if<
+        std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
+    Check(Items != nullptr && Items->size() == 1U &&
+              Items->front().Id.Value == "memory-exact-group",
+          "exact proposal-bound group consent can share its matching record");
+  }
+
+  {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-unbound-restore";
+    static_cast<void>(Memory.RegisterConsent(
+        Grant(MemoryCategory::IdentityPreference, Direct,
+              std::string(ConsentId))));
+    Storage.BackupRecords = {MakeRecord(Direct, "memory-bound-restore",
+                                        std::string(ConsentId), "proposal-a")};
+
+    const auto Restored = Memory.RestoreBackup(Direct, Now());
+    const auto* RestoredCount = std::get_if<std::size_t>(&Restored);
+    Check(RestoredCount != nullptr && *RestoredCount == 0U,
+          "unbound consent cannot restore a proposal-bound record");
+    Check(Storage.ApplyCalls == 0U && Storage.Rows.empty(),
+          "proposal mismatch cannot mutate storage during restore");
+  }
+
+  {
+    FakeMemoryStorage Storage;
+    ConversationMemory Memory(Storage);
+    constexpr std::string_view ConsentId = "consent-bound-restore";
+    auto BoundGrant =
+        Grant(MemoryCategory::IdentityPreference, Direct,
+              std::string(ConsentId));
+    BoundGrant.ProposalId = "proposal-a";
+    static_cast<void>(Memory.RegisterConsent(BoundGrant));
+    Storage.BackupRecords = {MakeRecord(Direct, "memory-exact-restore",
+                                        std::string(ConsentId), "proposal-a")};
+
+    const auto Restored = Memory.RestoreBackup(Direct, Now());
+    const auto* RestoredCount = std::get_if<std::size_t>(&Restored);
+    Check(RestoredCount != nullptr && *RestoredCount == 1U,
+          "exact proposal-bound consent can restore its matching record");
+    const auto Rows = Storage.Rows.find(ScopeKey(ScopeOf(Direct)));
+    Check(Rows != Storage.Rows.end() && Rows->second.size() == 1U &&
+              Rows->second.front().ProposalId ==
+                  std::optional<std::string>{"proposal-a"},
+          "restored record retains the exact proposal binding");
+  }
 }
 
 void TestScopeKindAndGroupMembership() {
@@ -1258,6 +1441,7 @@ void TestSensitiveMarkersAreRejectedAcrossPersistedFields() {
 int main() {
   TestIdentitySessionAndPolicy();
   TestConsentValidationAndProposalBinding();
+  TestOptionalProposalConsentRequiresExactMatch();
   TestScopeKindAndGroupMembership();
   TestFixtureGroupConsentAllowsListedMemberRecall();
   TestRevocationAtomicityAndScope();
