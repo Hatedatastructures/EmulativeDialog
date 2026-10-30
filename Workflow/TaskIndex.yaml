@@ -153,8 +153,8 @@ PhasePlans:
     LoadWhen: AgentWorkflowControllerAndCoreContractsVerified
   - PhaseId: P3
     Path: Workflow/Plans/P3.yaml
-    State: RegisteredEntryGatePendingWithScopedPreGateTaskReview
-    LoadWhen: AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerified
+    State: Current
+    LoadWhen: AgentWorkflowControllerAndCoreContractsVerifiedAndFirstAgentRuntimeSliceVerifiedAndP3EntryGatePassed
   - PhaseId: P4
     Path: ""
     State: NotExpanded

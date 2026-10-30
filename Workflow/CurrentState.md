@@ -450,3 +450,10 @@
 - 该句已从修订候选的 PendingReason 移除。P3 和 EntryGate 保持 Pending；没有创建 H2 成功状态或 `P3EntryGatePassed` 事件。修订候选仍须重新固定 Base/Head 并由 Worker04 独立复审。
 - 固定头审查证据：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R3-H1Finding-20261030.md`。Finding EventId：`e324a8e7-3502-4141-8079-74d400e3d515`。
 - 修订后的 H1 候选静态校验通过：追加验证记录前 270 条、追加后 271 条 JSONL 事件均有效且 EventId 唯一；258 条 Base 前缀完整；P3/EntryGate 仍 Pending、没有 P3EntryGatePassed；WriteSet、P2/TaskIndex 和 git diff --check 均通过。日志：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H1-F001-CorrectedCandidateValidation-20261030.log`；CommandExecuted EventId `028444f2-078e-4739-8f2e-a549f7f52213`。新 Head 仍待 Worker04 固定头复审。
+
+## 2026-10-30 ED-0151/R3 P3 EntryGate Closeout — H2 candidate
+
+- H1 GateDecisionReview：Worker04 于 `2026-10-30T00:17:26Z` 对 Base `f543bb64cea60cd14075e5a93279668d7de4adc1` → Head `817387a5fb1df4caad7e0ffd143ed31f61735b9e` 作出 APPROVE。AC-1 至 AC-4 满足，Finding `ED0151-R3-H1-F001` 已解决；证据：`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Review/Worker04-ED0151-R3-H1GateDecisionReview-20261030.md`。
+- H2 候选 EvaluationEventId / `P3EntryGatePassed` EventId：`aa6bf49d-0b25-46a7-afdc-7fd2238ebcdf`。候选 P3 路由为 Current、EntryGate 为 Passed；当前 main 仍在 `f543bb64cea60cd14075e5a93279668d7de4adc1`，只有 H2 PR 完成独立最终审查并合并后，主线才进入 P3。
+- 状态边界：`P2FirstSliceGate=Passed`；`LargeScaleProductImplementation=BlockedUnverified`；`CodexAgentRewrite=Incomplete`。本门禁不包含产品源码或测试变更，也不代表完整重写完成。
+- H2 审查与合并尚未完成；H2 的固定头最终审查仍需单独执行。

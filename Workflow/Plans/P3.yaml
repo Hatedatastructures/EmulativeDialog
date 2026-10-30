@@ -1,7 +1,7 @@
 SchemaVersion: 1
 PhaseId: P3
 PhaseName: Provider Protocols and Durable Memory
-State: PendingEntryGateWithScopedPreGateTaskReview
+State: Current
 
 EntryGate:
   RequiredGateId: AgentWorkflowControllerAndCoreContractsVerified
@@ -12,15 +12,15 @@ EntryGate:
     - HttpTransportContract V1 Port enforcement (ED-0120, hardened by ED-0146)
     - CoreEndpointGrantContract V1 (ED-0147)
   RequiredAdditionalTaskIds: [ED-0146, ED-0147]
-  State: Pending
-  EvaluatedBy: ""
-  ReviewerAgentId: ""
-  ReviewerDecision: ""
-  EvaluatedAtUtc: ""
-  EvaluationEventId: ""
-  PendingReason: >-
-    P1 and P2 gate evidence and the exact pinned dependency revisions were verified on the assigned baseline 554ba46146eeada94b2863a97c2b5b96e1260b51. ED-0146/R6, ED-0147/R9, and ED-0120/R5 have their required merge and fixed-head evidence; ED-0147/R9 is closed, both required P3 contracts are Frozen, and ADR-0003 prohibits EndpointGrantId disclosure.
-    ED-0151/R3 assignment-ledger PR #66 merged at f543bb64cea60cd14075e5a93279668d7de4adc1; post-merge Controller validation returned AssignmentAccepted and the task is Active. Worker04 rejected H1 Base f543bb64cea60cd14075e5a93279668d7de4adc1 and Head 4df6b99c4cfd94ee2f1021c90ebbf44eea47428c for finding ED0151-R3-H1-F001; AC-1 through AC-4 were satisfied and no gate AcceptanceId was unmet. The out-of-scope sentence has been removed from this corrected candidate, with the finding and correction recorded in the append-only event ledger. A new fixed-head H1 GateDecisionReview is required; only an approved H1 can proceed to H2 finalization, separate FinalPRReview, and merge. P3 remains Pending.
+  State: Passed
+  EvaluatedBy: "/root"
+  ReviewerAgentId: "/root/luna04_ed0144_branch_review"
+  ReviewerDecision: Approve
+  EvaluatedAtUtc: "2026-10-30T00:17:26Z"
+  EvaluationEventId: "aa6bf49d-0b25-46a7-afdc-7fd2238ebcdf"
+  PassedReason: >-
+    P1 and P2 exit gates are Passed; all ten pinned ED-0151/R3 dependencies report Merged on the assigned baseline; ED-0146/R6, ED-0147/R9, and ED-0120/R5 have their required merged and fixed-head evidence; both required P3 contracts are Frozen; and ADR-0003 prohibits EndpointGrantId disclosure.
+    Worker04 independently approved H1 Base f543bb64cea60cd14075e5a93279668d7de4adc1 -> Head 817387a5fb1df4caad7e0ffd143ed31f61735b9e at 2026-10-30T00:17:26Z after AC-1 through AC-4 review; H1 finding ED0151-R3-H1-F001 is resolved. Evidence is bound in the P3EntryGatePassed event and external fixed-head review record. This passes the P3 entry gate only; it does not mean the Codex Agent rewrite is complete.
   PreGateTaskExceptions:
     - TaskId: ED-0148
       TaskRevision: 4
@@ -3756,10 +3756,10 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "PR #66 assignment-ledger PR received Worker04 fixed-head APPROVE for Base 554ba46146eeada94b2863a97c2b5b96e1260b51 -> Head 4aefd98bb170b300021e76ea928bc2faf4671f72 and squash-merged to main at f543bb64cea60cd14075e5a93279668d7de4adc1; post-merge Controller query/validate-assignment then returned Assigned/AssignmentAccepted on the main-equivalent task worktree."
-      CurrentFindingOrFailure: "Worker04 rejected H1 with finding ED0151-R3-H1-F001 although AC-1 through AC-4 are satisfied. The prior PendingReason included out-of-scope downstream work; the sentence is removed in this corrected candidate. P3 remains Pending and H1 must be independently reviewed again."
+      LastCompletedAcceptance: "H1 GateDecisionReview APPROVE by Worker04 at 2026-10-30T00:17:26Z on Base f543bb64cea60cd14075e5a93279668d7de4adc1 -> Head 817387a5fb1df4caad7e0ffd143ed31f61735b9e; AC-1 through AC-4 satisfied; F001 resolved."
+      CurrentFindingOrFailure: "H1 is approved and H2 records the P3 entry-gate decision in this candidate. H2 is not merged; main remains at f543bb64cea60cd14075e5a93279668d7de4adc1 with P3 Pending until the exact final PR Head is independently approved and merged. PRBaseCommit must come from GitHub metadata after PR creation."
       TriedApproaches: ["R2 could not record a success event after an immutable fixed-head decision. CR-ED-0151-003 separates GateDecisionReview from H2 finalization and FinalPRReview."]
-      NextAction: "Freeze the corrected H1 Base/Head after validation and obtain a new Worker04 GateDecisionReview. Only on H1 approval create H2, then obtain separate FinalPRReview before the H2 PR is merged."
-      LastValidationResult: "Corrected H1 candidate validation passed: 270 valid unique JSONL records before the validation append and 271 after; 258-record Base prefix intact; exact WriteSet subset; P2/TaskIndex unchanged; P3/EntryGate Pending with no pass event; CurrentState review record readable; git diff --check exit 0. Log: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H1-F001-CorrectedCandidateValidation-20261030.log; CommandExecuted EventId 028444f2-078e-4739-8f2e-a549f7f52213.
+      NextAction: "Validate and freeze H2; create the main-targeting PR; record actual GitHub base/head metadata and PRCreated evidence; obtain Worker04 FinalPRReview on the final exact Base/Head; merge only after approval, then record PRMerged/TaskClosed lifecycle evidence without changing H2 gate fields."
+      LastValidationResult: "Worker06 independent audit at 2026-10-30T00:33:20Z passed: four-path WriteSet, H1 binding, P2 unchanged, 258-row Base prefix, 280 valid unique candidate events with one pass event, diff-check exit 0. Coordinator post-audit pre-PR check at 2026-10-30T00:38:21Z also passed: exact paths, P2 byte-identical, JSONL valid and unique, one pass event, diff-check exit 0. Logs: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0151-P3GateCloseout/Validation/Logs/ED0151-R3-H2-IndependentStaticAudit-20261030.log and ED0151-R3-H2-PostAuditPrePR-20261030.log. No product build or tests were run; H2 final PR review and merge remain pending."
       OpenMessageIds: []
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
