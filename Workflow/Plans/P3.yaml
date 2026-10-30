@@ -4580,14 +4580,18 @@ Tasks:
     CreatedAt: '2026-10-30T14:37:30Z'
     ParallelGroup: AgentRuntimeTestBuildIntegration
     Goal: >-
-      Link the existing pinned EmulativeDialogBoostAsio INTERFACE target PUBLIC to CoreChatServiceObject so its
-      compile features and Boost include requirements reach CoreChatService.cpp and consumers that include the
-      asynchronous AgentRuntime/provider public interfaces. Preserve all runtime behavior and dependency pins.
+      Add both required CMake dependency edges to CoreChatServiceObject: link EmulativeDialogBoostAsio with PUBLIC
+      visibility to propagate C++20, Boost include and Windows link usage requirements, and explicitly depend on
+      EmulativeDialogBoostAsioVerify so a fresh ExternalProject checkout is populated and verified before this target
+      compiles. Preserve all runtime behavior and dependency pins.
     OutOfScope:
       - >-
-        Source/ production code, public C++ APIs, test source/fixtures/behavior, or provider/channel behavior. The sole
-        permitted test-build configuration edit is the exact Tests/Contract/Agent/CMakeLists.txt WriteSet for this
-        compile-link edge.
+        Production C++ source, public C++ APIs, test source/fixtures/assertions, and provider/channel runtime behavior
+        are out of scope.
+      - >-
+        In the sole Tests/Contract/Agent/CMakeLists.txt WriteSet, only the target_link_libraries PUBLIC edge and the
+        add_dependencies verification edge specified by this task may change; all other test/build configuration is
+        out of scope.
       - Root CMakeLists.txt, CMake/BoostAsioDependency.cmake, dependency pins, and workflow configuration
       - ED-0150 files or scope; this task only supplies the missing compile usage-requirement edge
       - P2/P3 gate decisions, protocol contracts, credentials, or live channel/provider traffic
@@ -4621,7 +4625,7 @@ Tasks:
         - Architecture/ModuleMap.yaml#AgentRuntime
         - Architecture/Modules/HostCoreAgent.yaml#AgentRuntime
         - Tests/Contract/Agent/CMakeLists.txt#CoreChatServiceObject
-        - CMake/BoostAsioDependency.cmake#EmulativeDialogBoostAsio
+        - CMake/BoostAsioDependency.cmake#EmulativeDialogBoostAsioVerify,EmulativeDialogBoostAsio
         - CMakePresets.json#windows-agent-slice
         - .github/workflows/WindowsAgentSlice.yml#WindowsAgentSlice
       OnDemandSet: []
@@ -4638,23 +4642,28 @@ Tasks:
     WriteSet: [Tests/Contract/Agent/CMakeLists.txt]
     WriteSetRationale:
       - CoreChatServiceObject is defined in this module-owned test build file; the shared interface target already exists in the pinned dependency module.
-      - A PUBLIC target link propagates include directories, C++20 compile features, and Windows system link requirements to this object target and its consumers.
+      - target_link_libraries(CoreChatServiceObject PUBLIC EmulativeDialogBoostAsio) propagates the include directories, C++20 compile feature, and Windows system link requirement.
+      - add_dependencies(CoreChatServiceObject EmulativeDialogBoostAsioVerify) orders the build-stage ExternalProject checkout and pinned-source verification before CoreChatServiceObject compilation when the dependency cache is fresh and empty.
       - No source, contract, dependency, root-build, or workflow path changes are needed.
     SharedLocks: []
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
-          CoreChatServiceObject links EmulativeDialogBoostAsio with PUBLIC visibility, and the implementation diff
-          contains exactly the one-path WriteSet.
+          CoreChatServiceObject has both exact CMake edges: target_link_libraries(CoreChatServiceObject PUBLIC
+          EmulativeDialogBoostAsio) and add_dependencies(CoreChatServiceObject EmulativeDialogBoostAsioVerify). The
+          implementation diff contains exactly the one-path WriteSet and no other target relationship changes.
         Evidence: >-
-          Fixed PR diff and CMake target inspection show the exact link edge and no other changed path.
+          Fixed PR diff and CMake target inspection show both exact edges and no other changed path or target edge.
       - AcceptanceId: AC-2
         Description: >-
-          A fresh Windows native windows-agent-slice configure/build succeeds for the assigned implementation
-          worktree, compiling CoreChatServiceObject and its consumers with the pinned Boost.Asio headers.
+          A fresh Windows native windows-agent-slice configure/build using an absent, empty FETCHCONTENT_BASE_DIR
+          cache succeeds for the assigned implementation worktree. Building CoreChatServiceObject first must cause
+          ExternalProject to populate the pinned Boost checkout and EmulativeDialogBoostAsioVerify to verify it before
+          CoreChatServiceObject compiles with the required Boost.Asio headers.
         Evidence: >-
-          Configure/build logs from the unique ED-0155-R1 Windows build directory and the successful required
-          WindowsAgentSlice / Build and Test check.
+          Fresh configure and verbose CoreChatServiceObject build logs show checkout at the pinned commit
+          afdfa32505af73e3d208144b3f623f0096cb62b6, the successful verification marker, then CoreChatServiceObject
+          compilation; the full required WindowsAgentSlice / Build and Test check succeeds from the same build.
       - AcceptanceId: AC-3
         Description: >-
           AgentRuntime.VerticalSlice passes from the same fresh Windows build, with no tests skipped or missing.
@@ -4663,50 +4672,65 @@ Tasks:
       - AcceptanceId: AC-4
         Description: >-
           The exact ED-0150/R2 PR #85 failing head can be validated in a disposable detached integration worktree
-          by overlaying only this task's Tests/Contract/Agent/CMakeLists.txt from the reviewed task head; the async
-          CoreChatServiceObject compile succeeds and AgentRuntime.VerticalSlice passes. The ED-0150 worktree and
-          branch remain untouched.
+          with its own absent, empty FETCHCONTENT_BASE_DIR cache by overlaying only this task's
+          Tests/Contract/Agent/CMakeLists.txt from the reviewed task head. Its fresh dependency checkout and verify
+          must precede the async CoreChatServiceObject compile, and AgentRuntime.VerticalSlice must pass. The
+          ED-0150 worktree and branch remain untouched.
         Evidence: >-
           Integration-worktree HEAD, one-path overlay diff, fresh configure/build/CTest logs, and explicit before/after
-          git status showing no modification to the ED-0150 checkout. This evidence reproduces the reported failure
-          without expanding either task's committed WriteSet.
+          git status showing no modification to the ED-0150 checkout; the verbose build log shows pinned checkout,
+          verify success, then CoreChatServiceObject compilation. This reproduces the reported failure without
+          expanding either task's committed WriteSet.
       - AcceptanceId: AC-5
         Description: >-
           The task does not alter API, wire/runtime semantics, dependency versions, ED-0150 files, or any path outside
           its one-file WriteSet.
         Evidence: Exact Base-to-Head changed-path comparison and git diff --check.
     Validation:
-      RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
+      RequiredTargets: [CoreChatServiceObject, AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
       RequiredCTestTests: [AgentRuntime.VerticalSlice]
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice
+      DependencyCache:
+        TaskBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Dependencies
+        IntegrationBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationDependencies
+        RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+        MustBeAbsentBeforeConfigure: true
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
         $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree'
         $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice'
+        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Dependencies'
         $IntegrationWorktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree'
         $IntegrationBuild = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice'
+        $IntegrationDependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationDependencies'
         if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Expected assigned worktree is missing: $Worktree" }
         if (Test-Path -LiteralPath $Build) { throw "Fresh preset binaryDir already exists; preserve it and stop: $Build" }
+        if (Test-Path -LiteralPath $Dependencies) { throw "Fresh task dependency cache already exists; preserve it and stop: $Dependencies" }
         if (Test-Path -LiteralPath $IntegrationWorktree) { throw "Disposable integration worktree path already exists; preserve it and stop: $IntegrationWorktree" }
         if (Test-Path -LiteralPath $IntegrationBuild) { throw "Fresh integration preset binaryDir already exists; preserve it and stop: $IntegrationBuild" }
-        Write-Output 'FRESH_TASK_AND_INTEGRATION_BINARYDIR_PREFLIGHT_OK=1'
+        if (Test-Path -LiteralPath $IntegrationDependencies) { throw "Fresh integration dependency cache already exists; preserve it and stop: $IntegrationDependencies" }
+        Write-Output 'FRESH_TASK_AND_INTEGRATION_BINARYDIR_AND_DEPENDENCY_CACHE_PREFLIGHT_OK=1'
       FreshDirectoryPolicy: >-
         CMakePresets.json resolves windows-agent-slice binaryDir as
         `${sourceParentDir}/${sourceDirName}.build/${presetName}`. Before configure, verify both the task binaryDir
         in TaskBuildDirectory and the integration binaryDir in IntegrationReproduction.BuildDirectory do not exist
-        using FreshBuildPreflight. Run TargetedBuild from the assigned Worktree and IntegrationReproduction.Commands
-        from IntegrationReproduction.Worktree after creating the detached integration checkout. Do not clear, reuse,
-        or overwrite an existing build/evidence directory.
+        using FreshBuildPreflight; it also rejects pre-existing TaskBaseDirectory and IntegrationBaseDirectory values
+        so both FETCHCONTENT_BASE_DIR caches start empty. Run TargetedBuild from the assigned Worktree and
+        IntegrationReproduction.Commands from IntegrationReproduction.Worktree after creating the detached
+        integration checkout. Do not clear, reuse, or overwrite an existing build/evidence directory or dependency cache.
       TargetedBuild:
-        - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies"
+        - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Dependencies"
+        - "cmake --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice --target CoreChatServiceObject --verbose --parallel 4"
         - "cmake --build --preset windows-agent-slice --parallel 4"
         - "ctest --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/Worktree.build/windows-agent-slice -R '^AgentRuntime\\.VerticalSlice$' --no-tests=error --output-on-failure"
       IntegrationReproduction:
         BaseCommit: 3b729eb295aae551633185bc50d032e971350de9
         Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree
         BuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice
+        DependencyBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationDependencies
         Commands:
-          - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies"
+          - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationDependencies"
+          - "cmake --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice --target CoreChatServiceObject --verbose --parallel 4"
           - "cmake --build --preset windows-agent-slice --parallel 4"
           - "ctest --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R1AgentAsioPropagation/IntegrationWorktree.build/windows-agent-slice -R '^AgentRuntime\\.VerticalSlice$' --no-tests=error --output-on-failure"
         OverlayRule: >-
@@ -4719,8 +4743,9 @@ Tasks:
         - "Controller query reports ED-0131/R2 Merged and P3 EntryGate=Passed before assignment."
         - "Controller validate-assignment returns AssignmentAccepted after the assignment-ledger PR merges to main."
         - "git diff --check exits 0 and the implementation PR changed-path set equals exactly Tests/Contract/Agent/CMakeLists.txt."
-        - "The diff contains target_link_libraries(CoreChatServiceObject PUBLIC EmulativeDialogBoostAsio); no forbidden/read-set path is in the WriteSet."
-        - "The ED-0150 integration reproduction uses the exact recorded PR head and a detached validation worktree; the original ED-0150 checkout remains unchanged."
+        - "The diff contains both target_link_libraries(CoreChatServiceObject PUBLIC EmulativeDialogBoostAsio) and add_dependencies(CoreChatServiceObject EmulativeDialogBoostAsioVerify); no forbidden/read-set path is in the WriteSet."
+        - "Both FETCHCONTENT_BASE_DIR locations are absent before configuration; verbose CoreChatServiceObject build logs show pinned ExternalProject checkout and EmulativeDialogBoostAsioVerify success before object compilation."
+        - "The ED-0150 integration reproduction uses the exact recorded PR head, a detached validation worktree, and an independent empty dependency cache; the original ED-0150 checkout remains unchanged."
       Coverage: {Required: false, ProductionSources: [], MinimumLinePercent: 80, NotApplicableReason: "CMake usage-requirement propagation only; no production logic changes."}
       LiveSideEffects: Forbidden
       NotRunReason: "No product runtime logic is changed; native build/CTest are required and integration validation is isolated from the ED-0150 worktree."
