@@ -2487,10 +2487,12 @@ Tasks:
     ProductWriteAuthorization: None
     AssignmentGate: >-
       Do not edit product paths or run R3 configure/build/CTest/gcov until this R3 TaskSpec PR is independently
-      reviewed and merged. The Coordinator must then merge a separate assignment-ledger update binding the current
-      main baseline, Worker05 owner and Worker06 reviewer, exact product branch/worktree, and this four-path WriteSet;
-      WorkflowController validate-assignment must return AssignmentAccepted and the matching TaskStarted event must
-      be recorded before implementation or validation begins.
+      reviewed and merged. After merge, the Coordinator must verify that the P3 EntryGate is Passed and dependencies
+      ED-0113, ED-0123, and ED-0148/R6 are complete, then submit a separate assignment PR that changes this task from
+      Blocked to Ready and binds the current main baseline, Worker05 owner, Worker06 reviewer, exact product
+      branch/worktree, and this four-path WriteSet. After that assignment PR merges, WorkflowController
+      validate-assignment must return AssignmentAccepted; only then may the Coordinator record TaskStarted and
+      authorize product implementation or validation.
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory
       Coverage:
@@ -2518,7 +2520,7 @@ Tasks:
         - "Encoded MemoryKind bytes stay <= INT_MAX before SqliteStore binding; decoded V2 payload bytes exactly equal the declared length before buffer allocation"
         - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
 
-        - "The CMake cache identifies the EmulativeDialogMemoryContract source and the frozen C++20 MinGW compiler."
+        - "The CMake cache identifies the EmulativeDialogConversationMemoryContract source and the frozen C++20 MinGW compiler."
         - "The standalone CTest run proves both ConversationMemoryTests and SqliteMemoryStorageAdapterTests passed and contains no libgcov profiling checksum or overwrite warning."
         - "CoverageCommand uses the unique fresh R3 .gcno/.gcda pair and exact source identity, emits gcov JSON v2, and reports at least 80 percent unique executable-line coverage with numerator and denominator."
         - "Every listed validation command has a CommandExecuted event with exact command, working directory, exit code, correlation ID, and output evidence reference; missing command evidence invalidates acceptance."
@@ -2556,7 +2558,7 @@ Tasks:
           $Cache = Join-Path $Build 'CMakeCache.txt'
           if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
           $CacheText = [System.IO.File]::ReadAllText($Cache).Replace(([string][char]13 + [string][char]10), [string][char]10).Replace([string][char]13, [string][char]10)
-          if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogMemoryContract$') { throw 'Wrong CMake project in task build directory' }
+          if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogConversationMemoryContract$') { throw 'Wrong CMake project in task build directory' }
           if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0144/Tests/Contract/Memory$') { throw 'CMake source directory does not match the assigned Memory worktree' }
           if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
           if ($CacheText -notmatch '(?m)^CMAKE_CXX_FLAGS:STRING=.*--coverage') { throw 'CMAKE_CXX_FLAGS is missing --coverage' }
