@@ -29,12 +29,17 @@ include("${PROJECT_ROOT}/CMake/BoostAsioDependency.cmake")
 
 add_executable(
   AsyncRuntimeVerticalSliceTests
+  "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
   "${PROJECT_ROOT}/Source/Agent/AsyncAgentRuntime.cpp"
+  "${PROJECT_ROOT}/Source/Agent/AsyncToolCallCoordinator.cpp"
   "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp"
+  "${PROJECT_ROOT}/Source/Agent/ToolCallCoordinator.cpp"
+  "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp"
   "${PROJECT_ROOT}/Source/Core/CoreChatService.cpp"
   "${PROJECT_ROOT}/Source/Core/IdentityPolicy.cpp"
   "${PROJECT_ROOT}/Source/Core/OperationRecord.cpp"
   "${PROJECT_ROOT}/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp"
+  "${PROJECT_ROOT}/Tests/Contract/Agent/ToolCallRoundTripTests.cpp"
   AsyncRuntimeVerticalSliceTests.cpp
 )
 target_include_directories(
@@ -60,6 +65,11 @@ target_compile_options(
     -Wextra
     -Wpedantic
     -Werror
+)
+target_compile_definitions(
+  AsyncRuntimeVerticalSliceTests
+  PRIVATE
+    EMULATIVE_DIALOG_EMBEDDED_TOOLCALL_TESTS=1
 )
 set_target_properties(
   AsyncRuntimeVerticalSliceTests

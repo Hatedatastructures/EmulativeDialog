@@ -30,6 +30,8 @@
 #include <utility>
 #include <vector>
 
+void RunLegacyToolCallRoundTripTests();
+
 namespace {
 
 namespace Asio = boost::asio;
@@ -52,6 +54,14 @@ enum class FakeScenario : std::uint8_t {
   ProfileRejected,
   CapabilitiesRejected,
   UnsupportedCapabilities,
+  ToolRoundTrip,
+  ToolRoundTripBadArguments,
+  ToolRoundTripUnknownSecond,
+  ToolHandoffLoop,
+  ToolHandoffTwoCallsLoop,
+  ToolCallOverflow,
+  ToolCallDuplicate,
+  ToolProposalFinal,
 };
 
 class StreamActivity final {
@@ -199,8 +209,18 @@ public:
       Cancelled.Reason.Code.Value = "cancelled-before-dispatch";
       co_return Cancelled;
     }
+    const bool ToolFlow =
+        Scenario == FakeScenario::ToolRoundTrip ||
+        Scenario == FakeScenario::ToolRoundTripBadArguments ||
+        Scenario == FakeScenario::ToolRoundTripUnknownSecond ||
+        Scenario == FakeScenario::ToolHandoffLoop ||
+        Scenario == FakeScenario::ToolHandoffTwoCallsLoop ||
+        Scenario == FakeScenario::ToolCallOverflow ||
+        Scenario == FakeScenario::ToolCallDuplicate ||
+        Scenario == FakeScenario::ToolProposalFinal;
     if (Profile.Id.Value.empty() || Profile.ModelName.empty() ||
-        Lease.GetAuthenticationSecret().empty() || Request.Messages.size() != 1) {
+        Lease.GetAuthenticationSecret().empty() || Request.Messages.empty() ||
+        (!ToolFlow && Request.Messages.size() != 1U)) {
       Providers::ResponseFailedEvent Failed;
       Failed.Metadata = {Request.Id, Request.TurnId, 1};
       Failed.Failure = {Providers::FailureCode::InvalidRequest, false,
@@ -209,13 +229,14 @@ public:
     }
 
     const StreamActivity Activity{ActiveStreamCount, MaxActiveStreamCount};
-    ++DispatchCount;
+    const std::uint32_t RequestNumber = DispatchCount.fetch_add(1) + 1U;
     if (OnDispatched) {
       OnDispatched();
     }
     {
       std::lock_guard Lock(RequestMutex);
       LastRequestText.clear();
+      Requests.push_back(Request);
       for (const Providers::ContentPart& Part : Request.Messages.front().ContentParts) {
         if (const auto* Text = std::get_if<Providers::TextContentPart>(&Part)) {
           LastRequestText += Text->Text;
@@ -228,6 +249,138 @@ public:
     AwaitingProvider.store(true);
     co_await Suspension.async_wait(Asio::use_awaitable);
     AwaitingProvider.store(false);
+
+    if (CustomEventScript && CustomTerminalScript) {
+      CustomEventScript(Request, CancellationToken, Sink);
+      if (CustomTerminalDelay > std::chrono::milliseconds::zero()) {
+        AwaitingProvider.store(true);
+        Asio::steady_timer TerminalDelay(Executor);
+        TerminalDelay.expires_after(CustomTerminalDelay);
+        co_await TerminalDelay.async_wait(Asio::use_awaitable);
+        AwaitingProvider.store(false);
+      }
+      if (BeforeCustomTerminal) {
+        BeforeCustomTerminal();
+      }
+      Providers::CanonicalTerminalEvent Terminal =
+          CustomTerminalScript(Request);
+      ++FinalTerminalCount;
+      co_return Terminal;
+    }
+
+    const auto SendFinalUsage = [&Sink, &Request]() {
+      Providers::UsageUpdatedEvent Usage;
+      Usage.Metadata = {Request.Id, Request.TurnId, 2};
+      Usage.Usage.InputTokens = 5;
+      Usage.Usage.OutputTokens = 2;
+      Usage.Usage.TotalTokens = 7;
+      Usage.Usage.Completeness = Providers::UsageCompleteness::Final;
+      Sink(Providers::CanonicalNonTerminalEvent{std::move(Usage)});
+    };
+    const auto MakeUsage = []() {
+      Providers::UsageSnapshot Usage;
+      Usage.InputTokens = 5;
+      Usage.OutputTokens = 2;
+      Usage.TotalTokens = 7;
+      Usage.Completeness = Providers::UsageCompleteness::Final;
+      return Usage;
+    };
+    const auto MakeHandoff = [&Request, &MakeUsage]() {
+      Providers::ResponseCompletedEvent Handoff;
+      Handoff.Metadata = {Request.Id, Request.TurnId, 3};
+      Handoff.Kind = Providers::CompletionKind::ToolHandoff;
+      Handoff.FinalUsage = MakeUsage();
+      return Providers::CanonicalTerminalEvent{std::move(Handoff)};
+    };
+
+    if (ToolFlow) {
+      if (Scenario == FakeScenario::ToolRoundTripUnknownSecond &&
+          RequestNumber > 1U) {
+        Providers::ResponseOutcomeUnknownEvent Unknown;
+        Unknown.Metadata = {Request.Id, Request.TurnId, 1};
+        Unknown.Reason.Code.Value = "unknown-after-read-only-tool";
+        co_return Unknown;
+      }
+
+      const bool AlwaysHandoff =
+          Scenario == FakeScenario::ToolHandoffLoop ||
+          Scenario == FakeScenario::ToolHandoffTwoCallsLoop ||
+          Scenario == FakeScenario::ToolCallOverflow ||
+          Scenario == FakeScenario::ToolCallDuplicate;
+      const bool FirstHandoff = RequestNumber == 1U;
+      if (AlwaysHandoff || FirstHandoff) {
+        std::uint32_t CallCount = 1U;
+        if (Scenario == FakeScenario::ToolCallOverflow) {
+          CallCount = 9U;
+        } else if (Scenario == FakeScenario::ToolHandoffTwoCallsLoop) {
+          CallCount = 2U;
+        } else if (Scenario == FakeScenario::ToolCallDuplicate) {
+          CallCount = 2U;
+        }
+        for (std::uint32_t Index = 0; Index < CallCount; ++Index) {
+          Providers::ToolCallReadyEvent Tool;
+          Tool.Metadata = {Request.Id, Request.TurnId,
+                           static_cast<std::uint64_t>(Index + 1U)};
+          Tool.Item = Providers::ItemId{"fake-tool-item"};
+          std::string ToolCallId;
+          if (Scenario == FakeScenario::ToolCallDuplicate) {
+            ToolCallId = "duplicate-call";
+          } else if (Scenario == FakeScenario::ToolHandoffLoop ||
+                     Scenario == FakeScenario::ToolHandoffTwoCallsLoop) {
+            ToolCallId = "loop-call-" + std::to_string(RequestNumber) +
+                         "-" + std::to_string(Index + 1U);
+          } else {
+            ToolCallId = "fake-tool-call-" + std::to_string(Index + 1U);
+          }
+          Tool.Call = Providers::ToolCallId{std::move(ToolCallId)};
+          Tool.ToolName = "LookupProfile";
+          Tool.Arguments = Providers::JsonValue{
+              Scenario == FakeScenario::ToolRoundTripBadArguments
+                  ? R"({"query":7})"
+                  : R"({"query":"profile"})"};
+          Sink(Providers::CanonicalNonTerminalEvent{std::move(Tool)});
+        }
+        Providers::UsageUpdatedEvent Usage;
+        Usage.Metadata = {Request.Id, Request.TurnId,
+                          static_cast<std::uint64_t>(CallCount + 1U)};
+        Usage.Usage = MakeUsage();
+        Sink(Providers::CanonicalNonTerminalEvent{std::move(Usage)});
+        if (Scenario == FakeScenario::ToolProposalFinal) {
+          Providers::ResponseCompletedEvent Final;
+          Final.Metadata = {Request.Id, Request.TurnId,
+                            static_cast<std::uint64_t>(CallCount + 2U)};
+          Final.Kind = Providers::CompletionKind::FinalAnswer;
+          Final.FinalUsage = MakeUsage();
+          co_return Final;
+        }
+        auto Terminal = MakeHandoff();
+        std::visit(
+            [&CallCount](auto& Value) {
+              using ValueType = std::decay_t<decltype(Value)>;
+              if constexpr (std::is_same_v<
+                                ValueType,
+                                Providers::ResponseCompletedEvent>) {
+                Value.Metadata.SequenceNumber =
+                    static_cast<std::uint64_t>(CallCount + 2U);
+              }
+            },
+            Terminal);
+        co_return Terminal;
+      }
+
+      Providers::TextDeltaEvent Delta;
+      Delta.Metadata = {Request.Id, Request.TurnId, 1};
+      Delta.Item = Providers::ItemId{"tool-roundtrip-final"};
+      Delta.Utf8Delta = "profile result is ready";
+      Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+      SendFinalUsage();
+      Providers::ResponseCompletedEvent Final;
+      Final.Metadata = {Request.Id, Request.TurnId, 3};
+      Final.Kind = Providers::CompletionKind::FinalAnswer;
+      Final.FinalUsage = MakeUsage();
+      ++FinalTerminalCount;
+      co_return Final;
+    }
 
     if (Scenario == FakeScenario::ThrowAfterDispatch) {
       throw std::runtime_error("synthetic unknown provider outcome");
@@ -264,6 +417,15 @@ public:
       Providers::ResponseCompletedEvent Handoff;
       Handoff.Metadata = {Request.Id, Request.TurnId, 1};
       Handoff.Kind = Providers::CompletionKind::ToolHandoff;
+      Handoff.FinalUsage = Providers::UsageSnapshot{
+          .InputTokens = 5,
+          .OutputTokens = 2,
+          .TotalTokens = 7,
+          .CachedInputReadTokens = std::nullopt,
+          .CachedInputWriteTokens = std::nullopt,
+          .ReasoningOutputTokens = std::nullopt,
+          .Completeness = Providers::UsageCompleteness::Final,
+      };
       co_return Handoff;
     }
     if (Scenario == FakeScenario::ToolCall) {
@@ -354,12 +516,25 @@ public:
     return LastRequestText;
   }
 
+  [[nodiscard]] std::vector<Providers::CanonicalModelRequest>
+  GetRequests() const {
+    std::lock_guard Lock(RequestMutex);
+    return Requests;
+  }
+
   std::atomic<std::uint32_t> DispatchCount{0};
   std::atomic<std::uint32_t> ActiveStreamCount{0};
   std::atomic<std::uint32_t> MaxActiveStreamCount{0};
   std::atomic<bool> AwaitingProvider{false};
   std::atomic<std::uint32_t> FinalTerminalCount{0};
   std::function<void()> OnDispatched;
+  std::function<void(const Providers::CanonicalModelRequest&,
+                     std::stop_token,
+                     const Providers::EventSink&)> CustomEventScript;
+  std::function<Providers::CanonicalTerminalEvent(
+      const Providers::CanonicalModelRequest&)> CustomTerminalScript;
+  std::function<void()> BeforeCustomTerminal;
+  std::chrono::milliseconds CustomTerminalDelay{};
   std::chrono::milliseconds StreamDelay{2};
 
 private:
@@ -368,6 +543,7 @@ private:
       true, true, true, true, true, true};
   mutable std::mutex RequestMutex;
   std::string LastRequestText;
+  std::vector<Providers::CanonicalModelRequest> Requests;
 };
 
 class ScriptedActionIdSource final : public Core::CoreActionIdSource {
@@ -655,6 +831,47 @@ private:
   return Profile;
 }
 
+[[nodiscard]] Core::BusinessActionDefinition MakeAsyncLookup(
+    std::function<Asio::awaitable<Core::BusinessActionExecutionResult>(
+        const Core::BusinessActionInvocation&, std::stop_token)> Handler,
+    Core::BusinessActionEffectClass Effect =
+        Core::BusinessActionEffectClass::InProcessReadOnly,
+    std::string RequiredCapability = "Chat.Lookup",
+    std::string RequiredConversation = "async-conversation") {
+  return Core::BusinessActionDefinition{
+      .Name = "LookupProfile",
+      .RequiredArgumentFields = {"query"},
+      .RequiredCapabilities =
+          RequiredCapability.empty()
+              ? std::vector<std::string>{}
+              : std::vector<std::string>{std::move(RequiredCapability)},
+      .Scope = Core::BusinessActionScopeRequirement{
+          .ChannelId = std::string{"Mock"},
+          .ConversationId = std::move(RequiredConversation),
+      },
+      .Handler = {},
+      .ModelTool = Providers::ToolDefinition{
+          .Name = "LookupProfile",
+          .Description = "Look up a profile using trusted in-process data",
+          .Parameters = Providers::JsonSchema{
+              R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query"],"additionalProperties":false})"},
+          .Strict = true,
+      },
+      .EffectClass = Effect,
+      .AsyncHandler = std::move(Handler),
+  };
+}
+
+[[nodiscard]] Providers::ToolDefinition MakeRegistrySchemaTool(
+    std::string SchemaText) {
+  return Providers::ToolDefinition{
+      .Name = "InspectRecord",
+      .Description = "validate a canonical in-process tool schema",
+      .Parameters = Providers::JsonSchema{std::move(SchemaText)},
+      .Strict = true,
+  };
+}
+
 [[nodiscard]] Testing::MockChannelConfiguration MakeMockConfiguration(
     const Channels::AccountProfile& Profile) {
   std::vector<Testing::MockActionReceipt> Receipts;
@@ -708,7 +925,9 @@ private:
 
 class Fixture final {
 public:
-  explicit Fixture(FakeScenario Scenario = FakeScenario::Final)
+  explicit Fixture(
+      FakeScenario Scenario = FakeScenario::Final,
+      std::vector<std::string> GrantedCapabilities = {"Chat.Lookup"})
       : ChannelProfile(MakeChannelProfile()),
         Channel(MakeMockConfiguration(ChannelProfile)),
         ProviderProfile(MakeProviderProfile(Scenario)),
@@ -716,10 +935,12 @@ public:
                        .Account = ChannelProfile,
                        .Sender = Channels::SenderId{"async-sender"},
                        .Principal = Core::PrincipalId{"async-principal"},
+                       .GrantedCapabilities =
+                           std::move(GrantedCapabilities),
                    }}),
         Service(Policy, SyncRuntime, SyncProvider, ProviderProfile,
                 ProviderLease, Channel, ChannelLease, IdSource,
-                &OperationObserver),
+                BusinessActions, &OperationObserver),
         Provider(Scenario) {
     const bool Started =
         Channel.Start(ChannelProfile, ChannelLease).Status ==
@@ -747,6 +968,61 @@ public:
     return Service.Process(Message);
   }
 
+  [[nodiscard]] Core::CoreChatResult RunToolAsync(
+      Channels::InboundChannelMessage Message,
+      std::stop_token CancellationToken = {}) {
+    Asio::io_context Context;
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Core::AsyncAgentToolRuntimePort& ToolRuntime = Runtime;
+    Asio::co_spawn(
+        Context,
+        Service.ProcessAsync(std::move(Message), ToolRuntime, Provider,
+                             CancellationToken),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    if (Failure) {
+      std::rethrow_exception(Failure);
+    }
+    if (!Result.has_value()) {
+      throw std::runtime_error("tool coroutine produced no CoreChatResult");
+    }
+    return *Result;
+  }
+
+  [[nodiscard]] Core::CoreChatResult RunToolAsyncObservingTerminal(
+      bool& CoreReturnedBeforeProviderTerminal,
+      std::stop_token CancellationToken = {}) {
+    Asio::io_context Context;
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Provider.BeforeCustomTerminal = [&]() {
+      CoreReturnedBeforeProviderTerminal = Result.has_value();
+    };
+    Core::AsyncAgentToolRuntimePort& ToolRuntime = Runtime;
+    Asio::co_spawn(
+        Context,
+        Service.ProcessAsync(Inbound(), ToolRuntime, Provider,
+                             CancellationToken),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    if (Failure) {
+      std::rethrow_exception(Failure);
+    }
+    if (!Result.has_value()) {
+      throw std::runtime_error("terminal observation produced no Core result");
+    }
+    return *Result;
+  }
+
   [[nodiscard]] Channels::InboundChannelMessage Inbound() const {
     return InboundSink.Events.front();
   }
@@ -761,6 +1037,7 @@ public:
   ScriptedActionIdSource IdSource;
   CollectingOperationObserver OperationObserver;
   Core::IdentityPolicy Policy;
+  Core::BusinessActionRegistry BusinessActions;
   Core::CoreChatService Service;
   CollectingSink InboundSink;
   EmulativeDialog::Agent::AsyncAgentRuntime Runtime;
@@ -776,8 +1053,10 @@ private:
     std::exception_ptr Failure;
     Asio::co_spawn(
         Context,
-        Service.ProcessAsync(std::move(Message), Runtime, Provider,
-                             CancellationToken),
+        Service.ProcessAsync(
+            std::move(Message),
+            static_cast<Core::AsyncAgentRuntimePort&>(Runtime), Provider,
+            CancellationToken),
         [&Result, &Failure](std::exception_ptr Exception,
                             Core::CoreChatResult Value) {
           Failure = std::move(Exception);
@@ -810,6 +1089,44 @@ public:
 
 private:
   Core::AgentRunResult Result;
+};
+
+class ThrowAfterProviderDispatchRuntime final
+    : public Core::AsyncAgentToolRuntimePort {
+public:
+  [[nodiscard]] Asio::awaitable<Core::AgentRunResult> RunTurnAsync(
+      const Core::AuthorizedTurnContext&,
+      Providers::AsyncModelProviderPort&,
+      const Providers::ModelProviderProfile&,
+      const Providers::CredentialLease&,
+      std::stop_token) override {
+    co_return Core::AgentRunResult::Failed(
+        Core::AgentRunFailureCode::InternalError);
+  }
+
+  [[nodiscard]] Asio::awaitable<Core::AgentRunResult>
+  RunTurnWithToolsAsync(
+      const Core::AuthorizedTurnContext& Context,
+      Providers::AsyncModelProviderPort& Provider,
+      const Providers::ModelProviderProfile& Profile,
+      const Providers::CredentialLease& Lease,
+      Core::AsyncBusinessActionDispatcherPort&,
+      std::stop_token CancellationToken) override {
+    Providers::CanonicalModelRequest Request;
+    Request.Id = Providers::RequestId{"throw-after-provider-start"};
+    Request.TurnId = Context.AgentTurn;
+    Request.CreatedAt = std::chrono::system_clock::now();
+    Request.Messages.push_back(Providers::CanonicalMessage{
+        .Role = Providers::MessageRole::User,
+        .ContentParts = {Providers::TextContentPart{.Text = "hello"}},
+        .FunctionCalls = {},
+        .ToolCallResultId = std::nullopt,
+    });
+    static_cast<void>(co_await Provider.StreamTurnAsync(
+        Profile, Lease, Request, CancellationToken,
+        [](const Providers::CanonicalNonTerminalEvent&) {}));
+    throw std::runtime_error("runtime escaped after provider request start");
+  }
 };
 
 [[nodiscard]] Core::CoreChatResult RunWithRuntimeStub(
@@ -991,7 +1308,9 @@ struct ScenarioExpectation final {
     Asio::co_spawn(
         Context,
         TestFixture.Service.ProcessAsync(
-            Message, TestFixture.Runtime, TestFixture.Provider,
+            Message,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider,
             Cancellation.get_token()),
         [&Result, &Failure](std::exception_ptr Exception,
                             Core::CoreChatResult Value) {
@@ -1037,7 +1356,9 @@ struct ScenarioExpectation final {
     Asio::co_spawn(
         Context,
         TestFixture.Service.ProcessAsync(
-            Message, TestFixture.Runtime, TestFixture.Provider,
+            Message,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider,
             Cancellation.get_token()),
         [&Result, &Failure](std::exception_ptr Exception,
                             Core::CoreChatResult Value) {
@@ -1407,8 +1728,10 @@ struct ScenarioExpectation final {
     std::exception_ptr SecondFailure;
     Asio::co_spawn(
         Context,
-        TestFixture.Service.ProcessAsync(FirstMessage, TestFixture.Runtime,
-                                         TestFixture.Provider),
+        TestFixture.Service.ProcessAsync(
+            FirstMessage,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider),
         [&FirstResult, &FirstFailure](std::exception_ptr Exception,
                                       Core::CoreChatResult Value) {
           FirstFailure = std::move(Exception);
@@ -1416,8 +1739,10 @@ struct ScenarioExpectation final {
         });
     Asio::co_spawn(
         Context,
-        TestFixture.Service.ProcessAsync(SecondMessage, TestFixture.Runtime,
-                                         TestFixture.Provider),
+        TestFixture.Service.ProcessAsync(
+            SecondMessage,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider),
         [&SecondResult, &SecondFailure](std::exception_ptr Exception,
                                         Core::CoreChatResult Value) {
           SecondFailure = std::move(Exception);
@@ -1500,8 +1825,10 @@ struct ScenarioExpectation final {
     std::exception_ptr AsyncFailure;
     Asio::co_spawn(
         Context,
-        TestFixture.Service.ProcessAsync(AsyncMessage, TestFixture.Runtime,
-                                         TestFixture.Provider),
+        TestFixture.Service.ProcessAsync(
+            AsyncMessage,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider),
         [&AsyncResult, &AsyncFailure](std::exception_ptr Exception,
                                       Core::CoreChatResult Value) {
           AsyncFailure = std::move(Exception);
@@ -1712,8 +2039,1687 @@ struct ScenarioExpectation final {
   return Passed;
 }
 
+[[nodiscard]] bool TestBusinessActionSchemaParserEdges() {
+  bool Passed = true;
+  const Providers::ToolDefinition FullSchema = MakeRegistrySchemaTool(
+      R"({"type":"object","properties":{"query":{"type":"string"},"amount":{"type":"number"},"count":{"type":"integer"},"active":{"type":"boolean"},"empty":{"type":"null"}},"required":["query"],"additionalProperties":true})");
+
+  const Providers::JsonValue AllJsonKindsAndEscapes{
+      R"({"query":"quote \" slash \\ / backspace \b formfeed \f newline \n return \r tab \t latin \u00e9 euro \u20AC face \uD83D\uDE00","amount":-1.25e+2,"count":-5,"active":true,"empty":null,"extra":{"items":[false,null,0,2.5,1E-2,{"key":"value"}]}})"};
+  Passed &= Check(Core::BusinessActionRegistry::IsValidToolDefinition(FullSchema),
+                  "the five supported primitive schema types form a valid tool definition");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      AllJsonKindsAndEscapes, FullSchema),
+                  "JSON parser accepts escapes, Unicode surrogate pairs, nested values and numeric forms");
+
+  const std::vector<std::string> LegacyRequiredFields{"query"};
+  const std::vector<std::string> LegacyValidJson{
+      R"({"query":"escaped \" \\ / \b \f \n \r \t \u00e9 \u20AC \uD83D\uDE00"})",
+      R"({"query":"ok","nested":{"items":[true,false,null,-1.25e+2,0,2.5,1E-2]}})",
+      R"({ "query" : "ok" , "array" : [] , "object" : {} })",
+  };
+  for (std::size_t Index = 0; Index < LegacyValidJson.size(); ++Index) {
+    Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                        LegacyValidJson[Index], LegacyRequiredFields),
+                    "legacy JSON parser accepts valid nested/escaped input " +
+                        std::to_string(Index));
+  }
+  const std::vector<std::string> LegacyInvalidJson{
+      "",
+      "[]",
+      R"({"query":})",
+      R"({"query":"bad\q"})",
+      R"json({"query":"truncated escape\)json",
+      R"({"query":"\u12"})",
+      R"({"query":"unterminated})",
+      R"({"query":"ok","number":01})",
+      R"({"query":"ok","number":-})",
+      R"({"query":"ok","number":1.})",
+      R"({"query":"ok","number":1e})",
+      R"({"query":"ok","flag":tru})",
+      R"({"query":"ok",})",
+      R"({"query":"ok","query":"duplicate"})",
+      R"({"nested":[1]})",
+      R"({"query":"ok"} trailing)",
+  };
+  std::vector<std::string> LegacyInvalidCases = LegacyInvalidJson;
+  std::string LegacyDeepArray{R"({"query":"ok","nested":)"};
+  LegacyDeepArray.append(40U, '[');
+  LegacyDeepArray.push_back('0');
+  LegacyDeepArray.append(40U, ']');
+  LegacyDeepArray.push_back('}');
+  LegacyInvalidCases.push_back(std::move(LegacyDeepArray));
+  for (std::size_t Index = 0; Index < LegacyInvalidCases.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                        LegacyInvalidCases[Index], LegacyRequiredFields),
+                    "legacy JSON parser rejects malformed input " +
+                        std::to_string(Index));
+  }
+  const std::string LegacyRawControl = "{\"query\":\"bad\ncontrol\"}";
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      LegacyRawControl, LegacyRequiredFields),
+                  "legacy JSON parser rejects unescaped control characters");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      R"({"optional":true})", std::vector<std::string>{}),
+                  "legacy JSON parser allows a valid object with no required fields");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      "{}", std::vector<std::string>{}),
+                  "legacy JSON parser accepts an empty object when no fields are required");
+
+  const std::vector<Providers::JsonValue> WrongTypes{
+      {R"({"query":7})"},
+      {R"({"query":"x","amount":"2"})"},
+      {R"({"query":"x","count":1.1})"},
+      {R"({"query":"x","count":1e-1})"},
+      {R"({"query":"x","count":1.0000000000000000001})"},
+      {R"({"query":"x","count":9007199254740992.1})"},
+      {R"({"query":"x","active":"true"})"},
+      {R"({"query":"x","empty":false})"},
+      {R"({"amount":1,"count":1,"active":true,"empty":null})"},
+  };
+  for (std::size_t Index = 0; Index < WrongTypes.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                        WrongTypes[Index], FullSchema),
+                    "schema argument type/required rejection case " +
+                        std::to_string(Index));
+  }
+  const std::vector<std::string> MathematicalIntegers{
+      R"({"query":"x","count":1.0})",
+      R"({"query":"x","count":1e0})",
+      R"({"query":"x","count":1e-0})",
+      R"({"query":"x","count":10e-1})",
+      R"({"query":"x","count":10e-0001})",
+      R"({"query":"x","count":1.2300e2})",
+      R"({"query":"x","count":100e-2})",
+      R"({"query":"x","count":-0.00e-999999999999999999999})",
+      R"({"query":"x","count":1e+999999999999999999999})",
+      R"({"query":"x","count":9007199254740992.0})",
+  };
+  for (std::size_t Index = 0; Index < MathematicalIntegers.size(); ++Index) {
+    Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                        Providers::JsonValue{MathematicalIntegers[Index]},
+                        FullSchema),
+                    "integer schema accepts mathematical integer value " +
+                        std::to_string(Index));
+  }
+
+  const Providers::ToolDefinition NoExtrasSchema = MakeRegistrySchemaTool(
+      R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query"],"additionalProperties":false})");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok"})"},
+                      NoExtrasSchema),
+                  "declared required properties are accepted when extras are disabled");
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok","extra":1})"},
+                      NoExtrasSchema),
+                  "additionalProperties false rejects undeclared fields");
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok","query":"duplicate"})"},
+                      FullSchema),
+                  "duplicate object keys are rejected after JSON key decoding");
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok","extra":{"key":1,"key":2}})"},
+                      FullSchema),
+                  "duplicate keys in nested objects are rejected");
+
+  std::string DeepArray{R"({"query":"ok","extra":)"};
+  DeepArray.append(40U, '[');
+  DeepArray.push_back('0');
+  DeepArray.append(40U, ']');
+  DeepArray.push_back('}');
+
+  const std::vector<Providers::JsonValue> InvalidJson{
+      {""},
+      {R"([])"},
+      {R"({"query":)"},
+      {R"({"query":"bad\q"})"},
+      {R"({"query":"\u0x00"})"},
+      {R"({"query":"\uDC00"})"},
+      {R"({"query":"\uD800"})"},
+      {R"({"query":"\uD800\u0041"})"},
+      {R"({"query":"\u12"})"},
+      {R"({"query":"unterminated})"},
+      {R"({"query":"ok","extra":01})"},
+      {R"({"query":"ok","extra":-})"},
+      {R"({"query":"ok","extra":1.})"},
+      {R"({"query":"ok","extra":1e})"},
+      {R"({"query":"ok","extra":tru})"},
+      {R"({"query":"ok",})"},
+      Providers::JsonValue{DeepArray},
+  };
+  for (std::size_t Index = 0; Index < InvalidJson.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                        InvalidJson[Index], FullSchema),
+                    "malformed JSON parser rejection case " +
+                        std::to_string(Index));
+  }
+  const std::string RawControlCharacter = "{\"query\":\"bad\ncontrol\"}";
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{RawControlCharacter}, FullSchema),
+                  "unescaped JSON control characters are rejected");
+
+  std::vector<std::string> InvalidSchemas{
+      "",
+      "not-json",
+      R"([])",
+      R"({"type":"object","properties":{},"required":[]})",
+      R"({"type":2,"properties":{},"required":[],"additionalProperties":false})",
+      R"({"type":"array","properties":{},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":[],"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":{},"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":[],"additionalProperties":"false"})",
+      R"({"type":"object","properties":{"bad field":{"type":"string"}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"string","format":"email"}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":true}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"array"}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":[2],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"string"}},"required":["bad field"],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query","query"],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":["query"],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":[],"additionalProperties":false,"unsupported":true})",
+  };
+  InvalidSchemas.push_back(
+      "{\"type\":\"object\",\"properties\":{\"\":{\"type\":\"string\"}},\"required\":[],\"additionalProperties\":false}");
+  InvalidSchemas.push_back(
+      "{\"type\":\"object\",\"properties\":{\"" +
+      std::string(65U, 'a') +
+      "\":{\"type\":\"string\"}},\"required\":[],\"additionalProperties\":false}");
+  for (std::size_t Index = 0; Index < InvalidSchemas.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::IsValidToolDefinition(
+                        MakeRegistrySchemaTool(InvalidSchemas[Index])),
+                    "unsupported tool schema rejection case " +
+                        std::to_string(Index));
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestCanonicalArgumentMeasurement() {
+  const Providers::JsonValue Arguments{
+      R"json({ "z" : "\u00E9", "a" : ["\n", 2] })json"};
+  std::size_t CanonicalBytes = 0U;
+  std::size_t NestedStringBytes = 0U;
+  bool ExceedsLimit = false;
+  const bool Measured = Core::BusinessActionRegistry::
+      MeasureCanonicalArgumentJson(Arguments, 256U, 23U, 5U,
+                                    CanonicalBytes, NestedStringBytes,
+                                    ExceedsLimit);
+  bool Passed = Check(Measured && !ExceedsLimit && CanonicalBytes == 23U &&
+                          NestedStringBytes == 5U,
+                      "canonical argument measure sorts keys, compacts whitespace, normalizes escapes and counts decoded nested UTF-8 strings");
+
+  std::size_t SmallerCanonicalBytes = 0U;
+  std::size_t SmallerNestedStringBytes = 0U;
+  bool SmallerExceedsLimit = false;
+  const bool SmallerMeasured = Core::BusinessActionRegistry::
+      MeasureCanonicalArgumentJson(Arguments, 256U, 22U, 5U,
+                                    SmallerCanonicalBytes,
+                                    SmallerNestedStringBytes,
+                                    SmallerExceedsLimit);
+  Passed &= Check(SmallerMeasured && SmallerExceedsLimit,
+                  "canonical argument counting stops when the remaining byte allowance is exceeded");
+
+  const Providers::JsonValue DuplicateKeys{
+      R"json({"query":"x","\u0071uery":"y"})json"};
+  std::size_t DuplicateCanonicalBytes = 0U;
+  std::size_t DuplicateNestedStringBytes = 0U;
+  bool DuplicateExceedsLimit = false;
+  Passed &= Check(!Core::BusinessActionRegistry::MeasureCanonicalArgumentJson(
+                      DuplicateKeys, 128U, 128U, 128U,
+                      DuplicateCanonicalBytes, DuplicateNestedStringBytes,
+                      DuplicateExceedsLimit),
+                  "canonical argument counting rejects duplicate keys after Unicode escape decoding");
+  return Passed;
+}
+
+[[nodiscard]] bool TestBusinessActionAsyncRegistrationEdges() {
+  bool Passed = true;
+  const auto Handler = [](const Core::BusinessActionInvocation&,
+                          std::stop_token)
+      -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+    co_return Core::BusinessActionExecutionResult{
+        Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+  };
+
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.EffectClass = Core::BusinessActionEffectClass::Unspecified;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           IneligibleEffectClass &&
+                        Registry.GetAsyncDefinitions().empty(),
+                    "unspecified async effects cannot be registered or advertised");
+  }
+  for (const Core::BusinessActionEffectClass Effect : {
+           Core::BusinessActionEffectClass::ExternalWrite,
+           Core::BusinessActionEffectClass::ExternalIo}) {
+    Core::BusinessActionRegistry Registry;
+    const auto Error = Registry.Register(MakeAsyncLookup(Handler, Effect));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           IneligibleEffectClass &&
+                        Registry.GetAsyncDefinitions().empty(),
+                    "side-effecting or external-I/O async actions are rejected before advertisement");
+  }
+  for (const std::string& Name : {
+           std::string{}, std::string(65U, 'A'), std::string{"Lookup-Profile"}}) {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = Name;
+    Definition.ModelTool.Name = Name;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidActionName,
+                    "empty, overlong, and punctuation-bearing action names are rejected");
+  }
+  for (const std::string& Name : {std::string{"FileCatalog"},
+                                 std::string{"OpenBrowser"},
+                                 std::string{"Mcp"}}) {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = Name;
+    Definition.ModelTool.Name = Name;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           ForbiddenActionName,
+                    "file, browser, and MCP action names are denied by exact, prefix, or Pascal-word rules");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.ModelTool.Name = "OtherAction";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidToolDefinition,
+                    "model tool name must match the Core registry name");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.RequiredArgumentFields = {"other"};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidToolDefinition,
+                    "declared required fields must match the canonical schema");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.RequiredCapabilities = {"Chat.Lookup", "Chat.Lookup"};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidSchemaField,
+                    "duplicate capability requirements are rejected");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.RequiredCapabilities = {""};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidSchemaField,
+                    "empty capability requirements are rejected");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.ModelTool.Parameters.JsonText = R"({"type":"object","properties":{},"required":[],"additionalProperties":false,"extra":true})";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidToolDefinition,
+                    "unsupported schema keywords fail registration");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = "ReadFile";
+    Definition.ModelTool.Name = "ReadFile";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           ForbiddenActionName,
+                    "generic file actions are forbidden before schema registration");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = "lookupProfile";
+    Definition.ModelTool.Name = "lookupProfile";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidActionName,
+                    "non-PascalCase action names fail registration");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Passed &= Check(!Registry.Register(Definition).has_value() &&
+                        Registry.GetAsyncDefinitions().size() == 1U,
+                    "a valid async read-only definition is available for advertisement");
+    const auto Duplicate = Registry.Register(std::move(Definition));
+    Passed &= Check(Duplicate.has_value() &&
+                        Duplicate->Code == Core::BusinessActionRegistrationErrorCode::
+                                               DuplicateAction,
+                    "duplicate action names cannot replace the registered definition");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.AsyncHandler = {};
+    Definition.Handler = {};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           EmptyHandler,
+                    "definitions without a sync or async handler are rejected");
+  }
+  const auto SyncHandler = [](const Core::BusinessActionInvocation&) {
+    return Core::BusinessActionExecutionResult{
+        Core::BusinessActionExecutionStatus::Succeeded, "SyncReadOnly"};
+  };
+  for (const std::vector<std::string>& RequiredFields : {
+           std::vector<std::string>{"bad field"},
+           std::vector<std::string>{"query", "query"}}) {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.AsyncHandler = {};
+    Definition.Handler = SyncHandler;
+    Definition.RequiredArgumentFields = RequiredFields;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidSchemaField,
+                    "sync-only registrations reject invalid or duplicate required argument fields");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.AsyncHandler = {};
+    Definition.Handler = SyncHandler;
+    Passed &= Check(!Registry.Register(std::move(Definition)).has_value() &&
+                        Registry.GetAsyncDefinitions().empty(),
+                    "sync-only registrations are not included in async model-tool advertisement");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestCoreAuthorizedReadOnlyToolRoundTrip() {
+  Fixture TestFixture(FakeScenario::ToolRoundTrip);
+  std::uint32_t HandlerCalls = 0;
+  Core::BusinessActionInvocation ObservedInvocation;
+  const auto Registration = TestFixture.BusinessActions.Register(
+      MakeAsyncLookup(
+          [&HandlerCalls, &ObservedInvocation](
+              const Core::BusinessActionInvocation& Invocation,
+              std::stop_token) -> Asio::awaitable<
+                  Core::BusinessActionExecutionResult> {
+            ++HandlerCalls;
+            ObservedInvocation = Invocation;
+            co_return Core::BusinessActionExecutionResult{
+                Core::BusinessActionExecutionStatus::Succeeded,
+                "ProfileFound"};
+          }));
+  if (!Check(!Registration.has_value(),
+             "Core must accept a valid in-process read-only action")) {
+    return false;
+  }
+
+  const Channels::InboundChannelMessage Inbound = TestFixture.Inbound();
+  const Core::CoreChatResult Result = TestFixture.RunToolAsync(Inbound);
+  const auto Requests = TestFixture.Provider.GetRequests();
+  const auto ChannelReceipt = TestFixture.Channel.GetLastSendActionReceipt();
+  const auto Operations = TestFixture.OperationObserver.Snapshot();
+  bool Passed = true;
+  Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                      Result.Completion ==
+                          Providers::CompletionKind::FinalAnswer,
+                  "Core completes the user turn after an authorized tool round trip");
+  Passed &= Check(HandlerCalls == 1U && Requests.size() == 2U &&
+                      TestFixture.Provider.DispatchCount.load() == 2U,
+                  "one terminal-authorized action runs before a second provider request");
+  Passed &= Check(
+      ObservedInvocation.Principal.Value == "async-principal" &&
+          ObservedInvocation.Scope.Conversation.Value == "async-conversation" &&
+          ObservedInvocation.Turn.Value == MakeTurnId(Inbound.Envelope).Value &&
+          ObservedInvocation.ToolCallId == "fake-tool-call-1" &&
+          ObservedInvocation.Arguments.JsonText == R"({"query":"profile"})",
+      "action receives the trusted Core identity, scope, turn and canonical arguments");
+  Passed &= Check(Requests[0].ToolDefinitions.size() == 1U &&
+                      Requests[0].ToolDefinitions.front().Name ==
+                          "LookupProfile" &&
+                      Requests[1].Id.Value != Requests[0].Id.Value &&
+                      Requests[0].TurnId.Value == Requests[1].TurnId.Value,
+                  "Core advertises only the registered tool and continuation uses a fresh request id on the same turn");
+  Passed &= Check(
+      Requests[1].Messages.size() == 3U &&
+          Requests[1].Messages[0].Role == Providers::MessageRole::User &&
+          Requests[1].Messages[1].Role == Providers::MessageRole::Assistant &&
+          Requests[1].Messages[1].FunctionCalls.size() == 1U &&
+          Requests[1].Messages[1].FunctionCalls.front().Id.Value ==
+              "fake-tool-call-1" &&
+          Requests[1].Messages[2].Role == Providers::MessageRole::Tool &&
+          Requests[1].Messages[2].ToolCallResultId.has_value() &&
+          Requests[1].Messages[2].ToolCallResultId->Value ==
+              "fake-tool-call-1" &&
+          std::get<Providers::TextContentPart>(
+              Requests[1].Messages[2].ContentParts.front()).Text ==
+              "ProfileFound",
+      "only the correlated sanitized CoreActionReceipt becomes a tool result");
+  Passed &= Check(ChannelReceipt.has_value() &&
+                      ChannelReceipt->Status ==
+                          Channels::ReceiptStatus::Succeeded,
+                  "the final Mock Channel receipt is successful");
+  Passed &= Check(TestFixture.Channel.GetSendActionCallCount() == 1U,
+                  "the final user reply is sent exactly once");
+  const bool OneFinalOperation =
+      !Operations.empty() &&
+      std::all_of(Operations.begin(), Operations.end(),
+                  [](const Core::OperationRecord& Record) {
+                    return Record.GetOperationId().Value ==
+                               "async-operation-1" &&
+                           Record.GetActionId().Value == "async-action-1";
+                  }) &&
+      Operations.back().GetState() == Core::OperationState::Succeeded;
+  Passed &= Check(OneFinalOperation,
+                  "only the final channel send creates one successful OperationRecord lifecycle; CoreActionReceipt creates none");
+  Passed &= Check(!EmulativeDialog::Agent::OutputBudgetController::Shared()
+                       .HasActiveTurn(MakeTurnId(Inbound.Envelope)),
+                  "Core releases output-budget state after the complete async tool turn");
+  const Core::CoreChatResult Duplicate =
+      TestFixture.RunToolAsync(Inbound);
+  Passed &= Check(Duplicate.Status == Core::CoreChatStatus::Duplicate &&
+                      HandlerCalls == 1U &&
+                      TestFixture.Provider.DispatchCount.load() == 2U &&
+                      TestFixture.Channel.GetSendActionCallCount() == 1U,
+                  "the shared Core dedupe reservation prevents a repeated async tool turn");
+  return Passed;
+}
+
+[[nodiscard]] bool TestReadOnlyToolAuthorizationAndSchemaRejections() {
+  bool Passed = true;
+  {
+    bool RejectedDuplicateGrant = false;
+    try {
+      static_cast<void>(Core::IdentityPolicy(
+          3, {Core::IdentityBinding{
+                  .Account = MakeChannelProfile(),
+                  .Sender = Channels::SenderId{"async-sender"},
+                  .Principal = Core::PrincipalId{"async-principal"},
+                  .GrantedCapabilities = {"Chat.Lookup", "Chat.Lookup"},
+              }}));
+    } catch (const std::invalid_argument&) {
+      RejectedDuplicateGrant = true;
+    }
+    Passed &= Check(RejectedDuplicateGrant,
+                    "Core identity configuration rejects duplicate capability grants");
+  }
+  {
+    const Core::IdentityPolicy LegacyPolicy(
+        3, {Core::IdentityBinding{
+                .Account = MakeChannelProfile(),
+                .Sender = Channels::SenderId{"async-sender"},
+                .Principal = Core::PrincipalId{"async-principal"},
+            }});
+    const Core::IdentityResolution LegacyResolution =
+        LegacyPolicy.Resolve(MakeInboundMessage().Envelope);
+    const auto* Resolved =
+        std::get_if<Core::ResolvedIdentity>(&LegacyResolution);
+    Passed &= Check(Resolved != nullptr &&
+                        Resolved->GrantedCapabilities.empty(),
+                    "legacy IdentityBinding aggregates default to no capability grants");
+    if (Resolved != nullptr) {
+      const Channels::InboundChannelMessage LegacyInbound = MakeInboundMessage();
+      const Core::AuthorizedTurnContext LegacyContext{
+          Resolved->Principal, Resolved->Scope,
+          MakeTurnId(LegacyInbound.Envelope), LegacyInbound.Message};
+      Passed &= Check(
+          LegacyContext.GrantedCapabilities.empty(),
+          "legacy AuthorizedTurnContext aggregates default to no capability grants");
+    }
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip, {});
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "read-only test action registers for an identity without its grant");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 0U && Requests.size() == 2U &&
+                        Requests.front().ToolDefinitions.empty() &&
+                        std::get<Providers::TextContentPart>(
+                            Requests.back().Messages.back().ContentParts.front())
+                                .Text == "MissingCapability",
+                    "model-proposed calls cannot supply missing Core capability grants");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTripBadArguments);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "schema test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 0U && Requests.size() == 2U &&
+                        std::get<Providers::TextContentPart>(
+                            Requests.back().Messages.back().ContentParts.front())
+                                .Text == "InvalidArguments",
+                    "Core validates tool JSON types before invoking the handler");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    auto External = MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "Unsafe"};
+        },
+        Core::BusinessActionEffectClass::ExternalWrite);
+    const auto Rejected = TestFixture.BusinessActions.Register(std::move(External));
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Rejected.has_value() &&
+                        Rejected->Code ==
+                            Core::BusinessActionRegistrationErrorCode::
+                                IneligibleEffectClass &&
+                        TestFixture.BusinessActions.Count() == 0U &&
+                        HandlerCalls == 0U &&
+                        Result.Status == Core::CoreChatStatus::Completed &&
+                        Requests.front().ToolDefinitions.empty(),
+                    "ExternalWrite is rejected before registration, advertisement or handler invocation");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    auto ExternalIo = MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "Unsafe"};
+        },
+        Core::BusinessActionEffectClass::ExternalIo);
+    const auto Rejected = TestFixture.BusinessActions.Register(std::move(ExternalIo));
+    Passed &= Check(Rejected.has_value() &&
+                        Rejected->Code ==
+                            Core::BusinessActionRegistrationErrorCode::
+                                IneligibleEffectClass &&
+                        HandlerCalls == 0U,
+                    "ExternalIo registration fails closed without executing its handler");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestToolHandoffTerminalAndUnknownOutcomeRules() {
+  bool Passed = true;
+  {
+    Fixture TestFixture(FakeScenario::ToolProposalFinal);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "terminal-only test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::InvalidStream &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "ToolCallReady followed by a final terminal is discarded without dispatch");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTripUnknownSecond);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ProfileFound"};
+                })).has_value(),
+          "unknown provider outcome test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::UnknownOutcome &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "unknown provider outcome after a read-only action stops without replay or send");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolCallDuplicate);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "duplicate-call test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::InvalidStream &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U,
+                    "duplicate ToolCallIds invalidate the correlated proposal batch");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestV2TerminalFailureMatrix() {
+  const std::vector<ScenarioExpectation> Cases{
+      {FakeScenario::Final, Core::CoreChatStatus::Completed, std::nullopt, true},
+      {FakeScenario::Refusal, Core::CoreChatStatus::Completed, std::nullopt, true},
+      {FakeScenario::OutputLimited, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::OutputLimitReached, false},
+      {FakeScenario::Failed, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::ProviderRejected, false},
+      {FakeScenario::Cancelled, Core::CoreChatStatus::Cancelled, std::nullopt,
+       false},
+      {FakeScenario::Unknown, Core::CoreChatStatus::UnknownOutcome, std::nullopt,
+       false},
+      {FakeScenario::InvalidSequence, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::InvalidStream, false},
+      {FakeScenario::UnsupportedCapabilities, Core::CoreChatStatus::Unsupported,
+       std::nullopt, false},
+      {FakeScenario::ToolHandoff, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::InvalidStream, false},
+  };
+
+  bool Passed = true;
+  for (const ScenarioExpectation& Expected : Cases) {
+    Fixture TestFixture(Expected.Scenario);
+    const Core::CoreChatResult Result =
+        TestFixture.RunToolAsync(TestFixture.Inbound());
+    const bool FailureMatches =
+        Expected.Failure.has_value()
+            ? Result.AgentFailure == Expected.Failure
+            : !Result.AgentFailure.has_value();
+    const std::string Label =
+        "V2 terminal scenario #" +
+        std::to_string(static_cast<unsigned>(Expected.Scenario));
+    Passed &= Check(Result.Status == Expected.Status && FailureMatches &&
+                        TestFixture.Channel.GetSendActionCallCount() ==
+                            (Expected.SendsAction ? 1U : 0U),
+                    Label + " maps the terminal and send behavior");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestReadOnlyActionFailureAndUnknownAreNotReplayed() {
+  bool Passed = true;
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Failed,
+                      "ProfileUnavailable"};
+                })).has_value(),
+          "definite failure action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 1U && Requests.size() == 2U &&
+                        std::get<Providers::TextContentPart>(
+                            Requests.back().Messages.back().ContentParts.front())
+                                .Text == "ProfileUnavailable" &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "a definite read-only failure yields a sanitized Core receipt for the next request");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::UnknownOutcome,
+                      "MustNotLeak"};
+                })).has_value(),
+          "read-only unknown test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::InternalError &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "an impossible unknown action status stops without receipt, continuation or replay");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestToolCycleAndCallLimits() {
+  bool Passed = true;
+  {
+    Fixture TestFixture(FakeScenario::ToolHandoffLoop);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ReadOnly"};
+                })).has_value(),
+          "loop-limit test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 4U &&
+                        TestFixture.Provider.DispatchCount.load() == 5U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "the fifth handoff stops after four dispatched cycles");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolHandoffTwoCallsLoop);
+    std::uint32_t HandlerCalls = 0U;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ReadOnly"};
+                })).has_value(),
+          "eight-call turn-bound test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 8U &&
+                        TestFixture.Provider.DispatchCount.load() == 5U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "four handoff cycles dispatch exactly eight calls and reject the fifth cycle before a ninth call or reply");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolCallOverflow);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "call-limit test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U,
+                    "the ninth proposed call is rejected before any handler runs");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestV3PerRequestResourceLimits() {
+  constexpr std::size_t MaximumEvents = 1024U;
+  constexpr std::size_t MaximumDynamicBytes = 256U * 1024U;
+  constexpr std::size_t MaximumTextBytes = 64U * 1024U;
+  constexpr std::size_t MaximumArgumentBytes = 64U * 1024U;
+  constexpr std::size_t ReceiptBoundaryCallIdBytes =
+      (MaximumDynamicBytes - 13U - 13U - 6U) / 4U;
+  static_assert(ReceiptBoundaryCallIdBytes == 65'528U);
+
+  const auto EmitUsage = [](const Providers::CanonicalModelRequest& Request,
+                            const Providers::EventSink& Sink,
+                            std::uint64_t Sequence) {
+    Providers::UsageUpdatedEvent Usage;
+    Usage.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Usage.Usage.InputTokens = 5U;
+    Usage.Usage.OutputTokens = 2U;
+    Usage.Usage.TotalTokens = 7U;
+    Usage.Usage.Completeness = Providers::UsageCompleteness::Final;
+    Sink(Providers::CanonicalNonTerminalEvent{std::move(Usage)});
+  };
+  const auto MakeFinal = [](const Providers::CanonicalModelRequest& Request,
+                            std::uint64_t Sequence)
+      -> Providers::CanonicalTerminalEvent {
+    Providers::ResponseCompletedEvent Final;
+    Final.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Final.Kind = Providers::CompletionKind::FinalAnswer;
+    Providers::UsageSnapshot Usage;
+    Usage.InputTokens = 5U;
+    Usage.OutputTokens = 2U;
+    Usage.TotalTokens = 7U;
+    Usage.Completeness = Providers::UsageCompleteness::Final;
+    Final.FinalUsage = Usage;
+    return Final;
+  };
+  const auto MakeHandoff = [](const Providers::CanonicalModelRequest& Request,
+                              std::uint64_t Sequence)
+      -> Providers::CanonicalTerminalEvent {
+    Providers::ResponseCompletedEvent Handoff;
+    Handoff.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Handoff.Kind = Providers::CompletionKind::ToolHandoff;
+    Providers::UsageSnapshot Usage;
+    Usage.InputTokens = 5U;
+    Usage.OutputTokens = 2U;
+    Usage.TotalTokens = 7U;
+    Usage.Completeness = Providers::UsageCompleteness::Final;
+    Handoff.FinalUsage = Usage;
+    return Handoff;
+  };
+  const auto MakeProviderFailure = [](
+      const Providers::CanonicalModelRequest& Request,
+      std::uint64_t Sequence) -> Providers::CanonicalTerminalEvent {
+    Providers::ResponseFailedEvent Failed;
+    Failed.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Failed.Failure = {Providers::FailureCode::ProviderRejected, false,
+                      "bounded resource test"};
+    return Failed;
+  };
+  const auto EmitText = [](const Providers::CanonicalModelRequest& Request,
+                           const Providers::EventSink& Sink,
+                           std::uint64_t Sequence, std::string Text) {
+    Providers::TextDeltaEvent Delta;
+    Delta.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Delta.Item = Providers::ItemId{"resource-text"};
+    Delta.Utf8Delta = std::move(Text);
+    Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+  };
+  const auto MakeToolCall = [](const Providers::CanonicalModelRequest& Request,
+                               std::uint64_t Sequence, std::string CallId,
+                               std::string JsonText) {
+    Providers::ToolCallReadyEvent Tool;
+    Tool.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Tool.Item = Providers::ItemId{"resource-tool-item"};
+    Tool.Call = Providers::ToolCallId{std::move(CallId)};
+    Tool.ToolName = "LookupProfile";
+    Tool.Arguments = Providers::JsonValue{std::move(JsonText)};
+    return Providers::CanonicalNonTerminalEvent{std::move(Tool)};
+  };
+  const auto MakeSizedToolCall = [](
+      const Providers::CanonicalModelRequest& Request,
+      std::uint64_t Sequence, std::string CallId, std::string ToolName,
+      std::string JsonText) {
+    Providers::ToolCallReadyEvent Tool;
+    Tool.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Tool.Item = Providers::ItemId{"sized-tool-item"};
+    Tool.Call = Providers::ToolCallId{std::move(CallId)};
+    Tool.ToolName = std::move(ToolName);
+    Tool.Arguments = Providers::JsonValue{std::move(JsonText)};
+    return Providers::CanonicalNonTerminalEvent{std::move(Tool)};
+  };
+  const auto EmitRefusal = [](const Providers::CanonicalModelRequest& Request,
+                              const Providers::EventSink& Sink,
+                              std::uint64_t Sequence, std::string Text) {
+    Providers::RefusalDeltaEvent Delta;
+    Delta.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Delta.Item = Providers::ItemId{"resource-refusal"};
+    Delta.Utf8Delta = std::move(Text);
+    Delta.Category = Providers::RefusalCategory::GeneralHarms;
+    Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+  };
+
+  bool Passed = true;
+
+  // The terminal is the 1,024th event and is admitted. The next nonterminal
+  // event after 1,024 admitted events latches the stop before retention.
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumEvents](const Providers::CanonicalModelRequest& Request,
+           std::stop_token, const Providers::EventSink& Sink) {
+          for (std::uint64_t Sequence = 1U; Sequence < MaximumEvents - 1U;
+               ++Sequence) {
+            Providers::ResponseStartedEvent Started;
+            Started.Metadata = {Request.Id, Request.TurnId, Sequence};
+            Sink(Providers::CanonicalNonTerminalEvent{std::move(Started)});
+          }
+          Providers::TextDeltaEvent Delta;
+          Delta.Metadata = {Request.Id, Request.TurnId,
+                            MaximumEvents - 1U};
+          Delta.Item = Providers::ItemId{"event-limit-final"};
+          Delta.Utf8Delta = "ok";
+          Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal, MaximumEvents](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, MaximumEvents);
+        };
+    TestFixture.Provider.BeforeCustomTerminal = [] {};
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "1,023 nonterminal events plus terminal exactly fit the 1,024-event request limit");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeenAtOverflow = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [&StopSeenAtOverflow, EmitText,
+         MaximumEvents](const Providers::CanonicalModelRequest& Request,
+                              std::stop_token Token,
+                              const Providers::EventSink& Sink) {
+          for (std::uint64_t Sequence = 1U; Sequence <= MaximumEvents;
+               ++Sequence) {
+            Providers::ResponseStartedEvent Started;
+            Started.Metadata = {Request.Id, Request.TurnId, Sequence};
+            Sink(Providers::CanonicalNonTerminalEvent{std::move(Started)});
+          }
+          EmitText(Request, Sink, MaximumEvents + 1U, "must be ignored");
+          StopSeenAtOverflow = Token.stop_requested();
+          EmitText(Request, Sink, MaximumEvents + 2U,
+                   "ignored-after-limit");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal, MaximumEvents](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, MaximumEvents + 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeenAtOverflow &&
+                        Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "event 1,025 latches stop, ignores later callbacks, awaits the definitive terminal, and never replies");
+  }
+
+  // Text/refusal/safe-generated text share the exact 64 KiB accumulator cap.
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, MaximumTextBytes](
+            const Providers::CanonicalModelRequest& Request,
+                   std::stop_token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U, std::string(MaximumTextBytes, 't'));
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal](const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, 2U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U &&
+                        TestFixture.Channel.GetSendObservations().front()
+                                .TextPayload.size() == MaximumTextBytes,
+                    "exactly 64 KiB of text is admitted and sent intact");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeenAfterOverflow = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [&StopSeenAfterOverflow, EmitText, MaximumTextBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U,
+                   std::string(MaximumTextBytes + 1U, 'x'));
+          StopSeenAfterOverflow = Token.stop_requested();
+          EmitText(Request, Sink, 2U, "late-payload");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal](const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeenAfterOverflow &&
+                        Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "text over 64 KiB stops the provider, ignores later text, waits for terminal, and exposes no partial answer");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, MaximumTextBytes, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U,
+                   std::string(MaximumTextBytes + 1U, 'x'));
+          StopSeen = Token.stop_requested();
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MaximumDynamicBytes](
+            const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutputLimitedEvent Limited;
+          Limited.Metadata = {Request.Id, Request.TurnId, 2U};
+          Limited.Kind = Providers::LimitKind::OutputTokens;
+          Limited.SafeGeneratedText =
+              std::string(MaximumDynamicBytes + 1U, 's');
+          return Providers::CanonicalTerminalEvent{std::move(Limited)};
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "after a resource latch, a definitive output-limited terminal is awaited and counted without retaining its oversized payload");
+  }
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, EmitRefusal, MaximumTextBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          const std::size_t Half = MaximumTextBytes / 2U;
+          EmitText(Request, Sink, 1U, std::string(Half, 't'));
+          EmitRefusal(Request, Sink, 2U,
+                      std::string(MaximumTextBytes - Half, 'r'));
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 3U);
+        };
+    const auto ExactCombined = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(ExactCombined.Status == Core::CoreChatStatus::Failed &&
+                        ExactCombined.AgentFailure ==
+                            Core::AgentRunFailureCode::ProviderRejected &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "text and refusal deltas together use the inclusive 64 KiB combined-output limit");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, EmitRefusal, MaximumTextBytes, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          const std::size_t Half = MaximumTextBytes / 2U;
+          EmitText(Request, Sink, 1U, std::string(Half, 't'));
+          EmitRefusal(Request, Sink, 2U,
+                      std::string(MaximumTextBytes - Half + 1U, 'r'));
+          StopSeen = Token.stop_requested();
+          EmitText(Request, Sink, 3U, "ignored-after-combined-limit");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 4U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto OverCombined = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && OverCombined.Status == Core::CoreChatStatus::Failed &&
+                        OverCombined.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "text plus refusal byte 65,537 latches stop and waits for a definitive terminal without a partial reply");
+  }
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest&,
+           std::stop_token, const Providers::EventSink&) {};
+    TestFixture.Provider.CustomTerminalScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutputLimitedEvent Limited;
+          Limited.Metadata = {Request.Id, Request.TurnId, 1U};
+          Limited.Kind = Providers::LimitKind::OutputTokens;
+          Limited.SafeGeneratedText = std::string(MaximumTextBytes, 's');
+          return Providers::CanonicalTerminalEvent{std::move(Limited)};
+        };
+    const auto ExactSafeText = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(ExactSafeText.Status == Core::CoreChatStatus::Failed &&
+                        ExactSafeText.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "safe generated text at exactly 64 KiB remains a non-sendable output-limited terminal");
+  }
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest&,
+           std::stop_token, const Providers::EventSink&) {};
+    TestFixture.Provider.CustomTerminalScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutputLimitedEvent Limited;
+          Limited.Metadata = {Request.Id, Request.TurnId, 1U};
+          Limited.Kind = Providers::LimitKind::OutputTokens;
+          Limited.SafeGeneratedText = std::string(MaximumTextBytes + 1U, 's');
+          return Providers::CanonicalTerminalEvent{std::move(Limited)};
+        };
+    const auto OverSafeText = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(OverSafeText.Status == Core::CoreChatStatus::Failed &&
+                        OverSafeText.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "safe generated text over 64 KiB fails closed without a receipt");
+  }
+
+  // The ToolCallReady ID is retained by the accumulator pending set, the
+  // coordinator's duplicate-ID set, and the pending FunctionCall. The tool
+  // name, source JSON, and decoded JSON strings are retained separately.
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumDynamicBytes, MakeSizedToolCall,
+         &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          constexpr std::size_t ToolNameBytes = 15U;
+          constexpr std::size_t SourceJsonBytes = 13U;
+          constexpr std::size_t NestedJsonStringBytes = 6U;
+          constexpr std::size_t FixedBytes =
+              ToolNameBytes + SourceJsonBytes + NestedJsonStringBytes;
+          const std::size_t CallIdBytes =
+              (MaximumDynamicBytes - FixedBytes) / 3U;
+          const std::string ToolCallId(CallIdBytes, 'c');
+          Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                 "LookupProfileXY",
+                                 R"({"query":"p"})"));
+          StopSeen = Token.stop_requested();
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 2U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(!StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::ProviderRejected &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "exactly 262,144 retained bytes across the three ToolCallId copies are admitted");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+        })));
+    TestFixture.Provider.CustomEventScript =
+        [MakeSizedToolCall, EmitUsage, EmitText,
+         ReceiptBoundaryCallIdBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          if (Request.Messages.size() == 1U) {
+            const std::string ToolCallId(ReceiptBoundaryCallIdBytes, 'h');
+            Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                   "LookupProfile", R"({"query":"p"})"));
+            EmitUsage(Request, Sink, 2U);
+          } else {
+            EmitText(Request, Sink, 1U, "done");
+            EmitUsage(Request, Sink, 2U);
+          }
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff, MakeFinal](
+            const Providers::CanonicalModelRequest& Request)
+            -> Providers::CanonicalTerminalEvent {
+          return Request.Messages.size() == 1U ? MakeHandoff(Request, 3U)
+                                              : MakeFinal(Request, 3U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "a successful handoff admits exactly 262,144 retained bytes including the Core receipt ToolCallId copy");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "MustNotRun"};
+        })));
+    TestFixture.Provider.CustomEventScript =
+        [MakeSizedToolCall, EmitUsage, ReceiptBoundaryCallIdBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          const std::string ToolCallId(ReceiptBoundaryCallIdBytes, 'h');
+          Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                 "LookupProfileX", R"({"query":"p"})"));
+          EmitUsage(Request, Sink, 2U);
+        };
+    TestFixture.Provider.CustomTerminalScript = [MakeHandoff](
+        const Providers::CanonicalModelRequest& Request) {
+      return MakeHandoff(Request, 3U);
+    };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "the extra Core receipt ToolCallId copy makes 262,145 bytes, so the handoff is rejected before action dispatch");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumDynamicBytes, MakeSizedToolCall, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          constexpr std::size_t ToolNameBytes = 16U;
+          constexpr std::size_t SourceJsonBytes = 13U;
+          constexpr std::size_t NestedJsonStringBytes = 6U;
+          constexpr std::size_t FixedBytes =
+              ToolNameBytes + SourceJsonBytes + NestedJsonStringBytes;
+          const std::size_t CallIdBytes =
+              (MaximumDynamicBytes - (FixedBytes - 1U)) / 3U;
+          const std::string ToolCallId(CallIdBytes, 'c');
+          Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                 "LookupProfileXYZ",
+                                 R"({"query":"p"})"));
+          StopSeen = Token.stop_requested();
+          Sink(MakeSizedToolCall(Request, 2U, "late-id", "LookupProfile",
+                                 R"({"query":"late"})"));
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "retained ToolCallId copies plus one extra tool-name byte reach 262,145, latch stop, ignore later input, and await terminal");
+  }
+
+  // Complete tool argument bytes use the exact compact canonical JSON length.
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+        })));
+    const auto ExactJson = std::string(R"({"query":")") +
+                           std::string(MaximumArgumentBytes - 12U, 'a') +
+                           R"("})";
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitText, EmitUsage, ExactJson](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          if (Request.Messages.size() == 1U) {
+            Sink(MakeToolCall(Request, 1U, "exact-argument", ExactJson));
+            EmitUsage(Request, Sink, 2U);
+          } else {
+            EmitText(Request, Sink, 1U, "done");
+            EmitUsage(Request, Sink, 2U);
+          }
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff, MakeFinal](
+            const Providers::CanonicalModelRequest& Request)
+            -> Providers::CanonicalTerminalEvent {
+          return Request.Messages.size() == 1U ? MakeHandoff(Request, 3U)
+                                              : MakeFinal(Request, 3U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "64 KiB of compact canonical complete-tool JSON is admitted and dispatched");
+  }
+  {
+    Fixture TestFixture;
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "MustNotRun"};
+        })));
+    const auto OverJson = std::string(R"({"query":")") +
+                          std::string(MaximumArgumentBytes - 11U, 'a') +
+                          R"("})";
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitUsage, OverJson,
+         &StopSeen](const Providers::CanonicalModelRequest& Request,
+                    std::stop_token Token, const Providers::EventSink& Sink) {
+          Sink(MakeToolCall(Request, 1U, "over-argument", OverJson));
+          StopSeen = Token.stop_requested();
+          EmitUsage(Request, Sink, 2U);
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff](const Providers::CanonicalModelRequest& Request) {
+          return MakeHandoff(Request, 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "the 65,537th canonical tool-argument byte stops the provider and prevents every dispatch or receipt");
+  }
+
+  // Eight complete calls are admitted; an incomplete ninth consumes the
+  // ninth pending slot and prevents dispatch of all eight earlier proposals.
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+        })));
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitText, EmitUsage](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          if (Request.Messages.size() == 1U) {
+            for (std::uint64_t Index = 1U; Index <= 8U; ++Index) {
+              Sink(MakeToolCall(Request, Index,
+                                "pending-" + std::to_string(Index),
+                                R"({"query":"p"})"));
+            }
+            EmitUsage(Request, Sink, 9U);
+          } else {
+            EmitText(Request, Sink, 1U, "done");
+            EmitUsage(Request, Sink, 2U);
+          }
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff, MakeFinal](
+            const Providers::CanonicalModelRequest& Request)
+            -> Providers::CanonicalTerminalEvent {
+          return Request.Messages.size() == 1U ? MakeHandoff(Request, 10U)
+                                              : MakeFinal(Request, 3U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 8U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "all eight distinct pending tool calls are admitted and dispatched at the inclusive limit");
+  }
+  {
+    Fixture TestFixture;
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "MustNotRun"};
+        })));
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitUsage, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          for (std::uint64_t Index = 1U; Index <= 8U; ++Index) {
+            Sink(MakeToolCall(Request, Index,
+                              "pending-" + std::to_string(Index),
+                              R"({"query":"p"})"));
+          }
+          Providers::ToolCallStartedEvent Ninth;
+          Ninth.Metadata = {Request.Id, Request.TurnId, 9U};
+          Ninth.Item = Providers::ItemId{"ninth-pending"};
+          Ninth.Call = Providers::ToolCallId{"pending-9"};
+          Ninth.ToolName = "LookupProfile";
+          Sink(Providers::CanonicalNonTerminalEvent{std::move(Ninth)});
+          StopSeen = Token.stop_requested();
+          Sink(MakeToolCall(Request, 10U, "pending-9",
+                            R"({"query":"late"})"));
+          EmitUsage(Request, Sink, 11U);
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff](const Providers::CanonicalModelRequest& Request) {
+          return MakeHandoff(Request, 12U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "an incomplete ninth call latches the pending limit before retention and prevents dispatch, receipt, and continuation");
+  }
+
+  // An uncertain terminal wins over a local text limit and caller cancellation.
+  {
+    Fixture TestFixture;
+    std::stop_source CallerCancellation;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, &StopSeen, &CallerCancellation](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U, std::string(MaximumTextBytes + 1U, 'u'));
+          StopSeen = Token.stop_requested();
+          CallerCancellation.request_stop();
+          EmitText(Request, Sink, 2U, "ignored-unknown-path");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [](const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutcomeUnknownEvent Unknown;
+          Unknown.Metadata = {Request.Id, Request.TurnId, 3U};
+          Unknown.Reason.Code.Value = "uncertain-after-limit";
+          return Providers::CanonicalTerminalEvent{std::move(Unknown)};
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal, CallerCancellation.get_token());
+    Passed &= Check(StopSeen &&
+                        Result.Status == Core::CoreChatStatus::UnknownOutcome &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "an uncertain terminal is counted and returned as UnknownOutcome ahead of a latched limit and caller cancellation");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestRuntimeExceptionAfterProviderMayHaveDispatchedIsUnknown() {
+  Fixture TestFixture;
+  ThrowAfterProviderDispatchRuntime Runtime;
+  Asio::io_context Context;
+  std::optional<Core::CoreChatResult> Result;
+  std::exception_ptr Failure;
+  Core::AsyncAgentToolRuntimePort& ToolRuntime = Runtime;
+  Asio::co_spawn(
+      Context,
+      TestFixture.Service.ProcessAsync(TestFixture.Inbound(), ToolRuntime,
+                                       TestFixture.Provider),
+      [&Result, &Failure](std::exception_ptr Exception,
+                          Core::CoreChatResult Value) {
+        Failure = std::move(Exception);
+        Result = std::move(Value);
+      });
+  Context.run();
+  if (Failure) {
+    std::rethrow_exception(Failure);
+  }
+  return Check(Result.has_value() &&
+                   Result->Status == Core::CoreChatStatus::UnknownOutcome &&
+                   TestFixture.Provider.DispatchCount.load() == 1U &&
+                   TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                   TestFixture.Channel.GetSendActionCallCount() == 0U &&
+                   TestFixture.IdSource.NextSequence.load() == 1U &&
+                   TestFixture.OperationObserver.Snapshot().empty() &&
+                   !EmulativeDialog::Agent::OutputBudgetController::Shared()
+                        .HasActiveTurn(MakeTurnId(TestFixture.Inbound().Envelope)),
+               "a V2 runtime exception after a provider request may have started is UnknownOutcome with no retry, operation receipt, or channel send");
+}
+
+[[nodiscard]] bool TestCancellationDuringReadOnlyAction() {
+  Fixture TestFixture(FakeScenario::ToolRoundTrip);
+  std::stop_source StopSource;
+  std::uint32_t HandlerCalls = 0;
+  const bool ActionRegistered =
+      !TestFixture.BusinessActions.Register(MakeAsyncLookup(
+              [&HandlerCalls, &StopSource](
+                  const Core::BusinessActionInvocation&,
+                  std::stop_token) -> Asio::awaitable<
+                      Core::BusinessActionExecutionResult> {
+                ++HandlerCalls;
+                const auto Executor = co_await Asio::this_coro::executor;
+                Asio::steady_timer Timer(Executor);
+                Timer.expires_after(std::chrono::milliseconds(1));
+                co_await Timer.async_wait(Asio::use_awaitable);
+                StopSource.request_stop();
+                co_return Core::BusinessActionExecutionResult{
+                    Core::BusinessActionExecutionStatus::Succeeded,
+                    "ProfileFound"};
+              })).has_value();
+  const auto Result =
+      TestFixture.RunToolAsync(TestFixture.Inbound(), StopSource.get_token());
+  return Check(ActionRegistered &&
+                   Result.Status == Core::CoreChatStatus::Cancelled &&
+                   HandlerCalls == 1U &&
+                   TestFixture.Provider.DispatchCount.load() == 1U &&
+                   TestFixture.Channel.GetSendActionCallCount() == 0U,
+               "cancellation during a read-only handler creates no receipt, continuation or channel send");
+}
+
+[[nodiscard]] bool TestConcreteAsyncRuntimePreservesLegacyConstructor() {
+  Fixture TestFixture(FakeScenario::Final);
+  Core::CoreChatService LegacyService(
+      TestFixture.Policy, TestFixture.SyncRuntime, TestFixture.SyncProvider,
+      TestFixture.ProviderProfile, TestFixture.ProviderLease,
+      TestFixture.Channel, TestFixture.ChannelLease, TestFixture.IdSource,
+      &TestFixture.OperationObserver);
+
+  Asio::io_context Context;
+  std::optional<Core::CoreChatResult> Result;
+  std::exception_ptr Failure;
+  Asio::co_spawn(
+      Context,
+      LegacyService.ProcessAsync(TestFixture.Inbound(), TestFixture.Runtime,
+                                 TestFixture.Provider),
+      [&Result, &Failure](std::exception_ptr Exception,
+                          Core::CoreChatResult Value) {
+        Failure = std::move(Exception);
+        Result = std::move(Value);
+      });
+  Context.run();
+  if (Failure) {
+    std::rethrow_exception(Failure);
+  }
+  return Check(Result.has_value() &&
+                   Result->Status == Core::CoreChatStatus::Completed &&
+                   TestFixture.Provider.DispatchCount.load() == 1U &&
+                   TestFixture.Channel.GetSendActionCallCount() == 1U,
+               "a concrete AsyncAgentRuntime keeps the V1 path with the original CoreChatService constructor");
+}
+
 bool RunAllTests() {
   bool Passed = true;
+  RunLegacyToolCallRoundTripTests();
   Passed &= TestSuccessfulMockToMockCoroutineSlice();
   Passed &= TestTerminalAndProviderFailureMatrix();
   Passed &= TestCancellationAndInputOrdering();
@@ -1721,6 +3727,19 @@ bool RunAllTests() {
   Passed &= TestDistinctConcurrentMessagesAndIdentifierSafety();
   Passed &= TestChannelAndTerminalValidationFailures();
   Passed &= TestCorePolicyAndReceiptStateCoverage();
+  Passed &= TestBusinessActionSchemaParserEdges();
+  Passed &= TestCanonicalArgumentMeasurement();
+  Passed &= TestBusinessActionAsyncRegistrationEdges();
+  Passed &= TestCoreAuthorizedReadOnlyToolRoundTrip();
+  Passed &= TestReadOnlyToolAuthorizationAndSchemaRejections();
+  Passed &= TestToolHandoffTerminalAndUnknownOutcomeRules();
+  Passed &= TestV2TerminalFailureMatrix();
+  Passed &= TestReadOnlyActionFailureAndUnknownAreNotReplayed();
+  Passed &= TestToolCycleAndCallLimits();
+  Passed &= TestV3PerRequestResourceLimits();
+  Passed &= TestCancellationDuringReadOnlyAction();
+  Passed &= TestRuntimeExceptionAfterProviderMayHaveDispatchedIsUnknown();
+  Passed &= TestConcreteAsyncRuntimePreservesLegacyConstructor();
   return Passed;
 }
 
