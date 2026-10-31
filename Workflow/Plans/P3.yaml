@@ -872,13 +872,14 @@ ParallelGroups:
     OwnerSlotId: Worker05
     OwnerAgentId: /root/luna05_async_runtime_taskroute
     OwnerDecision: APPROVE
-    OwnerDecisionSource: "Owner scope approval communicated by Coordinator; fixed-head review remains pending."
+    OwnerDecisionSource: "Worker05 OwnerReview APPROVE at fixed TaskSpec Head b60dfaeb; ReviewBundle SHA256 C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD."
     IndependentReviewerSlotId: Worker04
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
-    IndependentReviewerDecision: Pending
+    IndependentReviewerDecision: APPROVE
     ReviewerIndependence: Required
-    CoordinatorDecision: Pending
-    Decision: ProposedAwaitingIndependentFixedHeadReview
+    CoordinatorDecision: ACCEPTED
+    Decision: Accepted
+    CoordinatorDecisionAtUtc: NotCaptured
     TaskRevisionTransitions:
       - {TaskId: ED-0144, FromRevision: 4, ToRevision: 5}
     Scope: >-
@@ -903,7 +904,16 @@ ParallelGroups:
     Rollback: >-
       Reject or revert only this unmerged TaskSpec/CR, preserve R4 state and artifacts, and leave product source,
       schema, persisted data, and PR #124 unchanged.
-
+    IndependentReviewerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+    IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker04-FixedHeadReview-PR125-b60dfaeb-20261101.md
+    IndependentReviewerReviewBundleSha256: DDB36130E5F99279F3E3D1D25B91283187401C9B6B7A5094B83EF5DAE765476D
+    CoordinatorDecisionHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+    MergedToMainCommit: 06922df395d318499b053ed71c3a0882c36f389f
+    MergePullRequestNumber: 125
+    MergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
+    MergeMethod: squash
+    AcceptedAt: NotCaptured
+    MergedAt: "2026-10-31T16:41:40Z"
 Tasks:
   - TaskId: ED-0104
     TaskRevision: 3
@@ -2450,7 +2460,7 @@ Tasks:
     EpicId: EP-06
     Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
@@ -2462,7 +2472,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T12:40:15Z"
-    UpdatedAt: "2026-10-31T16:14:56Z"
+    UpdatedAt: "2026-10-31T16:46:46Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2565,9 +2575,34 @@ Tasks:
       ProductWriteAuthorization: None
     ProposedImplementationBranch: Task/ED-0144-MemoryContentUtf8Validation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
-    Branch: ""
-    Worktree: ""
-    AssignmentStatus: ProposedPendingTaskSpecReviewMergeAndAssignmentLedger
+    Branch: Task/ED-0144-MemoryContentUtf8Validation
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
+    AssignmentStatus: AssignedCandidatePendingAssignmentLedgerMerge
+    AssignmentLedgerPullRequestNumber: 126
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/126
+    AssignmentLedgerPullRequestCreationBaseCommit: 06922df395d318499b053ed71c3a0882c36f389f
+    AssignmentLedgerPullRequestCreationHeadCommit: c47137a3872b290d2584e6872130475db668f801
+    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-31T16:53:49Z"
+    AssignmentLedgerCreatedEventId: a6a05fa0-0fb2-41aa-a96c-57f2fb3e26b6
+    TaskSpecReviewCompletedEventId: cd4bb3dc-b5fc-4d2a-9537-280b15f14b47
+    TaskSpecMergedToMainEventId: e0a02d43-c286-4a00-afc5-1204024597fc
+    ChangeRequestAcceptedEventId: 0d8fa8fb-386d-4b05-a078-faf34eb1830f
+    TaskReadinessValidatedEventId: 40b151af-fcdf-49b7-8c7a-4e01f50f98f5
+    AssignmentValidationEventId: 4577c1e0-f070-4d42-ab99-4fa02d938100
+    TaskAssignedEventId: 05fada65-8c4b-437c-b303-e1c2d43f3fb1
+    Worker05SlotRecoveryEventId: ccb4189e-35e8-4cc4-aff8-9dfde056071b
+    Worker05SlotAssignmentEventId: 04767b53-e0e9-4392-a622-e04dcc14fd70
+    AssignmentValidationCommand: "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5-AssignmentLedger/Worktree P3 ED-0144 5 /root/luna05_async_runtime_taskroute Task/ED-0144-MemoryContentUtf8Validation H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree 1816c64488228bfbdb5019d8230b2d415329c2a8"
+    AssignmentValidationExitCode: 0
+    AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Assignment/Controller-ValidateAssignment-ED-0144-R5.txt#SHA256=4D57E8456929F833AF2D240EA930B1EDC1C13F8E9A0727A61D40BC03779D1F73
+    ReadinessQueryExitCode: 0
+    ReadinessQueryReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Assignment/Controller-Query-ED-0144-R5.txt#SHA256=7CE8D5586E4E6710BFF341913B810ACADD087FB88162AD8A363686291715AA95
+    AssignedToSlot: Worker05
+    ImplementationHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
+    ImplementationPullRequestNumber: 124
+    ImplementationPullRequestBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
+    ImplementationPullRequestHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
+    AssignmentNote: "R5 TaskSpec/CR merged by PR #125 at main 06922df. Existing Worker05 implementation branch/worktree remains bound to PR #124 Head d693d05; no product-source writes are authorized. Run only the frozen R5 validation after this assignment ledger merges and Controller validate-assignment succeeds."
     TaskSpecProposalBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
     TaskSpecProposalEventId: 1c86e7e5-b2d3-43ce-9763-758c22edc762
     ChangeRequestProposedEventId: 1d5c8c47-f524-444a-8b63-7d41bcd6354c
@@ -2584,13 +2619,26 @@ Tasks:
     TaskSpecOwnerSlotId: Worker05
     TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
     TaskSpecOwnerDecision: APPROVE
-    TaskSpecOwnerDecisionSource: "Owner scope approval communicated by Coordinator; final TaskSpec Head review pending."
+    TaskSpecOwnerDecisionSource: "Worker05 fixed-head OwnerReview APPROVE at TaskSpec Head b60dfaeb; ReviewBundle SHA256 C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD."
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
     TaskSpecReviewerIndependence: Required
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewStatus: AwaitingIndependentFixedHeadReview
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecCoordinatorDecision: ACCEPTED
+    TaskSpecOwnerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker05/Worker05-OwnerReview-PR125-b60dfaeb-20261101.md
+    TaskSpecOwnerReviewBundleSha256: C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD
+    TaskSpecReviewerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker04-FixedHeadReview-PR125-b60dfaeb-20261101.md
+    TaskSpecReviewerReviewBundleSha256: DDB36130E5F99279F3E3D1D25B91283187401C9B6B7A5094B83EF5DAE765476D
+    TaskSpecCoordinatorDecisionHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+    TaskSpecCoordinatorDecisionAtUtc: NotCaptured
+    TaskSpecMergedToMainCommit: 06922df395d318499b053ed71c3a0882c36f389f
+    TaskSpecMergePullRequestNumber: 125
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
+    TaskSpecMergePullRequestHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+    TaskSpecMergedAt: "2026-10-31T16:41:40Z"
     ProductWriteAuthorization: None
     PreviousRevision4:
       TaskRevision: 4
