@@ -39,7 +39,7 @@ EntryGate:
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
-  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154, ED-0155, ED-0156]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154, ED-0155, ED-0156, ED-0157]
   AllTaskSpecsFrozenBeforeAssignment: true
   ValidationCommandChangeRequestId: CR-ED-0126-001
 
@@ -6686,3 +6686,213 @@ Tasks:
     TaskSpecPullRequestCreatedAtUtc: '2026-10-30T18:24:48Z'
     TaskSpecPullRequestCreatedEventId: 6e71b310-4d5d-498b-b017-5edb8c68a2c3
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+  - TaskId: ED-0157
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 冻结异步 AgentRuntime 流资源上限与超限语义
+    TaskKind: IntegrationTask
+    State: Proposed
+    Phase: P3
+    OwnerRole: AgentRuntimeOwner
+    OwnerSlotId: Worker02
+    OwnerAgentId: /root/luna02_ed0148_pr_ready
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedByAgentId: /root
+    CreatedAt: "2026-10-31T04:28:38Z"
+    UpdatedAt: "2026-10-31T04:41:01Z"
+    ParallelGroup: AsyncAgentRuntimeContractV3
+    ProposedImplementationBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3-Implementation
+    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
+    TaskSpecReviewStatus: PendingFixedHeadReview
+    TaskSpecReviewerDecision: Pending
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
+    PreviousTaskSpecOwnerReview:
+      Decision: APPROVE
+      DecisionAtUtc: "2026-10-31T04:31:39Z"
+      FindingCount: 0
+      BaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+      HeadCommit: 3ded2de2d831fb26a091ef6f81bbb2dec12a42e0
+      ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/DecisionEvidence/Worker02-OwnerReview-3ded2de-20261031.md
+      ReviewBundleSha256: B6A7EA8CE7C02100358C20ED886399359CFAB7D3D845EC1F40F4791C0230F85D
+      Disposition: HistoricalDecisionSupersededByUpdatedFixedHeadReview
+    TaskSpecOwnerDecisionAtUtc: "2026-10-31T04:41:01Z"
+    TaskSpecOwnerReviewBaseCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
+    TaskSpecOwnerReviewHeadCommit: e7aa12a680296682708281485dd7fafb3c47c754
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/DecisionEvidence/Worker02-OwnerReview-e7aa12a-20261031.md
+    TaskSpecOwnerReviewBundleSha256: 74A6C67DC3F13AC230FAC92C5B1972AFA3A8DE21F813FFAD9FEF23E6EAA6C0C9
+    TaskSpecOwnerReviewFindingCount: 0
+    TaskSpecProposalBaseCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
+    TaskSpecProposalBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3
+    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/Worktree
+    TaskSpecProposalHeadCommit: e7aa12a680296682708281485dd7fafb3c47c754
+    TaskSpecProposalEventHeadCommit: 2db692da636c550f38d9fe0094c962b81a51538b
+    TaskSpecCreationEventId: 2a53c573-0cce-4b70-bb0c-8c23fcb688c9
+    BaselineCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
+    HeadCommit: ""
+    Branch: ""
+    Worktree: ""
+    PullRequest: ""
+    Goal: >-
+      在独立版本化的 Architecture/Contracts/AsyncAgentRuntimeContractV3.md 中冻结 AgentRuntime 对每次异步
+      Provider 请求的事件、字符串和待处理工具调用资源上限及超限生命周期。V3 只扩展已冻结的
+      AsyncAgentRuntimeContract V2；不改变 AsyncModelProviderPort V1、CoreAgentContract 或产品 C++ 实现。
+    OutOfScope:
+      - 修改 AsyncModelProviderContract、ModelProviderContract、CoreAgentContract 或 Boost.Asio 依赖合同
+      - 修改任何 C++ 生产源码、测试源码、CMake、Provider adapter、Channel adapter 或任务账本之外的产品文件
+      - 实现真实网络 I/O、协议 wire 限额、持久化、渠道发送或工具副作用
+      - 开始 ED-0150 后续产品实现；本 TaskSpec 与其合同合并均不单独提供产品源码写权限
+    DependsOn: [ED-0149]
+    ContractVersion:
+      - Architecture/Contracts/AsyncAgentRuntimeContract.md V2 (frozen)
+      - Architecture/Contracts/AsyncModelProviderContract.md V1 (frozen; unchanged)
+      - Architecture/Contracts/ModelProviderContract.md V1.2
+      - Architecture/Contracts/CoreAgentContract.md V1.1
+    ModuleIds: [AgentRuntime]
+    Context:
+      ModuleId: AgentRuntime
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Workflow/Plans/P3.yaml#TaskId=ED-0149&TaskRevision=2
+        - Architecture/ModuleMap.yaml#ModuleId=AgentRuntime
+        - Architecture/Modules/HostCoreAgent.yaml#ModuleId=AgentRuntime
+        - Architecture/Contracts/AsyncAgentRuntimeContract.md
+        - Architecture/Contracts/AsyncModelProviderContract.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/CoreAgentContract.md
+      OnDemandSet:
+        - Source/Agent/AsyncAgentRuntime.hpp
+        - Source/Agent/AsyncAgentRuntime.cpp
+        - Source/Agent/AsyncToolCallCoordinator.hpp
+        - Source/Agent/AsyncToolCallCoordinator.cpp
+        - Source/Providers/Contracts/AsyncModelProviderPort.hpp
+        - Source/Providers/Contracts/ModelProviderPort.h
+      ForbiddenSet:
+        - Source/Core/
+        - Source/Channels/
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Tests/
+        - CMakeLists.txt
+        - CMakePresets.json
+      Budget:
+        CoreDocumentsTargetPercent: 10
+        TaskReferencesTargetPercent: 25
+        ImplementationContextReserveMinimumPercent: 50
+        MeasurementMode: EstimateUntilTelemetryExists
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
+    SharedLocks: [AsyncAgentRuntimeContractV3]
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          V3 defines per-provider-request counters before retaining canonical events: at most 1,024 events including
+          each nonterminal sink callback and the one returned terminal; at most 256 KiB of cumulative dynamic-string
+          payload; at most 64 KiB combined accumulated text/refusal and safe generated text bytes; at most 64 KiB cumulative compact
+          canonical JSON bytes for all complete ToolCallReady arguments; and at most 8 distinct pending tool calls,
+          including started/incomplete and ready-but-not-dispatched calls. KiB means 1,024 bytes.
+        Evidence: >-
+          Fixed-head review verifies the exact per-request scope, inclusive event definition, aggregate-versus-per-call
+          limits, overflow-safe counter arithmetic, and reset boundary at each new provider request.
+      - AcceptanceId: AC-2
+        Description: >-
+          V3 defines dynamic-string accounting as UTF-8 payload octets measured by std::string::size(), summing every
+          dynamically sized string field in canonical event metadata and payloads, including identifiers, text/refusal,
+          safe generated text, reason/error codes, tool IDs/names/argument deltas, and recursively nested JSON string
+          keys and values. Complete tool arguments are additionally counted by their compact canonical UTF-8 JSON
+          serialization size; counters use stored byte lengths, not allocator capacity or Unicode normalization, and
+          do not count unrelated provider wire buffers outside AgentRuntime-owned retained state.
+        Evidence: >-
+          Contract examples specify exact byte units and countable fields, state that checks happen before accumulator
+          retention, and identify the single incoming event's already-materialized provider object as transient input
+          outside the retained-state budget; provider wire-parser allocation limits remain a separate adapter concern.
+      - AcceptanceId: AC-3
+        Description: >-
+          Crossing any limit latches one resource-limit stop before the offending payload is retained, requests stop on
+          the runtime-owned stop_source forwarded to StreamTurnAsync, ignores later callbacks without accumulation,
+          and awaits provider completion. No detached coroutine, blocking wait, partial tool dispatch, CoreActionReceipt,
+          next provider request, or continuation is permitted after the limit latch.
+        Evidence: >-
+          The V3 stop/await state sequence is explicit for callback-time overflow and for a limit discovered when the
+          returned terminal is received; borrowed inputs remain alive until the provider awaitable completes.
+      - AcceptanceId: AC-4
+        Description: >-
+          If the provider settles definitively after a local limit latch, AgentRuntime discards the response and maps
+          the request to Failed(OutputLimitReached), releasing per-request accumulation and turn budget state. A
+          provider ResponseOutcomeUnknown or an escaped exception after dispatch may have started maps to
+          UnknownOutcome, which has priority over resource-limit and caller-cancellation flags; unknown work is never
+          retried, replayed, dispatched, or continued.
+        Evidence: >-
+          Contract decision table covers limit-before-terminal, terminal-after-limit, provider-unknown, and
+          post-dispatch exception cases, including the exact precedence and no-replay result.
+      - AcceptanceId: AC-5
+        Description: >-
+          V3 preserves all V2 turn bounds and semantics, including at most four dispatched tool cycles and eight
+          dispatched calls per turn; the new eight-pending-call limit applies to a single provider request and cannot
+          relax the existing per-turn cap. Existing V1 synchronous interfaces and AsyncModelProvider V1 are untouched.
+        Evidence: >-
+          The V3 contract declares itself an additive successor to V2 and explicitly states every retained V2 bound and
+          the non-modification of provider/Core contracts.
+      - AcceptanceId: AC-6
+        Description: >-
+          The implementation task changes exactly AsyncAgentRuntimeContractV3.md and marks V3 frozen only as the
+          reviewed contract result. This registration PR changes only P3 task registration paths and contains no
+          product implementation or assignment authorization. ED-0150 must receive a separate TaskRevision and
+          post-merge AssignmentAccepted before any implementation of these limits.
+        Evidence: >-
+          Exact task Base-to-Head path comparison, fixed-head Worker04 review, TaskSpec state query, and final merged
+          contract status; ED-0150 remains separately gated.
+    Validation:
+      RequiredTargets: []
+      RequiredCTestTests: []
+      TaskBuildDirectory: ""
+      TargetedBuild: []
+      ContractFixtures: []
+      StaticChecks:
+        - "WorkflowController query returns ED-0157/R1 State=Proposed before assignment; it must not report Active or Assigned."
+        - "git diff --check exits 0; the task implementation WriteSet is exactly Architecture/Contracts/AsyncAgentRuntimeContractV3.md and the registration PR changes only P3.yaml plus append-only P3.jsonl."
+        - "Contract source states event, dynamic-string, combined text/refusal, aggregate complete-tool-argument, and pending-call counters with the exact AC-1 limits and byte definitions."
+        - "Contract source specifies stop request, no further retention, provider await completion, no dispatch/continuation, and UnknownOutcome precedence over local limit/cancellation."
+        - "Contract source preserves V2's four-cycle/eight-dispatched-call limits and does not change AsyncModelProvider V1 or any C++ source."
+        - "The proposal PR contains only P3 task registration paths; this task's later product execution may write only its one-path contract WriteSet."
+      Coverage:
+        Required: false
+        ProductionSources: []
+        MinimumLinePercent: 80
+        NotApplicable: true
+        NotApplicableReason: Contract-only task with no production source or executable target.
+        ReportDirectory: ""
+      LiveSideEffects: Forbidden
+      NotRunReason: Contract-only TaskSpec/contract authoring; no product build or live provider call.
+    RiskLevel: Medium
+    RiskOwnerRole: AgentRuntimeOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules:
+      MustFollow: [API-001, SEC-001, PAR-002]
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Checkpoint:
+      LastCompletedAcceptance: "ED-0149/R2 dependency verified Merged by WorkflowController against main@f34f6bc."
+      CurrentFindingOrFailure: "No resource limits exist in AsyncAgentRuntimeContract V2; implementation remains outside this contract-freeze task."
+      TriedApproaches: []
+      NextAction: "After this TaskSpec is reviewed and merged, assign the contract-only task; only after the V3 contract is merged may Coordinator prepare a separate ED-0150 revision for product code."
+      OpenMessageIds: []
+      LastValidationResult: "TaskSpec registration candidate; proposal and contract implementation are not yet merged or authorized."
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/CodexRewrite/P3.jsonl
+      FollowUpTaskIds: [ED-0150]
