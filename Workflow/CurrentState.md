@@ -1,10 +1,11 @@
 # 当前状态
 
-## 2026-10-31 ED-0150/R6 assignment candidate
+## 2026-10-31 ED-0144/R4 Memory C++ implementation
 
-- PR #114 registered the R6 implementation TaskSpec; PR #115 froze AsyncAgentRuntimeContractV3, and ED-0157/R1 is recorded as merged.
-- PR #116 now carries the assignment candidate; Worker02 owns `Task/ED-0150-ResourceBoundedAsyncToolLoop`, based on main@a1b1deeb, with Worker04 as independent reviewer.
-- Product source changes remain gated until the assignment ledger PR merges and the merged-main WorkflowController check returns `AssignmentAccepted`; after that the next action is the R6 C++ tool-loop implementation.
+- PR #122 merged the reviewed ED-0144/R4 TaskSpec to main@1816c64. Worker05 and Worker04 approved the same fixed Base/Head; Worker06's Windows support check passed.
+- ED-0160/R1 is closed as merged: PR #120 added MemoryContract V2 at 30e33b8 and PR #121 recorded its post-merge activation evidence at 38feb8e. Worker05 is released for the successor implementation.
+- This assignment candidate assigns Worker05 to `Task/ED-0144-MemoryContentUtf8Validation` and Worker04 as independent Reviewer. Its implementation baseline is main@1816c64; the product WriteSet remains the four frozen Memory Core/SQLite source and test files.
+- Product C++ edits begin only after the assignment PR merges and the main-worktree WorkflowController check returns `AssignmentAccepted`; the next action is the four-file implementation and Windows coverage run.
 
 
 ## 2026-10-31 ED-0155/R2 CMake 修复派工
