@@ -309,9 +309,7 @@ public:
       const Providers::AgentTurnId& ExpectedTurn) {
     std::lock_guard<std::mutex> Lock(Mutex);
     if (ResourceLimitLatched) {
-      if (std::holds_alternative<
-              Providers::ResponseOutcomeUnknownEvent>(Event) &&
-          FitsRemaining(EventCount, 1U, MaximumCanonicalEvents)) {
+      if (FitsRemaining(EventCount, 1U, MaximumCanonicalEvents)) {
         ++EventCount;
       }
       return StreamAdmission::ResourceLimit;
@@ -363,6 +361,28 @@ public:
     DynamicStringBytes += static_cast<std::uint64_t>(DynamicDelta);
     TextBytes += static_cast<std::uint64_t>(SafeTextDelta);
     return StreamAdmission::Accepted;
+  }
+
+  bool ReserveReceiptToolCallIdCopies(
+      const std::vector<Providers::FunctionCall>& Calls) {
+    std::lock_guard<std::mutex> Lock(Mutex);
+    if (ResourceLimitLatched || Invalid) {
+      return false;
+    }
+    std::size_t DynamicDelta = 0U;
+    for (const Providers::FunctionCall& Call : Calls) {
+      if (!AddDynamicStringBytes(Call.Id.Value, DynamicDelta)) {
+        ResourceLimitLatched = true;
+        return false;
+      }
+    }
+    if (!FitsRemaining(DynamicStringBytes, DynamicDelta,
+                       MaximumDynamicStringBytes)) {
+      ResourceLimitLatched = true;
+      return false;
+    }
+    DynamicStringBytes += static_cast<std::uint64_t>(DynamicDelta);
+    return true;
   }
 
   void MarkInvalid() noexcept {
@@ -950,6 +970,14 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
         co_return AgentRunResult::Failed(
             AgentRunFailureCode::OutputLimitReached);
       }
+      // Core returns one retained ToolCallId in each receipt. Reserve that
+      // representation before dispatch so no successful handler can cross the
+      // dynamic-string limit after it has already run.
+      if (!Accumulator.ReserveReceiptToolCallIdCopies(Calls)) {
+        static_cast<void>(RequestStopSource.request_stop());
+        co_return AgentRunResult::Failed(
+            AgentRunFailureCode::OutputLimitReached);
+      }
       CumulativeOutputTokens += CurrentOutputTokens;
       ++HandoffCycles;
       ProposedCalls += static_cast<std::uint32_t>(Calls.size());
@@ -974,7 +1002,7 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
       std::vector<Providers::CanonicalMessage> ToolResults;
       ToolResults.reserve(Calls.size());
       for (std::size_t Index = 0; Index < Calls.size(); ++Index) {
-        const Core::CoreActionReceipt& Receipt = Receipts[Index];
+        Core::CoreActionReceipt& Receipt = Receipts[Index];
         const Providers::FunctionCall& Call = Calls[Index];
         const bool ValidCode =
             !Receipt.SanitizedCode.empty() &&
@@ -1000,7 +1028,7 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
         }
         Providers::CanonicalMessage ToolResult;
         ToolResult.Role = MessageRole::Tool;
-        ToolResult.ToolCallResultId = Receipt.ToolCall;
+        ToolResult.ToolCallResultId = std::move(Receipt.ToolCall);
         ToolResult.ContentParts.emplace_back(
             TextContentPart{.Text = Receipt.SanitizedCode});
         ToolResults.push_back(std::move(ToolResult));

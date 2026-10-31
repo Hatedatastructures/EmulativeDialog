@@ -2913,6 +2913,9 @@ struct ScenarioExpectation final {
   constexpr std::size_t MaximumDynamicBytes = 256U * 1024U;
   constexpr std::size_t MaximumTextBytes = 64U * 1024U;
   constexpr std::size_t MaximumArgumentBytes = 64U * 1024U;
+  constexpr std::size_t ReceiptBoundaryCallIdBytes =
+      (MaximumDynamicBytes - 13U - 13U - 6U) / 4U;
+  static_assert(ReceiptBoundaryCallIdBytes == 65'528U);
 
   const auto EmitUsage = [](const Providers::CanonicalModelRequest& Request,
                             const Providers::EventSink& Sink,
@@ -3131,6 +3134,40 @@ struct ScenarioExpectation final {
   }
   {
     Fixture TestFixture;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, MaximumTextBytes, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U,
+                   std::string(MaximumTextBytes + 1U, 'x'));
+          StopSeen = Token.stop_requested();
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MaximumDynamicBytes](
+            const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutputLimitedEvent Limited;
+          Limited.Metadata = {Request.Id, Request.TurnId, 2U};
+          Limited.Kind = Providers::LimitKind::OutputTokens;
+          Limited.SafeGeneratedText =
+              std::string(MaximumDynamicBytes + 1U, 's');
+          return Providers::CanonicalTerminalEvent{std::move(Limited)};
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "after a resource latch, a definitive output-limited terminal is awaited and counted without retaining its oversized payload");
+  }
+  {
+    Fixture TestFixture;
     TestFixture.Provider.CustomEventScript =
         [EmitText, EmitRefusal, MaximumTextBytes](
             const Providers::CanonicalModelRequest& Request,
@@ -3260,6 +3297,79 @@ struct ScenarioExpectation final {
                         TestFixture.Provider.DispatchCount.load() == 1U &&
                         TestFixture.Channel.GetSendActionCallCount() == 0U,
                     "exactly 262,144 retained bytes across the three ToolCallId copies are admitted");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+        })));
+    TestFixture.Provider.CustomEventScript =
+        [MakeSizedToolCall, EmitUsage, EmitText,
+         ReceiptBoundaryCallIdBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          if (Request.Messages.size() == 1U) {
+            const std::string ToolCallId(ReceiptBoundaryCallIdBytes, 'h');
+            Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                   "LookupProfile", R"({"query":"p"})"));
+            EmitUsage(Request, Sink, 2U);
+          } else {
+            EmitText(Request, Sink, 1U, "done");
+            EmitUsage(Request, Sink, 2U);
+          }
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff, MakeFinal](
+            const Providers::CanonicalModelRequest& Request)
+            -> Providers::CanonicalTerminalEvent {
+          return Request.Messages.size() == 1U ? MakeHandoff(Request, 3U)
+                                              : MakeFinal(Request, 3U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "a successful handoff admits exactly 262,144 retained bytes including the Core receipt ToolCallId copy");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "MustNotRun"};
+        })));
+    TestFixture.Provider.CustomEventScript =
+        [MakeSizedToolCall, EmitUsage, ReceiptBoundaryCallIdBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          const std::string ToolCallId(ReceiptBoundaryCallIdBytes, 'h');
+          Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                 "LookupProfileX", R"({"query":"p"})"));
+          EmitUsage(Request, Sink, 2U);
+        };
+    TestFixture.Provider.CustomTerminalScript = [MakeHandoff](
+        const Providers::CanonicalModelRequest& Request) {
+      return MakeHandoff(Request, 3U);
+    };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "the extra Core receipt ToolCallId copy makes 262,145 bytes, so the handoff is rejected before action dispatch");
   }
   {
     Fixture TestFixture;
