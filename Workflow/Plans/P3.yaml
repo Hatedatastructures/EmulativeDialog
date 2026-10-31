@@ -4281,13 +4281,44 @@ Tasks:
         Description: >-
           Every changed production source in the frozen WriteSet reaches at least 80 percent unique executable-line coverage.
         Evidence: >-
-          After a successful named CTest, the frozen post-preflight bootstrap verifies and copies the pinned prior coverage template, substitutes only the exact R5 Worktree, Build, and five-source literals once each, writes the generated script only to Execution/CoverageCommand.ps1, and reports its SHA256. A fresh Windows gcov JSON v2 report for each exact modified .cpp source is tied to that CTest and its unique .gcno/.gcda pair, prints covered/total unique executable lines, and fails below 80 percent.
+          FreshBuildPreflight fails closed unless the exact assigned branch is clean and records its full source HEAD before configure. CoverageCommand rechecks the same branch, unchanged HEAD, and clean status against that record before any report/log write; final acceptance verifies the recorded HEAD equals the implementation PR HeadCommit. After a successful named CTest, the pinned post-preflight bootstrap substitutes only the exact R5 Worktree, Build, five-source, source-revision-guard, and Reports/Logs initialization literals once each, writes only Execution/CoverageCommand.ps1, and reports its SHA256. A fresh Windows gcov JSON v2 report for each modified .cpp source is tied to that source HEAD, named CTest, and unique .gcno/.gcda pair, prints covered/total unique executable lines, and fails below 80 percent.
     Validation:
       RequiredTargets: [AsyncRuntimeVerticalSliceTests]
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice
       Configure:
         - 'I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Reports'
-      FreshBuildPreflight: 'Verify TaskBuildDirectory, Dependencies, Reports, and Execution do not exist before configure; do not remove or overwrite an existing path.'
+      FreshBuildPreflight:
+        RunBefore: Configure
+        Invocation: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command -'
+        InputMode: 'Pipe the Script block verbatim to PowerShell standard input; require process exit code 0.'
+        Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree
+        ExpectedBranch: Task/ED-0150-AsyncBusinessActionRoundTrip
+        RequiredAbsent: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5
+        SourceRevisionRecord: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs/FreshBuildPreflight.txt
+        Script: |-
+          $ErrorActionPreference = 'Stop'
+          $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree'
+          $ExpectedBranch = 'Task/ED-0150-AsyncBusinessActionRoundTrip'
+          $TaskRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5'
+          if (Test-Path -LiteralPath $TaskRoot) { throw "Fresh R5 validation root already exists: $TaskRoot" }
+          $Branch = (& git -C $Worktree branch --show-current 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $Branch -ne $ExpectedBranch) { throw "Wrong task branch: $Branch" }
+          $Status = @(& git -C $Worktree status --porcelain --untracked-files=all 2>&1)
+          if ($LASTEXITCODE -ne 0) { throw 'git status failed for the assigned source worktree' }
+          if ($Status.Count -ne 0) { throw "Assigned source worktree is dirty before configure: $($Status -join '; ')" }
+          $SourceHead = (& git -C $Worktree rev-parse HEAD 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $SourceHead -notmatch '^[0-9a-f]{40}$') { throw "Could not capture exact source HEAD: $SourceHead" }
+          $null = New-Item -ItemType Directory -Path $TaskRoot
+          $Logs = Join-Path $TaskRoot 'Logs'
+          $null = New-Item -ItemType Directory -Path $Logs
+          $Evidence = @("SOURCE_BRANCH=$Branch", "SOURCE_HEAD=$SourceHead", 'SOURCE_STATUS_CLEAN=1') -join [Environment]::NewLine
+          $EvidencePath = Join-Path $Logs 'FreshBuildPreflight.txt'
+          [System.IO.File]::WriteAllText($EvidencePath, $Evidence + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+          Write-Output "FRESH_BUILD_PREFLIGHT_OK=1"
+          Write-Output "SOURCE_BRANCH=$Branch"
+          Write-Output "SOURCE_HEAD=$SourceHead"
+          Write-Output "SOURCE_STATUS_CLEAN=1"
+          Write-Output "EVIDENCE=$EvidencePath"
       TargetedBuild:
         - 'I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice --target AsyncRuntimeVerticalSliceTests --parallel 4'
       ContractFixtures:
@@ -4300,7 +4331,7 @@ Tasks:
         - 'Every provider continuation uses a fresh RequestId, the original AgentTurnId, matching tool-result ids, and bounded loop counters.'
         - 'R5 handlers do not mutate persistent/cross-turn state or perform filesystem/database/network/provider/channel I/O; side-effecting actions are deferred to a separate OperationRecord plus ChannelReceipt task.'
         - 'CoreActionReceipt is never converted into a ChannelReceipt or used to mark an OperationRecord successful.'
-        - 'CoverageCommand creates and verifies Reports and Logs before its first report or log write; record the pinned template SHA256 and generated script SHA256.'
+        - 'FreshBuildPreflight verifies the expected branch, requires git status --porcelain --untracked-files=all to be empty, records the exact source HEAD, and runs before configure; CoverageCommand rechecks that branch, clean status, and unchanged HEAD before the first report/log write; final PR HeadCommit equals the recorded source HEAD; CoverageCommand creates and verifies Reports and Logs before writes and records pinned-template/generated-script SHA256.'
         - 'The new V2 async tool entry is additive and existing V1 synchronous and async single-request APIs remain unchanged.'
         - 'git diff --check exits 0; all five changed production .cpp files are included in exact-head coverage reports.'
       Coverage:
@@ -4324,10 +4355,29 @@ Tasks:
           $ActualTemplateHash = (Get-FileHash -LiteralPath $Template -Algorithm SHA256).Hash
           if ($ActualTemplateHash -ne $ExpectedTemplateHash) { throw "Coverage template hash mismatch: $ActualTemplateHash" }
           $Content = [System.IO.File]::ReadAllText($Template)
+          $SourceHeadGuard = @(
+            '$ExpectedHeadFile = ''H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs/FreshBuildPreflight.txt'''
+            '$ExpectedSourceBranch = ''Task/ED-0150-AsyncBusinessActionRoundTrip'''
+            '$PreflightText = [System.IO.File]::ReadAllText($ExpectedHeadFile)'
+            'if ($PreflightText -notmatch ''(?m)^SOURCE_HEAD=([0-9a-f]{40})$'') { throw ''FreshBuildPreflight source HEAD record is missing or malformed'' }'
+            '$ExpectedSourceHead = $Matches[1]'
+            '$ExpectedBranchRecord = [System.Text.RegularExpressions.Regex]::Match($PreflightText, ''(?m)^SOURCE_BRANCH=(.+)$'').Groups[1].Value'
+            'if ($ExpectedBranchRecord -ne $ExpectedSourceBranch -or $PreflightText -notmatch ''(?m)^SOURCE_STATUS_CLEAN=1$'') { throw ''FreshBuildPreflight source branch/clean-state record is invalid'' }'
+            '$CurrentSourceBranch = (& git -C $Worktree branch --show-current 2>&1 | Out-String).Trim()'
+            'if ($LASTEXITCODE -ne 0 -or $CurrentSourceBranch -ne $ExpectedSourceBranch) { throw "Source branch changed after preflight: $CurrentSourceBranch" }'
+            '$CurrentSourceHead = (& git -C $Worktree rev-parse HEAD 2>&1 | Out-String).Trim()'
+            'if ($LASTEXITCODE -ne 0 -or $CurrentSourceHead -ne $ExpectedSourceHead) { throw "Source HEAD differs from FreshBuildPreflight: $CurrentSourceHead" }'
+            '$SourceStatus = @(& git -C $Worktree status --porcelain --untracked-files=all 2>&1)'
+            'if ($LASTEXITCODE -ne 0) { throw ''git status failed at coverage time'' }'
+            'if ($SourceStatus.Count -ne 0) { throw ''Source worktree is dirty at coverage time'' }'
+            'Write-Output ("COVERAGE_SOURCE_HEAD=" + $CurrentSourceHead)'
+          ) -join [System.Environment]::NewLine
+          $GuardedTestName = $SourceHeadGuard + [System.Environment]::NewLine + '$TestName = ''Agent.AsyncRuntimeVerticalSlice'''
           $Replacements = @(
             [PSCustomObject]@{ Old = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'; New = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree' },
             [PSCustomObject]@{ Old = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED0150/F004-Run3/Windows'; New = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice' },
             [PSCustomObject]@{ Old = "`$Sources = @('Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')"; New = "`$Sources = @('Source/Core/IdentityPolicy.cpp', 'Source/Core/BusinessActionRegistry.cpp', 'Source/Agent/AsyncToolCallCoordinator.cpp', 'Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')" },
+            [PSCustomObject]@{ Old = "`$TestName = 'Agent.AsyncRuntimeVerticalSlice'"; New = $GuardedTestName },
             [PSCustomObject]@{ Old = 'if (-not (Test-Path -LiteralPath $Report -PathType Container)) { throw "Missing report directory: $Report" }'; New = 'foreach ($Directory in @($Report, $Logs)) { if (-not (Test-Path -LiteralPath $Directory -PathType Container)) { $null = New-Item -ItemType Directory -Path $Directory }; if (-not (Test-Path -LiteralPath $Directory -PathType Container)) { throw "Missing coverage directory: $Directory" } }' }
           )
           foreach ($Replacement in $Replacements) {
