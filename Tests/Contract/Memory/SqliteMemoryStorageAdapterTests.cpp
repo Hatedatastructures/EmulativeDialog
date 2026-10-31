@@ -911,6 +911,29 @@ void TestInvalidInputsAndNoOp() {
                         MemoryStorageErrorCode::InvalidArgument),
         "SessionScope cannot use durable backup recall");
 
+  MemoryMutationBatch EmbeddedNulContent;
+  EmbeddedNulContent.Scope = ScopeTemplate(Context());
+  StoredMemory TruncatedContent =
+      MakeRecord(EmbeddedNulContent.Scope, "embedded-nul-content");
+  TruncatedContent.Content = "visible-prefix";
+  TruncatedContent.Content.push_back('\0');
+  TruncatedContent.Content += "hidden-suffix";
+  EmbeddedNulContent.Upserts.push_back(std::move(TruncatedContent));
+  Check(HasStorageError(Adapter.ApplyAtomically(EmbeddedNulContent),
+                        MemoryStorageErrorCode::InvalidArgument),
+        "embedded-NUL content is rejected before SQLite persistence");
+  const auto AfterEmbeddedNulRejection =
+      Adapter.ListActive(EmbeddedNulContent.Scope, Now());
+  const auto* PersistedAfterRejection =
+      StorageValue(AfterEmbeddedNulRejection);
+  Check(PersistedAfterRejection != nullptr &&
+            std::none_of(PersistedAfterRejection->begin(),
+                         PersistedAfterRejection->end(),
+                         [](const StoredMemory& Record) {
+                           return Record.MemoryId == "embedded-nul-content";
+                         }),
+        "embedded-NUL content rejection leaves no SQLite record");
+
   MemoryMutationBatch DuplicateUpsert;
   DuplicateUpsert.Scope = ScopeTemplate(Context());
   DuplicateUpsert.Upserts.push_back(
