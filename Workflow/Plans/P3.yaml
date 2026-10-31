@@ -813,17 +813,19 @@ ParallelGroups:
     CoordinatorDecision: Pending
     Decision: Proposed
     Scope: >-
-      Add a new MemoryContract V2 rule for durable MemoryRecord.Content only: require strict valid UTF-8 and reject
-      U+0000/NUL before any durable write or restore. Define stable content rejection codes and prohibit logging or
-      otherwise recording the rejected body. Preserve every other V1 memory, consent, scope, TTL, backup and schema
-      rule. This text contract change must not validate or rewrite opaque identifiers; ProposalId and all other IDs
-      continue to preserve their exact byte sequences, including embedded NUL and non-UTF-8 bytes where already
-      permitted by their contracts.
+      Add a MemoryContract V2 rule for new durable MemoryRecord.Content inputs: require strict valid UTF-8 and reject
+      U+0000/NUL for write, update and restore/import input before persistent side effects. Use the existing
+      MemoryErrorCode::InvalidArgument and MemoryStorageErrorCode::InvalidArgument; add no rejection enum or new
+      legacy-read/recall behavior. Prohibit logging or otherwise recording the rejected body. Preserve every other V1
+      memory, consent, scope, TTL, backup and schema rule. ProposalId and all other opaque IDs keep their exact byte
+      sequences, including embedded NUL and non-UTF-8 bytes where already permitted.
     Reason: >-
-      MemoryContract V1 lists durable Content but does not establish an encoding/NUL rule. The product needs a stable
-      contract boundary before changing ConversationMemory or storage code. ED-0144/R3 remains an unmerged draft
-      consumer; V2 is forward-compatible with its adapter-only scope, so the contract can merge first. PR #105 must
-      then synchronize to the updated mainline and rerun its frozen validation before it can merge.
+      MemoryContract V1 does not define the strict UTF-8/NUL input boundary consistently across Core and storage.
+      The existing InvalidArgument error codes and SqliteStore UTF-8 checks are sufficient; adding new enum values or
+      changing legacy recall behavior would exceed the four-path adapter task. ED-0144/R3 is not a dependency: its
+      R4 implementation must depend on this forward-compatible contract and enforce Content validation in Core and
+      the adapter within its approved four-path scope. PR #105 remains the current R3 draft and is planned to be
+      superseded/closed after the R4 module merges.
     ContractWriteSet: [Architecture/Contracts/MemoryContract.md]
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
     PreserveV1ConsentScopeTtlOpaqueIdentifierAndPhysicalSchemaSemantics: true
@@ -7148,7 +7150,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: /root/luna02_ed0148_pr_ready
     CreatedAt: "2026-10-31T10:46:00Z"
-    UpdatedAt: "2026-10-31T10:51:43Z"
+    UpdatedAt: "2026-10-31T10:57:41Z"
     ParallelGroup: DurableMemory
     TaskSpecProposalBaseCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
     TaskSpecProposalBranch: Task/ED-0160-R1-MemoryContractV2TaskSpec
@@ -7160,9 +7162,10 @@ Tasks:
     Worktree: ""
     PullRequest: ""
     Goal: >-
-      在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结 durable MemoryRecord.Content 的 UTF-8 与
-      U+0000/NUL 拒绝规则、稳定拒绝码和正文不落日志要求。保留现有 V1 scope/consent、ProposalId 字节语义、
-      TTL、backup、physical schema 和所有未修改条款；本 TaskSpec 只注册合同任务，不授权 C++ 源码修改。
+      在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结新 durable MemoryRecord.Content 输入的严格
+      UTF-8 与 U+0000/NUL 拒绝规则，使用已有 InvalidArgument 错误码且拒绝正文不落日志。只覆盖 write/update/
+      restore-import 输入，不增加旧记录读取/迁移行为。保留现有 V1 scope/consent、ProposalId 字节语义、TTL、
+      backup、physical schema 和所有未修改条款；本 TaskSpec 只注册合同任务，不授权 C++ 源码修改。
     OutOfScope:
       - 修改任何 C++ 生产源码、测试源码、CMake、SQLite schema 或已持久化数据
       - 改变 scope、identity、consent、ProposalId 编码、TTL、backup、tombstone 或删除语义
@@ -7171,9 +7174,9 @@ Tasks:
     DependsOn: [ED-0148]
     DependencyRationale: >-
       ED-0148/R6 supplies the merged exact ProposalId consent semantics that V2 must preserve. ED-0144/R3 is not a
-      contract-task dependency: its adapter-only PR remains draft and must synchronize to main after this contract
-      and the separate content-enforcement implementation are merged, then rerun its frozen validation before merge.
-      The later ED-0161/R1 content-enforcement task depends on ED-0160/R1 and must include Core-side input rejection.
+      contract-task dependency: its R4 implementation must depend on ED-0160/R1 and enforce Content validation in
+      Core and the adapter within its approved four-path WriteSet. PR #105 remains the current R3 draft and is planned
+      to be superseded/closed after R4 merges; it is not required to synchronize or merge first.
     ContractVersion:
       - Architecture/Contracts/MemoryContract.md V1 (current frozen baseline)
       - Architecture/Contracts/MemoryContract.md V2 (proposed output of this contract-only task)
@@ -7222,22 +7225,23 @@ Tasks:
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
-          V2 normatively limits the new encoding rule to durable MemoryRecord.Content, including content supplied by
-          MemoryWriteRequest. The payload is a byte sequence that must be strict well-formed UTF-8: reject malformed
-          leading/continuation bytes, truncation, overlong encodings, surrogate encodings and values above U+10FFFF;
-          reject U+0000/NUL byte 0x00. Do not normalize or silently rewrite accepted bytes, and do not broaden this
-          rule to unrelated identifiers.
+          V2 normatively applies to new durable MemoryRecord.Content supplied by MemoryWriteRequest for write, update
+          and restore/import inputs only. Require strict well-formed UTF-8: reject malformed leading/continuation
+          bytes, truncation, overlong encodings, surrogate encodings and values above U+10FFFF; reject U+0000/NUL
+          byte 0x00. Do not normalize or silently rewrite accepted bytes. Do not add legacy-row read/recall behavior or
+          broaden this rule to unrelated identifiers.
         Evidence: >-
           Fixed-head contract review maps every named validation condition to V2 prose and confirms the rule applies
           only at durable Content boundaries.
       - AcceptanceId: AC-2
         Description: >-
-          V2 defines stable machine-readable rejection codes MemoryContentContainsNul and MemoryContentInvalidUtf8,
-          with NUL taking precedence if both conditions are present. Every durable write/update/restore/import path
-          validates before persistent side effects; invalid legacy persisted Content fails closed on recall/restore.
+          Core reports the existing MemoryErrorCode::InvalidArgument and the adapter reports the existing
+          MemoryStorageErrorCode::InvalidArgument for invalid Content inputs. Validate write/update/restore/import
+          input before persistent side effects. Add no new error enum, no legacy-row migration, and no changed
+          Recall/RecallBackup behavior for pre-existing V1 records.
         Evidence: >-
-          Contract review checks exact code spelling, precedence, pre-write/restore ordering, and fail-closed handling
-          of invalid stored bytes without adding a physical schema change or migration.
+          Fixed-head review checks the existing error enum values, input validation ordering, absence of new enum
+          values and unchanged legacy recall behavior; no physical schema change or data migration is authorized.
       - AcceptanceId: AC-3
         Description: >-
           Rejection diagnostics may identify only the stable rejection code and safe non-content record/operation IDs.
@@ -7249,19 +7253,20 @@ Tasks:
       - AcceptanceId: AC-4
         Description: >-
           The rule does not alter any opaque identifier bytes: ProposalId, MemoryId, ScopeKey and other identifiers
-          retain their existing exact byte semantics, including embedded NUL and non-UTF-8 ProposalId bytes where
-          already permitted. All V1 consent, scope, TTL, backup and tombstone semantics remain unchanged; the SQLite
-          physical schema and existing persisted rows are not rewritten or deleted by this contract task.
+          retain their existing exact byte semantics, including embedded NUL and non-UTF-8 bytes where already
+          permitted. All V1 consent, scope, TTL, backup and tombstone semantics remain unchanged. Existing persisted
+          rows are not rewritten or deleted by this contract task.
         Evidence: >-
           Fixed-head review compares V2 scope with the existing ED-0144/R2 ProposalId encoding and verifies no
-          migration, schema change, broad ID validation, or unrelated V1 behavior change is authorized.
+          migration, schema change, new error enum, legacy-read behavior, broad ID validation, or unrelated V1 change.
       - AcceptanceId: AC-5
         Description: >-
           The contract task's implementation WriteSet is exactly Architecture/Contracts/MemoryContract.md. Its
           registration PR WriteSet is separately exactly P3.yaml plus append-only P3.jsonl; that registration does not
-          authorize product code or tests. A later ED-0161/R1 content-enforcement task must depend on ED-0160/R1,
-          include Core-side input rejection, define its own product WriteSet and pass post-merge assignment validation.
-          The ED-0144/R3 PR #105 must synchronize to the resulting mainline and rerun its frozen validation before merge.
+          authorize product code or tests. ED-0144/R4 must depend on ED-0160/R1 and enforce Core/adapter input
+          validation within its approved four-path WriteSet under a separate assignment. Existing ED-0144/R3 PR #105
+          remains a draft and will be superseded/closed after the R4 module merges; it does not need to merge or
+          synchronize first.
         Evidence: >-
           Fixed-head path audit, Controller Proposed query, and lifecycle review verify the two write sets remain
           separate and no implementation authorization is inferred from the TaskSpec PR.
@@ -7275,8 +7280,8 @@ Tasks:
         - "WorkflowController query P3 ED-0160 1 returns Proposed while the registration PR is pending; no assignment event is implied."
         - "git diff --check exits 0 and the registration PR changes exactly Workflow/Plans/P3.yaml and append-only Workflow/Events/CodexRewrite/P3.jsonl."
         - "The future contract task's implementation diff contains exactly Architecture/Contracts/MemoryContract.md."
-        - "Contract text defines strict UTF-8, U+0000/NUL rejection, exact stable rejection codes, and body-free diagnostics."
-        - "Contract text explicitly preserves embedded-NUL/non-UTF-8 opaque identifiers, ProposalId semantics, V1 consent/TTL/backup rules, and physical SQLite schema."
+        - "Contract text defines strict UTF-8 and U+0000/NUL rejection only for new Content write/update/restore/import inputs, uses existing InvalidArgument error enums, and keeps rejected bodies out of diagnostics."
+        - "Contract text explicitly preserves embedded-NUL/non-UTF-8 opaque identifiers and ProposalId semantics, leaves legacy recall behavior unchanged, and preserves V1 consent/TTL/backup rules and physical SQLite schema."
         - "TaskSpec stays Proposed until fixed-head reviews, merge, dependency completion and a separate assignment ledger; no product source write is authorized here."
       Coverage:
         Required: false
@@ -7296,19 +7301,19 @@ Tasks:
       SoftDefaults: []
       ApprovedOverrides: []
     Checkpoint:
-      LastCompletedAcceptance: "ED-0148/R6 is merged with exact ProposalId consent semantics; ED-0144/R3 remains an unmerged adapter-only draft."
-      CurrentFindingOrFailure: "MemoryContract V1 does not define strict UTF-8 or NUL policy for durable Content; no product fix is authorized by this proposal."
+      LastCompletedAcceptance: "ED-0148/R6 is merged with exact ProposalId consent semantics; ED-0144/R3/PR #105 remains an unmerged draft, with R4 as its planned contract-dependent implementation successor."
+      CurrentFindingOrFailure: "MemoryContract V1 does not define a shared strict UTF-8/NUL input rule; no product fix is authorized by this proposal."
       TriedApproaches: []
       NextAction: >-
-        Complete independent fixed-head review and merge this one-file contract task. Then register and assign a
-        separate ED-0161/R1 ConversationMemory content-enforcement task depending on ED-0160/R1 and implementing
-        Core-side input rejection with its own exact source/test WriteSet. Before PR #105 merges, synchronize ED-0144/R3
-        to main after the contract and required enforcement changes, then rerun its frozen validation.
+        Complete independent fixed-head review and merge this one-file contract task. Then revise ED-0144 to R4 with
+        a dependency on ED-0160/R1, preserving its approved four-path WriteSet and adding Core plus adapter input
+        validation tests and its own fixed-head/assignment gates. After that R4 module merges, close PR #105 as
+        superseded; no sync or merge of R3 is required.
       OpenMessageIds: []
       LastValidationResult: "TaskSpec proposal only; no contract file or product source has been changed."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
       EventShard: Workflow/Events/CodexRewrite/P3.jsonl
-      FollowUpTaskIds: []
+      FollowUpTaskIds: [ED-0144]
       NotRunReason: "This task only freezes a data-contract rule; the later C++ enforcement task has not been registered or assigned."
