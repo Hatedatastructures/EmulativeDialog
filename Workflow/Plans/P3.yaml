@@ -6709,6 +6709,11 @@ Tasks:
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
     TaskSpecReviewStatus: PendingFixedHeadReview
     TaskSpecReviewerDecision: Pending
+    TaskSpecProposalBaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+    TaskSpecProposalBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3
+    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/Worktree
+    TaskSpecProposalHeadCommit: 2db692da636c550f38d9fe0094c962b81a51538b
+    TaskSpecCreationEventId: 2a53c573-0cce-4b70-bb0c-8c23fcb688c9
     BaselineCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
     HeadCommit: ""
     Branch: ""
@@ -6776,7 +6781,7 @@ Tasks:
         Description: >-
           V3 defines per-provider-request counters before retaining canonical events: at most 1,024 events including
           each nonterminal sink callback and the one returned terminal; at most 256 KiB of cumulative dynamic-string
-          payload; at most 64 KiB combined accumulated text and refusal bytes; at most 64 KiB cumulative compact
+          payload; at most 64 KiB combined accumulated text/refusal and safe generated text bytes; at most 64 KiB cumulative compact
           canonical JSON bytes for all complete ToolCallReady arguments; and at most 8 distinct pending tool calls,
           including started/incomplete and ready-but-not-dispatched calls. KiB means 1,024 bytes.
         Evidence: >-
@@ -6786,9 +6791,10 @@ Tasks:
         Description: >-
           V3 defines dynamic-string accounting as UTF-8 payload octets measured by std::string::size(), summing every
           dynamically sized string field in canonical event metadata and payloads, including identifiers, text/refusal,
-          tool IDs/names/argument deltas, and recursively nested JSON string keys and values. Complete tool arguments
-          are additionally counted by their compact canonical UTF-8 JSON serialization size; counters do not use
-          allocator capacity or double-count wire buffers outside AgentRuntime-owned retained state.
+          safe generated text, reason/error codes, tool IDs/names/argument deltas, and recursively nested JSON string
+          keys and values. Complete tool arguments are additionally counted by their compact canonical UTF-8 JSON
+          serialization size; counters use stored byte lengths, not allocator capacity or Unicode normalization, and
+          do not count unrelated provider wire buffers outside AgentRuntime-owned retained state.
         Evidence: >-
           Contract examples specify exact byte units and countable fields, state that checks happen before accumulator
           retention, and identify the single incoming event's already-materialized provider object as transient input
@@ -6822,9 +6828,10 @@ Tasks:
           the non-modification of provider/Core contracts.
       - AcceptanceId: AC-6
         Description: >-
-          The task changes exactly AsyncAgentRuntimeContractV3.md and marks V3 frozen only as the reviewed contract
-          result; it contains no product implementation or assignment authorization. ED-0150 must receive a separate
-          TaskRevision and post-merge AssignmentAccepted before any implementation of these limits.
+          The implementation task changes exactly AsyncAgentRuntimeContractV3.md and marks V3 frozen only as the
+          reviewed contract result. This registration PR changes only P3 task registration paths and contains no
+          product implementation or assignment authorization. ED-0150 must receive a separate TaskRevision and
+          post-merge AssignmentAccepted before any implementation of these limits.
         Evidence: >-
           Exact task Base-to-Head path comparison, fixed-head Worker04 review, TaskSpec state query, and final merged
           contract status; ED-0150 remains separately gated.
@@ -6836,7 +6843,7 @@ Tasks:
       ContractFixtures: []
       StaticChecks:
         - "WorkflowController query returns ED-0157/R1 State=Proposed before assignment; it must not report Active or Assigned."
-        - "git diff --check exits 0 and the task implementation WriteSet is exactly Architecture/Contracts/AsyncAgentRuntimeContractV3.md."
+        - "git diff --check exits 0; the task implementation WriteSet is exactly Architecture/Contracts/AsyncAgentRuntimeContractV3.md and the registration PR changes only P3.yaml plus append-only P3.jsonl."
         - "Contract source states event, dynamic-string, combined text/refusal, aggregate complete-tool-argument, and pending-call counters with the exact AC-1 limits and byte definitions."
         - "Contract source specifies stop request, no further retention, provider await completion, no dispatch/continuation, and UnknownOutcome precedence over local limit/cancellation."
         - "Contract source preserves V2's four-cycle/eight-dispatched-call limits and does not change AsyncModelProvider V1 or any C++ source."
