@@ -5558,10 +5558,16 @@ Tasks:
     Worker01SlotRecoveryEventId: c94bb281-5469-4c93-b91c-79abe110a071
     Worker01SlotAssignmentEventId: 78ef150e-c2bd-4cb5-ae91-224f7150a306
     AssignedToSlot: Worker01
+    AssignmentLedgerPullRequestNumber: 107
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/107
+    AssignmentLedgerBaseCommit: b6730ffdfe90a87bcd64fb792c0239128a1402df
+    AssignmentLedgerHeadAtCreation: fd15023fda202af2c7ddc2d97bba44138c9f5b63
+    AssignmentLedgerCreatedEventId: 1c17f020-572b-4ef1-b493-0ae167b8a652
     PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2-AssignmentLedger/Logs/PreMerge-ValidateAssignment.log#SHA256=896EFEA5878326191CFB2651FFA3DC84BCF58BC22A060C19EAAB0A23B734079D
     AssignmentNote: >-
-      Candidate assignment recorded after PR #106 merged. Product source and build outputs remain unauthorized until
-      this ledger PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted.
+      Candidate assignment recorded after PR #106 merged. Assignment ledger PR #107 is open from base b6730ff;
+      product source and build outputs remain unauthorized until it merges and post-merge WorkflowController
+      validate-assignment returns AssignmentAccepted.
     Goal: >-
       Preserve the R1 Boost.Asio compile-usage and verification-order edges on CoreChatServiceObject, and add one
       shared BusinessActionRegistryObject target so every AgentRuntime test executable consuming CoreChatServiceObject

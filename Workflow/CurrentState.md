@@ -4,7 +4,7 @@
 
 - PR #106 已 squash 合并到 main@b6730ffdfe90a87bcd64fb792c0239128a1402df；其 WindowsAgentSlice 必需检查通过。
 - ED-0156/R1 的 Boost.WinAPI 变更已由 main 中 commit 19ddbfd161b4db76614fd625203c68cfcc86360 满足，不再重复提交；Worker01 转派 ED-0155/R2。
-- 当前 assignment PR 只记录任务与工作槽状态。产品写集仍严格限定为 Tests/Contract/Agent/CMakeLists.txt；Worker01 必须等 ledger 合并且 post-merge WorkflowController 返回 AssignmentAccepted 后才能修改该文件。
+- assignment ledger PR #107 已从 b6730ffd 创建，当前首个 Head 为 fd15023f；PR 只记录任务与工作槽状态。产品写集仍严格限定为 Tests/Contract/Agent/CMakeLists.txt；Worker01 必须等 ledger 合并且 post-merge WorkflowController 返回 AssignmentAccepted 后才能修改该文件。
 
 ## 2026-10-31 ED-0144/R3 实施激活候选
 
