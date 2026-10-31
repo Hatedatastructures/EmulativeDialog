@@ -5528,7 +5528,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: "/root/luna02_ed0148_pr_ready"
     CreatedAt: "2026-10-31T02:18:54Z"
-    UpdatedAt: "2026-10-31T02:43:41Z"
+    UpdatedAt: "2026-10-31T02:51:29Z"
     ParallelGroup: AgentRuntimeTestBuildIntegration
     TaskSpecProposalBaseCommit: 60916cd436b6f92257855c1258e0bcff0659bc56
     ProposedTaskSpecBranch: Task/ED-0155-R2TaskSpec
@@ -5631,6 +5631,10 @@ Tasks:
       OwnerDecisionSlotId: Worker01
       OwnerDecisionAgentId: "/root/luna01_ed0112_r8_audit"
       OwnerDecisionScope: "Approve only the ED-0155/R2 one-path target-graph ChangeRequest; this is not implementation authorization."
+      OwnerDecisionBaseCommit: 60916cd436b6f92257855c1258e0bcff0659bc56
+      OwnerDecisionHeadCommit: a2e0f3e215ce3359a9454272894a8075938d5b10
+      OwnerDecisionEvidencePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2-TaskSpec/DecisionEvidence/CR-ED-0155-002-Decisions-a2e0f3e.md
+      OwnerDecisionEvidenceSha256: D3B47D1411D5F4EF1B6ACCDC5E76C39F0959DC01FB8813FBA0355A99E01021D1
       IndependentReviewerDecision: PendingFixedHeadReview
       IndependentReviewerSlotId: Worker04
       IndependentReviewerAgentId: "/root/luna04_ed0144_branch_review"
@@ -5661,6 +5665,16 @@ Tasks:
       CoordinatorDecision: ACCEPTED
       CoordinatorDecisionAgentId: "/root"
       CoordinatorDecisionScope: "Accept CR-ED-0155-002 only; keep TaskRevision 2 Proposed pending fixed-head TaskSpec review and a separate assignment."
+      CoordinatorDecisionBaseCommit: 60916cd436b6f92257855c1258e0bcff0659bc56
+      CoordinatorDecisionHeadCommit: a2e0f3e215ce3359a9454272894a8075938d5b10
+      CoordinatorDecisionEvidencePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2-TaskSpec/DecisionEvidence/CR-ED-0155-002-Decisions-a2e0f3e.md
+      CoordinatorDecisionEvidenceSha256: D3B47D1411D5F4EF1B6ACCDC5E76C39F0959DC01FB8813FBA0355A99E01021D1
+      TechnicalReviewEvidenceRefs:
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-CMakeDiagnostic/Logs/DiagnosticInputs-Head9ac7.txt
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-CMakeDiagnostic/Logs/RootConfigure-Head9ac7.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-CMakeDiagnostic/Logs/PresetBuild-Head9ac7.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-CMakeDiagnostic/Logs/AffectedTargetsBuild-Head9ac7.log
+        - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-CMakeDiagnostic/Logs/AffectedCTest-Head9ac7.log
     TaskSpecCoordinatorDecision: Pending
     TaskSpecCoordinatorDecisionAgentId: "/root"
     TaskSpecCoordinatorDecisionRequired: true
