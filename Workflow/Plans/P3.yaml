@@ -5516,7 +5516,7 @@ Tasks:
     EpicId: EP-06
     Title: 将异步业务动作实现对象接入 CoreChatService 测试目标
     TaskKind: Build
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: BuildAndWorkflowOwner
     OwnerSlotId: Worker01
@@ -5528,7 +5528,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: "/root/luna02_ed0148_pr_ready"
     CreatedAt: "2026-10-31T03:39:16Z"
-    UpdatedAt: "2026-10-31T03:39:16Z"
+    UpdatedAt: "2026-10-31T04:15:04Z"
     ParallelGroup: AgentRuntimeTestBuildIntegration
     TaskSpecProposalBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
     ProposedTaskSpecBranch: Task/ED-0155-R3IntegrationHeadTaskSpec
@@ -5536,14 +5536,36 @@ Tasks:
     ProposedImplementationBranch: Task/ED-0155-R3BusinessActionRegistryLink
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree
     ProposedBaselineCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
+    BaselineCommit: 74ba2bcc55aaee36a400bbfc99df5f8962124c9e
+    Branch: Task/ED-0155-R3BusinessActionRegistryLink
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree
+    TaskSpecHeadCommit: b52c5d37d1309201e65f69dfb1d9fd7ed922e18c
+    TaskSpecPullRequestNumber: 108
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/108
+    TaskSpecMergedToMainCommit: 74ba2bcc55aaee36a400bbfc99df5f8962124c9e
+    TaskSpecMergePullRequestNumber: 108
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/108
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainEventId: 11ac60de-855e-4f62-a8c4-decaebf969cd
+    TaskReadinessValidatedEventId: 060f8444-1b00-45e6-be60-dc426e50a874
+    AssignmentValidationEventId: f618a1fe-a9a1-406f-bbac-0a52ff9a0973
+    TaskAssignedEventId: 53d28a1b-8b14-4f20-819a-2f3172519774
+    Worker01SlotRecoveryEventId: 2768c618-1f16-47ff-9eaf-ca3c7ddb7e84
+    Worker01SlotAssignmentEventId: c69bffd5-1f83-4b78-8d57-634d7dd23574
+    AssignedToSlot: Worker01
+    AssignmentLedgerBaseCommit: 74ba2bcc55aaee36a400bbfc99df5f8962124c9e
+    AssignmentLedgerHeadAtCreation: 3389e1d32e15df93465d96f7e7f40138bd86228f
+    AssignmentLedgerPullRequestNumber: 109
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/109
+    AssignmentLedgerCreatedEventId: 8a76020f-f27c-42a1-b750-c608500ae590
+    PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3-AssignmentLedger/Logs/PreMerge-ValidateAssignment.log#SHA256=6146F65A792C9A1CACF4FDAAB888AFFD17FF8CFB072D4DE226F19739BE592F69
     TaskSpecStatusNote: >-
-      CR-ED-0155-003 was approved by Owner Worker01 and independent Reviewer Worker04 and accepted by the Coordinator.
-      The decision evidence and both review bundles are recorded in the ChangeRequest fields. R3 changes only the fixed
-      PR #104 integration reproduction input to head 9ac7cfcd7256dc494b203e5edad7066e0b8d3a0a and its matching AC-5
-      and detached-checkout reference. The d3d3375 proposal-time head and its unrelated aggregate-initializer failure
-      remain historical evidence. ED-0155/R3 remains Proposed pending fixed-head TaskSpec review and PR merge; a new
-      assignment and post-merge Controller AssignmentAccepted are required before R3 source writes. Goal, sole ED-0131
-      task-state dependency, Worker01 owner, Worker06 implementation reviewer, and one-path CMake WriteSet are retained.
+      PR #108 merged the approved R3 TaskSpec to main at 74ba2bcc55aaee36a400bbfc99df5f8962124c9e after Worker01 Owner
+      APPROVE and Worker04 fixed-head APPROVE on Base ba5a3c2ad325224daa2a586844142cf74f54c463 / Head
+      b52c5d37d1309201e65f69dfb1d9fd7ed922e18c. R3 changes only the fixed PR #104 integration input and fresh R3
+      validation paths. A separate R3 assignment ledger and post-merge Controller AssignmentAccepted are required
+      before product source writes. Goal, ED-0131 dependency, Worker01 owner, Worker06 implementation reviewer, and the
+      one-path CMake WriteSet remain unchanged.
     Goal: >-
       Preserve the R1 Boost.Asio compile-usage and verification-order edges on CoreChatServiceObject, and add one
       shared BusinessActionRegistryObject target so every AgentRuntime test executable consuming CoreChatServiceObject
@@ -5615,15 +5637,25 @@ Tasks:
       - The exact R1 Boost.Asio link and verification-order edges remain unchanged.
       - No production or test source, root build, protocol, or runtime behavior changes are needed.
     SharedLocks: []
-    OwnerDecision: Pending
-    IndependentReviewerDecision: PendingFixedHeadReview
+    OwnerDecision: APPROVE
+    IndependentReviewerDecision: APPROVE
     TaskSpecOwnerSlotId: Worker01
     TaskSpecOwnerAgentId: "/root/luna01_ed0112_r8_audit"
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: "/root/luna04_ed0144_branch_review"
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: PendingFixedHeadReview
-    TaskSpecReviewStatus: ProposedAwaitingFixedHeadReview
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecisionAgentId: "/root/luna01_ed0112_r8_audit"
+    TaskSpecOwnerDecisionBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
+    TaskSpecOwnerDecisionHeadCommit: b52c5d37d1309201e65f69dfb1d9fd7ed922e18c
+    TaskSpecOwnerDecisionEvidencePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0155-R3-TaskSpec/Worker01-TaskSpecOwnerDecision-PR108-b52c5d37.md
+    TaskSpecOwnerDecisionEvidenceSha256: 0FC054935AB0E0A0602A3EA2060F8CE04D91BA9B469D5446A9E2A458A1E187FA
+    TaskSpecReviewerDecisionAgentId: "/root/luna04_ed0144_branch_review"
+    TaskSpecReviewerDecisionBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
+    TaskSpecReviewerDecisionHeadCommit: b52c5d37d1309201e65f69dfb1d9fd7ed922e18c
+    TaskSpecReviewerDecisionReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0155-R3-TaskSpec/Worker04-FixedHeadReview-PR108-b52c5d3-20261031.md
+    TaskSpecReviewerDecisionReviewBundleSha256: 3C081631F7D82A572964D92FDB2B95071C59A56C122E46F9B44F0B0021B8D8C7
     ChangeRequest:
       ChangeRequestId: CR-ED-0155-003
       TargetTaskRevision: 2
@@ -5817,7 +5849,7 @@ Tasks:
       LastCompletedAcceptance: "R1 is merged and verified; its historical review/build evidence is preserved under PreviousRevision1."
       CurrentFindingOrFailure: "The historical d3d3375 full integration build stops at AgentRuntimeContractTests.cpp:104 on the unrelated missing GrantedCapabilities initializer; R3 pins the isolated reproduction to PR #104 head 9ac7cfcd, whose compatibility fix permits the CMake overlay acceptance to run."
       TriedApproaches: []
-      NextAction: "Obtain Worker04 fixed-head review for the R3 TaskSpec, merge it, then create a new R3 assignment and require post-merge Controller AssignmentAccepted before any R3 source write or final validation."
+      NextAction: "Merge the R3 assignment ledger, require post-merge Controller AssignmentAccepted, then implement the one-path CMake link repair and run the fresh R3 Windows validation."
       OpenMessageIds: []
       LastValidationResult: "CR-ED-0155-003 evidence records R2 implementation target/full-preset build exit 0, current PR #104 head 9ac7cfcd integration configure/build exit 0, and affected CTests 4/4. The d3d3375 complete target build exit 2 is preserved as an unrelated historical compatibility failure. R3 still requires its frozen fresh-directory acceptance run after assignment."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
