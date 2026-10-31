@@ -39,7 +39,7 @@ EntryGate:
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
-  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154, ED-0155, ED-0156]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154, ED-0155, ED-0156, ED-0157]
   AllTaskSpecsFrozenBeforeAssignment: true
   ValidationCommandChangeRequestId: CR-ED-0126-001
 
@@ -6701,28 +6701,38 @@ Tasks:
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
-    CreatedBy: AgentRuntimeOwner
-    CreatedAt: "2026-10-31"
-    UpdatedAt: "2026-10-31"
+    CreatedBy: Coordinator
+    CreatedByAgentId: /root
+    CreatedAt: "2026-10-31T04:28:38Z"
+    UpdatedAt: "2026-10-31T04:40:03Z"
     ParallelGroup: AsyncAgentRuntimeContractV3
     ProposedImplementationBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3-Implementation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
     TaskSpecReviewStatus: PendingFixedHeadReview
     TaskSpecReviewerDecision: Pending
-    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerDecision: Pending
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
-    TaskSpecOwnerDecisionAtUtc: "2026-10-31T04:31:39Z"
+    PreviousTaskSpecOwnerReview:
+      Decision: APPROVE
+      DecisionAtUtc: "2026-10-31T04:31:39Z"
+      FindingCount: 0
+      BaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+      HeadCommit: 3ded2de2d831fb26a091ef6f81bbb2dec12a42e0
+      ReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/DecisionEvidence/Worker02-OwnerReview-3ded2de-20261031.md
+      ReviewBundleSha256: B6A7EA8CE7C02100358C20ED886399359CFAB7D3D845EC1F40F4791C0230F85D
+      Disposition: HistoricalDecisionSupersededByUpdatedFixedHeadReview
+    TaskSpecOwnerReviewBaseCommit: ""
+    TaskSpecOwnerReviewHeadCommit: ""
+    TaskSpecOwnerReviewBundle: ""
+    TaskSpecOwnerReviewBundleSha256: ""
     TaskSpecOwnerReviewFindingCount: 0
-    TaskSpecOwnerReviewBaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
-    TaskSpecOwnerReviewHeadCommit: 3ded2de2d831fb26a091ef6f81bbb2dec12a42e0
-    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/DecisionEvidence/Worker02-OwnerReview-3ded2de-20261031.md
-    TaskSpecOwnerReviewBundleSha256: B6A7EA8CE7C02100358C20ED886399359CFAB7D3D845EC1F40F4791C0230F85D
-    TaskSpecProposalBaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+    TaskSpecProposalBaseCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
     TaskSpecProposalBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/Worktree
-    TaskSpecProposalHeadCommit: 2db692da636c550f38d9fe0094c962b81a51538b
+    TaskSpecProposalHeadCommit: ""
+    TaskSpecProposalEventHeadCommit: 2db692da636c550f38d9fe0094c962b81a51538b
     TaskSpecCreationEventId: 2a53c573-0cce-4b70-bb0c-8c23fcb688c9
-    BaselineCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+    BaselineCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
     HeadCommit: ""
     Branch: ""
     Worktree: ""
@@ -6874,7 +6884,7 @@ Tasks:
       SoftDefaults: []
       ApprovedOverrides: []
     Checkpoint:
-      LastCompletedAcceptance: "ED-0149/R2 dependency verified Merged by WorkflowController against main@376fe97e."
+      LastCompletedAcceptance: "ED-0149/R2 dependency verified Merged by WorkflowController against main@f34f6bc."
       CurrentFindingOrFailure: "No resource limits exist in AsyncAgentRuntimeContract V2; implementation remains outside this contract-freeze task."
       TriedApproaches: []
       NextAction: "After this TaskSpec is reviewed and merged, assign the contract-only task; only after the V3 contract is merged may Coordinator prepare a separate ED-0150 revision for product code."
