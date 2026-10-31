@@ -7135,7 +7135,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结持久化 Memory Content 的 UTF-8 与 NUL 规则
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Review
     Phase: P3
     ChangeRequestId: CR-ED-0160-R1-MEMORY-CONTENT-UTF8-001
     TaskSpecReviewStatus: ApprovedAndMergedToMain
@@ -7152,7 +7152,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: /root/luna02_ed0148_pr_ready
     CreatedAt: "2026-10-31T10:46:00Z"
-    UpdatedAt: "2026-10-31T11:10:21Z"
+    UpdatedAt: "2026-10-31T12:05:35Z"
     ParallelGroup: DurableMemory
     TaskSpecProposalBaseCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
     TaskSpecProposalBranch: Task/ED-0160-R1-MemoryContractV2TaskSpec
@@ -7162,7 +7162,7 @@ Tasks:
     BaselineCommit: 51235c2596e8216c7d2c068255765295aec5ca96
     Branch: Task/ED-0160-MemoryContentUtf8V2
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1/Worktree
-    PullRequest: ""
+    PullRequest: "https://github.com/Hatedatastructures/EmulativeDialog/pull/120"
     Goal: >-
       在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结新 durable MemoryRecord.Content 的严格 UTF-8
       与 U+0000/NUL 输入规则，使用已有 InvalidArgument 错误码且拒绝正文不落日志。Write/Update 校验
