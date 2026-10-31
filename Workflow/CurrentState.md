@@ -1,5 +1,12 @@
 # 当前状态
 
+## 2026-10-31 ED-0150/R6 assignment candidate
+
+- PR #114 registered the R6 implementation TaskSpec; PR #115 froze AsyncAgentRuntimeContractV3, and ED-0157/R1 is recorded as merged.
+- PR #116 now carries the assignment candidate; Worker02 owns `Task/ED-0150-ResourceBoundedAsyncToolLoop`, based on main@a1b1deeb, with Worker04 as independent reviewer.
+- Product source changes remain gated until the assignment ledger PR merges and the merged-main WorkflowController check returns `AssignmentAccepted`; after that the next action is the R6 C++ tool-loop implementation.
+
+
 ## 2026-10-31 ED-0155/R2 CMake 修复派工
 
 - PR #106 已 squash 合并到 main@b6730ffdfe90a87bcd64fb792c0239128a1402df；其 WindowsAgentSlice 必需检查通过。
