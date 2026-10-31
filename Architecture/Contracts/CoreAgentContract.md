@@ -1,6 +1,6 @@
-# Core 与 Agent 合同 V1
+# Core 与 Agent 合同 V1.1
 
-状态：冻结候选（ED-0007@1；独立评审通过并合并后生效）。本合同规定产品运行时的 Core policy 与 C++ AgentRuntime 边界，不依赖 Codex 私有结构。
+状态：冻结候选（V1.1 为兼容性增补：增加仅适用于 Core 注册的进程内只读业务动作的 `CoreActionReceipt`；R5 CR 独立评审并合并后生效）。其余 V1 规则保持不变。本合同规定产品运行时的 Core policy 与 C++ AgentRuntime 边界，不依赖 Codex 私有结构。
 
 ## 术语和信任边界
 
@@ -34,11 +34,13 @@ AgentRuntime 执行一个 `AgentTurn`：
 3. 由 ContextSelector 构造有界 ModelRequest；系统/开发规则不能被历史、摘要、模型输出或记忆覆盖。
 4. 只通过 `ModelProviderPort` 发起一个或多个 ProviderRequest；消费规范化流事件和每请求唯一终态。
 5. `ToolCallReady` 只表示完整的模型请求。Provider 终态为 `ResponseCompleted` 后，AgentRuntime 才能把 action proposal 交 Core 校验；Provider function call 从不授权执行。
-6. Core 校验工具名、参数、schema、当前 AgentTurn、Envelope、作用域、能力、授权和频率。只有带有效 `AuthorizationRef` 的 `CoreAuthorizedAction` 可以交 `ChannelAdapterPort` 执行。
-7. 工具结果仅在 Core 接收确定的 ChannelReceipt 后作为下一次模型输入；未知副作用结果不得作为成功回执注入。
+6. Core 校验工具名、参数、schema、当前 AgentTurn、Envelope、作用域、能力、授权和频率。只有带有效 `AuthorizationRef` 的 `CoreAuthorizedAction` 可以交 `ChannelAdapterPort` 执行。R5 的 `EffectClass::InProcessReadOnly` handler 只能计算进程内结果；它不得持久化或跨回合修改状态，也不得进行文件系统、数据库、网络、Provider 或 Channel I/O。
+7. 工具结果只可在 Core 创建并验证相关的确定回执后作为下一次模型输入：外部写操作必须有确定的 `ChannelReceipt`；满足下述限制的进程内只读动作可使用 `CoreActionReceipt`。未知外部副作用结果不得作为成功回执注入。
 8. AgentRuntime 形成面向用户的最终文字或已获准动作；所有出站发送由 Core/Channel Port 执行。最终成功要求对应的成功 ChannelReceipt。
 
 ## 授权操作和恢复
+
+`CoreActionReceipt` 是 Core 对进程内只读业务动作的确定结果凭据，至少关联 `ToolCallId`、`RequestId`、`AgentTurnId` 和已注册 action 名称，并含稳定的状态与脱敏结果码。Core 仅在该 action 明确注册为 `EffectClass::InProcessReadOnly`、通过身份/scope/capability/schema 检查且 handler 返回确定结果后创建它；Core 对确定拒绝/unsupported 也可生成对应的非成功回执。它不是 `ChannelReceipt`，不证明平台或其他外部效果，不携带 `OperationId`，不能授权调用 Adapter，也不能把 `OperationRecord` 标为 `Succeeded`。任何外部写、持久化或 I/O action 均不可使用此回执，必须遵守外部操作记录和 ChannelReceipt 规则。
 
 `OperationRecord` 至少保存 `OperationId`、`IdempotencyKey`、`AgentTurnId`、目标 Scope、ActionId、策略版本、可选的 `MemoryConsentId`、状态和脱敏结果类别。每个外部写操作必须先建立记录并执行 Core 授权，再开始调用 Adapter。
 
