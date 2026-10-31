@@ -655,3 +655,5 @@
 - PR #104 / ED-0150/R5 remains open at its recorded head and is frozen in Blocked state: Worker03 identified stream resource-bound and uncertain-outcome findings that require the V3 contract and a separate R6 TaskSpec. Worker02 was recovered from R5 and assigned as the ED-0157/R1 contract owner candidate.
 - The contract worktree is clean at ae7a148310cefa154694c67b9dae9bd739c6172f on Task/ED-0157-AsyncAgentRuntimeContractV3Implementation. Pre-merge WorkflowController validate-assignment returned AssignmentAccepted, exit 0; log SHA256 is 07DAEC50CB125F229F83CEB75A73A84FDF8D7DD2E051FFA40B57D6D7B448A106.
 - Contract writes remain gated until the separate assignment-ledger PR merges and post-merge validate-assignment returns AssignmentAccepted. Then Worker02 may write only Architecture/Contracts/AsyncAgentRuntimeContractV3.md. No V3 contract file edits or ED-0150/R6 product implementation has started yet.
+
+- Assignment-ledger PR #112 was created at Base ae7a148310cefa154694c67b9dae9bd739c6172f / creation Head 3fb36f03722d29242505dfbff6e0e0c895dd13c3; PRCreated event 05b2d59c-e198-4c38-b7d7-1d407ffc0414 records that snapshot. The remote branch count is 4/4.

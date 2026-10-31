@@ -6771,6 +6771,11 @@ Tasks:
     Worker02SlotAssignmentEventId: 55a830d9-3bb3-45ef-8b54-91ee95983f86
     AssignedToSlot: Worker02
     AssignmentLedgerBaseCommit: ae7a148310cefa154694c67b9dae9bd739c6172f
+    AssignmentLedgerPullRequestNumber: 112
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/112
+    AssignmentLedgerHeadAtCreationCommit: 3fb36f03722d29242505dfbff6e0e0c895dd13c3
+    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-31T05:02:19Z"
+    AssignmentLedgerCreatedEventId: 05b2d59c-e198-4c38-b7d7-1d407ffc0414
     PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-AssignmentLedger/Logs/PreMerge-ValidateAssignment-Retry1.log#SHA256=07DAEC50CB125F229F83CEB75A73A84FDF8D7DD2E051FFA40B57D6D7B448A106
     AssignmentStatusNote: >-
       ED-0157/R1 is assigned as a contract-only task. The Worker02 implementation branch follows the WorkflowController PascalCase branch rule; the TaskSpec's proposed label remains historical. Product writes await assignment-ledger merge and post-merge AssignmentAccepted.
