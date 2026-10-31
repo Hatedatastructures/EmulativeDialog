@@ -40,6 +40,36 @@ Core 是 scope 的唯一解析者。每个持久范围使用全部必需的 opaq
 
 禁止写入密码、密钥、访问令牌、支付凭据及策略明确禁止持久化的敏感个人数据。拒绝响应和诊断只记录稳定错误码/记录 ID，不复制被拒绝的明文。
 
+## MemoryRecord Content V2
+
+本节是在 MemoryRecord V1 上增加的版本化持久化输入规则，仅约束新 durable `MemoryRecord.Content`。除本节明确规定外，V1 的全部语义继续有效；易失的会话上下文和 MemoryProposal 不因此改变。
+
+### Durable Content 编码
+
+在任何新 durable MemoryRecord 写入边界，`Content` 必须是严格、格式良好的 UTF-8 字节序列，并且不得包含 U+0000（字节 `0x00`）。严格 UTF-8 仅编码 Unicode scalar value；必须拒绝非法起始字节或续字节、截断序列、过长编码、代理码点编码以及大于 U+10FFFF 的值。不得规范化、转码或静默改写有效输入；通过校验的 Content 字节按原值保存。
+
+这条校验只适用于 durable `MemoryRecord.Content`，不适用于消息正文、易失候选或标识符。已有的 Content 长度、空值、敏感内容和授权校验仍按原合同执行。
+
+### Write 与 Update
+
+Core 对 `MemoryWriteRequest.Content` 在每个 Write/Update 持久化入口进行上述校验。无效输入必须以现有 `MemoryErrorCode::InvalidArgument` 拒绝，且不得写入任何记录。Storage adapter 也必须在直接收到无效 Content 的 `ApplyAtomically` 写入时，以现有 `MemoryStorageErrorCode::InvalidArgument` 拒绝，并且不得产生持久化变更。不得为此增加新的错误枚举。
+
+### Restore 与 Import 的整批预校验
+
+Restore/Import 在写入任何一行或调用任何 `ApplyAtomically` 之前，必须先校验本次操作全部 `StoredMemory.Content` 候选。只要任一候选不是有效 UTF-8 或含 U+0000，就必须拒绝整个操作：Core 返回现有 `MemoryErrorCode::InvalidArgument`，且不应用任何候选；不得跳过坏行后部分恢复。Storage adapter 对直接提交的无效候选仍返回现有 `MemoryStorageErrorCode::InvalidArgument`。这条规则只约束 Restore/Import 的新写入，不改变备份记录的读取行为。
+
+### 拒绝诊断与标识符
+
+拒绝结果和诊断只可包含稳定错误码及安全的非 Content 记录/操作标识。不得记录被拒绝的正文，也不得记录其原文、转义、截断、编码、哈希或任何其他派生表示；日志、事件、错误详情和崩溃诊断均适用此规则。拒绝不得被报告为成功写入或成功恢复。此规定延续 V1 的脱敏要求。
+
+UTF-8/NUL 校验专属于 `Content`，不得应用于 `ProposalId`、`MemoryId`、`ScopeKey` 或其他 opaque identifiers。所有标识符继续保留其既有精确字节语义，包括在现有合同允许时保留嵌入 NUL 和非 UTF-8 字节；不得因本节而拒绝、规范化或转码。特别是 `ProposalId` 的精确字节、同意匹配和既有持久化编码保持不变。
+
+### 与 V1 的兼容
+
+本节不追溯性地使现有持久化记录对 `ListActive`、Recall 或 `RecallBackup` 失效，也不改变既有行的 Recall 行为；不迁移、重写或删除现有数据。若既有备份记录被选作新的 Restore/Import 写入候选，则按上面的整批规则校验：无效 Content 会使整次恢复/导入失败，不产生部分写入。
+
+V1 的 identity、scope、consent、ProposalId、TTL、backup、tombstone 与删除语义均不变；SQLite physical schema 和既有 V1/V2 ProposalId 编码均不变。本节不授权任何数据迁移或 schema 变更。
+
 ## ContextSelector V1
 
 ContextSelector 只接收 Core 解析的 Scope、当前可信 Envelope、当前正文、授权的 MemoryRecord 和预算；不得自行通过名字或正文推导身份，也不得直接访问外部网络或 Provider。
