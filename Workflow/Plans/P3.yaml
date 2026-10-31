@@ -4109,9 +4109,9 @@ Tasks:
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 的 Core 授权业务动作回合闭环
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Assigned
     BlockedBy: >-
-      This is a proposed scope expansion. Product source writes are forbidden until the contract/task PR is fixed-head approved and merged, a separate R5 assignment ledger is merged, and the post-merge WorkflowController validate-assignment returns AssignmentAccepted.
+      Product source writes remain forbidden until this R5 assignment ledger is merged and the post-merge WorkflowController validate-assignment returns AssignmentAccepted.
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -4124,19 +4124,36 @@ Tasks:
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     CreatedAt: '2026-10-30T23:55:45Z'
-    UpdatedAt: '2026-10-30T23:55:45Z'
+    UpdatedAt: '2026-10-31T00:47:14Z'
     ParallelGroup: AgentRuntimeToolLoop
     TaskSpecProposalBaseCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
     ProposedTaskSpecBranch: Task/ED-0150-R5-AsyncBusinessActionTaskSpec
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-TaskSpec/Worktree
     TaskSpecProposedEventId: 22878b42-dfdc-43e9-8807-54dfd3c76638
-    TaskSpecReviewStatus: ProposedAwaitingFixedHeadOwnerAndReviewer
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerReviewBaseCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
+    TaskSpecOwnerReviewHeadCommit: ec4bd16669a14928ea4b30f6f90661e1691c81e6
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerReviewBaseCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
+    TaskSpecReviewerReviewHeadCommit: ec4bd16669a14928ea4b30f6f90661e1691c81e6
+    TaskSpecReviewSource: InternalFixedHeadReview
+    TaskSpecHeadCommit: ec4bd16669a14928ea4b30f6f90661e1691c81e6
+    TaskSpecPullRequestNumber: 102
+    TaskSpecMergedToMainCommit: de7376a97f8e645f946c77056439f90618c31448
+    TaskSpecMergeMethod: squash
+    TaskReadinessValidatedEventId: 6ae96fa9-67d1-43d5-bd41-ae21d02a5ac2
+    TaskAssignedEventId: 4d76c942-2e2b-4370-8df7-6fd1f12b4744
+    DependencyStatesCorrectionEventId: d5419847-ef03-419e-8dea-ad6aeba01f3e
+    Worker02SlotRecoveryEventId: f8b23526-9798-4241-b98c-741ddd8a0411
+    Worker02SlotAssignmentEventId: 06d3539e-3b50-4e48-93d2-d393d6358e5d
+    AssignmentLedgerPullRequestNumber: 103
+    TaskSpecCoordinatorDecision: Accepted
     TaskSpecStatusNote: >-
-      R5 replaces the blocked validation-only R4 assignment with the next missing product behavior: after a terminal ToolHandoff, Core authorizes and executes only a registered in-process read-only business action, creates a correlated CoreActionReceipt, and the runtime continues with a unique request id. External side-effecting actions remain deferred to an OperationRecord and ChannelReceipt-backed task. This proposal authorizes no product source writes.
+      PR #102 merged after Owner and independent Reviewer approval of Base 0dc8626 / Head ec4bd16 and Coordinator acceptance. The assignment candidate corrects DependsOn to the WorkflowController's bare TaskId format; ED-0150/R2 is already contained in the product baseline de7376a. Source writes remain gated on the post-merge AssignmentAccepted result.
     Goal: >-
       Implement the bounded asynchronous tool round trip in native C++20: the async runtime streams canonical function-call proposals, waits for a terminal handoff, Core validates and dispatches only a registered `EffectClass::InProcessReadOnly` scoped/capability-authorized action, and deterministic CoreActionReceipts become the next provider request input before one final Mock Channel reply. R5 handlers cannot perform I/O or mutate persistent/cross-turn state.
     OutOfScope:
@@ -4148,13 +4165,12 @@ Tasks:
       - Automatic retries after unknown provider or action outcomes
       - TUI, host UI, and changes to the synchronous AgentRuntime behavior
     DependsOn:
-      - ED-0108/R2 ToolCallCoordinator and BusinessActionRegistry merged
-      - ED-0149 AsyncModelProviderPort V1 merged
-      - ED-0150/R2 async AgentRuntime vertical slice merged
-      - ED-0131 Boost.Asio C++20 build foundation merged
+      - ED-0108
+      - ED-0149
+      - ED-0131
     ExternalInputs: []
     ContractVersion: AsyncAgentRuntimeContractV2 + AsyncBusinessActionContractV1 + CoreAgentContractV1.1-CoreActionReceipt + ModelProviderContractV1.2 + AsyncModelProviderContractV1
-    BaselineCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
+    BaselineCommit: de7376a97f8e645f946c77056439f90618c31448
     HeadCommit: ''
     PullRequest: ''
     ChangeRequest:
@@ -4176,9 +4192,9 @@ Tasks:
         Existing AsyncAgentRuntimeContract V1 and synchronous ports remain unchanged. The new V2 tool loop is opt-in. Core remains the only owner of identity, scope, capability grants, effect classification, action registration, receipt creation, and dispatch. Only in-process read-only actions are eligible in R5; external writes require OperationRecord before dispatch and a definite ChannelReceipt, and are deferred to a separate task.
       Rollback: >-
         If either fixed-head review rejects the proposal, keep the R4 historical record and its validation-only evidence intact, do not assign Worker02 to R5, and do not modify any product source. A corrected contract/task proposal must receive a new revision and fixed-head review.
-      OwnerDecision: Pending
-      IndependentReviewerDecision: Pending
-      CoordinatorDecision: Pending
+      OwnerDecision: APPROVE
+      IndependentReviewerDecision: APPROVE
+      CoordinatorDecision: Accepted
     ModuleIds: [AgentRuntime, Core]
     Context:
       ModuleId: AgentRuntime
