@@ -4127,7 +4127,7 @@ Tasks:
     TaskSpecProposalBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
     ProposedTaskSpecBranch: Task/ED-0150-R6ResourceBoundedAsyncToolLoopTaskSpec
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6-TaskSpec/Worktree
-    TaskSpecProposedEventId: ""
+    TaskSpecProposedEventId: "31b01c04-7d6b-46b6-9a75-bf4e368d28b2"
     TaskSpecReviewStatus: Proposed
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
     TaskSpecOwnerDecision: Pending
