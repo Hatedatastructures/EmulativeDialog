@@ -2421,7 +2421,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T12:40:15Z"
-    UpdatedAt: "2026-10-31T13:04:33Z"
+    UpdatedAt: "2026-10-31T13:22:56Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2475,7 +2475,7 @@ Tasks:
       - {AcceptanceId: AC-3, Description: "RestoreBackup validates every candidate Content before the first ApplyAtomically call and rejects the whole restore if any candidate is invalid.", Evidence: "FakeStorage test places a valid candidate before a later invalid candidate and asserts InvalidArgument, zero ApplyAtomically calls, and no partial rows."}
       - {AcceptanceId: AC-4, Description: "Content validation is limited to durable Content; existing exact opaque ProposalId bytes, including permitted embedded NUL and non-UTF-8 values, remain unchanged.", Evidence: "Existing SQLite real-file ProposalId write, read, close/reopen, backup, consent recall, and restore tests continue to pass unchanged."}
       - {AcceptanceId: AC-5, Description: "Memory V1 behavior, schema, consent, scope, TTL, tombstone, backup, and legacy Recall behavior remain unchanged; no data migration is performed.", Evidence: "Existing Memory contract CTests pass; the diff is confined to the four frozen WriteSet paths."}
-      - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution."}
+      - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage tied to the final implementation PR head.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution. CoverageSummary records the exact expected branch and PR Head SHA and confirms the worktree was clean before and after collection."}
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory
       FreshBuildPreflight: |-
@@ -2499,15 +2499,19 @@ Tasks:
         ProductionSources: [Source/Memory/ConversationMemory.cpp, Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumUniqueExecutableLinePercent: 80
         ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory/Reports
-        Command: >-
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80
-        ScriptSha256: 6478186E4C429D721C7D5D154B08409432CA6B22D984B52FC528427952C49A4E
+        CommandTemplate: >-
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-R4-MemoryContentUtf8Validation" -ExpectedHeadCommit "<FinalImplementationPRHeadCommit>"
+        ExpectedHeadCommitBinding: "Before invocation, replace the placeholder with the exact 40-character HeadCommit of the final implementation PR under review; do not resolve the branch dynamically inside the command."
+        ScriptSha256: AFEBFC66C47C44EC53A2E4872EBD9380C5E0DA31F3AFA0F3E9C9F8090AAAD784
+        GitBinding: "The script rejects a branch or HEAD mismatch and any tracked/untracked worktree changes, verifies these conditions again after collection, and records the branch, HEAD and clean status in CoverageSummary.json."
+        WindowsPathPolicy: "gcov is invoked without --preserve-paths, inside a unique per-object output directory; the exact JSON files[].file source identity check is retained."
         AggregationRule: "For ConversationMemory.cpp merge reports from ConversationMemoryTests and SqliteMemoryStorageAdapterTests by unique source line index; a line is covered if any paired object reports a positive execution count. Do not add duplicate line denominators or select only one object report. SqliteMemoryStorageAdapter.cpp is measured from its adapter test object."
       StaticChecks:
         - "Controller query returns ED-0144/R4 State=Proposed before assignment."
         - "git diff --check exits 0 and implementation diff paths equal the exact four-path WriteSet."
         - "C++20 MinGW configure, both target builds, complete standalone build, and required CTests exit 0."
         - "Coverage reports are generated from the fresh build only and both production sources meet 80 percent."
+        - "CoverageCommand fails on a wrong branch, mismatched final implementation PR Head, or dirty/untracked worktree, then records the exact branch and Head in CoverageSummary.json."
         - "No schema, data, user content, secrets, or generated source-tree files are changed."
     ProposedImplementationBranch: Task/ED-0144-R4-MemoryContentUtf8Validation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
