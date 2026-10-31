@@ -7734,7 +7734,7 @@ Tasks:
     ModuleIds: [Core, AgentRuntime, ContextSelector, Memory]
     CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]
     ContractVersion:
-      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/CoreAgentContract.md V1.1
       - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
       - Architecture/Contracts/ModelProviderContract.md V1.2
       - Architecture/Contracts/AsyncAgentRuntimeContractV3.md V3 Frozen
@@ -7748,13 +7748,13 @@ Tasks:
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/HostCoreAgent.yaml
         - Architecture/Modules/MemoryStorage.yaml
-        - Architecture/Modules/Providers.yaml
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/MemoryContract.md
         - Architecture/Contracts/ModelProviderContract.md
         - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
         - Architecture/Contracts/AsyncModelProviderContract.md
         - Architecture/Contracts/AsyncBusinessActionContract.md
+      OnDemandSet:
         - Source/Context/ContextSelector.hpp
         - Source/Context/ContextSelector.cpp
         - Source/Memory/ConversationMemory.hpp
@@ -7776,11 +7776,8 @@ Tasks:
         - Source/Channels/WeChat/
         - CMakeLists.txt
         - CMake/
-        - Architecture/Contracts/
-        - Workflow/TaskIndex.yaml
-      MaxReferenceFiles: 26
-      ExpansionReasonRequired: true
-      ExpansionReason: "ED-0158 must review both the frozen AsyncModelProvider contract and its public C++ port header to build the actual asynchronous request path; this adds read-only contract/API context and does not expand the product WriteSet."
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: false
     WriteSet:
       - Source/Core/AgentContextAssembler.hpp
       - Source/Core/AgentContextAssembler.cpp
@@ -7798,6 +7795,11 @@ Tasks:
       - {AcceptanceId: AC-4, Description: "The selected context is consumed by AsyncAgentRuntime on the actual Core to FakeProvider to Mock Channel path, while existing tool handoff, cancellation, unknown-outcome and single-receipt behavior remain intact.", Evidence: "Agent.AsyncRuntimeVerticalSlice contract test plus existing lifecycle cases pass."}
       - {AcceptanceId: AC-5, Description: "Every changed production source has at least 80 percent unique executable-line coverage from fresh GCC/gcov 16.1.0 JSON v2 reports.", Evidence: "Fresh per-source reports for AgentContextAssembler.cpp, CoreChatService.cpp and AsyncAgentRuntime.cpp with covered/total counts; no stale or ambiguous gcda/gcno pairs."}
     Validation:
+      AssignmentCandidate:
+        ImplementationBranch: Task/ED-0158-MemoryContextAgentIntegration
+        ImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/Worktree
+        BaselineCommit: "Set by a separate post-merge assignment ledger after all DependsOn tasks are Merged."
+        ProductWriteAuthorization: None
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice
       DependencyDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
       RequiredTargets: [AsyncRuntimeVerticalSliceTests]
