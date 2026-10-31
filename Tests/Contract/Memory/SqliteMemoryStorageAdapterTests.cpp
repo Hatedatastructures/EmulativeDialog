@@ -987,6 +987,79 @@ void TestInvalidInputsAndNoOp() {
         "incomplete scope is rejected");
 }
 
+void TestStrictUtf8ContentGuard() {
+  TemporaryDatabase Database{"StrictUtf8Content"};
+  if (!Database.IsReady()) {
+    Check(false, "strict UTF-8 test database directory is available");
+    return;
+  }
+  auto Store = OpenStore(Database.Path());
+  if (!Store) {
+    return;
+  }
+  SqliteMemoryStorageAdapter Adapter{*Store};
+  const StoredMemory Scope = ScopeTemplate(Context());
+  const std::string ValidContent(
+      "A\xC3\xB1\xE4\xB8\xAD\xF0\x9F\x8C\x8D", 10U);
+  const std::string OpaqueProposalId("\0\xFF\xC3", 3U);
+
+  MemoryMutationBatch ValidBatch;
+  ValidBatch.Scope = Scope;
+  auto ValidRecord = MakeRecord(Scope, "strict-utf8-valid");
+  ValidRecord.Content = ValidContent;
+  ValidRecord.ProposalId = OpaqueProposalId;
+  ValidBatch.Upserts.push_back(ValidRecord);
+  Check(std::holds_alternative<std::monostate>(
+            Adapter.ApplyAtomically(ValidBatch)),
+        "valid multibyte Content and binary ProposalId write to SQLite");
+  const auto ValidRead = Adapter.ListActive(Scope, Now());
+  const auto* ValidRecords = StorageValue(ValidRead);
+  Check(ValidRecords != nullptr && ValidRecords->size() == 1U &&
+            ValidRecords->front().Content == ValidContent &&
+            ValidRecords->front().ProposalId == OpaqueProposalId,
+        "valid Content and opaque ProposalId round-trip byte-for-byte");
+
+  const std::vector<std::string> InvalidContents{
+      std::string("\0tail", 5U),
+      std::string("\x80", 1U),
+      std::string("\xC2", 1U),
+      std::string("\xE2\x82", 2U),
+      std::string("\xE2\x28\xA1", 3U),
+      std::string("\xE2\x82\x28", 3U),
+      std::string("\xC0\xAF", 2U),
+      std::string("\xE0\x80\x80", 3U),
+      std::string("\xED\xA0\x80", 3U),
+      std::string("\xF0\x80\x80\x80", 4U),
+      std::string("\xF0\x90\x80\x28", 4U),
+      std::string("\xF4\x90\x80\x80", 4U),
+      std::string("\xF5\x80\x80\x80", 4U),
+  };
+  for (std::size_t Index = 0; Index < InvalidContents.size(); ++Index) {
+    MemoryMutationBatch InvalidBatch;
+    InvalidBatch.Scope = Scope;
+    auto InvalidRecord = MakeRecord(
+        Scope, "strict-utf8-invalid-" + std::to_string(Index));
+    InvalidRecord.Content = InvalidContents[Index];
+    InvalidBatch.Upserts.push_back(std::move(InvalidRecord));
+    const auto Result = Adapter.ApplyAtomically(InvalidBatch);
+    const auto* Error = std::get_if<MemoryStorageError>(&Result);
+    Check(Error != nullptr &&
+              Error->Code == MemoryStorageErrorCode::InvalidArgument,
+          "SQLite rejects invalid durable Content with InvalidArgument");
+    if (Error != nullptr) {
+      Check(Error->Detail.find(InvalidContents[Index]) == std::string::npos,
+            "SQLite invalid Content error does not echo the body");
+    }
+  }
+  const auto AfterInvalidWrites = Adapter.ListActive(Scope, Now());
+  const auto* AfterInvalidRecords = StorageValue(AfterInvalidWrites);
+  Check(AfterInvalidRecords != nullptr &&
+            AfterInvalidRecords->size() == 1U &&
+            AfterInvalidRecords->front().MemoryId == "strict-utf8-valid" &&
+            AfterInvalidRecords->front().Content == ValidContent,
+        "invalid direct writes leave existing SQLite rows unchanged");
+}
+
 void TestConversationMemoryConsentTombstoneRestart() {
   TemporaryDatabase Database{"ConsentTombstoneRestart"};
   if (!Database.IsReady()) {
@@ -1151,6 +1224,7 @@ int main() {
   TestTransactionalRollbackAndVersionConflict();
   TestNestedTransactionFailsClosed();
   TestInvalidInputsAndNoOp();
+  TestStrictUtf8ContentGuard();
   TestConversationMemoryConsentTombstoneRestart();
   TestMalformedStoredKindsFailClosed();
 
