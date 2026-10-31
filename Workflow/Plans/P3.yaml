@@ -4378,23 +4378,31 @@ Tasks:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice
       RootBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build/windows-agent-slice
       RootConfigure:
-        - 'I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON'
+        - 'I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON'
       RootTargetedBuild:
         - 'I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build/windows-agent-slice --target AgentRuntimeContractTests AgentRuntimeVerticalSliceTests CorePolicyAndActionContractTests ToolCallRoundTripTests --parallel 4'
       RootContractFixtures:
         - 'I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build/windows-agent-slice --no-tests=error --output-on-failure -R "^(AgentRuntime\\.Contract|AgentRuntime\\.VerticalSlice|Core\\.PolicyAndAction|Agent\\.ToolCallRoundTrip)$"'
       Configure:
-        - 'I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports'
+        - 'I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports'
       FreshBuildPreflight:
         RunBefore: Configure
         Invocation: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command -'
         InputMode: 'Pipe the Script block verbatim to PowerShell standard input; require process exit code 0.'
+        PinnedDependencyCache:
+          Root: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies
+          BoostSourceDirectory: EmulativeDialogBoostAsioSource
+          ExpectedBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
+          RequiredBoostSubmodules: [libs/asio, libs/json, libs/container, libs/describe, libs/align, libs/assert, libs/config, libs/core, libs/mp11, libs/predef, libs/static_assert, libs/system, libs/throw_exception, libs/type_traits, libs/winapi]
+          YamlCppSourceDirectory: yamlcpp-src
+          ExpectedYamlCppCommit: 56e3bb550c91fd7005566f19c079cb7a503223cf
+          RequireCleanSuperprojectAndRequiredSubmodules: true
+          EvidenceFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Logs/FreshBuildPreflight.txt
         Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree
         ExpectedBranch: Task/ED-0150-ResourceBoundedAsyncToolLoop
         RequiredAbsent:
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build
-          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Logs
@@ -4404,11 +4412,16 @@ Tasks:
           $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree'
           $ExpectedBranch = 'Task/ED-0150-ResourceBoundedAsyncToolLoop'
           $TaskRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6'
+          $DependencyRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies'
+          $BoostSource = Join-Path $DependencyRoot 'EmulativeDialogBoostAsioSource'
+          $ExpectedBoostCommit = 'afdfa32505af73e3d208144b3f623f0096cb62b6'
+          $RequiredBoostSubmodules = @('libs/asio','libs/json','libs/container','libs/describe','libs/align','libs/assert','libs/config','libs/core','libs/mp11','libs/predef','libs/static_assert','libs/system','libs/throw_exception','libs/type_traits','libs/winapi')
+          $YamlCppSource = Join-Path $DependencyRoot 'yamlcpp-src'
+          $ExpectedYamlCppCommit = '56e3bb550c91fd7005566f19c079cb7a503223cf'
           if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Assigned source worktree is missing: $Worktree" }
           $RequiredAbsentArtifacts = @(
             (Join-Path $TaskRoot 'WindowsAgentSlice')
             (Join-Path $TaskRoot 'Worktree.build')
-            (Join-Path $TaskRoot 'Dependencies')
             (Join-Path $TaskRoot 'Reports')
             (Join-Path $TaskRoot 'Execution')
             (Join-Path $TaskRoot 'Logs')
@@ -4416,6 +4429,28 @@ Tasks:
           foreach ($ArtifactPath in $RequiredAbsentArtifacts) {
             if (Test-Path -LiteralPath $ArtifactPath) { throw "Fresh R6 artifact already exists: $ArtifactPath" }
           }
+          if (-not (Test-Path -LiteralPath $BoostSource -PathType Container)) { throw "Pinned Boost source is missing: $BoostSource" }
+          $BoostHead = (& git -C $BoostSource rev-parse HEAD 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $BoostHead -ne $ExpectedBoostCommit) { throw "Pinned Boost commit mismatch: $BoostHead" }
+          $BoostStatus = @(& git -C $BoostSource status --porcelain --untracked-files=all --ignore-submodules=all 2>&1)
+          if ($LASTEXITCODE -ne 0 -or $BoostStatus.Count -ne 0) { throw 'Pinned Boost superproject is dirty' }
+          $SubmoduleStatus = @(& git -C $BoostSource submodule status -- 2>&1)
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned Boost submodule status failed' }
+          foreach ($Submodule in $RequiredBoostSubmodules) {
+            $StatusLine = $SubmoduleStatus | Where-Object { $_ -match ('^ [0-9a-f]{40}\s+' + [regex]::Escape($Submodule) + '(?:\s+\([^)]+\))?$') } | Select-Object -First 1
+            if (-not $StatusLine) { throw "Pinned Boost submodule is missing, dirty, or not at its gitlink: $Submodule" }
+            $SubmodulePath = Join-Path $BoostSource $Submodule
+            if (-not (Test-Path -LiteralPath $SubmodulePath -PathType Container) -or -not (Test-Path -LiteralPath (Join-Path $SubmodulePath 'include') -PathType Container)) { throw "Pinned Boost include directory is missing: $Submodule" }
+            $SubmoduleClean = @(& git -C $SubmodulePath status --porcelain --untracked-files=all 2>&1)
+            if ($LASTEXITCODE -ne 0 -or $SubmoduleClean.Count -ne 0) { throw "Pinned Boost submodule is dirty: $Submodule" }
+          }
+          $WinApiHeader = Join-Path $BoostSource 'libs/winapi/include/boost/winapi/error_handling.hpp'
+          if (-not (Test-Path -LiteralPath $WinApiHeader -PathType Leaf)) { throw "Pinned Boost WinAPI header is missing: $WinApiHeader" }
+          if (-not (Test-Path -LiteralPath $YamlCppSource -PathType Container)) { throw "Pinned yaml-cpp source is missing: $YamlCppSource" }
+          $YamlCppHead = (& git -C $YamlCppSource rev-parse HEAD 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $YamlCppHead -ne $ExpectedYamlCppCommit) { throw "Pinned yaml-cpp commit mismatch: $YamlCppHead" }
+          $YamlCppStatus = @(& git -C $YamlCppSource status --porcelain --untracked-files=all 2>&1)
+          if ($LASTEXITCODE -ne 0 -or $YamlCppStatus.Count -ne 0) { throw 'Pinned yaml-cpp source is dirty' }
           $Branch = (& git -C $Worktree branch --show-current 2>&1 | Out-String).Trim()
           if ($LASTEXITCODE -ne 0 -or $Branch -ne $ExpectedBranch) { throw "Wrong task branch: $Branch" }
           $Status = @(& git -C $Worktree status --porcelain --untracked-files=all 2>&1)
@@ -4425,13 +4460,18 @@ Tasks:
           if ($LASTEXITCODE -ne 0 -or $SourceHead -notmatch '^[0-9a-f]{40}$') { throw "Could not capture exact source HEAD: $SourceHead" }
           $Logs = Join-Path $TaskRoot 'Logs'
           $null = New-Item -ItemType Directory -Path $Logs
-          $Evidence = @("SOURCE_BRANCH=$Branch", "SOURCE_HEAD=$SourceHead", 'SOURCE_STATUS_CLEAN=1') -join [Environment]::NewLine
+          $Evidence = @("SOURCE_BRANCH=$Branch", "SOURCE_HEAD=$SourceHead", 'SOURCE_STATUS_CLEAN=1', "BOOST_CACHE_ROOT=$DependencyRoot", "BOOST_SUPERPROJECT_COMMIT=$BoostHead", "BOOST_REQUIRED_SUBMODULES=$($RequiredBoostSubmodules.Count)/$($RequiredBoostSubmodules.Count)_CLEAN=1", "YAMLCPP_COMMIT=$YamlCppHead", 'YAMLCPP_CLEAN=1') -join [Environment]::NewLine
           $EvidencePath = Join-Path $Logs 'FreshBuildPreflight.txt'
           [System.IO.File]::WriteAllText($EvidencePath, $Evidence + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
           Write-Output "FRESH_BUILD_PREFLIGHT_OK=1"
           Write-Output "SOURCE_BRANCH=$Branch"
           Write-Output "SOURCE_HEAD=$SourceHead"
           Write-Output "SOURCE_STATUS_CLEAN=1"
+          Write-Output "BOOST_CACHE_ROOT=$DependencyRoot"
+          Write-Output "BOOST_SUPERPROJECT_COMMIT=$BoostHead"
+          Write-Output "BOOST_REQUIRED_SUBMODULES=$($RequiredBoostSubmodules.Count)/$($RequiredBoostSubmodules.Count)_CLEAN=1"
+          Write-Output "YAMLCPP_COMMIT=$YamlCppHead"
+          Write-Output "YAMLCPP_CLEAN=1"
           Write-Output "EVIDENCE=$EvidencePath"
       TargetedBuild:
         - 'I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice --target AsyncRuntimeVerticalSliceTests --parallel 4'
@@ -4445,6 +4485,7 @@ Tasks:
         - 'Every provider continuation uses a fresh RequestId, the original AgentTurnId, matching tool-result ids, and bounded loop counters.'
         - 'R6 handlers do not mutate persistent/cross-turn state or perform filesystem/database/network/provider/channel I/O; side-effecting actions are deferred to a separate OperationRecord plus ChannelReceipt task.'
         - 'CoreActionReceipt is never converted into a ChannelReceipt or used to mark an OperationRecord successful.'
+        - 'FreshBuildPreflight verifies the exact pinned ED-0155/R3 Boost superproject and yaml-cpp cache commits, all 15 required Boost submodules at initialized clean gitlinks, required include directories, and the WinAPI error_handling.hpp header; root and standalone configure consume that shared cache while all R6 build/report/log outputs remain fresh.'
         - 'FreshBuildPreflight verifies the expected branch, requires git status --porcelain --untracked-files=all to be empty, records the exact source HEAD, and runs before configure; CoverageCommand rechecks that branch, clean status, and unchanged HEAD before the first report/log write; final PR HeadCommit equals the recorded source HEAD; CoverageCommand creates and verifies Reports and Logs before writes and records pinned-template/generated-script SHA256.'
         - 'The new V2 async tool entry is additive and existing V1 synchronous and async single-request APIs remain unchanged.'
         - 'git diff --check exits 0; all five changed production .cpp files are included in exact-head coverage reports.'
@@ -4521,11 +4562,13 @@ Tasks:
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
       LastCompletedAcceptance: "R5 review findings recorded; PR #114 proposes R6, but ED-0157/R1 remains Assigned and V3 remains Proposed."
-      CurrentFindingOrFailure: "R5 PR #104 is frozen at 9ac7cfcd with two P2 findings; ED-0157/R1 remains Assigned and V3 Proposed; R6 source writes remain unauthorized."
-      TriedApproaches: ["R5 source branch remains immutable; R6 will replay its five reviewed commits on a fresh current-main implementation branch."]
+      CurrentFindingOrFailure: "R5 PR #104 remains frozen with two P2 findings. R6 originally required its local Dependencies path absent while configure pointed at it; the shared pinned ED-0155/R3 dependency cache is now verified and used, while R6 build/report/log outputs remain fresh."
+      TriedApproaches:
+        - "R5 source branch remains immutable; R6 will replay its five reviewed commits on a fresh current-main implementation branch."
+        - "Configured root and standalone probes offline against the verified ED-0155/R3 pinned dependency cache; retained all probe outputs under Worker01OfflineProbe."
       NextAction: "Complete ED-0157/R1 contract freeze; obtain new fixed-head R6 TaskSpec approval and merge; then assign R6 and require post-merge Controller AssignmentAccepted before source edits."
       OpenMessageIds: []
-      LastValidationResult: "ED-0155/R3 PR #110 merged its CMake integration at f34f6bc; R5 diagnostic integration CTest passed 1/1. No R6 product build has run."
+      LastValidationResult: "Diagnostic offline root windows-agent-slice configure passed (exit 0, 2844 ms) and standalone async vertical-slice configure passed (exit 0, 1654 ms) using the verified shared ED-0155/R3 pinned cache. Cache preflight verified Boost afdfa32505af73e3d208144b3f623f0096cb62b6, 15/15 required submodules clean, WinAPI header present, and yaml-cpp 56e3bb550c91fd7005566f19c079cb7a503223cf clean. These are configuration/preflight diagnostics only; no R6 build, CTest, or product acceptance has run."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
     PreviousRevision5:
