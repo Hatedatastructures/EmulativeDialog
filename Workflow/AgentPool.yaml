@@ -68,7 +68,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0150/R4-CoverageValidation
+    CurrentTaskId: ED-0150/R5-AsyncBusinessActionRoundTrip
     Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner

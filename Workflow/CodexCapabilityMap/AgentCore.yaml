@@ -231,23 +231,26 @@ SourceCatalog:
 Capabilities:
   - CapabilityId: AgentTurnOrchestration
     UpstreamSubsystem: CoreTurnLoop
-    PublicBehavior: Sample the model, execute a returned tool call, return its result to the next sample, and finish after a final assistant message.
-    UserVisibleCapability: A message can produce a reply or a bounded action and then continue with its action result.
+    PublicBehavior: Sample the model, authorize a returned registered in-process read-only action through Core, return a correlated CoreActionReceipt to the next sample, and finish after a final assistant message. External effects require a separate OperationRecord and ChannelReceipt-backed path.
+    UserVisibleCapability: A message can produce a reply after a bounded Core-authorized read-only action; an action result never claims an external write or channel receipt.
     Decision: Keep
     SourceRefs: [TurnLoop]
     TargetModules: [AgentRuntime]
     ContractRefs:
       - Architecture/Contracts/CoreAgentContract.md
+      - Architecture/Contracts/AsyncAgentRuntimeContractV2.md
+      - Architecture/Contracts/AsyncBusinessActionContract.md
       - Architecture/Contracts/ModelProviderContract.md
     ContractStatus: Draft
     ImplementationTask:
-      ProposedTaskId: ED-0101
-      CandidateWorkstream: AgentRuntimeTurnLoop
-      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
+      ProposedTaskId: ED-0150
+      CandidateWorkstream: AsyncAuthorizedBusinessActionRoundTrip
+      TaskRegistration: ProposedPendingFixedHeadReview
+      PriorTaskId: ED-0101
     AcceptanceEvidencePlan:
-      - Artifact: Tests/Contract/Agent/AgentRuntimeTurnLifecycle
+      - Artifact: Tests/Contract/Agent/AsyncRuntimeVerticalSlice/Agent.AsyncRuntimeVerticalSlice
         State: Planned
-        Proves: A FakeProvider and MockChannel fixture moves a trusted mock message through Core policy and AgentRuntime to one ChannelReceipt; a model-proposed action follows the authorized-action branch and re-enters sampling only after a Core result.
+        Proves: A trusted mock message can produce a bounded Core-authorized EffectClass::InProcessReadOnly action, return its correlated CoreActionReceipt to a later async provider request, and finish through one MockChannel receipt; CoreActionReceipt does not claim ChannelReceipt/OperationRecord success, and shell, arbitrary files and generic MCP tools remain unavailable.
 
   - CapabilityId: InstructionAssemblyAndPolicyPrecedence
     UpstreamSubsystem: SessionInstructionAndPromptContext
@@ -661,7 +664,8 @@ TaskLinkage:
   TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
   PhaseExpansionOwner: Coordinator
   ProposedTaskIdAllocation:
-    - {TaskId: ED-0101, CapabilityId: AgentTurnOrchestration}
+    - {TaskId: ED-0101, CapabilityId: AgentTurnOrchestration, Disposition: HistoricalPriorMapping}
+    - {TaskId: ED-0150, CapabilityId: AgentTurnOrchestration, Disposition: CurrentProposedFollowUp}
     - {TaskId: ED-0115, CapabilityId: InstructionAssemblyAndPolicyPrecedence}
     - {TaskId: ED-0102, CapabilityId: SessionAndConversationState}
     - {TaskId: ED-0103, CapabilityId: ContextSelectionAndBudget}
