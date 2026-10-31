@@ -921,6 +921,88 @@ void TestCapacityAndWriteAtomicity() {
         "version conflict maps to storage failure");
 }
 
+void TestDurableContentRequiresStrictUtf8() {
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  const auto Value = Context();
+  const std::string OpaqueProposalId("\0\xFF\xC3", 3U);
+  auto Consent = Grant(MemoryCategory::IdentityPreference, Value);
+  Consent.ProposalId = OpaqueProposalId;
+  Check(std::holds_alternative<std::monostate>(Memory.RegisterConsent(Consent)),
+        "opaque binary ProposalId consent is accepted");
+
+  const std::string ValidContent(
+      "A\xC3\xB1\xE4\xB8\xAD\xF0\x9F\x8C\x8D", 10U);
+  auto ValidRequest =
+      Request("memory-valid-utf8", MemoryCategory::IdentityPreference);
+  ValidRequest.Content = ValidContent;
+  ValidRequest.ProposalId = OpaqueProposalId;
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(Value, ValidRequest, Now())),
+        "valid multibyte Content and opaque ProposalId are accepted");
+  const auto ScopeRows = Storage.Rows.find(ScopeKey(ScopeOf(Value)));
+  Check(ScopeRows != Storage.Rows.end() && ScopeRows->second.size() == 1U &&
+            ScopeRows->second.front().Content == ValidContent &&
+            ScopeRows->second.front().ProposalId == OpaqueProposalId,
+        "valid Content and binary ProposalId persist byte-for-byte");
+
+  const std::vector<std::string> InvalidContents{
+      std::string("\0tail", 5U),
+      std::string("\x80", 1U),
+      std::string("\xC2", 1U),
+      std::string("\xE2\x82", 2U),
+      std::string("\xE2\x28\xA1", 3U),
+      std::string("\xE2\x82\x28", 3U),
+      std::string("\xC0\xAF", 2U),
+      std::string("\xE0\x80\x80", 3U),
+      std::string("\xED\xA0\x80", 3U),
+      std::string("\xF0\x80\x80\x80", 4U),
+      std::string("\xF0\x90\x80\x28", 4U),
+      std::string("\xF4\x90\x80\x80", 4U),
+      std::string("\xF5\x80\x80\x80", 4U),
+  };
+  const std::size_t ApplyCallsBeforeInvalid = Storage.ApplyCalls;
+  for (std::size_t Index = 0; Index < InvalidContents.size(); ++Index) {
+    auto InvalidRequest = Request(
+        "memory-invalid-utf8-" + std::to_string(Index),
+        MemoryCategory::IdentityPreference);
+    InvalidRequest.Content = InvalidContents[Index];
+    InvalidRequest.ProposalId = OpaqueProposalId;
+    const auto Result = Memory.Write(Value, InvalidRequest, Now());
+    const auto* Error = AsError(Result);
+    Check(Error != nullptr && Error->Code == MemoryErrorCode::InvalidArgument,
+          "invalid durable Content is rejected with InvalidArgument");
+    if (Error != nullptr) {
+      Check(Error->Detail.find(InvalidContents[Index]) == std::string::npos,
+            "invalid Content is not echoed in the error detail");
+    }
+  }
+  Check(Storage.ApplyCalls == ApplyCallsBeforeInvalid,
+        "invalid Content never reaches storage mutation");
+
+  auto InvalidUpdate = ValidRequest;
+  InvalidUpdate.Content = std::string("replacement\0content", 19U);
+  ++InvalidUpdate.Version;
+  const std::size_t ApplyCallsBeforeInvalidUpdate = Storage.ApplyCalls;
+  const auto InvalidUpdateResult = Memory.Write(Value, InvalidUpdate, Now());
+  const auto* InvalidUpdateError = AsError(InvalidUpdateResult);
+  Check(InvalidUpdateError != nullptr &&
+            InvalidUpdateError->Code == MemoryErrorCode::InvalidArgument,
+        "invalid Content update is rejected");
+  Check(Storage.ApplyCalls == ApplyCallsBeforeInvalidUpdate,
+        "invalid Content update never reaches storage mutation");
+  const auto RowsAfterInvalidUpdate =
+      Storage.Rows.find(ScopeKey(ScopeOf(Value)));
+  Check(RowsAfterInvalidUpdate != Storage.Rows.end() &&
+            RowsAfterInvalidUpdate->second.size() == 1U &&
+            RowsAfterInvalidUpdate->second.front().MemoryId ==
+                ValidRequest.MemoryId &&
+            RowsAfterInvalidUpdate->second.front().Content == ValidContent &&
+            RowsAfterInvalidUpdate->second.front().Version ==
+                ValidRequest.Version,
+        "invalid Content update preserves the existing record");
+}
+
 void TestRecallPriorityAndSummaryMapping() {
   FakeMemoryStorage Storage;
   ConversationMemory Memory(Storage);
@@ -1004,6 +1086,26 @@ void TestRestoreBackupBoundaries() {
   Check(std::holds_alternative<std::size_t>(Denied) &&
             std::get<std::size_t>(Denied) == 0,
         "sensitive backup denied");
+
+  FakeMemoryStorage AtomicStorage;
+  ConversationMemory AtomicMemory(AtomicStorage);
+  static_cast<void>(AtomicMemory.RegisterConsent(
+      Grant(MemoryCategory::IdentityPreference, Value)));
+  auto ValidCandidate = Base;
+  ValidCandidate.MemoryId = "memory-valid-before-invalid";
+  ValidCandidate.Content = "\xE4\xB8\xad";
+  auto InvalidCandidate = Base;
+  InvalidCandidate.MemoryId = "memory-invalid-after-valid";
+  InvalidCandidate.Content = std::string("\xED\xA0\x80", 3U);
+  AtomicStorage.BackupRecords = {ValidCandidate, InvalidCandidate};
+  const auto InvalidRestore = AtomicMemory.RestoreBackup(Value, Now());
+  const auto* InvalidRestoreError = AsError(InvalidRestore);
+  Check(InvalidRestoreError != nullptr &&
+            InvalidRestoreError->Code == MemoryErrorCode::InvalidArgument,
+        "later invalid backup candidate rejects the whole restore");
+  Check(AtomicStorage.ApplyCalls == 0U && AtomicStorage.Rows.empty(),
+        "restore prevalidates every candidate before any storage mutation");
+
   Storage.BackupRecords = {Base};
   static_cast<void>(Memory.Write(
       Value,
@@ -1447,6 +1549,7 @@ int main() {
   TestRevocationAtomicityAndScope();
   TestForgetAndExpiry();
   TestCapacityAndWriteAtomicity();
+  TestDurableContentRequiresStrictUtf8();
   TestRecallPriorityAndSummaryMapping();
   TestRestoreBackupBoundaries();
   TestFixtureBackupTombstoneCannotBeResurrected();

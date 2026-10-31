@@ -33,6 +33,53 @@ MemoryStorageError InvalidArgument() {
                    "invalid memory storage input");
 }
 
+bool IsValidDurableContent(std::string_view Content) noexcept {
+  std::size_t Position = 0;
+  while (Position < Content.size()) {
+    const auto Lead = static_cast<unsigned char>(Content[Position]);
+    if (Lead == 0U) {
+      return false;
+    }
+    if (Lead <= 0x7fU) {
+      ++Position;
+      continue;
+    }
+
+    std::size_t Length = 0;
+    if (Lead >= 0xc2U && Lead <= 0xdfU) {
+      Length = 2U;
+    } else if (Lead >= 0xe0U && Lead <= 0xefU) {
+      Length = 3U;
+    } else if (Lead >= 0xf0U && Lead <= 0xf4U) {
+      Length = 4U;
+    } else {
+      return false;
+    }
+    if (Content.size() - Position < Length) {
+      return false;
+    }
+
+    const auto Second =
+        static_cast<unsigned char>(Content[Position + 1U]);
+    if ((Lead == 0xe0U && Second < 0xa0U) ||
+        (Lead == 0xedU && Second > 0x9fU) ||
+        (Lead == 0xf0U && Second < 0x90U) ||
+        (Lead == 0xf4U && Second > 0x8fU) ||
+        Second < 0x80U || Second > 0xbfU) {
+      return false;
+    }
+    for (std::size_t Offset = 2U; Offset < Length; ++Offset) {
+      const auto Continuation =
+          static_cast<unsigned char>(Content[Position + Offset]);
+      if (Continuation < 0x80U || Continuation > 0xbfU) {
+        return false;
+      }
+    }
+    Position += Length;
+  }
+  return true;
+}
+
 std::optional<Storage::ConversationScopeKey> ToStorageScope(
     const StoredMemory& Scope) {
   std::string_view Prefix;
@@ -465,6 +512,9 @@ SqliteMemoryStorageAdapter::ApplyAtomically(
   std::vector<Storage::MemoryRecord> Upserts;
   Upserts.reserve(Batch.Upserts.size());
   for (const StoredMemory& Record : Batch.Upserts) {
+    if (!IsValidDurableContent(Record.Content)) {
+      return InvalidArgument();
+    }
     if (!UpsertIds.insert(Record.MemoryId).second) {
       return InvalidArgument();
     }

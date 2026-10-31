@@ -78,6 +78,53 @@ std::uint64_t EstimateTokens(std::string_view Text) {
   return static_cast<std::uint64_t>(Text.size() / 4U) + 1U;
 }
 
+bool IsValidDurableContent(std::string_view Content) noexcept {
+  std::size_t Position = 0;
+  while (Position < Content.size()) {
+    const auto Lead = static_cast<unsigned char>(Content[Position]);
+    if (Lead == 0U) {
+      return false;
+    }
+    if (Lead <= 0x7fU) {
+      ++Position;
+      continue;
+    }
+
+    std::size_t Length = 0;
+    if (Lead >= 0xc2U && Lead <= 0xdfU) {
+      Length = 2U;
+    } else if (Lead >= 0xe0U && Lead <= 0xefU) {
+      Length = 3U;
+    } else if (Lead >= 0xf0U && Lead <= 0xf4U) {
+      Length = 4U;
+    } else {
+      return false;
+    }
+    if (Content.size() - Position < Length) {
+      return false;
+    }
+
+    const auto Second =
+        static_cast<unsigned char>(Content[Position + 1U]);
+    if ((Lead == 0xe0U && Second < 0xa0U) ||
+        (Lead == 0xedU && Second > 0x9fU) ||
+        (Lead == 0xf0U && Second < 0x90U) ||
+        (Lead == 0xf4U && Second > 0x8fU) ||
+        Second < 0x80U || Second > 0xbfU) {
+      return false;
+    }
+    for (std::size_t Offset = 2U; Offset < Length; ++Offset) {
+      const auto Continuation =
+          static_cast<unsigned char>(Content[Position + Offset]);
+      if (Continuation < 0x80U || Continuation > 0xbfU) {
+        return false;
+      }
+    }
+    Position += Length;
+  }
+  return true;
+}
+
 } // namespace
 
 bool AuthorizedMemoryContext::IsComplete() const noexcept {
@@ -360,6 +407,10 @@ MemoryResult<std::monostate> ConversationMemory::Write(
     return Error(MemoryErrorCode::InvalidArgument,
                  "new memory is already expired");
   }
+  if (!IsValidDurableContent(Request.Content)) {
+    return Error(MemoryErrorCode::InvalidArgument,
+                 "memory content must be valid UTF-8 without U+0000");
+  }
   const auto Existing = ListActive(Context, Now);
   if (const auto* ExistingError = std::get_if<MemoryError>(&Existing)) {
     return *ExistingError;
@@ -604,9 +655,16 @@ MemoryResult<std::size_t> ConversationMemory::RestoreBackup(
   if (const auto* StorageError = std::get_if<MemoryStorageError>(&Backup)) {
     return Error(MemoryErrorCode::StorageFailure, StorageError->Detail);
   }
+  const auto& BackupRecords =
+      std::get<std::vector<StoredMemory>>(Backup);
+  for (const StoredMemory& Record : BackupRecords) {
+    if (!IsValidDurableContent(Record.Content)) {
+      return Error(MemoryErrorCode::InvalidArgument,
+                   "backup memory content must be valid UTF-8 without U+0000");
+    }
+  }
   std::size_t Restored = 0;
-  for (const StoredMemory& Record :
-       std::get<std::vector<StoredMemory>>(Backup)) {
+  for (const StoredMemory& Record : BackupRecords) {
     const std::string_view RecordStrings[] = {
         Record.MemoryId, Record.ChannelId, Record.AccountId,
         Record.ConversationId, Record.PrincipalId, Record.SubjectId,
