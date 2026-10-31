@@ -985,12 +985,13 @@ ParallelGroups:
   - ChangeRequestId: CR-ED-0144-R7-CONTROLLER-BRANCH-001
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: ProposedAwaitingOwnerAndIndependentFixedHeadReview
-    OwnerDecision: Pending
+    Decision: Accepted
+    OwnerDecision: APPROVE
     OwnerAgentId: /root/luna05_async_runtime_taskroute
-    IndependentReviewerDecision: Pending
+    IndependentReviewerDecision: APPROVE
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
-    CoordinatorDecision: Pending
+    CoordinatorDecision: ACCEPTED
+    CoordinatorDecisionAtUtc: "2026-10-31T23:26:55Z"
     TaskIds: [ED-0144]
     TaskRevisionTransitions:
       - {TaskId: ED-0144, FromRevision: 6, ToRevision: 7}
@@ -2565,7 +2566,7 @@ Tasks:
     EpicId: EP-06
     Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
@@ -2577,7 +2578,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T23:04:00Z"
-    UpdatedAt: "2026-10-31T23:04:00Z"
+    UpdatedAt: "2026-10-31T23:29:49Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2711,14 +2712,14 @@ Tasks:
       ProductWriteAuthorization: None
     ProposedImplementationBranch: Task/ED-0144-R6FinalHeadValidation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Worktree
-    Branch: ""
-    Worktree: ""
-    AssignmentStatus: NotAssigned
+    Branch: Task/ED-0144-R6FinalHeadValidation
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Worktree
+    AssignmentStatus: Assigned
     ImplementationHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f
     ImplementationPullRequestNumber: 124
     ImplementationPullRequestBaseCommit: d6aa14022d5098378d230a0215aa9461c4a34a76
     ImplementationPullRequestHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f
-    AssignmentNote: "Validation only. R7 corrects the Controller branch format and uses a distinct fresh artifact root. A separate assignment ledger must merge and post-merge WorkflowController must return AssignmentAccepted before validation."
+    AssignmentNote: "Validation only. R7 TaskSpec PR #131 merged at main@66f82dd. This separate assignment ledger must merge and post-merge WorkflowController must return AssignmentAccepted before validation."
     TaskSpecProposalBaseCommit: 2642c6c583d919f93d49b6ab4bcc1a83e25d9cfd
     TaskSpecProposalEventId: bd0c14d8-38c0-4b0b-a0dc-02348285fb8a
     ChangeRequestProposedEventId: b3bff883-f385-4130-8d0a-8a940c5c09af
@@ -2733,24 +2734,49 @@ Tasks:
     TaskSpecPullRequestCreatedEventId: 7c2dc92c-aaa3-4d4a-9ecc-52f6dd1a999d
     TaskSpecPullRequestHeadCommit: 8cbb7fec0c5f9eada81b46b9c0cc95f234cb9839
     TaskSpecPullRequestHeadUpdatedEventId: 020e673a-d14b-4de0-9f2f-9f6cf2170d85
+    TaskSpecMergedHeadCommit: 92b75c6f2037748a3e27bf55ca383ca0453ed166
+    TaskSpecMergedToMainCommit: 66f82dd5cb2f43088c16b164646ab344df919e78
+    TaskSpecMergePullRequestNumber: 131
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/131
+    TaskSpecMergedToMainEventId: 8e85cb0f-8326-402e-9ba3-2942f509c77d
+    TaskSpecReviewCompletedEventId: 817a0eaf-acad-4b68-b9fe-3f4f34ecddeb
+    ChangeRequestAcceptedEventId: 7acd25f4-c63e-4937-82cd-346c77a02bc6
     TaskSpecPullRequestHeadTrackingSemantics: "PRHeadUpdated records the latest pushed PR head snapshot before the commit appending that event; the event commit necessarily becomes the next live PR head. The exact head used for final Owner/Reviewer approval is captured by its fixed-head review evidence and by the post-merge TaskSpecReviewCompleted event."
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
     TaskSpecOwnerSlotId: Worker05
     TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
-    TaskSpecOwnerDecision: Pending
+    TaskSpecOwnerDecision: APPROVE
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
     TaskSpecReviewerIndependence: Required
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewStatus: Pending
-    TaskSpecCoordinatorDecision: Pending
-    AssignmentStatusNote: "R7 TaskSpec and branch correction are proposed; no product validation worktree or product-source write is authorized."
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecCoordinatorDecision: ACCEPTED
+    AssignmentStatusNote: "R7 is assigned to Worker05 for validation only. Product validation starts only after this assignment ledger merges and post-merge WorkflowController returns AssignmentAccepted."
     ProductWriteAuthorization: None
+    Worker04SlotRecoveryEventId: 1a9e42ab-a424-4168-956a-064897fd7e3f
+    Worker05SlotRecoveryEventId: 14ded094-8d17-4e5d-94f3-12a9bb415faa
+    AssignmentValidationEventId: 7076b9b2-69fe-4dab-ab3d-5b4b71de028c
+    TaskReadinessValidatedEventId: afc4395a-aa26-4117-95d3-6c7d79e8bb2d
+    TaskAssignedEventId: 1426d029-d35f-4033-8a8b-e6bcf15c270c
+    Worker05SlotAssignmentEventId: 6289b80e-1cba-4705-9bb1-70f728dc8c4e
+    Worker04SlotAssignmentEventId: e84a8129-d2f6-4666-a327-27c5cd90450f
+    TaskSpecReviewOccurredAtCorrectionEventId: 19f74f0a-6c5b-47ff-ae69-672df50e9328
+    ChangeRequestAcceptedOccurredAtCorrectionEventId: 52e3c103-97aa-40a6-a43d-252e64803a8f
+    AssignmentValidationCommandCorrectionEventId: 84884f69-469f-4afb-90d1-13254e8db645
+    CoordinatorDecisionTimeCorrectionEventId: d268965f-8043-4ec7-92ab-dde372fc8ca9
+    AssignmentLedgerBranch: Task/ED-0144-R7AssignmentLedger
+    AssignmentLedgerWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-AssignmentLedger/Worktree
+    AssignmentLedgerBaseCommit: 66f82dd5cb2f43088c16b164646ab344df919e78
+    AssignmentLedgerPullRequestNumber: 132
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/132
+    AssignmentLedgerCreatedHeadCommit: 3a1f36ac8121d04d7e77b62ae3aeb13a9f9f45c1
+    AssignmentLedgerCreatedEventId: 3313b689-cbba-4316-9118-33be30e73e5c
+    AssignmentLedgerHeadCommit: 214a373105ae27887b44efb4965f066fa3e2571d
+    AssignmentLedgerHeadUpdatedEventId: e10daf24-610b-4a8b-b0de-e49b60c8d37f
     TaskSpecStatusNote: >-
-      Revision 7 corrects the Controller-incompatible branch name and allocates a new validation root; the R6 candidate was rejected before any product worktree or build was created.
-      Worker05's prior fixed-head review found the Coverage.CommandTemplate omitted PowerShell's call operator; R7 now uses valid invocation syntax and its exact command parses without errors. Worker04 approved the prior head; both roles must review the new pushed head.
-      PR #130 merged the R6 TaskSpec at main@2642c6; its final-head scope remains PR #124 Base d6aa14022d5098378d230a0215aa9461c4a34a76 / Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f.
-      R7 remains unassigned; no product validation or product-source write is authorized until the corrected TaskSpec, separate assignment ledger, and post-merge Controller AssignmentAccepted.
+      PR #131 merged the corrected R7 TaskSpec at main@66f82dd after Worker05 and Worker04 approved fixed Head 92b75c6f2037748a3e27bf55ca383ca0453ed166. The corrected PowerShell coverage command parses without errors.
+      R7 is assigned validation only on Task/ED-0144-R6FinalHeadValidation. The target remains PR #124 Base d6aa14022d5098378d230a0215aa9461c4a34a76 / Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f; no product validation is authorized until the assignment ledger merges and post-merge Controller returns AssignmentAccepted.
     PreviousRevision6:
       TaskRevision: 6
       Disposition: SupersededByProposedRevision7ControllerBranchCorrection
@@ -2771,11 +2797,11 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, DEP-001, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "The exact Coverage.CommandTemplate parses with PowerShell 7.6.9 (ERROR_COUNT=0); static parse only, no validation command was executed."
-      CurrentFindingOrFailure: "Worker05 requested a call operator for the PowerShell executable path; corrected on the new TaskSpec head and awaiting both fixed-head reviews. No product validation has run."
+      LastCompletedAcceptance: "PR #131 merged after Worker05/Worker04 fixed-head approval and passing Windows CI; Coverage.CommandTemplate static parsing returned ERROR_COUNT=0."
+      CurrentFindingOrFailure: "Assignment ledger is open for Worker05; no R7 product worktree, build, CTest, or coverage validation has run before post-merge AssignmentAccepted."
       TriedApproaches:
         - "Candidate validate-assignment returned exit 1 with the recorded branch-format error; no product worktree or output directory was created."
-      NextAction: "Review and merge R7 branch-format ChangeRequest, then create the separate assignment ledger; after post-merge AssignmentAccepted, run fresh R7 Windows C++20 validation."
+      NextAction: "Merge the R7 assignment ledger, run post-merge Controller validation, then execute the fresh R7 Windows C++20 configure/build/CTest and per-source coverage checks."
       OpenMessageIds: []
       LastValidationResult: "TaskSpec correction proposed; no product configure, build, CTest, coverage, or source write has run."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
