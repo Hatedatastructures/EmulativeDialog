@@ -241,13 +241,14 @@ Capabilities:
       - Architecture/Contracts/ModelProviderContract.md
     ContractStatus: Draft
     ImplementationTask:
-      ProposedTaskId: ED-0101
-      CandidateWorkstream: AgentRuntimeTurnLoop
-      TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
+      ProposedTaskId: ED-0150
+      CandidateWorkstream: AsyncAuthorizedBusinessActionRoundTrip
+      TaskRegistration: ProposedPendingFixedHeadReview
+      PriorTaskId: ED-0101
     AcceptanceEvidencePlan:
-      - Artifact: Tests/Contract/Agent/AgentRuntimeTurnLifecycle
+      - Artifact: Tests/Contract/Agent/AsyncRuntimeVerticalSlice/Agent.AsyncRuntimeVerticalSlice
         State: Planned
-        Proves: A FakeProvider and MockChannel fixture moves a trusted mock message through Core policy and AgentRuntime to one ChannelReceipt; a model-proposed action follows the authorized-action branch and re-enters sampling only after a Core result.
+        Proves: A trusted mock message can produce a bounded Core-authorized registered business action, return its safe result to a later async provider request, and finish through one MockChannel receipt; shell, arbitrary files and generic MCP tools remain unavailable.
 
   - CapabilityId: InstructionAssemblyAndPolicyPrecedence
     UpstreamSubsystem: SessionInstructionAndPromptContext
@@ -661,7 +662,8 @@ TaskLinkage:
   TaskRegistration: RegisteredAndFrozenPendingP1ExitGate
   PhaseExpansionOwner: Coordinator
   ProposedTaskIdAllocation:
-    - {TaskId: ED-0101, CapabilityId: AgentTurnOrchestration}
+    - {TaskId: ED-0101, CapabilityId: AgentTurnOrchestration, Disposition: HistoricalPriorMapping}
+    - {TaskId: ED-0150, CapabilityId: AgentTurnOrchestration, Disposition: CurrentProposedFollowUp}
     - {TaskId: ED-0115, CapabilityId: InstructionAssemblyAndPolicyPrecedence}
     - {TaskId: ED-0102, CapabilityId: SessionAndConversationState}
     - {TaskId: ED-0103, CapabilityId: ContextSelectionAndBudget}
