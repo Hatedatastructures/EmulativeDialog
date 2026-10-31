@@ -813,18 +813,20 @@ ParallelGroups:
     CoordinatorDecision: Pending
     Decision: Proposed
     Scope: >-
-      Add a MemoryContract V2 rule for new durable MemoryRecord.Content inputs: require strict valid UTF-8 and reject
-      U+0000/NUL for write, update and restore/import input before persistent side effects. Use the existing
-      MemoryErrorCode::InvalidArgument and MemoryStorageErrorCode::InvalidArgument; add no rejection enum or new
-      legacy-read/recall behavior. Prohibit logging or otherwise recording the rejected body. Preserve every other V1
-      memory, consent, scope, TTL, backup and schema rule. ProposalId and all other opaque IDs keep their exact byte
-      sequences, including embedded NUL and non-UTF-8 bytes where already permitted.
+      Add a MemoryContract V2 rule for new durable MemoryRecord.Content: require strict valid UTF-8 and reject
+      U+0000/NUL at each input boundary. Write/update validates MemoryWriteRequest.Content. Restore/import validates
+      every StoredMemory.Content candidate before any ApplyAtomically or other persistent write; if any candidate is
+      invalid, reject the entire operation without partially restoring earlier rows. Use existing
+      MemoryErrorCode::InvalidArgument and MemoryStorageErrorCode::InvalidArgument; add no rejection enum or legacy
+      read/recall behavior. Do not log or otherwise record the rejected body. Preserve all other V1 memory, consent,
+      scope, TTL, backup and schema rules. ProposalId and other opaque IDs keep exact bytes, including permitted NUL
+      and non-UTF-8 sequences.
     Reason: >-
       MemoryContract V1 does not define the strict UTF-8/NUL input boundary consistently across Core and storage.
       The existing InvalidArgument error codes and SqliteStore UTF-8 checks are sufficient; adding new enum values or
-      changing legacy recall behavior would exceed the four-path adapter task. ED-0144/R3 is not a dependency: its
-      R4 implementation must depend on this forward-compatible contract and enforce Content validation in Core and
-      the adapter within its approved four-path scope. PR #105 remains the current R3 draft and is planned to be
+      changing legacy recall behavior would exceed the current ED-0144/R3 scope. ED-0144/R3 is not a dependency. A
+      future ED-0144/R4 must be separately proposed with its own CR, exact Core/adapter WriteSet, independent review
+      and assignment; it must depend on this contract. PR #105 remains the current R3 draft and is planned to be
       superseded/closed after the R4 module merges.
     ContractWriteSet: [Architecture/Contracts/MemoryContract.md]
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
@@ -7150,7 +7152,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: /root/luna02_ed0148_pr_ready
     CreatedAt: "2026-10-31T10:46:00Z"
-    UpdatedAt: "2026-10-31T10:57:41Z"
+    UpdatedAt: "2026-10-31T11:10:21Z"
     ParallelGroup: DurableMemory
     TaskSpecProposalBaseCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
     TaskSpecProposalBranch: Task/ED-0160-R1-MemoryContractV2TaskSpec
@@ -7162,10 +7164,11 @@ Tasks:
     Worktree: ""
     PullRequest: ""
     Goal: >-
-      在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结新 durable MemoryRecord.Content 输入的严格
-      UTF-8 与 U+0000/NUL 拒绝规则，使用已有 InvalidArgument 错误码且拒绝正文不落日志。只覆盖 write/update/
-      restore-import 输入，不增加旧记录读取/迁移行为。保留现有 V1 scope/consent、ProposalId 字节语义、TTL、
-      backup、physical schema 和所有未修改条款；本 TaskSpec 只注册合同任务，不授权 C++ 源码修改。
+      在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结新 durable MemoryRecord.Content 的严格 UTF-8
+      与 U+0000/NUL 输入规则，使用已有 InvalidArgument 错误码且拒绝正文不落日志。Write/Update 校验
+      MemoryWriteRequest.Content；Restore/import 校验全部 StoredMemory.Content 候选后才可 ApplyAtomically，
+      任一无效候选都必须整体失败且不部分恢复。不得新增旧记录读取/迁移行为。保留现有 V1
+      scope/consent、ProposalId 字节语义、TTL、backup、physical schema 和未修改条款；TaskSpec 不授权 C++ 修改。
     OutOfScope:
       - 修改任何 C++ 生产源码、测试源码、CMake、SQLite schema 或已持久化数据
       - 改变 scope、identity、consent、ProposalId 编码、TTL、backup、tombstone 或删除语义
@@ -7174,9 +7177,10 @@ Tasks:
     DependsOn: [ED-0148]
     DependencyRationale: >-
       ED-0148/R6 supplies the merged exact ProposalId consent semantics that V2 must preserve. ED-0144/R3 is not a
-      contract-task dependency: its R4 implementation must depend on ED-0160/R1 and enforce Content validation in
-      Core and the adapter within its approved four-path WriteSet. PR #105 remains the current R3 draft and is planned
-      to be superseded/closed after R4 merges; it is not required to synchronize or merge first.
+      contract-task dependency: a future ED-0144/R4 must be separately proposed, reviewed and assigned with its own
+      exact WriteSet covering Core and adapter validation, and it must depend on ED-0160/R1. No R4 WriteSet is approved
+      or authorized here. PR #105 remains the current R3 draft and is planned to be superseded/closed after R4 merges;
+      it is not required to synchronize or merge first.
     ContractVersion:
       - Architecture/Contracts/MemoryContract.md V1 (current frozen baseline)
       - Architecture/Contracts/MemoryContract.md V2 (proposed output of this contract-only task)
@@ -7225,23 +7229,25 @@ Tasks:
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
-          V2 normatively applies to new durable MemoryRecord.Content supplied by MemoryWriteRequest for write, update
-          and restore/import inputs only. Require strict well-formed UTF-8: reject malformed leading/continuation
-          bytes, truncation, overlong encodings, surrogate encodings and values above U+10FFFF; reject U+0000/NUL
-          byte 0x00. Do not normalize or silently rewrite accepted bytes. Do not add legacy-row read/recall behavior or
-          broaden this rule to unrelated identifiers.
+          V2 normatively applies to new durable MemoryRecord.Content at each input boundary. For Write/Update, validate
+          MemoryWriteRequest.Content. For restore/import, validate each StoredMemory.Content candidate obtained from
+          backup/import before calling ApplyAtomically or writing any row. Require strict well-formed UTF-8: reject
+          malformed leading/continuation bytes, truncation, overlong encodings, surrogate encodings and values above
+          U+10FFFF; reject U+0000/NUL byte 0x00. Do not normalize accepted bytes or add legacy-row read/recall behavior.
         Evidence: >-
           Fixed-head contract review maps every named validation condition to V2 prose and confirms the rule applies
           only at durable Content boundaries.
       - AcceptanceId: AC-2
         Description: >-
           Core reports the existing MemoryErrorCode::InvalidArgument and the adapter reports the existing
-          MemoryStorageErrorCode::InvalidArgument for invalid Content inputs. Validate write/update/restore/import
-          input before persistent side effects. Add no new error enum, no legacy-row migration, and no changed
-          Recall/RecallBackup behavior for pre-existing V1 records.
+          MemoryStorageErrorCode::InvalidArgument for invalid Content. Write/Update rejects invalid
+          MemoryWriteRequest.Content before storage side effects. Restore/import validates the full candidate set
+          before ApplyAtomically; any invalid candidate returns InvalidArgument and leaves all persistent rows
+          unchanged. Add no error enum, legacy-row migration, or changed Recall/RecallBackup behavior.
         Evidence: >-
-          Fixed-head review checks the existing error enum values, input validation ordering, absence of new enum
-          values and unchanged legacy recall behavior; no physical schema change or data migration is authorized.
+          Fixed-head review checks both existing error enum values, write-path validation and all-candidates-before-
+          ApplyAtomically restore ordering, no partial restore, no new enum values and unchanged legacy recall
+          behavior; no physical schema change or data migration is authorized.
       - AcceptanceId: AC-3
         Description: >-
           Rejection diagnostics may identify only the stable rejection code and safe non-content record/operation IDs.
@@ -7263,10 +7269,10 @@ Tasks:
         Description: >-
           The contract task's implementation WriteSet is exactly Architecture/Contracts/MemoryContract.md. Its
           registration PR WriteSet is separately exactly P3.yaml plus append-only P3.jsonl; that registration does not
-          authorize product code or tests. ED-0144/R4 must depend on ED-0160/R1 and enforce Core/adapter input
-          validation within its approved four-path WriteSet under a separate assignment. Existing ED-0144/R3 PR #105
-          remains a draft and will be superseded/closed after the R4 module merges; it does not need to merge or
-          synchronize first.
+          authorize product code or tests. A future ED-0144/R4 must be a separately proposed/frozen TaskSpec/CR with
+          an exact Core/adapter WriteSet, independent review, dependency on ED-0160/R1 and its own assignment gate.
+          This proposal does not approve or authorize that future WriteSet. ED-0144/R3 PR #105 remains a draft and
+          will be superseded/closed after R4 merges; it does not need to merge or synchronize first.
         Evidence: >-
           Fixed-head path audit, Controller Proposed query, and lifecycle review verify the two write sets remain
           separate and no implementation authorization is inferred from the TaskSpec PR.
@@ -7280,9 +7286,9 @@ Tasks:
         - "WorkflowController query P3 ED-0160 1 returns Proposed while the registration PR is pending; no assignment event is implied."
         - "git diff --check exits 0 and the registration PR changes exactly Workflow/Plans/P3.yaml and append-only Workflow/Events/CodexRewrite/P3.jsonl."
         - "The future contract task's implementation diff contains exactly Architecture/Contracts/MemoryContract.md."
-        - "Contract text defines strict UTF-8 and U+0000/NUL rejection only for new Content write/update/restore/import inputs, uses existing InvalidArgument error enums, and keeps rejected bodies out of diagnostics."
+        - "Contract text defines strict UTF-8 and U+0000/NUL validation separately for MemoryWriteRequest.Content and StoredMemory restore/import candidates, with the full restore set checked before ApplyAtomically; it uses existing InvalidArgument enums and keeps rejected bodies out of diagnostics."
         - "Contract text explicitly preserves embedded-NUL/non-UTF-8 opaque identifiers and ProposalId semantics, leaves legacy recall behavior unchanged, and preserves V1 consent/TTL/backup rules and physical SQLite schema."
-        - "TaskSpec stays Proposed until fixed-head reviews, merge, dependency completion and a separate assignment ledger; no product source write is authorized here."
+        - "TaskSpec stays Proposed until fixed-head reviews, merge, dependency completion and a separate assignment ledger; no product source write is authorized here, and no future ED-0144/R4 WriteSet is pre-approved."
       Coverage:
         Required: false
         ProductionSources: []
@@ -7301,14 +7307,14 @@ Tasks:
       SoftDefaults: []
       ApprovedOverrides: []
     Checkpoint:
-      LastCompletedAcceptance: "ED-0148/R6 is merged with exact ProposalId consent semantics; ED-0144/R3/PR #105 remains an unmerged draft, with R4 as its planned contract-dependent implementation successor."
+      LastCompletedAcceptance: "ED-0148/R6 is merged with exact ProposalId consent semantics; ED-0144/R3/PR #105 remains an unmerged draft, with a separately reviewed R4 TaskSpec planned as its contract-dependent successor."
       CurrentFindingOrFailure: "MemoryContract V1 does not define a shared strict UTF-8/NUL input rule; no product fix is authorized by this proposal."
       TriedApproaches: []
       NextAction: >-
-        Complete independent fixed-head review and merge this one-file contract task. Then revise ED-0144 to R4 with
-        a dependency on ED-0160/R1, preserving its approved four-path WriteSet and adding Core plus adapter input
-        validation tests and its own fixed-head/assignment gates. After that R4 module merges, close PR #105 as
-        superseded; no sync or merge of R3 is required.
+        Complete independent fixed-head review and merge this one-file contract task. Then propose ED-0144/R4 as a
+        separate TaskSpec/CR with an exact Core/adapter WriteSet, independent review, dependency on ED-0160/R1, and a
+        separate assignment before implementation. After the R4 module merges, close PR #105 as superseded; no sync
+        or merge of R3 is required.
       OpenMessageIds: []
       LastValidationResult: "TaskSpec proposal only; no contract file or product source has been changed."
     Deliverable:
