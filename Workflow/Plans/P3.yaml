@@ -4127,7 +4127,7 @@ Tasks:
     TaskSpecProposalBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
     ProposedTaskSpecBranch: Task/ED-0150-R6ResourceBoundedAsyncToolLoopTaskSpec
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6-TaskSpec/Worktree
-    TaskSpecProposedEventId: "31b01c04-7d6b-46b6-9a75-bf4e368d28b2"
+    TaskSpecProposedEventId: "12a386dc-19b8-4d11-935e-397c478fef06"
     TaskSpecReviewStatus: Proposed
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
     TaskSpecOwnerDecision: Pending
@@ -4140,7 +4140,12 @@ Tasks:
     TaskSpecReviewerReviewHeadCommit: ""
     TaskSpecReviewSource: PendingFixedHeadReview
     TaskSpecHeadCommit: ""
-    TaskSpecPullRequestNumber: ""
+    TaskSpecPullRequestNumber: 114
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/114
+    TaskSpecPullRequestCreatedAtUtc: '2026-10-31T05:44:33Z'
+    TaskSpecPullRequestCreatedEventId: 23472e2c-6642-4600-ad66-66e1f6fd9800
+    TaskSpecPullRequestCreationBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
+    TaskSpecPullRequestCreationHeadCommit: 35d207af60a8fd0ef8cfa24136d8c9fb7757bdcd
     TaskSpecMergedToMainCommit: ""
     TaskSpecMergeMethod: ""
     TaskReadinessValidatedEventId: ""
@@ -4255,6 +4260,7 @@ Tasks:
         - Source/Core/IdentityPolicy.cpp
         - Source/Core/BusinessActionRegistry.cpp
         - Source/Agent/ToolCallCoordinator.cpp
+        - Source/Agent/AsyncToolCallCoordinator.cpp
         - Source/Agent/AsyncAgentRuntime.cpp
         - Source/Core/CoreChatService.cpp
         - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
