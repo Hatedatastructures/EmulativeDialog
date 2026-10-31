@@ -2421,7 +2421,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T12:40:15Z"
-    UpdatedAt: "2026-10-31T12:45:17Z"
+    UpdatedAt: "2026-10-31T13:04:33Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2433,8 +2433,8 @@ Tasks:
       - 记录拒绝正文的原文、转义、截断、编码、哈希或其他派生内容
     DependsOn: [ED-0113, ED-0123, ED-0160]
     ContractVersion:
-      - Architecture/Contracts/MemoryContract.md#MemoryRecord-Content-V2
-      - Architecture/Contracts/MemoryContract.md#MemoryRecord-V1
+      - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
+      - Architecture/Contracts/MemoryContract.md MemoryRecord V1
     BaselineCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
     ModuleIds: [Memory]
     Context:
@@ -2459,10 +2459,8 @@ Tasks:
         - Source/Agent/
         - Source/Providers/
         - Source/Channels/
-        - Source/Storage/
         - CMakeLists.txt
         - CMake/
-        - Architecture/Contracts/
       MaxReferenceFiles: 14
       ExpansionReasonRequired: true
     WriteSet:
@@ -2482,13 +2480,16 @@ Tasks:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Root = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4'
-        if (Test-Path -LiteralPath $Root) { throw "Preserve existing R4 artifacts and stop: $Root" }
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory'
+        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Dependencies'
+        if (Test-Path -LiteralPath $Build) { throw "Preserve existing build artifacts and stop: $Build" }
+        if (Test-Path -LiteralPath $Dependencies) { throw "Preserve existing dependency artifacts and stop: $Dependencies" }
         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
       ConfigureCommand: >-
         I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Dependencies -DBUILD_TESTING=ON
       RequiredBuildTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
       RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests, SqliteStoreTests, SQLiteBuildProbe]
+      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
       BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --parallel 4"
       CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --output-on-failure --no-tests=error"
       Coverage:
@@ -2498,6 +2499,9 @@ Tasks:
         ProductionSources: [Source/Memory/ConversationMemory.cpp, Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumUniqueExecutableLinePercent: 80
         ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory/Reports
+        Command: >-
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80
+        ScriptSha256: 6478186E4C429D721C7D5D154B08409432CA6B22D984B52FC528427952C49A4E
         AggregationRule: "For ConversationMemory.cpp merge reports from ConversationMemoryTests and SqliteMemoryStorageAdapterTests by unique source line index; a line is covered if any paired object reports a positive execution count. Do not add duplicate line denominators or select only one object report. SqliteMemoryStorageAdapter.cpp is measured from its adapter test object."
       StaticChecks:
         - "Controller query returns ED-0144/R4 State=Proposed before assignment."
@@ -2516,7 +2520,7 @@ Tasks:
     TaskSpecPullRequestCreationBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
     TaskSpecPullRequestCreationHeadCommit: 6a185ec04dcaba415b5baec86d026e6dda946ed4
     TaskSpecPullRequestCreatedAtUtc: "2026-10-31T12:44:56Z"
-    TaskSpecPullRequestCreatedEventId: ${prEventId}
+    TaskSpecPullRequestCreatedEventId: d5587971-6054-4552-a69d-80f332e36d8b
     TaskSpecProposalBranch: Task/ED-0144-R4-ContentValidationTaskSpecV2
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/Worktree
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
@@ -2867,116 +2871,6 @@ Tasks:
             RequiresCredentials: false
             RequiresExternalAccount: false
             Rules: {MustFollow: [SEC-001, API-001], SoftDefaults: [], ApprovedOverrides: []}
-            Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
-
-          - TaskId: ED-0154
-            TaskRevision: 1
-            EpicId: EP-06
-            Title: 配置 Windows Agent Slice 必需检查
-            TaskKind: Build
-            State: Merged
-            Phase: P3
-            OwnerRole: BuildAndWorkflowOwner
-            OwnerSlotId: Worker01
-            OwnerAgentId: "/root/luna01_ed0112_r8_audit"
-            ReviewerRole: IndependentValidator
-            ReviewerSlotId: Worker06
-            ReviewerAgentId: "/root/luna06_capability_status_audit"
-            ReviewerIndependence: Required
-            TaskSpecOwnerDecision: APPROVE
-            TaskSpecOwnerReviewedBaseCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
-            TaskSpecOwnerReviewedP3Blob: 5ab83c293c951ce1f6038d1af99339457b686822
-            TaskSpecOwnerFindingClosed: ED-0154-R1-OWNER-F001
-            CreatedBy: Coordinator
-            CreatedAt: "2026-10-30"
-            ParallelGroup: PRPlatformAndBranchProtection
-            Goal: >-
-              Add a Windows-native C++20 GitHub Actions check with SHA-pinned workflow actions for the existing
-              AgentRuntime/WorkflowController slice, establishing a stable required status check before large-scale product implementation.
-            OutOfScope:
-              - Product C++ source, tests, CMake targets, dependency pins, and protocol contracts
-              - Branch protection mutation (Coordinator-owned after the first verified check run)
-              - QQ/WeChat credentials or live channel/provider traffic
-            DependsOn: [ED-0124, ED-0131]
-            ContractVersion: NotApplicable
-            BaselineCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
-            Branch: Task/ED-0154-WindowsRequiredChecks
-            Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Worktree
-            PullRequest: https://github.com/Hatedatastructures/EmulativeDialog/pull/79
-            PullRequestCreated: true
-            PullRequestNumber: 79
-            PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/79
-            PullRequestCreatedAtUtc: "2026-10-30T09:29:11Z"
-            PullRequestBaseCommit: 7a66a8444dd8e8b8785aabeee6958ebf1f1289d8
-            PullRequestCreatedHeadCommit: 6fa67103ecfc585953487d52bf93c64bd8493a79
-            PullRequestHeadCommit: ec93d07046396da7ebd3ca8a174c4eead4585d3a
-            PullRequestState: Merged
-            PullRequestMergeable: true
-            PullRequestCreatedEventId: e7fe3d4f-b359-476a-8b7d-2c299f01a544
-            PullRequestHeadUpdatedEventId: 051a8f35-6921-4711-a073-0af57a181d84
-            PullRequestMergedEventId: 2e552b30-e5f3-49c1-b802-3335f1624076
-            PullRequestMergeCommit: 734998470e7561052794ea189cd83a8f0cbb5371
-            PullRequestMergedAtUtc: "2026-10-30T10:18:15Z"
-            TaskClosedEventId: ff7267f1-af45-4f39-8bb3-bbcfb3c61803
-            OwnerSlotRecoveredEventId: 236db3b7-e81e-4b40-bbbd-80a2a5f4d1e0
-            FinalReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0154-WindowsRequiredChecks/Worker06-FixedHeadReview-PR79-ec93d070-20261030.md
-            FinalReviewBundleSha256: CFFD507ADCEEDA90E07272B585C879C7264B6ABD9DAE6E80A24AA75E337B03E5
-            SuccessfulWindowsCheckRunIds: [41038850833, 41038842056]
-            Context:
-              ModuleId: RootBuildAndDependencies
-              AlwaysLoad: [AGENTS.md, Workflow/CurrentState.md, Workflow/TaskIndex.yaml]
-              ReadSet:
-                - Workflow/AgentExecutionStandard.md
-                - Workflow/TaskLifecycle.md
-                - Workflow/AgentPool.yaml#Worker01
-                - Workflow/AgentPool.yaml#Worker06
-                - Workflow/EnforcementMatrix.yaml#PR-Platform-And-Branch-Protection
-                - Standards/DependencyPolicy.md
-                - CMakePresets.json
-                - CMakeLists.txt
-                - CMake/BoostAsioDependency.cmake
-              OnDemandSet: []
-              ForbiddenSet: ["Source/**", "Tests/**", "CMakeLists.txt", "CMake/**", "Architecture/Contracts/**", "Secrets/**"]
-              Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-              MaxReferenceFiles: 12
-              ExpansionReasonRequired: true
-            WriteSet: [.github/workflows/WindowsAgentSlice.yml]
-            SharedLocks: []
-            Acceptance:
-              - {AcceptanceId: AC-1, Description: "The workflow runs on pull requests targeting main and pushes to main or Task/** branches on Windows Server 2022.", Evidence: "A GitHub Actions run exists for the task branch and PR; the job is green."}
-              - {AcceptanceId: AC-2, Description: "The job provisions the UCRT64 MinGW GCC/make toolchain through the SHA-pinned setup action and invokes the existing windows-agent-slice configure/build/test presets.", Evidence: "Successful run logs show the resolved GCC/make versions, compiler/make validation, configure, the three registered build targets, and both CTest cases."}
-              - {AcceptanceId: AC-3, Description: "The stable check context is WindowsAgentSlice / Build and Test and fails when configure, build, or tests fail or no tests are found.", Evidence: "GitHub check run name and nonzero failure behavior are verified from workflow configuration and run."}
-              - {AcceptanceId: AC-4, Description: "The workflow uses contents:read only, SHA-pinned actions, and no repository secrets or product side effects.", Evidence: "Fixed-head diff and workflow definition review."}
-            Validation:
-              RequiredTargets: [AgentRuntimeVerticalSliceTests, WorkflowControllerContractTests, WorkflowController]
-              RequiredCTestTests: [AgentRuntime.VerticalSlice, WorkflowController.Contract]
-              TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Windows
-              TargetedBuild:
-                - "cmake --preset windows-agent-slice -DFETCHCONTENT_BASE_DIR=<RUNNER_TEMP>/EmulativeDialog/Dependencies"
-                - "cmake --build --preset windows-agent-slice --parallel 4"
-                - "ctest --preset windows-agent-slice --no-tests=error --output-on-failure"
-              ContractFixtures: []
-              StaticChecks:
-                - "GitHub Actions check context equals WindowsAgentSlice / Build and Test."
-                - "Workflow triggers and branch filters match AC-1; actions use the frozen 40-character upstream commit SHAs."
-                - "No product paths, credentials, or secrets are referenced; permissions are restricted to contents:read."
-              Coverage: {Required: false, ProductionSources: [], MinimumLinePercent: 80, ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0154-WindowsRequiredChecks/Windows/Reports}
-              LiveSideEffects: Forbidden
-              NotRunReason: "No product C++ source or test behavior changes; the workflow's own native build and CTest evidence is required on the GitHub task branch."
-            RiskLevel: Medium
-            RiskOwnerRole: BuildAndWorkflowOwner
-            RequiresCredentials: false
-            RequiresExternalAccount: false
-            Rules: {MustFollow: [SEC-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
-            Checkpoint:
-              LastCompletedAcceptance: "AC-1 through AC-4 passed on fixed Head ec93d07; Worker06 independently approved the exact Base/Head, both Windows Actions runs passed configure/build and CTest 2/2, and PR #79 merged to main@7349984."
-              CurrentFindingOrFailure: "None for ED-0154/R1. The task was CI/branch-protection support only and added no product C++ behavior."
-              TriedApproaches:
-                - "The runner initially selected a non-UCRT64 compiler; the workflow now resolves the compiler from the pinned setup action's install-root output."
-                - "The existing WorkflowController contract test requires a historical fixture at H:/Qbot/EmulativeDialog; the workflow checks out its frozen commit and maps the runner workspace to that path."
-              NextAction: "Closed after PR #79 merged and its remote task branch was deleted; the separate ED-0114/R5 product implementation is now being assigned."
-              OpenMessageIds: []
-              LastValidationResult: "Final Head ec93d07046396da7ebd3ca8a174c4eead4585d3a passed PR run 41038850833 and push run 41038842056; each built all three preset targets and passed WorkflowController.Contract plus AgentRuntime.VerticalSlice (2/2). Worker06 APPROVE; squash merge 734998470e7561052794ea189cd83a8f0cbb5371; remote task branch deleted."
             Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
   - TaskId: ED-0145
     TaskRevision: 1
