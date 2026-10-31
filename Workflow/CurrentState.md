@@ -1,5 +1,11 @@
 # 当前状态
 
+## 2026-10-31 ED-0155/R2 CMake 修复派工
+
+- PR #106 已 squash 合并到 main@b6730ffdfe90a87bcd64fb792c0239128a1402df；其 WindowsAgentSlice 必需检查通过。
+- ED-0156/R1 的 Boost.WinAPI 变更已由 main 中 commit 19ddbfd161b4db76614fd625203c68cfcc86360 满足，不再重复提交；Worker01 转派 ED-0155/R2。
+- assignment ledger PR #107 已从 b6730ffd 创建，当前首个 Head 为 fd15023f；PR 只记录任务与工作槽状态。产品写集仍严格限定为 Tests/Contract/Agent/CMakeLists.txt；Worker01 必须等 ledger 合并且 post-merge WorkflowController 返回 AssignmentAccepted 后才能修改该文件。
+
 ## 2026-10-31 ED-0144/R3 实施激活候选
 
 - assignment PR #100 已于 main@e7069c930db9f9d8f8cfb5b62a7e31580ea68b79 合并；主线 WorkflowController validate-assignment 返回 AssignmentAccepted（exit 0，1312 ms），TaskStarted 已写入本候选。
@@ -633,3 +639,21 @@
 - Assignment ledger PR #103 is open from base de7376a at initial head 073ae2d. Its four-path workflow diff is candidate-only; product writes still await merge and the post-merge Controller result.
 
 - Append-only correction for readiness event 6ae96fa9-67d1-43d5-bd41-ae21d02a5ac2 restores canonical dependency keys ED-0108, ED-0149, and ED-0131; events d5419847-ef03-419e-8dea-ad6aeba01f3e, f8b23526-9798-4241-b98c-741ddd8a0411, and 06d3539e-3b50-4e48-93d2-d393d6358e5d also record Worker02 R4 recovery and R5 candidate assignment. PR #103 remains the gate; product writes wait for merge and post-merge AssignmentAccepted.
+
+## 2026-10-31 ED-0155/R3 assignment candidate
+
+- PR #108 merged ED-0155/R3 TaskSpec to main at 74ba2bcc55aaee36a400bbfc99df5f8962124c9e; Worker01 Owner and Worker04 fixed-head reviewer approved the same Base/Head.
+- Worker01's superseded R2 assignment is released and R3 is assigned as a candidate on Task/ED-0155-R3BusinessActionRegistryLink, worktree H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree, baseline 74ba2bcc55aaee36a400bbfc99df5f8962124c9e.
+- Pre-merge WorkflowController validation is recorded in the assignment ledger. Product writes remain gated until this ledger merges and post-merge validation on main returns AssignmentAccepted.
+## 2026-10-31 ED-0155/R3 assignment PR
+
+- Assignment ledger PR #109 is open at Base 74ba2bcc55aaee36a400bbfc99df5f8962124c9e / creation Head 3389e1d32e15df93465d96f7e7f40138bd86228f. The four-path workflow diff is ready for Worker04 fixed-head review; remote branch capacity is 4/4.
+- Product source writes remain gated on PR merge and a post-merge Controller AssignmentAccepted result.
+## 2026-10-31 ED-0157/R1 contract assignment candidate
+
+- PR #111 merged to main at ae7a148310cefa154694c67b9dae9bd739c6172f after Worker04 fixed-head approval and successful WindowsAgentSlice run 41170125022.
+- PR #104 / ED-0150/R5 remains open at its recorded head and is frozen in Blocked state: Worker03 identified stream resource-bound and uncertain-outcome findings that require the V3 contract and a separate R6 TaskSpec. Worker02 was recovered from R5 and assigned as the ED-0157/R1 contract owner candidate.
+- The contract worktree is clean at ae7a148310cefa154694c67b9dae9bd739c6172f on Task/ED-0157-AsyncAgentRuntimeContractV3Implementation. Pre-merge WorkflowController validate-assignment returned AssignmentAccepted, exit 0; log SHA256 is 07DAEC50CB125F229F83CEB75A73A84FDF8D7DD2E051FFA40B57D6D7B448A106.
+- Contract writes remain gated until the separate assignment-ledger PR merges and post-merge validate-assignment returns AssignmentAccepted. Then Worker02 may write only Architecture/Contracts/AsyncAgentRuntimeContractV3.md. No V3 contract file edits or ED-0150/R6 product implementation has started yet.
+
+- Assignment-ledger PR #112 was created at Base ae7a148310cefa154694c67b9dae9bd739c6172f / creation Head 3fb36f03722d29242505dfbff6e0e0c895dd13c3; PRCreated event 05b2d59c-e198-4c38-b7d7-1d407ffc0414 records that snapshot. The remote branch count is 4/4.

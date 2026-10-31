@@ -56,7 +56,7 @@ Slots:
     ModuleIds:
       - RootBuildAndDependencies
       - AgentWorkflowController
-    CurrentTaskId: ED-0156/R1-BoostWinApiClosure
+    CurrentTaskId: ED-0155/R3-BusinessActionRegistryLink
     Status: Assigned
   - SlotId: Worker02
     RoleFamily: AgentRuntimeOwner
@@ -68,7 +68,7 @@ Slots:
       - AgentRuntime
       - Core
       - ChannelAdapterPort
-    CurrentTaskId: ED-0150/R5-AsyncBusinessActionRoundTrip
+    CurrentTaskId: ED-0157/R1-AsyncAgentRuntimeContractV3
     Status: Assigned
   - SlotId: Worker03
     RoleFamily: ResponsesProviderOwner
