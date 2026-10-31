@@ -31,6 +31,16 @@ add_dependencies(CoreChatServiceObject EmulativeDialogBoostAsioVerify)
 target_compile_options(CoreChatServiceObject PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 
+set(BUSINESS_ACTION_REGISTRY_SOURCE
+    "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp")
+add_library(BusinessActionRegistryObject OBJECT
+    "${BUSINESS_ACTION_REGISTRY_SOURCE}")
+target_include_directories(BusinessActionRegistryObject PUBLIC "${PROJECT_ROOT}")
+target_link_libraries(BusinessActionRegistryObject PUBLIC EmulativeDialogBoostAsio)
+add_dependencies(BusinessActionRegistryObject EmulativeDialogBoostAsioVerify)
+target_compile_options(BusinessActionRegistryObject PRIVATE
+    -Wall -Wextra -Wpedantic -Werror)
+
 set(OUTPUT_BUDGET_CONTROLLER_SOURCE
     "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp")
 add_library(OutputBudgetControllerObject OBJECT
@@ -79,7 +89,8 @@ target_include_directories(AgentRuntimeContractTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(AgentRuntimeContractTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(AgentRuntimeContractTests PRIVATE
-    AgentRuntimeObject CoreChatServiceObject OutputBudgetControllerObject)
+    AgentRuntimeObject CoreChatServiceObject BusinessActionRegistryObject
+    OutputBudgetControllerObject)
 
 add_executable(AgentRuntimeVerticalSliceTests
     ${CORE_SOURCES}
@@ -89,7 +100,8 @@ target_include_directories(AgentRuntimeVerticalSliceTests PRIVATE "${PROJECT_ROO
 target_compile_options(AgentRuntimeVerticalSliceTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(AgentRuntimeVerticalSliceTests PRIVATE
-    AgentRuntimeObject CoreChatServiceObject OutputBudgetControllerObject)
+    AgentRuntimeObject CoreChatServiceObject BusinessActionRegistryObject
+    OutputBudgetControllerObject)
 
 add_test(NAME AgentRuntime.Contract COMMAND AgentRuntimeContractTests)
 add_test(NAME AgentRuntime.VerticalSlice COMMAND AgentRuntimeVerticalSliceTests)
@@ -144,13 +156,13 @@ add_test(NAME Agent.EventProjector COMMAND AgentEventProjectorTests)
 
 add_executable(ToolCallRoundTripTests
     "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
-    "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/ToolCallRoundTripTests.cpp")
 target_include_directories(ToolCallRoundTripTests PRIVATE "${PROJECT_ROOT}")
 target_compile_options(ToolCallRoundTripTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(ToolCallRoundTripTests PRIVATE
-    ToolCallCoordinatorObject OutputBudgetControllerObject)
+    ToolCallCoordinatorObject BusinessActionRegistryObject
+    OutputBudgetControllerObject)
 
 add_test(NAME Agent.ToolCallRoundTrip COMMAND ToolCallRoundTripTests)
 
@@ -333,7 +345,8 @@ target_include_directories(CorePolicyAndActionContractTests PRIVATE
 target_compile_options(CorePolicyAndActionContractTests PRIVATE
     -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(CorePolicyAndActionContractTests PRIVATE
-    CoreChatServiceObject OutputBudgetControllerObject)
+    CoreChatServiceObject BusinessActionRegistryObject
+    OutputBudgetControllerObject)
 add_test(NAME Core.PolicyAndAction COMMAND CorePolicyAndActionContractTests)
 
 add_custom_target(ED0114CoverageReport
