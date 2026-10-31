@@ -914,6 +914,46 @@ ParallelGroups:
     MergeMethod: squash
     AcceptedAt: NotCaptured
     MergedAt: "2026-10-31T16:41:40Z"
+  - ChangeRequestId: CR-ED-0144-R6-COVERAGE-HEAD-001
+    TargetTaskId: ED-0144
+    TargetTaskRevision: 5
+    ProposedTaskRevision: 6
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    OwnerSlotId: Worker05
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
+    OwnerDecision: Pending
+    IndependentReviewerSlotId: Worker04
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    IndependentReviewerDecision: Pending
+    ReviewerIndependence: Required
+    CoordinatorDecision: Pending
+    Decision: Proposed
+    TaskRevisionTransitions:
+      - {TaskId: ED-0144, FromRevision: 5, ToRevision: 6}
+    Scope: >-
+      Preserve ED-0144/R5 Goal, exact four-path product WriteSet, AC-1 through AC-6, dependencies, contracts,
+      Owner Worker05, Reviewer Worker04, product behavior, and existing product PR #124. Rebind only the product Base/Head
+      to main d6aa140 and candidate Head a2a107a, and use new R6 build/dependency/report/log paths. Reuse the already
+      hash-pinned SQLite 3.50.1 source read-only through FETCHCONTENT_SOURCE_DIR_SQLITE; do not overwrite R5 artifacts.
+      R5 coverage and reviews remain valid only for d693d05 and cannot satisfy R6.
+    Reason: >-
+      GitHub reports PR #124 mergeable_state=behind because its current Head d693d05 predates main d6aa140. The local
+      integration candidate a2a107 includes current main and retains exactly the four frozen product paths. R5 acceptance
+      binds coverage to d693d05, so merging the updated PR requires an explicit new Base/Head binding and fresh validation.
+    ImpactPaths: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
+    ProductWriteSetChanged: false
+    NoProductWriteAuthorization: true
+    Rollback: >-
+      Revert only the unmerged R6 TaskSpec/CR proposal, preserve the merged R5 TaskSpec and all R5 artifacts, and leave
+      PR #124 product code and user data unchanged.
+    EvidenceRefs:
+      - https://github.com/Hatedatastructures/EmulativeDialog/pull/124
+      - Workflow/Plans/P3.yaml#TaskId=ED-0144&TaskRevision=5
+      - Workflow/Plans/P3.yaml#TaskId=ED-0144&TaskRevision=6
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Execution/Run-20261031T171314Z/ExecutionEvidenceManifest.md
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory/Reports/Run-395cc718461143dfa422e63afc6fc1916/CoverageSummary.json
+
 Tasks:
   - TaskId: ED-0104
     TaskRevision: 3
@@ -2453,14 +2493,14 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
 
   - TaskId: ED-0144
-    TaskRevision: 5
-    SupersedesTaskRevision: 4
-    RevisionTransition: {FromRevision: 4, ToRevision: 5}
-    ChangeRequestId: CR-ED-0144-R5-COVERAGE-VALIDATION-001
+    TaskRevision: 6
+    SupersedesTaskRevision: 5
+    RevisionTransition: {FromRevision: 5, ToRevision: 6}
+    ChangeRequestId: CR-ED-0144-R6-COVERAGE-HEAD-001
     EpicId: EP-06
     Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Proposed
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
@@ -2471,8 +2511,8 @@ Tasks:
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     CreatedByAgentId: /root
-    CreatedAt: "2026-10-31T12:40:15Z"
-    UpdatedAt: "2026-10-31T16:46:46Z"
+    CreatedAt: "2026-10-31T18:21:00.876Z"
+    UpdatedAt: "2026-10-31T18:21:00.876Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2486,7 +2526,7 @@ Tasks:
     ContractVersion:
       - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
       - Architecture/Contracts/MemoryContract.md MemoryRecord V1
-    BaselineCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
+    BaselineCommit: d6aa14022d5098378d230a0215aa9461c4a34a76
     ModuleIds: [Memory]
     Context:
       ModuleId: Memory
@@ -2528,21 +2568,21 @@ Tasks:
       - {AcceptanceId: AC-5, Description: "Memory V1 behavior, schema, consent, scope, TTL, tombstone, backup, and legacy Recall behavior remain unchanged; no data migration is performed.", Evidence: "Existing Memory contract CTests pass; the diff is confined to the four frozen WriteSet paths."}
       - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage tied to the final implementation PR head.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution. CoverageSummary records the exact expected branch and PR Head SHA and confirms the worktree was clean before and after collection."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory'
-        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Dependencies'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory'
+        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Dependencies'
         if (Test-Path -LiteralPath $Build) { throw "Preserve existing R5 artifacts and stop: $Build" }
         if (Test-Path -LiteralPath $Dependencies) { throw "Preserve existing R5 dependency artifacts and stop: $Dependencies" }
         Write-Output 'FRESH_R5_BUILD_PREFLIGHT_OK=1'
       ConfigureCommand: >-
-        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Dependencies -DBUILD_TESTING=ON
+        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Dependencies -DFETCHCONTENT_SOURCE_DIR_SQLITE=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Dependencies/sqlite-src -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON
       RequiredBuildTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
       RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests, SqliteStoreTests, SQLiteBuildProbe]
-      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
-      BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory --parallel 4"
-      CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory --output-on-failure --no-tests=error"
+      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
+      BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory --parallel 4"
+      CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory --output-on-failure --no-tests=error"
       ToolchainVersionCommands:
         Gxx: "C:/msys64/ucrt64/bin/g++.exe --version"
         Gcov: "C:/msys64/ucrt64/bin/gcov.exe --version"
@@ -2554,18 +2594,18 @@ Tasks:
         ProductionSources: [Source/Memory/ConversationMemory.cpp, Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumUniqueExecutableLinePercent: 80
         ThresholdRule: "For each source, covered_unique_executable_lines * 100 >= total_unique_executable_lines * 80; compare integer counts before display rounding."
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory/Reports
         CommandTemplate: >-
-          "C:/Program Files/PowerShell/7/pwsh.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Validation/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-MemoryContentUtf8Validation" -ExpectedHeadCommit "d693d05c920438007af9dd0d12bc8cf0194f4a95"
-        ScriptPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Validation/CoverageCommand.ps1
+          "C:/Program Files/PowerShell/7/pwsh.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Validation/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-MemoryContentUtf8Validation" -ExpectedHeadCommit "a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f"
+        ScriptPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6/Validation/CoverageCommand.ps1
         ScriptSha256: 747E40B98CBC03AA6AC31E14295AD04C4340E090CDFF8CF0CFFA6C9A274F5CC9
-        ExpectedImplementationPR: {Number: 124, ExpectedBaseBranch: main, ExpectedHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95}
+        ExpectedImplementationPR: {Number: 124, ExpectedBaseBranch: main, ExpectedHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f}
         ExpectedHeadCommitBinding: "Bound to exact PR #124 Head at proposal time; any later product-head change requires a revised binding before coverage."
         GitBinding: "Reject wrong branch/head and any tracked/untracked worktree changes before and after collection; record actual branch, HEAD and clean status in CoverageSummary.json."
         WindowsPathPolicy: "gcov runs without --preserve-paths in a unique per-object output directory; preserve exact files[].file source identity."
         AggregationRule: "Merge ConversationMemory.cpp reports from both test executables by unique source line; count a line hit if either reports execution. Measure SqliteMemoryStorageAdapter.cpp from its adapter test object."
       StaticChecks:
-        - "Controller query returns ED-0144/R5 State=Proposed; product branch/worktree remain unassigned until the separate post-merge assignment ledger."
+        - "Controller query returns ED-0144/R6 State=Proposed; product branch/worktree remain unassigned until the separate post-merge assignment ledger."
         - "git diff --check exits 0; registration diff is exactly P3.yaml and P3.jsonl; implementation WriteSet remains the exact four frozen Memory paths."
         - "Fresh Windows C++20 configure, both targeted builds, full standalone build, and all four required CTests exit 0."
         - "Coverage helper parser/help checks pass, SHA matches, and branch/head/cleanliness guards reject mismatched or dirty checkouts."
@@ -2575,604 +2615,666 @@ Tasks:
       ProductWriteAuthorization: None
     ProposedImplementationBranch: Task/ED-0144-MemoryContentUtf8Validation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
-    Branch: Task/ED-0144-MemoryContentUtf8Validation
-    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
-    AssignmentStatus: AssignedCandidatePendingAssignmentLedgerMerge
-    AssignmentLedgerPullRequestNumber: 126
-    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/126
-    AssignmentLedgerPullRequestCreationBaseCommit: 06922df395d318499b053ed71c3a0882c36f389f
-    AssignmentLedgerPullRequestCreationHeadCommit: c47137a3872b290d2584e6872130475db668f801
-    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-31T16:53:49Z"
-    AssignmentLedgerCreatedEventId: a6a05fa0-0fb2-41aa-a96c-57f2fb3e26b6
-    TaskSpecReviewCompletedEventId: cd4bb3dc-b5fc-4d2a-9537-280b15f14b47
-    TaskSpecMergedToMainEventId: e0a02d43-c286-4a00-afc5-1204024597fc
-    ChangeRequestAcceptedEventId: 0d8fa8fb-386d-4b05-a078-faf34eb1830f
-    TaskReadinessValidatedEventId: 40b151af-fcdf-49b7-8c7a-4e01f50f98f5
-    AssignmentValidationEventId: 4577c1e0-f070-4d42-ab99-4fa02d938100
-    TaskAssignedEventId: 05fada65-8c4b-437c-b303-e1c2d43f3fb1
-    Worker05SlotRecoveryEventId: ccb4189e-35e8-4cc4-aff8-9dfde056071b
-    Worker05SlotAssignmentEventId: 04767b53-e0e9-4392-a622-e04dcc14fd70
-    AssignmentValidationCommand: "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5-AssignmentLedger/Worktree P3 ED-0144 5 /root/luna05_async_runtime_taskroute Task/ED-0144-MemoryContentUtf8Validation H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree 1816c64488228bfbdb5019d8230b2d415329c2a8"
-    AssignmentValidationExitCode: 0
-    AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Assignment/Controller-ValidateAssignment-ED-0144-R5.txt#SHA256=4D57E8456929F833AF2D240EA930B1EDC1C13F8E9A0727A61D40BC03779D1F73
-    ReadinessQueryExitCode: 0
-    ReadinessQueryReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Assignment/Controller-Query-ED-0144-R5.txt#SHA256=7CE8D5586E4E6710BFF341913B810ACADD087FB88162AD8A363686291715AA95
-    AssignedToSlot: Worker05
-    ImplementationHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
+    Branch: ""
+    Worktree: ""
+    AssignmentStatus: NotAssigned
+    ImplementationHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f
     ImplementationPullRequestNumber: 124
-    ImplementationPullRequestBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
-    ImplementationPullRequestHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
-    AssignmentNote: "R5 TaskSpec/CR merged by PR #125 at main 06922df. Existing Worker05 implementation branch/worktree remains bound to PR #124 Head d693d05; no product-source writes are authorized. Run only the frozen R5 validation after this assignment ledger merges and Controller validate-assignment succeeds."
-    TaskSpecProposalBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
-    TaskSpecProposalEventId: 1c86e7e5-b2d3-43ce-9763-758c22edc762
-    ChangeRequestProposedEventId: 1d5c8c47-f524-444a-8b63-7d41bcd6354c
-    TaskSpecProposalHeadCommit: f125284a9a365c08b18a0dc3a0e041ada6ffe700
-    TaskSpecPullRequestNumber: 125
-    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
-    TaskSpecPullRequestCreationBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
-    TaskSpecPullRequestCreatedHeadCommit: f125284a9a365c08b18a0dc3a0e041ada6ffe700
-    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T16:14:39Z"
-    TaskSpecPullRequestCreatedEventId: 7fc6536c-2fab-4957-a358-b56bf90c73b9
-    TaskSpecProposalBranch: Task/ED-0144-R5CoverageValidationTaskSpec
-    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5-TaskSpec/Worktree
+    ImplementationPullRequestBaseCommit: d6aa14022d5098378d230a0215aa9461c4a34a76
+    ImplementationPullRequestHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f
+    AssignmentNote: "R6 is validation-only. The R5 product code and approvals remain historical at d693d05; this revision binds a2a107a after merging current main and requires fresh R6 validation before PR #124 can merge. No product writes are authorized."
+    TaskSpecProposalBaseCommit: d6aa14022d5098378d230a0215aa9461c4a34a76
+    TaskSpecProposalEventId: 29363268-09ee-4a95-b8f2-47a005af7bd9
+    ChangeRequestProposedEventId: 29363268-09ee-4a95-b8f2-47a005af7bd9
+    TaskSpecProposalBranch: Task/ED-0144-R6CoverageValidationTaskSpec
+    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-TaskSpec/Worktree
+    TaskSpecProposalHeadCommit: Pending
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
     TaskSpecOwnerSlotId: Worker05
     TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
-    TaskSpecOwnerDecision: APPROVE
-    TaskSpecOwnerDecisionSource: "Worker05 fixed-head OwnerReview APPROVE at TaskSpec Head b60dfaeb; ReviewBundle SHA256 C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD."
+    TaskSpecOwnerDecision: Pending
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
     TaskSpecReviewerIndependence: Required
-    TaskSpecReviewerDecision: APPROVE
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
-    TaskSpecCoordinatorDecision: ACCEPTED
-    TaskSpecOwnerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
-    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker05/Worker05-OwnerReview-PR125-b60dfaeb-20261101.md
-    TaskSpecOwnerReviewBundleSha256: C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD
-    TaskSpecReviewerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
-    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker04-FixedHeadReview-PR125-b60dfaeb-20261101.md
-    TaskSpecReviewerReviewBundleSha256: DDB36130E5F99279F3E3D1D25B91283187401C9B6B7A5094B83EF5DAE765476D
-    TaskSpecCoordinatorDecisionHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
-    TaskSpecCoordinatorDecisionAtUtc: NotCaptured
-    TaskSpecMergedToMainCommit: 06922df395d318499b053ed71c3a0882c36f389f
-    TaskSpecMergePullRequestNumber: 125
-    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
-    TaskSpecMergePullRequestHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
-    TaskSpecMergedAt: "2026-10-31T16:41:40Z"
+    TaskSpecReviewerDecision: Pending
+    TaskSpecReviewStatus: Pending
+    TaskSpecCoordinatorDecision: Pending
+    AssignmentStatusNote: "No R6 assignment exists. A separate assignment ledger and post-merge Controller AssignmentAccepted are required before R6 validation."
     ProductWriteAuthorization: None
-    PreviousRevision4:
-      TaskRevision: 4
-      Disposition: SupersededByProposedRevision5ValidationChange
-      StateAtSupersession: Assigned
-      ChangeRequestId: CR-ED-0144-R4-CONTENT-VALIDATION-001
-      HistoricalTaskSpecCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
-      HistoricalTaskSpecPullRequest: 122
-      ProductPullRequest: 124
-      ProductPullRequestHeadAtR5Proposal: d693d05c920438007af9dd0d12bc8cf0194f4a95
-      FrozenCoverageCommandSha256: AFEBFC66C47C44EC53A2E4872EBD9380C5E0DA31F3AFA0F3E9C9F8090AAAD784
-      FrozenCoverageFailureLogSha256: 4F768731AD20356A33892E0BC6432B53C8F7335C02EF8CD3CA140C9318FFE024
-      CompatibilityCopySha256: 747E40B98CBC03AA6AC31E14295AD04C4340E090CDFF8CF0CFFA6C9A274F5CC9
-      CompatibilityCoverageDiagnosticOnly: "ConversationMemory.cpp 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp 402/424 (94.81%); not formal acceptance."
-      SnapshotBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
-      SnapshotYaml: |-
-          - TaskId: ED-0144
-            TaskRevision: 4
-            SupersedesTaskRevision: 3
-            RevisionTransition: {FromRevision: 3, ToRevision: 4}
-            ChangeRequestId: CR-ED-0144-R4-CONTENT-VALIDATION-001
-            EpicId: EP-06
-            Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
-            TaskKind: IntegrationTask
-            State: Assigned
-            Phase: P3
-            OwnerRole: MemoryOwner
-            OwnerSlotId: Worker05
-            OwnerAgentId: /root/luna05_async_runtime_taskroute
-            ReviewerRole: IndependentReviewer
-            ReviewerSlotId: Worker04
-            ReviewerAgentId: /root/luna04_ed0144_branch_review
-            ReviewerIndependence: Required
-            CreatedBy: Coordinator
-            CreatedByAgentId: /root
-            CreatedAt: "2026-10-31T12:40:15Z"
-            UpdatedAt: "2026-10-31T13:22:56Z"
-            ParallelGroup: DurableMemoryContentV2
-            Goal: >-
-              在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
-            OutOfScope:
-              - 修改 SQLite physical schema、迁移或既有行的 Recall/ListActive/RecallBackup 行为
-              - 更改 Consent、Scope、TTL、tombstone、ProposalId 编码或其他 opaque identifier 语义
-              - 修改 Provider、AgentRuntime、Channel、QQ、微信、CMake 根构建或任何不在 WriteSet 的文件
-              - 引入新错误枚举、通用 UTF-8 API 或其他共享模块接口
-              - 记录拒绝正文的原文、转义、截断、编码、哈希或其他派生内容
-            DependsOn: [ED-0113, ED-0123, ED-0160]
-            ContractVersion:
-              - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
-              - Architecture/Contracts/MemoryContract.md MemoryRecord V1
-            BaselineCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
-            ModuleIds: [Memory]
-            Context:
-              ModuleId: Memory
-              ReadSet:
-                - AGENTS.md
-                - Architecture/ModuleMap.yaml
-                - Architecture/Modules/MemoryStorage.yaml
-                - Architecture/Contracts/MemoryContract.md
-                - Source/Memory/ConversationMemory.hpp
-                - Source/Memory/ConversationMemory.cpp
-                - Source/Memory/MemoryStoragePort.hpp
-                - Source/Memory/SqliteMemoryStorageAdapter.hpp
-                - Source/Memory/SqliteMemoryStorageAdapter.cpp
-                - Source/Storage/SqliteStore.hpp
-                - Source/Storage/SqliteStore.cpp
-                - Tests/Contract/Memory/ConversationMemoryTests.cpp
-                - Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp
-                - Tests/Contract/Memory/CMakeLists.txt
-              OnDemandSet: []
-              ForbiddenSet:
-                - Source/Agent/
-                - Source/Providers/
-                - Source/Channels/
-                - CMakeLists.txt
-                - CMake/
-              MaxReferenceFiles: 14
-              ExpansionReasonRequired: true
-            WriteSet:
-              - Source/Memory/ConversationMemory.cpp
-              - Tests/Contract/Memory/ConversationMemoryTests.cpp
-              - Source/Memory/SqliteMemoryStorageAdapter.cpp
-              - Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp
-            SharedLocks: []
-            Acceptance:
-              - {AcceptanceId: AC-1, Description: "Core Write and Update reject invalid durable Content with existing MemoryErrorCode::InvalidArgument after authorization and before any storage mutation; valid Content bytes are persisted unchanged.", Evidence: "Core behavior tests cover valid multibyte UTF-8, embedded NUL, malformed leading/continuation bytes, truncation, overlong encodings, surrogate encodings, and values above U+10FFFF; rejected Content does not appear in error text or diagnostics and storage ApplyAtomically is not called."}
-              - {AcceptanceId: AC-2, Description: "Direct SQLite adapter ApplyAtomically rejects invalid Content with existing MemoryStorageErrorCode::InvalidArgument before beginning a transaction or changing persisted rows.", Evidence: "Real SQLite adapter tests verify rejection leaves the database unchanged and valid multibyte Content round-trips byte-for-byte."}
-              - {AcceptanceId: AC-3, Description: "RestoreBackup validates every candidate Content before the first ApplyAtomically call and rejects the whole restore if any candidate is invalid.", Evidence: "FakeStorage test places a valid candidate before a later invalid candidate and asserts InvalidArgument, zero ApplyAtomically calls, and no partial rows."}
-              - {AcceptanceId: AC-4, Description: "Content validation is limited to durable Content; existing exact opaque ProposalId bytes, including permitted embedded NUL and non-UTF-8 values, remain unchanged.", Evidence: "Existing SQLite real-file ProposalId write, read, close/reopen, backup, consent recall, and restore tests continue to pass unchanged."}
-              - {AcceptanceId: AC-5, Description: "Memory V1 behavior, schema, consent, scope, TTL, tombstone, backup, and legacy Recall behavior remain unchanged; no data migration is performed.", Evidence: "Existing Memory contract CTests pass; the diff is confined to the four frozen WriteSet paths."}
-              - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage tied to the final implementation PR head.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution. CoverageSummary records the exact expected branch and PR Head SHA and confirms the worktree was clean before and after collection."}
-            Validation:
-              TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory
-              FreshBuildPreflight: |-
-                $ErrorActionPreference = 'Stop'
-                $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory'
-                $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Dependencies'
-                if (Test-Path -LiteralPath $Build) { throw "Preserve existing build artifacts and stop: $Build" }
-                if (Test-Path -LiteralPath $Dependencies) { throw "Preserve existing dependency artifacts and stop: $Dependencies" }
-                Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
-              ConfigureCommand: >-
-                I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Dependencies -DBUILD_TESTING=ON
-              RequiredBuildTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
-              RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests, SqliteStoreTests, SQLiteBuildProbe]
-              TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
-              BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --parallel 4"
-              CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --output-on-failure --no-tests=error"
-              Coverage:
-                Required: true
-                Tool: C:/msys64/ucrt64/bin/gcov.exe
-                Format: JSON v2
-                ProductionSources: [Source/Memory/ConversationMemory.cpp, Source/Memory/SqliteMemoryStorageAdapter.cpp]
-                MinimumUniqueExecutableLinePercent: 80
-                ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory/Reports
-                CommandTemplate: >-
-                  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-MemoryContentUtf8Validation" -ExpectedHeadCommit "<FinalImplementationPRHeadCommit>"
-                ExpectedHeadCommitBinding: "Before invocation, replace the placeholder with the exact 40-character HeadCommit of the final implementation PR under review; do not resolve the branch dynamically inside the command."
-                ScriptSha256: AFEBFC66C47C44EC53A2E4872EBD9380C5E0DA31F3AFA0F3E9C9F8090AAAD784
-                GitBinding: "The script rejects a branch or HEAD mismatch and any tracked/untracked worktree changes, verifies these conditions again after collection, and records the branch, HEAD and clean status in CoverageSummary.json."
-                WindowsPathPolicy: "gcov is invoked without --preserve-paths, inside a unique per-object output directory; the exact JSON files[].file source identity check is retained."
-                AggregationRule: "For ConversationMemory.cpp merge reports from ConversationMemoryTests and SqliteMemoryStorageAdapterTests by unique source line index; a line is covered if any paired object reports a positive execution count. Do not add duplicate line denominators or select only one object report. SqliteMemoryStorageAdapter.cpp is measured from its adapter test object."
-              StaticChecks:
-                - "Controller query returns ED-0144/R4 State=Proposed before assignment."
-                - "git diff --check exits 0 and implementation diff paths equal the exact four-path WriteSet."
-                - "C++20 MinGW configure, both target builds, complete standalone build, and required CTests exit 0."
-                - "Coverage reports are generated from the fresh build only and both production sources meet 80 percent."
-                - "CoverageCommand fails on a wrong branch, mismatched final implementation PR Head, or dirty/untracked worktree, then records the exact branch and Head in CoverageSummary.json."
-                - "No schema, data, user content, secrets, or generated source-tree files are changed."
+    TaskSpecStatusNote: >-
+      R5 validation and code review apply only to PR #124 Head d693d05. Main has advanced to d6aa140 and GitHub reports the PR behind.
+      R6 changes only the validation Base/Head binding and fresh artifact roots; the product diff remains the same four frozen Memory paths.
+      R5 artifacts and approvals stay preserved. After TaskSpec approval and merge, create a separate R6 assignment ledger, update PR #124 to Head a2a107a,
+      validate the assignment, run fresh Windows build/CTest/coverage, and obtain a new fixed-head product review.
+    RiskLevel: High
+    RiskOwnerRole: MemoryOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules: {MustFollow: [CODE-002, DEP-001, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
+    Checkpoint:
+      LastCompletedAcceptance: "ED-0144/R5 validation at d693d05 passed with 90.24% and 94.81% per-source coverage; PR #124 product review approved at that old head."
+      CurrentFindingOrFailure: "PR #124 is behind current main; R5 ExpectedHeadCommitBinding prohibits reusing coverage evidence for a2a107a."
+      TriedApproaches: []
+      NextAction: "Approve/merge R6 TaskSpec, create the separate R6 assignment ledger, then run the exact fresh R6 Windows acceptance."
+      OpenMessageIds: []
+      LastValidationResult: "R6 TaskSpec proposal only; no R6 configure, build, CTest, coverage, or product-source write has run."
+    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+    PreviousRevision5:
+      TaskRevision: 5
+      ChangeRequestId: CR-ED-0144-R5-COVERAGE-VALIDATION-001
+      State: Assigned
+      ProductPR: https://github.com/Hatedatastructures/EmulativeDialog/pull/124
+      ProductBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
+      ProductHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
+      TaskSpecPR: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
+      AssignmentLedgerPR: https://github.com/Hatedatastructures/EmulativeDialog/pull/126
+      ValidationRoot: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5
+      ValidationResult: "CTest 4/4 passed; ConversationMemory.cpp 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp 402/424 (94.81%)."
+      ExecutionEvidenceManifest: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Execution/Run-20261031T171314Z/ExecutionEvidenceManifest.md#SHA256=77ACC9AE7E55C6828049435B2CF5D5322458685D3E27FB128C9FDA024C1341D1
+      CoverageSummary: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Memory/Reports/Run-395cc718461143dfa422e63afc6fc1916/CoverageSummary.json#SHA256=53F9999FBDDF47BF2761838E1CD732A000C444B5DE100ED1062F6CB3545CBBE0
+      PreviousValidationOwnerReview: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-Validation/Worker05/Worker05-OwnerReview-PR124-R5Validation-d693d05-20261031.md
+      PreviousValidationIndependentReview: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-Validation/Worker04-FixedHeadValidationReview-PR124-d693d05-20261101.md
+      R5LifecycleYaml: |-
             ProposedImplementationBranch: Task/ED-0144-MemoryContentUtf8Validation
             ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
             Branch: Task/ED-0144-MemoryContentUtf8Validation
             Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
-            AssignmentStatus: AssignedCandidate
-            BranchNameCorrection:
-              PreviousProposedBranch: Task/ED-0144-R4-MemoryContentUtf8Validation
-              CorrectedBranch: Task/ED-0144-MemoryContentUtf8Validation
-              Reason: "WorkflowController IsAllowedBranch requires an alphanumeric topic after Task/ED-0144-."
-              ScopeImpact: "No change to Goal, ReadSet, WriteSet, dependencies, Acceptance, or product behavior."
-              Review: RequiredOnAssignmentPullRequestFixedHead
-              CorrectionEventId: aa4cb6eb-c4d2-4d39-9e0f-d344f2250eca
-            TaskSpecProposalBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
-            TaskSpecProposalHeadCommit: ac8b1afc58ecd09b3f707d26622d82a12c7d83ff
-            TaskSpecProposalEventId: f1413537-95d2-40b5-a119-685756c731a8
-            LatestTaskSpecProposalEventId: f3839f1d-b27b-4dc6-a5ff-8f37ab021668
-            ChangeRequestProposedEventId: ad8e92e3-200c-4f95-9531-1aeba7df1600
-            TaskSpecPullRequestNumber: 122
-            TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/122
-            TaskSpecPullRequestCreationBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
-            TaskSpecPullRequestCreationHeadCommit: 6a185ec04dcaba415b5baec86d026e6dda946ed4
-            TaskSpecPullRequestCreatedAtUtc: "2026-10-31T12:44:56Z"
-            TaskSpecPullRequestCreatedEventId: d5587971-6054-4552-a69d-80f332e36d8b
-            TaskSpecProposalBranch: Task/ED-0144-R4-ContentValidationTaskSpecV2
-            TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/Worktree
+            AssignmentStatus: AssignedCandidatePendingAssignmentLedgerMerge
+            AssignmentLedgerPullRequestNumber: 126
+            AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/126
+            AssignmentLedgerPullRequestCreationBaseCommit: 06922df395d318499b053ed71c3a0882c36f389f
+            AssignmentLedgerPullRequestCreationHeadCommit: c47137a3872b290d2584e6872130475db668f801
+            AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-31T16:53:49Z"
+            AssignmentLedgerCreatedEventId: a6a05fa0-0fb2-41aa-a96c-57f2fb3e26b6
+            TaskSpecReviewCompletedEventId: cd4bb3dc-b5fc-4d2a-9537-280b15f14b47
+            TaskSpecMergedToMainEventId: e0a02d43-c286-4a00-afc5-1204024597fc
+            ChangeRequestAcceptedEventId: 0d8fa8fb-386d-4b05-a078-faf34eb1830f
+            TaskReadinessValidatedEventId: 40b151af-fcdf-49b7-8c7a-4e01f50f98f5
+            AssignmentValidationEventId: 4577c1e0-f070-4d42-ab99-4fa02d938100
+            TaskAssignedEventId: 05fada65-8c4b-437c-b303-e1c2d43f3fb1
+            Worker05SlotRecoveryEventId: ccb4189e-35e8-4cc4-aff8-9dfde056071b
+            Worker05SlotAssignmentEventId: 04767b53-e0e9-4392-a622-e04dcc14fd70
+            AssignmentValidationCommand: "H:/Qbot/EmulativeDialog.ED-0124-R9.build/windows-agent-slice/WorkflowController.exe validate-assignment H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5-AssignmentLedger/Worktree P3 ED-0144 5 /root/luna05_async_runtime_taskroute Task/ED-0144-MemoryContentUtf8Validation H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree 1816c64488228bfbdb5019d8230b2d415329c2a8"
+            AssignmentValidationExitCode: 0
+            AssignmentValidationReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Assignment/Controller-ValidateAssignment-ED-0144-R5.txt#SHA256=4D57E8456929F833AF2D240EA930B1EDC1C13F8E9A0727A61D40BC03779D1F73
+            ReadinessQueryExitCode: 0
+            ReadinessQueryReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Assignment/Controller-Query-ED-0144-R5.txt#SHA256=7CE8D5586E4E6710BFF341913B810ACADD087FB88162AD8A363686291715AA95
+            AssignedToSlot: Worker05
+            ImplementationHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
+            ImplementationPullRequestNumber: 124
+            ImplementationPullRequestBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
+            ImplementationPullRequestHeadCommit: d693d05c920438007af9dd0d12bc8cf0194f4a95
+            AssignmentNote: "R5 TaskSpec/CR merged by PR #125 at main 06922df. Existing Worker05 implementation branch/worktree remains bound to PR #124 Head d693d05; no product-source writes are authorized. Run only the frozen R5 validation after this assignment ledger merges and Controller validate-assignment succeeds."
+            TaskSpecProposalBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
+            TaskSpecProposalEventId: 1c86e7e5-b2d3-43ce-9763-758c22edc762
+            ChangeRequestProposedEventId: 1d5c8c47-f524-444a-8b63-7d41bcd6354c
+            TaskSpecProposalHeadCommit: f125284a9a365c08b18a0dc3a0e041ada6ffe700
+            TaskSpecPullRequestNumber: 125
+            TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
+            TaskSpecPullRequestCreationBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
+            TaskSpecPullRequestCreatedHeadCommit: f125284a9a365c08b18a0dc3a0e041ada6ffe700
+            TaskSpecPullRequestCreatedAtUtc: "2026-10-31T16:14:39Z"
+            TaskSpecPullRequestCreatedEventId: 7fc6536c-2fab-4957-a358-b56bf90c73b9
+            TaskSpecProposalBranch: Task/ED-0144-R5CoverageValidationTaskSpec
+            TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5-TaskSpec/Worktree
             TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
             TaskSpecOwnerSlotId: Worker05
-            TaskSpecReviewerSlotId: Worker04
-            TaskSpecReviewerIndependence: Required
-            TaskSpecReviewStatus: ApprovedAndMergedToMain
-            TaskSpecOwnerDecision: APPROVE
             TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
-            TaskSpecOwnerReviewBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
-            TaskSpecOwnerReviewHeadCommit: b3acb21ce3f578826ea62aef468b181455d40ead
-            TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker05/Worker05-OwnerReview-PR122-b3acb21.md
-            TaskSpecOwnerReviewBundleSha256: 82FF4DA9A2BE3991DC28E8512369EB05242F3F07E4BF0B97084F1AB792C90A1C
-            TaskSpecReviewerDecision: APPROVE
+            TaskSpecOwnerDecision: APPROVE
+            TaskSpecOwnerDecisionSource: "Worker05 fixed-head OwnerReview APPROVE at TaskSpec Head b60dfaeb; ReviewBundle SHA256 C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD."
+            TaskSpecReviewerSlotId: Worker04
             TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-            TaskSpecReviewerReviewBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
-            TaskSpecReviewerReviewHeadCommit: b3acb21ce3f578826ea62aef468b181455d40ead
-            TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker04/Worker04-FixedHeadReview-PR122-b3acb21-20261031.md
-            TaskSpecReviewerReviewBundleSha256: 48441E96FB2E4F14C59511EC5B1805DD850ECAE1D394692FC95FD01897D67A5E
+            TaskSpecReviewerIndependence: Required
+            TaskSpecReviewerDecision: APPROVE
+            TaskSpecReviewStatus: ApprovedAndMergedToMain
             TaskSpecCoordinatorDecision: ACCEPTED
-            TaskSpecCoordinatorAgentId: /root
-            TaskSpecReviewCompletedEventId: c133cecf-b74e-4378-b4f9-e09912e81d8b
-            TaskSpecMergedEventId: 86e3daa4-361c-4279-b3ec-ab04b8edf489
-            TaskSpecMergedToMainCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
-            TaskSpecMergePullRequestNumber: 122
-            TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/122
-            TaskSpecMergeMethod: squash
-            TaskSpecMergedAt: "2026-10-31T13:32:50Z"
-            TaskAssignedEventId: c6340a40-0d04-440b-a2ec-2834e7c85b40
-            AgentSlotAssignedEventId: ac313b0c-fa61-4488-8f1d-fe5a0dd303a5
-            ReviewerSlotAssignedEventId: 76f0b151-20f9-4b06-9129-792a0ef1a12e
-            TaskReadinessValidatedEventId: a49bfe0c-78c9-4a9d-a90e-dd82e5905d56
-            AssignmentValidationEventId: 3fc575f5-b0bd-4d14-9bf4-5c0ccd6675c8
-            UpdatedAt: "2026-10-31T13:44:12Z"
-            ChangeRequest:
+            TaskSpecOwnerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+            TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker05/Worker05-OwnerReview-PR125-b60dfaeb-20261101.md
+            TaskSpecOwnerReviewBundleSha256: C9EC406AF4860B38A7B2C7EC8060EA743EC2E087C04B442DECEA10FDFFA87ABD
+            TaskSpecReviewerReviewHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+            TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R5-TaskSpec/Worker04-FixedHeadReview-PR125-b60dfaeb-20261101.md
+            TaskSpecReviewerReviewBundleSha256: DDB36130E5F99279F3E3D1D25B91283187401C9B6B7A5094B83EF5DAE765476D
+            TaskSpecCoordinatorDecisionHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+            TaskSpecCoordinatorDecisionAtUtc: NotCaptured
+            TaskSpecMergedToMainCommit: 06922df395d318499b053ed71c3a0882c36f389f
+            TaskSpecMergePullRequestNumber: 125
+            TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
+            TaskSpecMergePullRequestHeadCommit: b60dfaeb7adb35811ce61e42b3233c83fc1955ad
+            TaskSpecMergedAt: "2026-10-31T16:41:40Z"
+            ProductWriteAuthorization: None
+            PreviousRevision4:
+              TaskRevision: 4
+              Disposition: SupersededByProposedRevision5ValidationChange
+              StateAtSupersession: Assigned
               ChangeRequestId: CR-ED-0144-R4-CONTENT-VALIDATION-001
-              TargetTaskRevision: 4
-              RequestedByRole: Coordinator
-              RequestedByAgentId: /root
-              OwnerDecision: APPROVE
-              OwnerReviewEvidenceRef: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker05/Worker05-OwnerReview-PR122-b3acb21.md#SHA256=82FF4DA9A2BE3991DC28E8512369EB05242F3F07E4BF0B97084F1AB792C90A1C
-              IndependentReviewerDecision: APPROVE
-              IndependentReviewerEvidenceRef: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker04/Worker04-FixedHeadReview-PR122-b3acb21-20261031.md#SHA256=48441E96FB2E4F14C59511EC5B1805DD850ECAE1D394692FC95FD01897D67A5E
-              Decision: Accepted
-              ApprovedByRole: Coordinator
-              ApprovedByAgentId: /root
-              AcceptedAtUtc: "2026-10-31T13:32:50Z"
-              AcceptedEventId: 28fcdd03-9180-433b-8ffb-6c876279ed7d
-              Scope: >-
-                Replace the blocked R3 adapter-only path with a four-file Memory Content V2 implementation: validate strict UTF-8 and no U+0000 at Core Write/Update, prevalidate the full RestoreBackup candidate set before any ApplyAtomically, and independently reject invalid direct SQLite adapter writes. Preserve existing errors, opaque identifier bytes, all legacy read behavior and the SQLite schema. The implementation WriteSet is exactly the two Core files and two adapter files listed in this TaskSpec.
-              Reason: >-
-                MemoryContract V2 was merged by PR #120. The current R3 task and draft PR #105 do not enforce the contract across both Core and storage and cannot be extended without changing their frozen scope. A separate revision, fixed-head review, and assignment are required before the four-file C++ implementation.
-              PreserveOwnerReviewerModuleBoundaryAndExistingPersistentData: true
-            PreviousRevision3:
-              TaskRevision: 3
-              Disposition: SupersededByProposedRevision4
-              StateAtSupersession: Blocked
-              ChangeRequestId: CR-ED-0144-R3-TTL-001
-              PullRequestNumber: 105
-              PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/105
-              PullRequestHeadCommit: 3022c3c270ec5b5bf36715828a0169baa6e9dab3
+              HistoricalTaskSpecCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
+              HistoricalTaskSpecPullRequest: 122
+              ProductPullRequest: 124
+              ProductPullRequestHeadAtR5Proposal: d693d05c920438007af9dd0d12bc8cf0194f4a95
+              FrozenCoverageCommandSha256: AFEBFC66C47C44EC53A2E4872EBD9380C5E0DA31F3AFA0F3E9C9F8090AAAD784
+              FrozenCoverageFailureLogSha256: 4F768731AD20356A33892E0BC6432B53C8F7335C02EF8CD3CA140C9318FFE024
+              CompatibilityCopySha256: 747E40B98CBC03AA6AC31E14295AD04C4340E090CDFF8CF0CFFA6C9A274F5CC9
+              CompatibilityCoverageDiagnosticOnly: "ConversationMemory.cpp 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp 402/424 (94.81%); not formal acceptance."
+              SnapshotBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
               SnapshotYaml: |-
                   - TaskId: ED-0144
-                    TaskRevision: 3
+                    TaskRevision: 4
+                    SupersedesTaskRevision: 3
+                    RevisionTransition: {FromRevision: 3, ToRevision: 4}
+                    ChangeRequestId: CR-ED-0144-R4-CONTENT-VALIDATION-001
                     EpicId: EP-06
-                    Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
+                    Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
                     TaskKind: IntegrationTask
-                    State: Blocked
-                    AssignmentNote: "R3 is blocked pending MemoryContract V2 and its integrated Core plus SQLite adapter successor. PR #105 remains an unmerged draft; do not continue its isolated adapter-only change. Preserve its branch for later supersession review after ED-0144/R4 merges."
-                    WriteSetChangeRequest:
-                      ChangeRequestId: CR-ED-0144-002
-                      Decision: Accepted
-                      ApprovedByRole: Coordinator
-                      Scope: "Limit ED-0144 to the SqliteMemoryStorageAdapter implementation, its adapter tests, and Tests/Contract/Memory/CMakeLists.txt. Root CMake/CTest registration is owned by ED-0145 to preserve single-writer ownership of CMakeLists.txt."
-                      AcceptedAt: 2026-10-28
-                    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0144
-                    AssignedBranch: Task/ED-0144-MemorySqliteAdapter
-                    PreviousRevision1TaskBaseCommit: 8a608831ce94020a0187cf586abd66a4834de966
-                    BaselineCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
-                    PreviousRevision1CompletionHead: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
-                    PreviousRevision1Coverage: "SqliteMemoryStorageAdapter.cpp 289/306 (94.44%), gcov JSON v2, GCC/gcov 16.1.0; H:/Qbot/EmulativeDialog.ED-0144.build/Standalone/Reports/SqliteMemoryStorageAdapter##H~#Qbot#EmulativeDialog.ED-0144#Source#Memory#SqliteMemoryStorageAdapter.gcov.json.gz"
-                    PreviousRevision1Validation: "Windows C++20 configure 0; focused target build 0; standalone all-target build 0; CTest 4/4; git diff --check Base Head 0; four changed paths exactly match WriteSet."
-                    PreviousRevision2ReviewStatus: CHANGES_REQUESTED
-                    PreviousRevision2HeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
-                    PreviousRevision2PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
-                    PreviousRevision2PullRequestHeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
-                    PreviousRevision2ReviewBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
-                    PreviousRevision2ReviewHeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
-                    PreviousRevision2AuthorValidation:
-                      ConfigureExitCode: 0
-                      TargetBuildExitCode: 0
-                      FullBuildExitCode: 0
-                      CTest: "4/4 passed, exit 0"
-                      Coverage: "SqliteMemoryStorageAdapter.cpp 381/407 (93.61%), gcov JSON v2, GCC/gcov 16.1.0"
-                      DiffCheckExitCode: 0
-                      ChangedFiles: 4
-                      MergeableAtUpdate: true
-                      BuildDirectory: H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone
-                    IndependentReviewerAgentId: /root/worker06_ed0105_review
-                    IndependentValidationStatus: Pending
-                    PreviousRevision1ReviewBaseCommit: 8a608831ce94020a0187cf586abd66a4834de966
-                    PreviousRevision1ReviewHeadCommit: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
-                    PreviousRevision1ReviewDecision: CHANGES_REQUESTED
-                    PreviousRevision1ReviewFinding:
-                      FindingId: ED-0144-R1-F001
-                      Severity: Major
-                      Path: Source/Memory/SqliteMemoryStorageAdapter.cpp
-                      Summary: "StoredMemory.ProposalId is dropped on storage write/read, so proposal-bound consent fails ConversationMemory::ConsentMatches during SQLite Recall and RestoreBackup."
-                      ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0144-R1-Review-daeb204/ReviewResult.md
-                      IndependentValidation: "Windows C++20 configure/build exit 0; CTest 4/4; gcov JSON v2 289/306 (94.44%); diff check 0."
-                    Revision2ChangeRequest:
-                      ChangeRequestId: CR-ED-0144-R2-DATA-001
-                      RequestedByRole: MemoryOwner
-                      RequestedByAgentId: /root/worker05_ed0144_memory
-                      Decision: Accepted
-                      ApprovedByRole: Coordinator
-                      ApprovedByAgentId: /root
-                      Scope: "Preserve valid optional StoredMemory.ProposalId in MemoryKind without changing the physical SQLite schema or four-path WriteSet. V1 continues to represent an absent ProposalId; V2 length-prefix encodes the exact bytes as lowercase hex. Both versions are readable and an empty present ID, noncanonical, malformed, truncated, overflowing, invalid-hex, trailing, unknown or future encodings fail closed."
-                      Reason: "ED-0144-R1-F001 proved proposal-bound records cannot pass consent matching after recall/restore when ProposalId is dropped."
-                      TaskRevisionTransition: {FromRevision: 1, ToRevision: 2}
-                      PreserveTaskIdDependenciesOwnerReviewerModuleBoundaryAndPhysicalSchema: true
-                      PreserveV1Compatibility: true
-                      AcceptedAt: 2026-10-28
-                    Revision1ImplementationDecision:
-                      ImplementationDecisionId: ED-0144-DATA-001
-                      Disposition: SupersededByAcceptedTaskRevision2
-                      Decision: "R1 encoded Category and UserConfirmed in MemoryKind but did not preserve optional ProposalId; this caused ED-0144-R1-F001."
-                      Evidence: "Original R1 fixed-head validation and review are retained under PreviousRevision1Validation and PreviousRevision1ReviewFinding."
-                    AcceptedImplementationDecision:
-                      ImplementationDecisionId: ED-0144-DATA-002
-                      Decision: Accepted
-                      ApprovedByRole: Coordinator
-                      Scope: "If ProposalId is absent, write EDMemoryV1/<Category>/<0|1>. A present ProposalId must be non-empty and is written as EDMemoryV2/<Category>/<0|1>/P<byte-length>:<lowercase hex of exact ProposalId bytes>, where byte-length is the exact std::string byte count. Decode V1 as absent and V2 as present; require canonical decimal length, reject arithmetic overflow before multiplication/allocation, require exactly 2*byte-length lowercase hex digits and no trailing bytes, validate category and bit, and fail closed on an empty ID or malformed/unknown/future versions. Preserve all non-empty ProposalId bytes exactly, including embedded NUL. Require the full encoded MemoryKind to fit INT_MAX bytes on write and read, matching SqliteStore::BindText's int length."
-                      Evidence: "SQLite real-file tests prove V1 compatibility without inventing a missing ProposalId and exact V2 ProposalId round trips through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup, including delimiter, embedded-NUL and non-UTF-8 bytes; empty and mismatched proposal-bound IDs fail closed. Malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future encodings fail closed on active and backup reads."
-                      PreserveGoalWriteSetDependenciesAcceptanceAndPhysicalSchema: true
-                    Revision3ImplementationDecision:
-                      ImplementationDecisionId: ED-0144-TTL-001
-                      Decision: Accepted
-                      ApprovedByRole: Coordinator
-                      Scope: "SqliteMemoryStorageAdapter::RecallBackup uses ListActiveRecords and FromStorageRecord(MemoryRecord) to keep the exact expiry timestamp while retaining the same scope, active-state, expiry and ordering semantics."
-                      Evidence: "Real SQLite regression verifies exact future expiry through backup recall, close/reopen and ConversationMemory restore; querying at/after expiry returns no active recall."
-                      PreserveStorageSchemaAndWriteSet: true
-                    PullRequestCreated: true
-                    PullRequestNumber: 25
-                    PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/25
-                    PreviousRevision1PullRequestBaseCommitAtCreation: 1d8863b286f8e752edc06c2a671721af0a9a74f3
-                    PullRequestMergeableAtCreation: true
-                    PreviousRevision2:
-                      TaskRevision: 2
-                      Disposition: SupersededAfterFixedHeadMajorFinding
-                      HeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
-                      PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
-                      ReviewFindingId: ED-0144-R2-F001
-                      Severity: Major
-                      Summary: "Backup recall hydration drops ExpiresAt; restoring a future-expiring record removes TTL and can make it permanent. Existing R2 coverage artifacts contain libgcov profile checksum conflicts and cannot be reused for R3 acceptance."
-                      Reviewer: /root/worker06_ed0105_review
-                      ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0144-R2-Review-9dc44d3/ReviewResult.md
-                    ReviewStatus: AwaitingRevision3Head
-                    Revision3ChangeRequest:
-                      ChangeRequestId: CR-ED-0144-R3-TTL-001
-                      RequestedByRole: MemoryOwner
-                      RequestedByAgentId: /root/worker05_ed0144_memory
-                      Decision: Accepted
-                      ApprovedByRole: Coordinator
-                      ApprovedByAgentId: /root
-                      TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
-                      Scope: "Preserve four-path WriteSet; route backup recall through ListActiveRecords to preserve ExpiresAt; add future-expiry round-trip/restore/after-expiration real SQLite tests; validate in a fresh R3 build directory."
-                      PreserveGoalWriteSetDependenciesContractsOwnerReviewerAndPhysicalSchema: true
-                      AcceptedAt: 2026-10-28
+                    State: Assigned
                     Phase: P3
                     OwnerRole: MemoryOwner
                     OwnerSlotId: Worker05
                     OwnerAgentId: /root/luna05_async_runtime_taskroute
-                    ReviewerRole: BuildAndWorkflowOwner
-                    ReviewerSlotId: Worker06
-                    ReviewerAgentId: /root/luna06_capability_status_audit
+                    ReviewerRole: IndependentReviewer
+                    ReviewerSlotId: Worker04
+                    ReviewerAgentId: /root/luna04_ed0144_branch_review
                     ReviewerIndependence: Required
                     CreatedBy: Coordinator
-                    Branch: Task/ED-0144-MemorySqliteAdapter
-                    Worktree: H:/Qbot/EmulativeDialog.ED-0144
-                    Goal: "实现 MemoryStoragePort 到 SqliteStore 的生产适配器（事务化写、tombstone、scope kind 入 schema、consent tombstone、重启恢复）并接入独立 Memory 合同测试目标。"
-                    OutOfScope: ["授权策略本身", "原始私聊正文持久化", "平台副本删除声明"]
-                    DependsOn: [ED-0113, ED-0123]
-                    ContractVersion: [Architecture/Contracts/MemoryContract.md V1]
+                    CreatedByAgentId: /root
+                    CreatedAt: "2026-10-31T12:40:15Z"
+                    UpdatedAt: "2026-10-31T13:22:56Z"
+                    ParallelGroup: DurableMemoryContentV2
+                    Goal: >-
+                      在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
+                    OutOfScope:
+                      - 修改 SQLite physical schema、迁移或既有行的 Recall/ListActive/RecallBackup 行为
+                      - 更改 Consent、Scope、TTL、tombstone、ProposalId 编码或其他 opaque identifier 语义
+                      - 修改 Provider、AgentRuntime、Channel、QQ、微信、CMake 根构建或任何不在 WriteSet 的文件
+                      - 引入新错误枚举、通用 UTF-8 API 或其他共享模块接口
+                      - 记录拒绝正文的原文、转义、截断、编码、哈希或其他派生内容
+                    DependsOn: [ED-0113, ED-0123, ED-0160]
+                    ContractVersion:
+                      - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
+                      - Architecture/Contracts/MemoryContract.md MemoryRecord V1
+                    BaselineCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
+                    ModuleIds: [Memory]
                     Context:
                       ModuleId: Memory
-                      ReadSet: [AGENTS.md, Architecture/Contracts/MemoryContract.md, Source/Memory/ConversationMemory.hpp, Source/Memory/ConversationMemory.cpp, Source/Storage/SqliteStore.hpp, Source/Storage/SqliteStore.cpp, Tests/Contract/Memory/Fixtures/FixtureIndex.json]
-                      OnDemandSet: [Workflow/Plans/P3.yaml, Tests/Contract/Memory/ConversationMemoryTests.cpp]
-                      ContextExpanded:
-                        - {Path: Tests/Contract/Storage/CMakeLists.txt, Reason: "Link the standalone Memory contract target to the pinned EmulativeDialogSQLite target and preserve its isolated test data directory.", AcceptanceId: AC-3, WriteSetChanged: false}
-                        - {Path: Tests/Contract/Storage/SqliteStoreTests.cpp, Reason: "Use the existing real-file database and restart-recovery test pattern for the Memory adapter fixtures.", AcceptanceId: AC-1, WriteSetChanged: false}
-                        - {Path: Source/Memory/ConversationMemory.cpp, Reason: "Verify that StoredMemory.UserConfirmed is independent of Provenance before defining lossless persistence and recall mapping.", AcceptanceId: AC-1, WriteSetChanged: false}
-                        - {Path: Source/Storage/SqliteStore.cpp, Reason: "Verify MemoryKind binding length narrowing and NUL-terminated text read behavior before selecting a safe reversible ProposalId encoding.", AcceptanceId: AC-4, WriteSetChanged: false}
-                        - {Path: Tests/Contract/Memory/ConversationMemoryTests.cpp, Reason: "Confirm existing Recall and RestoreBackup behavior uses exact consent-bound ProposalId matching while validating the SQLite integration fixture.", AcceptanceId: AC-4, WriteSetChanged: false}
-                      ForbiddenSet: ["Source/Providers/", "Source/Agent/"]
-                      Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
-                      MaxReferenceFiles: 10
+                      ReadSet:
+                        - AGENTS.md
+                        - Architecture/ModuleMap.yaml
+                        - Architecture/Modules/MemoryStorage.yaml
+                        - Architecture/Contracts/MemoryContract.md
+                        - Source/Memory/ConversationMemory.hpp
+                        - Source/Memory/ConversationMemory.cpp
+                        - Source/Memory/MemoryStoragePort.hpp
+                        - Source/Memory/SqliteMemoryStorageAdapter.hpp
+                        - Source/Memory/SqliteMemoryStorageAdapter.cpp
+                        - Source/Storage/SqliteStore.hpp
+                        - Source/Storage/SqliteStore.cpp
+                        - Tests/Contract/Memory/ConversationMemoryTests.cpp
+                        - Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp
+                        - Tests/Contract/Memory/CMakeLists.txt
+                      OnDemandSet: []
+                      ForbiddenSet:
+                        - Source/Agent/
+                        - Source/Providers/
+                        - Source/Channels/
+                        - CMakeLists.txt
+                        - CMake/
+                      MaxReferenceFiles: 14
                       ExpansionReasonRequired: true
-                    WriteSet: [Source/Memory/SqliteMemoryStorageAdapter.hpp, Source/Memory/SqliteMemoryStorageAdapter.cpp, Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp, Tests/Contract/Memory/CMakeLists.txt]
-                    SharedLocks: [RootBuild]
+                    WriteSet:
+                      - Source/Memory/ConversationMemory.cpp
+                      - Tests/Contract/Memory/ConversationMemoryTests.cpp
+                      - Source/Memory/SqliteMemoryStorageAdapter.cpp
+                      - Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp
+                    SharedLocks: []
                     Acceptance:
-                      - {AcceptanceId: AC-1, Description: "ConversationMemory 通过真实 SqliteStore 持久化；事务失败不改变旧数据，tombstone 与 consent 撤销可恢复。", Evidence: "真实文件 DB 集成测试 + 重启恢复。"}
-                      - {AcceptanceId: AC-2, Description: "Direct/Group scope kind 入 schema，私聊与群记忆不可互读。", Evidence: "同 ID 不同 kind 隔离测试。"}
-                      - {AcceptanceId: AC-3, Description: "独立 Memory 合同目标可编译并运行；根 CMake/CTest 注册由 ED-0145 统一完成。", Evidence: "Standalone CMake target and CTest pass; ED-0145 later verifies the root suite."}
-                      - {AcceptanceId: AC-4, Description: "SQLite adapter losslessly preserves valid optional ProposalId while keeping existing V1 rows readable and rejecting malformed/future encodings; exact proposal-bound consent survives recall and backup restore.", Evidence: "Real SQLite tests cover nullopt V1 with no inferred ProposalId and non-empty delimiter-containing, embedded-NUL and non-UTF-8 ProposalId byte sequences through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup; empty and mismatched proposal-bound IDs fail closed; malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future values fail closed on active and backup reads."}
-                      - {AcceptanceId: AC-5, Description: "Backup recall and authorized restore preserve each record's optional ExpiresAt; an expired record is unavailable after its original expiry and cannot become permanent through restore.", Evidence: "Real SQLite test stores a future-expiring record, recalls backup and restarts the database, restores through ConversationMemory, verifies exact expiry equality, then verifies no Recall/ListActive result at or after the original expiry."}
-                    AssignmentStatus: ActiveAfterTaskStarted
-                    PreMergeAssignmentValidationEventId: c4628d86-c990-4383-b6e7-7ff4e1f05997
-                    TaskReadinessValidatedEventId: 9987a36f-bfea-4b4c-8ec9-d0cf50b28bc3
-                    TaskAssignedEventId: ce30b2a4-af88-4ae4-b051-50e94a3ad490
-                    AgentSlotAssignedEventId: acd68b2c-7067-4d70-8d98-2489d5b9e85d
-                    AssignmentLedgerPullRequestNumber: 100
-                    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/100
-                    AssignmentLedgerPullRequestBaseCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
-                    AssignmentLedgerPullRequestCreatedHeadCommit: 282f67faf02b594d8a18f195b2ce01fd32eb7bed
-                    AssignmentLedgerPullRequestCreatedAtUtc: '2026-10-30T22:46:11Z'
-                    AssignmentLedgerPullRequestCreatedEventId: 5927fdaa-7745-4aee-8ee9-f8a71606c35a
-                    AssignmentLedgerPullRequestMergeCommit: e7069c930db9f9d8f8cfb5b62a7e31580ea68b79
-                    AssignmentLedgerPullRequestMergedEventId: b7024e93-d65c-4a49-b3a4-8018261f5959
-                    PostMergeAssignmentValidationLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3-Activation/Logs/PostMerge-AssignmentValidation-Final.log
-                    PostMergeAssignmentValidationEventId: b7e5c448-9c22-453a-aba9-30a2034790a7
-                    TaskStartedAtUtc: '2026-10-30T22:57:47Z'
-                    TaskStartedEventId: b7b0be66-b6e8-49b3-8a37-7ec113e98778
-                    ActivationLedgerPullRequestNumber: 101
-                    ActivationLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/101
-                    ActivationLedgerPullRequestBaseCommit: e7069c930db9f9d8f8cfb5b62a7e31580ea68b79
-                    ActivationLedgerPullRequestCreatedHeadCommit: 21b304e4e42190ffb19be6ae319e9baee7c76380
-                    ActivationLedgerPullRequestCreatedAtUtc: '2026-10-30T22:59:24Z'
-                    ActivationLedgerPullRequestCreatedEventId: 0a95acb7-e31d-46ad-9baa-902d13dced06
-                    AssignmentLedgerBaseCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
-                    AssignmentTaskSpecPullRequestNumber: 99
-                    AssignmentTaskSpecMergeCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
-                    AssignedBranch: Task/ED-0144-MemorySqliteAdapter
-                    AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0144
-                    AssignedBaselineCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
-                    ProductWriteAuthorization: "Worker05 is authorized to modify only the frozen ED-0144/R3 four-path WriteSet after PR #101 merges to main; TaskStarted in the unmerged activation PR does not authorize product writes."
-                    AssignmentGate: >-
-                      PR #100 merged after fixed-head review and the required WindowsAgentSlice check passed. Post-merge
-                      WorkflowController validate-assignment returned AssignmentAccepted and TaskStarted is recorded. Product work
-                      may begin only after this activation ledger merges; scope remains the frozen four-path WriteSet.
+                      - {AcceptanceId: AC-1, Description: "Core Write and Update reject invalid durable Content with existing MemoryErrorCode::InvalidArgument after authorization and before any storage mutation; valid Content bytes are persisted unchanged.", Evidence: "Core behavior tests cover valid multibyte UTF-8, embedded NUL, malformed leading/continuation bytes, truncation, overlong encodings, surrogate encodings, and values above U+10FFFF; rejected Content does not appear in error text or diagnostics and storage ApplyAtomically is not called."}
+                      - {AcceptanceId: AC-2, Description: "Direct SQLite adapter ApplyAtomically rejects invalid Content with existing MemoryStorageErrorCode::InvalidArgument before beginning a transaction or changing persisted rows.", Evidence: "Real SQLite adapter tests verify rejection leaves the database unchanged and valid multibyte Content round-trips byte-for-byte."}
+                      - {AcceptanceId: AC-3, Description: "RestoreBackup validates every candidate Content before the first ApplyAtomically call and rejects the whole restore if any candidate is invalid.", Evidence: "FakeStorage test places a valid candidate before a later invalid candidate and asserts InvalidArgument, zero ApplyAtomically calls, and no partial rows."}
+                      - {AcceptanceId: AC-4, Description: "Content validation is limited to durable Content; existing exact opaque ProposalId bytes, including permitted embedded NUL and non-UTF-8 values, remain unchanged.", Evidence: "Existing SQLite real-file ProposalId write, read, close/reopen, backup, consent recall, and restore tests continue to pass unchanged."}
+                      - {AcceptanceId: AC-5, Description: "Memory V1 behavior, schema, consent, scope, TTL, tombstone, backup, and legacy Recall behavior remain unchanged; no data migration is performed.", Evidence: "Existing Memory contract CTests pass; the diff is confined to the four frozen WriteSet paths."}
+                      - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage tied to the final implementation PR head.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution. CoverageSummary records the exact expected branch and PR Head SHA and confirms the worktree was clean before and after collection."}
                     Validation:
-                      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory
-                      Coverage:
-                        Required: true
-                        ProductionSources: [Source/Memory/SqliteMemoryStorageAdapter.cpp]
-                        MinimumLinePercent: 80
-                        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory/Reports
-                      RequiredTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
+                      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory
                       FreshBuildPreflight: |-
                         $ErrorActionPreference = 'Stop'
-                        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory'
-                        if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+                        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory'
+                        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Dependencies'
+                        if (Test-Path -LiteralPath $Build) { throw "Preserve existing build artifacts and stop: $Build" }
+                        if (Test-Path -LiteralPath $Dependencies) { throw "Preserve existing dependency artifacts and stop: $Dependencies" }
                         Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
-                      TargetedBuild:
-                        - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
-                        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --target SqliteMemoryStorageAdapterTests --parallel 4"
-                        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --parallel 4"
-                        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --output-on-failure --no-tests=error"
-                        - "C:/msys64/ucrt64/bin/g++.exe --version"
-                        - "C:/msys64/ucrt64/bin/gcov.exe --version"
+                      ConfigureCommand: >-
+                        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Dependencies -DBUILD_TESTING=ON
+                      RequiredBuildTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
+                      RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests, SqliteStoreTests, SQLiteBuildProbe]
+                      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
+                      BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --parallel 4"
+                      CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory --output-on-failure --no-tests=error"
+                      Coverage:
+                        Required: true
+                        Tool: C:/msys64/ucrt64/bin/gcov.exe
+                        Format: JSON v2
+                        ProductionSources: [Source/Memory/ConversationMemory.cpp, Source/Memory/SqliteMemoryStorageAdapter.cpp]
+                        MinimumUniqueExecutableLinePercent: 80
+                        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory/Reports
+                        CommandTemplate: >-
+                          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-MemoryContentUtf8Validation" -ExpectedHeadCommit "<FinalImplementationPRHeadCommit>"
+                        ExpectedHeadCommitBinding: "Before invocation, replace the placeholder with the exact 40-character HeadCommit of the final implementation PR under review; do not resolve the branch dynamically inside the command."
+                        ScriptSha256: AFEBFC66C47C44EC53A2E4872EBD9380C5E0DA31F3AFA0F3E9C9F8090AAAD784
+                        GitBinding: "The script rejects a branch or HEAD mismatch and any tracked/untracked worktree changes, verifies these conditions again after collection, and records the branch, HEAD and clean status in CoverageSummary.json."
+                        WindowsPathPolicy: "gcov is invoked without --preserve-paths, inside a unique per-object output directory; the exact JSON files[].file source identity check is retained."
+                        AggregationRule: "For ConversationMemory.cpp merge reports from ConversationMemoryTests and SqliteMemoryStorageAdapterTests by unique source line index; a line is covered if any paired object reports a positive execution count. Do not add duplicate line denominators or select only one object report. SqliteMemoryStorageAdapter.cpp is measured from its adapter test object."
                       StaticChecks:
-                        - "git diff --check BaseCommit HEAD"
-                        - "Changed paths exactly equal the frozen WriteSet"
-                        - "The fresh CTest and gcov logs contain no libgcov profiling checksum or overwrite warnings; any such warning invalidates coverage evidence and requires a new fresh build directory."
-                        - "Encoded MemoryKind bytes stay <= INT_MAX before SqliteStore binding; decoded V2 payload bytes exactly equal the declared length before buffer allocation"
-                        - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
+                        - "Controller query returns ED-0144/R4 State=Proposed before assignment."
+                        - "git diff --check exits 0 and implementation diff paths equal the exact four-path WriteSet."
+                        - "C++20 MinGW configure, both target builds, complete standalone build, and required CTests exit 0."
+                        - "Coverage reports are generated from the fresh build only and both production sources meet 80 percent."
+                        - "CoverageCommand fails on a wrong branch, mismatched final implementation PR Head, or dirty/untracked worktree, then records the exact branch and Head in CoverageSummary.json."
+                        - "No schema, data, user content, secrets, or generated source-tree files are changed."
+                    ProposedImplementationBranch: Task/ED-0144-MemoryContentUtf8Validation
+                    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
+                    Branch: Task/ED-0144-MemoryContentUtf8Validation
+                    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
+                    AssignmentStatus: AssignedCandidate
+                    BranchNameCorrection:
+                      PreviousProposedBranch: Task/ED-0144-R4-MemoryContentUtf8Validation
+                      CorrectedBranch: Task/ED-0144-MemoryContentUtf8Validation
+                      Reason: "WorkflowController IsAllowedBranch requires an alphanumeric topic after Task/ED-0144-."
+                      ScopeImpact: "No change to Goal, ReadSet, WriteSet, dependencies, Acceptance, or product behavior."
+                      Review: RequiredOnAssignmentPullRequestFixedHead
+                      CorrectionEventId: aa4cb6eb-c4d2-4d39-9e0f-d344f2250eca
+                    TaskSpecProposalBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+                    TaskSpecProposalHeadCommit: ac8b1afc58ecd09b3f707d26622d82a12c7d83ff
+                    TaskSpecProposalEventId: f1413537-95d2-40b5-a119-685756c731a8
+                    LatestTaskSpecProposalEventId: f3839f1d-b27b-4dc6-a5ff-8f37ab021668
+                    ChangeRequestProposedEventId: ad8e92e3-200c-4f95-9531-1aeba7df1600
+                    TaskSpecPullRequestNumber: 122
+                    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/122
+                    TaskSpecPullRequestCreationBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+                    TaskSpecPullRequestCreationHeadCommit: 6a185ec04dcaba415b5baec86d026e6dda946ed4
+                    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T12:44:56Z"
+                    TaskSpecPullRequestCreatedEventId: d5587971-6054-4552-a69d-80f332e36d8b
+                    TaskSpecProposalBranch: Task/ED-0144-R4-ContentValidationTaskSpecV2
+                    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/Worktree
+                    TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
+                    TaskSpecOwnerSlotId: Worker05
+                    TaskSpecReviewerSlotId: Worker04
+                    TaskSpecReviewerIndependence: Required
+                    TaskSpecReviewStatus: ApprovedAndMergedToMain
+                    TaskSpecOwnerDecision: APPROVE
+                    TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
+                    TaskSpecOwnerReviewBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+                    TaskSpecOwnerReviewHeadCommit: b3acb21ce3f578826ea62aef468b181455d40ead
+                    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker05/Worker05-OwnerReview-PR122-b3acb21.md
+                    TaskSpecOwnerReviewBundleSha256: 82FF4DA9A2BE3991DC28E8512369EB05242F3F07E4BF0B97084F1AB792C90A1C
+                    TaskSpecReviewerDecision: APPROVE
+                    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+                    TaskSpecReviewerReviewBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+                    TaskSpecReviewerReviewHeadCommit: b3acb21ce3f578826ea62aef468b181455d40ead
+                    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker04/Worker04-FixedHeadReview-PR122-b3acb21-20261031.md
+                    TaskSpecReviewerReviewBundleSha256: 48441E96FB2E4F14C59511EC5B1805DD850ECAE1D394692FC95FD01897D67A5E
+                    TaskSpecCoordinatorDecision: ACCEPTED
+                    TaskSpecCoordinatorAgentId: /root
+                    TaskSpecReviewCompletedEventId: c133cecf-b74e-4378-b4f9-e09912e81d8b
+                    TaskSpecMergedEventId: 86e3daa4-361c-4279-b3ec-ab04b8edf489
+                    TaskSpecMergedToMainCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
+                    TaskSpecMergePullRequestNumber: 122
+                    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/122
+                    TaskSpecMergeMethod: squash
+                    TaskSpecMergedAt: "2026-10-31T13:32:50Z"
+                    TaskAssignedEventId: c6340a40-0d04-440b-a2ec-2834e7c85b40
+                    AgentSlotAssignedEventId: ac313b0c-fa61-4488-8f1d-fe5a0dd303a5
+                    ReviewerSlotAssignedEventId: 76f0b151-20f9-4b06-9129-792a0ef1a12e
+                    TaskReadinessValidatedEventId: a49bfe0c-78c9-4a9d-a90e-dd82e5905d56
+                    AssignmentValidationEventId: 3fc575f5-b0bd-4d14-9bf4-5c0ccd6675c8
+                    UpdatedAt: "2026-10-31T13:44:12Z"
+                    ChangeRequest:
+                      ChangeRequestId: CR-ED-0144-R4-CONTENT-VALIDATION-001
+                      TargetTaskRevision: 4
+                      RequestedByRole: Coordinator
+                      RequestedByAgentId: /root
+                      OwnerDecision: APPROVE
+                      OwnerReviewEvidenceRef: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker05/Worker05-OwnerReview-PR122-b3acb21.md#SHA256=82FF4DA9A2BE3991DC28E8512369EB05242F3F07E4BF0B97084F1AB792C90A1C
+                      IndependentReviewerDecision: APPROVE
+                      IndependentReviewerEvidenceRef: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker04/Worker04-FixedHeadReview-PR122-b3acb21-20261031.md#SHA256=48441E96FB2E4F14C59511EC5B1805DD850ECAE1D394692FC95FD01897D67A5E
+                      Decision: Accepted
+                      ApprovedByRole: Coordinator
+                      ApprovedByAgentId: /root
+                      AcceptedAtUtc: "2026-10-31T13:32:50Z"
+                      AcceptedEventId: 28fcdd03-9180-433b-8ffb-6c876279ed7d
+                      Scope: >-
+                        Replace the blocked R3 adapter-only path with a four-file Memory Content V2 implementation: validate strict UTF-8 and no U+0000 at Core Write/Update, prevalidate the full RestoreBackup candidate set before any ApplyAtomically, and independently reject invalid direct SQLite adapter writes. Preserve existing errors, opaque identifier bytes, all legacy read behavior and the SQLite schema. The implementation WriteSet is exactly the two Core files and two adapter files listed in this TaskSpec.
+                      Reason: >-
+                        MemoryContract V2 was merged by PR #120. The current R3 task and draft PR #105 do not enforce the contract across both Core and storage and cannot be extended without changing their frozen scope. A separate revision, fixed-head review, and assignment are required before the four-file C++ implementation.
+                      PreserveOwnerReviewerModuleBoundaryAndExistingPersistentData: true
+                    PreviousRevision3:
+                      TaskRevision: 3
+                      Disposition: SupersededByProposedRevision4
+                      StateAtSupersession: Blocked
+                      ChangeRequestId: CR-ED-0144-R3-TTL-001
+                      PullRequestNumber: 105
+                      PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/105
+                      PullRequestHeadCommit: 3022c3c270ec5b5bf36715828a0169baa6e9dab3
+                      SnapshotYaml: |-
+                          - TaskId: ED-0144
+                            TaskRevision: 3
+                            EpicId: EP-06
+                            Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
+                            TaskKind: IntegrationTask
+                            State: Blocked
+                            AssignmentNote: "R3 is blocked pending MemoryContract V2 and its integrated Core plus SQLite adapter successor. PR #105 remains an unmerged draft; do not continue its isolated adapter-only change. Preserve its branch for later supersession review after ED-0144/R4 merges."
+                            WriteSetChangeRequest:
+                              ChangeRequestId: CR-ED-0144-002
+                              Decision: Accepted
+                              ApprovedByRole: Coordinator
+                              Scope: "Limit ED-0144 to the SqliteMemoryStorageAdapter implementation, its adapter tests, and Tests/Contract/Memory/CMakeLists.txt. Root CMake/CTest registration is owned by ED-0145 to preserve single-writer ownership of CMakeLists.txt."
+                              AcceptedAt: 2026-10-28
+                            AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0144
+                            AssignedBranch: Task/ED-0144-MemorySqliteAdapter
+                            PreviousRevision1TaskBaseCommit: 8a608831ce94020a0187cf586abd66a4834de966
+                            BaselineCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
+                            PreviousRevision1CompletionHead: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
+                            PreviousRevision1Coverage: "SqliteMemoryStorageAdapter.cpp 289/306 (94.44%), gcov JSON v2, GCC/gcov 16.1.0; H:/Qbot/EmulativeDialog.ED-0144.build/Standalone/Reports/SqliteMemoryStorageAdapter##H~#Qbot#EmulativeDialog.ED-0144#Source#Memory#SqliteMemoryStorageAdapter.gcov.json.gz"
+                            PreviousRevision1Validation: "Windows C++20 configure 0; focused target build 0; standalone all-target build 0; CTest 4/4; git diff --check Base Head 0; four changed paths exactly match WriteSet."
+                            PreviousRevision2ReviewStatus: CHANGES_REQUESTED
+                            PreviousRevision2HeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+                            PreviousRevision2PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+                            PreviousRevision2PullRequestHeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+                            PreviousRevision2ReviewBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+                            PreviousRevision2ReviewHeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+                            PreviousRevision2AuthorValidation:
+                              ConfigureExitCode: 0
+                              TargetBuildExitCode: 0
+                              FullBuildExitCode: 0
+                              CTest: "4/4 passed, exit 0"
+                              Coverage: "SqliteMemoryStorageAdapter.cpp 381/407 (93.61%), gcov JSON v2, GCC/gcov 16.1.0"
+                              DiffCheckExitCode: 0
+                              ChangedFiles: 4
+                              MergeableAtUpdate: true
+                              BuildDirectory: H:/Qbot/EmulativeDialog.ED-0144-R2.build/Standalone
+                            IndependentReviewerAgentId: /root/worker06_ed0105_review
+                            IndependentValidationStatus: Pending
+                            PreviousRevision1ReviewBaseCommit: 8a608831ce94020a0187cf586abd66a4834de966
+                            PreviousRevision1ReviewHeadCommit: daeb204fb4b87b3405a4c05beb111bfe8d5c3f52
+                            PreviousRevision1ReviewDecision: CHANGES_REQUESTED
+                            PreviousRevision1ReviewFinding:
+                              FindingId: ED-0144-R1-F001
+                              Severity: Major
+                              Path: Source/Memory/SqliteMemoryStorageAdapter.cpp
+                              Summary: "StoredMemory.ProposalId is dropped on storage write/read, so proposal-bound consent fails ConversationMemory::ConsentMatches during SQLite Recall and RestoreBackup."
+                              ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0144-R1-Review-daeb204/ReviewResult.md
+                              IndependentValidation: "Windows C++20 configure/build exit 0; CTest 4/4; gcov JSON v2 289/306 (94.44%); diff check 0."
+                            Revision2ChangeRequest:
+                              ChangeRequestId: CR-ED-0144-R2-DATA-001
+                              RequestedByRole: MemoryOwner
+                              RequestedByAgentId: /root/worker05_ed0144_memory
+                              Decision: Accepted
+                              ApprovedByRole: Coordinator
+                              ApprovedByAgentId: /root
+                              Scope: "Preserve valid optional StoredMemory.ProposalId in MemoryKind without changing the physical SQLite schema or four-path WriteSet. V1 continues to represent an absent ProposalId; V2 length-prefix encodes the exact bytes as lowercase hex. Both versions are readable and an empty present ID, noncanonical, malformed, truncated, overflowing, invalid-hex, trailing, unknown or future encodings fail closed."
+                              Reason: "ED-0144-R1-F001 proved proposal-bound records cannot pass consent matching after recall/restore when ProposalId is dropped."
+                              TaskRevisionTransition: {FromRevision: 1, ToRevision: 2}
+                              PreserveTaskIdDependenciesOwnerReviewerModuleBoundaryAndPhysicalSchema: true
+                              PreserveV1Compatibility: true
+                              AcceptedAt: 2026-10-28
+                            Revision1ImplementationDecision:
+                              ImplementationDecisionId: ED-0144-DATA-001
+                              Disposition: SupersededByAcceptedTaskRevision2
+                              Decision: "R1 encoded Category and UserConfirmed in MemoryKind but did not preserve optional ProposalId; this caused ED-0144-R1-F001."
+                              Evidence: "Original R1 fixed-head validation and review are retained under PreviousRevision1Validation and PreviousRevision1ReviewFinding."
+                            AcceptedImplementationDecision:
+                              ImplementationDecisionId: ED-0144-DATA-002
+                              Decision: Accepted
+                              ApprovedByRole: Coordinator
+                              Scope: "If ProposalId is absent, write EDMemoryV1/<Category>/<0|1>. A present ProposalId must be non-empty and is written as EDMemoryV2/<Category>/<0|1>/P<byte-length>:<lowercase hex of exact ProposalId bytes>, where byte-length is the exact std::string byte count. Decode V1 as absent and V2 as present; require canonical decimal length, reject arithmetic overflow before multiplication/allocation, require exactly 2*byte-length lowercase hex digits and no trailing bytes, validate category and bit, and fail closed on an empty ID or malformed/unknown/future versions. Preserve all non-empty ProposalId bytes exactly, including embedded NUL. Require the full encoded MemoryKind to fit INT_MAX bytes on write and read, matching SqliteStore::BindText's int length."
+                              Evidence: "SQLite real-file tests prove V1 compatibility without inventing a missing ProposalId and exact V2 ProposalId round trips through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup, including delimiter, embedded-NUL and non-UTF-8 bytes; empty and mismatched proposal-bound IDs fail closed. Malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future encodings fail closed on active and backup reads."
+                              PreserveGoalWriteSetDependenciesAcceptanceAndPhysicalSchema: true
+                            Revision3ImplementationDecision:
+                              ImplementationDecisionId: ED-0144-TTL-001
+                              Decision: Accepted
+                              ApprovedByRole: Coordinator
+                              Scope: "SqliteMemoryStorageAdapter::RecallBackup uses ListActiveRecords and FromStorageRecord(MemoryRecord) to keep the exact expiry timestamp while retaining the same scope, active-state, expiry and ordering semantics."
+                              Evidence: "Real SQLite regression verifies exact future expiry through backup recall, close/reopen and ConversationMemory restore; querying at/after expiry returns no active recall."
+                              PreserveStorageSchemaAndWriteSet: true
+                            PullRequestCreated: true
+                            PullRequestNumber: 25
+                            PullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/25
+                            PreviousRevision1PullRequestBaseCommitAtCreation: 1d8863b286f8e752edc06c2a671721af0a9a74f3
+                            PullRequestMergeableAtCreation: true
+                            PreviousRevision2:
+                              TaskRevision: 2
+                              Disposition: SupersededAfterFixedHeadMajorFinding
+                              HeadCommit: 9dc44d37efd27b67296c373dcf23731c9fe44173
+                              PullRequestBaseCommit: 4e4dbc7f26066f30d71da97a838e5f46e211a29b
+                              ReviewFindingId: ED-0144-R2-F001
+                              Severity: Major
+                              Summary: "Backup recall hydration drops ExpiresAt; restoring a future-expiring record removes TTL and can make it permanent. Existing R2 coverage artifacts contain libgcov profile checksum conflicts and cannot be reused for R3 acceptance."
+                              Reviewer: /root/worker06_ed0105_review
+                              ReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0144-R2-Review-9dc44d3/ReviewResult.md
+                            ReviewStatus: AwaitingRevision3Head
+                            Revision3ChangeRequest:
+                              ChangeRequestId: CR-ED-0144-R3-TTL-001
+                              RequestedByRole: MemoryOwner
+                              RequestedByAgentId: /root/worker05_ed0144_memory
+                              Decision: Accepted
+                              ApprovedByRole: Coordinator
+                              ApprovedByAgentId: /root
+                              TaskRevisionTransition: {FromRevision: 2, ToRevision: 3}
+                              Scope: "Preserve four-path WriteSet; route backup recall through ListActiveRecords to preserve ExpiresAt; add future-expiry round-trip/restore/after-expiration real SQLite tests; validate in a fresh R3 build directory."
+                              PreserveGoalWriteSetDependenciesContractsOwnerReviewerAndPhysicalSchema: true
+                              AcceptedAt: 2026-10-28
+                            Phase: P3
+                            OwnerRole: MemoryOwner
+                            OwnerSlotId: Worker05
+                            OwnerAgentId: /root/luna05_async_runtime_taskroute
+                            ReviewerRole: BuildAndWorkflowOwner
+                            ReviewerSlotId: Worker06
+                            ReviewerAgentId: /root/luna06_capability_status_audit
+                            ReviewerIndependence: Required
+                            CreatedBy: Coordinator
+                            Branch: Task/ED-0144-MemorySqliteAdapter
+                            Worktree: H:/Qbot/EmulativeDialog.ED-0144
+                            Goal: "实现 MemoryStoragePort 到 SqliteStore 的生产适配器（事务化写、tombstone、scope kind 入 schema、consent tombstone、重启恢复）并接入独立 Memory 合同测试目标。"
+                            OutOfScope: ["授权策略本身", "原始私聊正文持久化", "平台副本删除声明"]
+                            DependsOn: [ED-0113, ED-0123]
+                            ContractVersion: [Architecture/Contracts/MemoryContract.md V1]
+                            Context:
+                              ModuleId: Memory
+                              ReadSet: [AGENTS.md, Architecture/Contracts/MemoryContract.md, Source/Memory/ConversationMemory.hpp, Source/Memory/ConversationMemory.cpp, Source/Storage/SqliteStore.hpp, Source/Storage/SqliteStore.cpp, Tests/Contract/Memory/Fixtures/FixtureIndex.json]
+                              OnDemandSet: [Workflow/Plans/P3.yaml, Tests/Contract/Memory/ConversationMemoryTests.cpp]
+                              ContextExpanded:
+                                - {Path: Tests/Contract/Storage/CMakeLists.txt, Reason: "Link the standalone Memory contract target to the pinned EmulativeDialogSQLite target and preserve its isolated test data directory.", AcceptanceId: AC-3, WriteSetChanged: false}
+                                - {Path: Tests/Contract/Storage/SqliteStoreTests.cpp, Reason: "Use the existing real-file database and restart-recovery test pattern for the Memory adapter fixtures.", AcceptanceId: AC-1, WriteSetChanged: false}
+                                - {Path: Source/Memory/ConversationMemory.cpp, Reason: "Verify that StoredMemory.UserConfirmed is independent of Provenance before defining lossless persistence and recall mapping.", AcceptanceId: AC-1, WriteSetChanged: false}
+                                - {Path: Source/Storage/SqliteStore.cpp, Reason: "Verify MemoryKind binding length narrowing and NUL-terminated text read behavior before selecting a safe reversible ProposalId encoding.", AcceptanceId: AC-4, WriteSetChanged: false}
+                                - {Path: Tests/Contract/Memory/ConversationMemoryTests.cpp, Reason: "Confirm existing Recall and RestoreBackup behavior uses exact consent-bound ProposalId matching while validating the SQLite integration fixture.", AcceptanceId: AC-4, WriteSetChanged: false}
+                              ForbiddenSet: ["Source/Providers/", "Source/Agent/"]
+                              Budget: {CoreDocumentsTargetPercent: 10, TaskReferencesTargetPercent: 25, ImplementationContextReserveMinimumPercent: 50, MeasurementMode: EstimateUntilTelemetryExists}
+                              MaxReferenceFiles: 10
+                              ExpansionReasonRequired: true
+                            WriteSet: [Source/Memory/SqliteMemoryStorageAdapter.hpp, Source/Memory/SqliteMemoryStorageAdapter.cpp, Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp, Tests/Contract/Memory/CMakeLists.txt]
+                            SharedLocks: [RootBuild]
+                            Acceptance:
+                              - {AcceptanceId: AC-1, Description: "ConversationMemory 通过真实 SqliteStore 持久化；事务失败不改变旧数据，tombstone 与 consent 撤销可恢复。", Evidence: "真实文件 DB 集成测试 + 重启恢复。"}
+                              - {AcceptanceId: AC-2, Description: "Direct/Group scope kind 入 schema，私聊与群记忆不可互读。", Evidence: "同 ID 不同 kind 隔离测试。"}
+                              - {AcceptanceId: AC-3, Description: "独立 Memory 合同目标可编译并运行；根 CMake/CTest 注册由 ED-0145 统一完成。", Evidence: "Standalone CMake target and CTest pass; ED-0145 later verifies the root suite."}
+                              - {AcceptanceId: AC-4, Description: "SQLite adapter losslessly preserves valid optional ProposalId while keeping existing V1 rows readable and rejecting malformed/future encodings; exact proposal-bound consent survives recall and backup restore.", Evidence: "Real SQLite tests cover nullopt V1 with no inferred ProposalId and non-empty delimiter-containing, embedded-NUL and non-UTF-8 ProposalId byte sequences through ApplyAtomically/ListActive/RecallBackup, close/reopen, ConversationMemory Recall and RestoreBackup; empty and mismatched proposal-bound IDs fail closed; malformed, truncated, overflow, invalid-hex, trailing, over-limit, unknown V3 and future values fail closed on active and backup reads."}
+                              - {AcceptanceId: AC-5, Description: "Backup recall and authorized restore preserve each record's optional ExpiresAt; an expired record is unavailable after its original expiry and cannot become permanent through restore.", Evidence: "Real SQLite test stores a future-expiring record, recalls backup and restarts the database, restores through ConversationMemory, verifies exact expiry equality, then verifies no Recall/ListActive result at or after the original expiry."}
+                            AssignmentStatus: ActiveAfterTaskStarted
+                            PreMergeAssignmentValidationEventId: c4628d86-c990-4383-b6e7-7ff4e1f05997
+                            TaskReadinessValidatedEventId: 9987a36f-bfea-4b4c-8ec9-d0cf50b28bc3
+                            TaskAssignedEventId: ce30b2a4-af88-4ae4-b051-50e94a3ad490
+                            AgentSlotAssignedEventId: acd68b2c-7067-4d70-8d98-2489d5b9e85d
+                            AssignmentLedgerPullRequestNumber: 100
+                            AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/100
+                            AssignmentLedgerPullRequestBaseCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
+                            AssignmentLedgerPullRequestCreatedHeadCommit: 282f67faf02b594d8a18f195b2ce01fd32eb7bed
+                            AssignmentLedgerPullRequestCreatedAtUtc: '2026-10-30T22:46:11Z'
+                            AssignmentLedgerPullRequestCreatedEventId: 5927fdaa-7745-4aee-8ee9-f8a71606c35a
+                            AssignmentLedgerPullRequestMergeCommit: e7069c930db9f9d8f8cfb5b62a7e31580ea68b79
+                            AssignmentLedgerPullRequestMergedEventId: b7024e93-d65c-4a49-b3a4-8018261f5959
+                            PostMergeAssignmentValidationLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3-Activation/Logs/PostMerge-AssignmentValidation-Final.log
+                            PostMergeAssignmentValidationEventId: b7e5c448-9c22-453a-aba9-30a2034790a7
+                            TaskStartedAtUtc: '2026-10-30T22:57:47Z'
+                            TaskStartedEventId: b7b0be66-b6e8-49b3-8a37-7ec113e98778
+                            ActivationLedgerPullRequestNumber: 101
+                            ActivationLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/101
+                            ActivationLedgerPullRequestBaseCommit: e7069c930db9f9d8f8cfb5b62a7e31580ea68b79
+                            ActivationLedgerPullRequestCreatedHeadCommit: 21b304e4e42190ffb19be6ae319e9baee7c76380
+                            ActivationLedgerPullRequestCreatedAtUtc: '2026-10-30T22:59:24Z'
+                            ActivationLedgerPullRequestCreatedEventId: 0a95acb7-e31d-46ad-9baa-902d13dced06
+                            AssignmentLedgerBaseCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
+                            AssignmentTaskSpecPullRequestNumber: 99
+                            AssignmentTaskSpecMergeCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
+                            AssignedBranch: Task/ED-0144-MemorySqliteAdapter
+                            AssignedWorktree: H:/Qbot/EmulativeDialog.ED-0144
+                            AssignedBaselineCommit: 86c7e84bdc2e4e80059ec577b9eccb6db0c36217
+                            ProductWriteAuthorization: "Worker05 is authorized to modify only the frozen ED-0144/R3 four-path WriteSet after PR #101 merges to main; TaskStarted in the unmerged activation PR does not authorize product writes."
+                            AssignmentGate: >-
+                              PR #100 merged after fixed-head review and the required WindowsAgentSlice check passed. Post-merge
+                              WorkflowController validate-assignment returned AssignmentAccepted and TaskStarted is recorded. Product work
+                              may begin only after this activation ledger merges; scope remains the frozen four-path WriteSet.
+                            Validation:
+                              TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory
+                              Coverage:
+                                Required: true
+                                ProductionSources: [Source/Memory/SqliteMemoryStorageAdapter.cpp]
+                                MinimumLinePercent: 80
+                                ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory/Reports
+                              RequiredTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
+                              FreshBuildPreflight: |-
+                                $ErrorActionPreference = 'Stop'
+                                $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory'
+                                if (Test-Path -LiteralPath $Build) { throw "Fresh build path already exists; preserve it and stop: $Build" }
+                                Write-Output 'FRESH_BUILD_PREFLIGHT_OK=1'
+                              TargetedBuild:
+                                - "I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.ED-0144/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory -G \"MinGW Makefiles\" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies -DBUILD_TESTING=ON"
+                                - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --target SqliteMemoryStorageAdapterTests --parallel 4"
+                                - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --parallel 4"
+                                - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory --output-on-failure --no-tests=error"
+                                - "C:/msys64/ucrt64/bin/g++.exe --version"
+                                - "C:/msys64/ucrt64/bin/gcov.exe --version"
+                              StaticChecks:
+                                - "git diff --check BaseCommit HEAD"
+                                - "Changed paths exactly equal the frozen WriteSet"
+                                - "The fresh CTest and gcov logs contain no libgcov profiling checksum or overwrite warnings; any such warning invalidates coverage evidence and requires a new fresh build directory."
+                                - "Encoded MemoryKind bytes stay <= INT_MAX before SqliteStore binding; decoded V2 payload bytes exactly equal the declared length before buffer allocation"
+                                - "Both CMAKE_CXX_FLAGS and CMAKE_EXE_LINKER_FLAGS contain --coverage"
 
-                        - "The CMake cache identifies the EmulativeDialogConversationMemoryContract source and the frozen C++20 MinGW compiler."
-                        - "The standalone CTest run proves both ConversationMemoryTests and SqliteMemoryStorageAdapterTests passed and contains no libgcov profiling checksum or overwrite warning."
-                        - "CoverageCommand uses the unique fresh R3 .gcno/.gcda pair and exact source identity, emits gcov JSON v2, and reports at least 80 percent unique executable-line coverage with numerator and denominator."
-                        - "Every listed validation command has a CommandExecuted event with exact command, working directory, exit code, correlation ID, and output evidence reference; missing command evidence invalidates acceptance."
-                      CoverageCommand: |-
-                        $ErrorActionPreference = 'Stop'
-                        $Worktree = 'H:/Qbot/EmulativeDialog.ED-0144'
-                        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory'
-                        $Reports = Join-Path $Build 'Reports'
-                        $Source = Join-Path $Worktree 'Source/Memory/SqliteMemoryStorageAdapter.cpp'
-                        $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
-                        $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
-                        $ExpectedVersion = '16.1.0'
-                        $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
+                                - "The CMake cache identifies the EmulativeDialogConversationMemoryContract source and the frozen C++20 MinGW compiler."
+                                - "The standalone CTest run proves both ConversationMemoryTests and SqliteMemoryStorageAdapterTests passed and contains no libgcov profiling checksum or overwrite warning."
+                                - "CoverageCommand uses the unique fresh R3 .gcno/.gcda pair and exact source identity, emits gcov JSON v2, and reports at least 80 percent unique executable-line coverage with numerator and denominator."
+                                - "Every listed validation command has a CommandExecuted event with exact command, working directory, exit code, correlation ID, and output evidence reference; missing command evidence invalidates acceptance."
+                              CoverageCommand: |-
+                                $ErrorActionPreference = 'Stop'
+                                $Worktree = 'H:/Qbot/EmulativeDialog.ED-0144'
+                                $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R3/Memory'
+                                $Reports = Join-Path $Build 'Reports'
+                                $Source = Join-Path $Worktree 'Source/Memory/SqliteMemoryStorageAdapter.cpp'
+                                $Gxx = 'C:/msys64/ucrt64/bin/g++.exe'
+                                $Gcov = 'C:/msys64/ucrt64/bin/gcov.exe'
+                                $ExpectedVersion = '16.1.0'
+                                $WarningPattern = '(?im)(?:libgcov|profiling)[^\r\n]*(?:checksum|overwrit\w*)|(?:checksum|overwrit\w*)[^\r\n]*(?:libgcov|profiling)'
 
-                        function Normalize-Path([string]$Path, [string]$BaseDirectory) {
-                          $Value = $Path.Replace('/', '\')
-                          if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
-                          return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
-                        }
+                                function Normalize-Path([string]$Path, [string]$BaseDirectory) {
+                                  $Value = $Path.Replace('/', '\')
+                                  if (-not [System.IO.Path]::IsPathRooted($Value)) { $Value = Join-Path $BaseDirectory $Value }
+                                  return [System.IO.Path]::GetFullPath($Value).TrimEnd('\').ToLowerInvariant()
+                                }
 
-                        function Read-GcovJson([string]$Path) {
-                          $InputStream = [System.IO.File]::OpenRead($Path)
-                          try {
-                            $ZipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
-                            try {
-                              $Reader = [System.IO.StreamReader]::new($ZipStream)
-                              try { $JsonText = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
-                            } finally { $ZipStream.Dispose() }
-                          } finally { $InputStream.Dispose() }
-                          return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
-                        }
+                                function Read-GcovJson([string]$Path) {
+                                  $InputStream = [System.IO.File]::OpenRead($Path)
+                                  try {
+                                    $ZipStream = [System.IO.Compression.GzipStream]::new($InputStream, [System.IO.Compression.CompressionMode]::Decompress)
+                                    try {
+                                      $Reader = [System.IO.StreamReader]::new($ZipStream)
+                                      try { $JsonText = $Reader.ReadToEnd() } finally { $Reader.Dispose() }
+                                    } finally { $ZipStream.Dispose() }
+                                  } finally { $InputStream.Dispose() }
+                                  return (ConvertFrom-Json -InputObject $JsonText -ErrorAction Stop)
+                                }
 
-                        try {
-                          if (-not (Test-Path -LiteralPath $Build -PathType Container)) { throw "Missing fresh task build directory: $Build" }
-                          $Cache = Join-Path $Build 'CMakeCache.txt'
-                          if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
-                          $CacheText = [System.IO.File]::ReadAllText($Cache).Replace(([string][char]13 + [string][char]10), [string][char]10).Replace([string][char]13, [string][char]10)
-                          if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogConversationMemoryContract$') { throw 'Wrong CMake project in task build directory' }
-                          if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0144/Tests/Contract/Memory$') { throw 'CMake source directory does not match the assigned Memory worktree' }
-                          if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
-                          if ($CacheText -notmatch '(?m)^CMAKE_CXX_FLAGS:STRING=.*--coverage') { throw 'CMAKE_CXX_FLAGS is missing --coverage' }
-                          if ($CacheText -notmatch '(?m)^CMAKE_EXE_LINKER_FLAGS:STRING=.*--coverage') { throw 'CMAKE_EXE_LINKER_FLAGS is missing --coverage' }
+                                try {
+                                  if (-not (Test-Path -LiteralPath $Build -PathType Container)) { throw "Missing fresh task build directory: $Build" }
+                                  $Cache = Join-Path $Build 'CMakeCache.txt'
+                                  if (-not (Test-Path -LiteralPath $Cache -PathType Leaf)) { throw 'Missing fresh CMakeCache.txt' }
+                                  $CacheText = [System.IO.File]::ReadAllText($Cache).Replace(([string][char]13 + [string][char]10), [string][char]10).Replace([string][char]13, [string][char]10)
+                                  if ($CacheText -notmatch '(?m)^CMAKE_PROJECT_NAME:STATIC=EmulativeDialogConversationMemoryContract$') { throw 'Wrong CMake project in task build directory' }
+                                  if ($CacheText -notmatch '(?m)^CMAKE_HOME_DIRECTORY:INTERNAL=H:/Qbot/EmulativeDialog\.ED-0144/Tests/Contract/Memory$') { throw 'CMake source directory does not match the assigned Memory worktree' }
+                                  if ($CacheText -notmatch '(?mi)^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=C:/msys64/ucrt64/bin/g\+\+\.exe$') { throw 'CMAKE_CXX_COMPILER does not match the frozen GCC path' }
+                                  if ($CacheText -notmatch '(?m)^CMAKE_CXX_FLAGS:STRING=.*--coverage') { throw 'CMAKE_CXX_FLAGS is missing --coverage' }
+                                  if ($CacheText -notmatch '(?m)^CMAKE_EXE_LINKER_FLAGS:STRING=.*--coverage') { throw 'CMAKE_EXE_LINKER_FLAGS is missing --coverage' }
 
-                          $CompilerText = (& $Gxx --version 2>&1 | Out-String)
-                          $VersionPattern = "(?<![0-9.])$([regex]::Escape($ExpectedVersion))(?![0-9.])"
-                          if ($LASTEXITCODE -ne 0 -or $CompilerText -notmatch $VersionPattern) { throw "Expected GCC $ExpectedVersion; $CompilerText" }
-                          $GcovText = (& $Gcov --version 2>&1 | Out-String)
-                          if ($LASTEXITCODE -ne 0 -or $GcovText -notmatch $VersionPattern -or $GcovText -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2; $GcovText" }
+                                  $CompilerText = (& $Gxx --version 2>&1 | Out-String)
+                                  $VersionPattern = "(?<![0-9.])$([regex]::Escape($ExpectedVersion))(?![0-9.])"
+                                  if ($LASTEXITCODE -ne 0 -or $CompilerText -notmatch $VersionPattern) { throw "Expected GCC $ExpectedVersion; $CompilerText" }
+                                  $GcovText = (& $Gcov --version 2>&1 | Out-String)
+                                  if ($LASTEXITCODE -ne 0 -or $GcovText -notmatch $VersionPattern -or $GcovText -notmatch 'JSON format version:\s*2') { throw "Expected gcov $ExpectedVersion with JSON v2; $GcovText" }
 
-                          $OldJson = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter '*.gcov.json.gz')
-                          if ($OldJson.Count -ne 0) { throw 'Task build must be fresh; gcov JSON already exists' }
-                          $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter 'SqliteMemoryStorageAdapter.cpp.gcno')
-                          if ($Notes.Count -ne 1) { throw "Expected one SqliteMemoryStorageAdapter.cpp.gcno; found $($Notes.Count)" }
-                          $Data = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
-                          if (-not (Test-Path -LiteralPath $Data -PathType Leaf)) { throw "Missing paired coverage data: $Data" }
-                          if ((Get-Item -LiteralPath $Data).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) { throw 'gcda predates gcno; rebuild and rerun CTest' }
-                          $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
-                          if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw 'Missing CTest LastTest.log' }
-                          $TestLogText = [System.IO.File]::ReadAllText($TestLog)
-                          foreach ($TestName in @('ConversationMemoryTests', 'SqliteMemoryStorageAdapterTests')) {
-                            $Pattern = "(?ms)^\d+/\d+ Test: $([regex]::Escape($TestName))\r?\n.*?(?=^\d+/\d+ Testing:|\z)"
-                            $TestBlocks = @([regex]::Matches($TestLogText, $Pattern))
-                            if ($TestBlocks.Count -ne 1) { throw "Expected one CTest result block for $TestName; found $($TestBlocks.Count)" }
-                            if ($TestBlocks[0].Value -notmatch '(?im)^Test Passed\.\r?$') { throw "The CTest result block for $TestName did not pass" }
-                          }
-                          if ($TestLogText -match $WarningPattern) { throw 'CTest log contains a libgcov checksum/overwrite warning' }
-                          if ((Get-Item -LiteralPath $TestLog).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Data).LastWriteTimeUtc) { throw 'CTest log predates gcda execution data' }
+                                  $OldJson = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter '*.gcov.json.gz')
+                                  if ($OldJson.Count -ne 0) { throw 'Task build must be fresh; gcov JSON already exists' }
+                                  $Notes = @(Get-ChildItem -LiteralPath $Build -Recurse -File -Filter 'SqliteMemoryStorageAdapter.cpp.gcno')
+                                  if ($Notes.Count -ne 1) { throw "Expected one SqliteMemoryStorageAdapter.cpp.gcno; found $($Notes.Count)" }
+                                  $Data = [System.IO.Path]::ChangeExtension($Notes[0].FullName, '.gcda')
+                                  if (-not (Test-Path -LiteralPath $Data -PathType Leaf)) { throw "Missing paired coverage data: $Data" }
+                                  if ((Get-Item -LiteralPath $Data).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Notes[0].FullName).LastWriteTimeUtc) { throw 'gcda predates gcno; rebuild and rerun CTest' }
+                                  $TestLog = Join-Path $Build 'Testing/Temporary/LastTest.log'
+                                  if (-not (Test-Path -LiteralPath $TestLog -PathType Leaf)) { throw 'Missing CTest LastTest.log' }
+                                  $TestLogText = [System.IO.File]::ReadAllText($TestLog)
+                                  foreach ($TestName in @('ConversationMemoryTests', 'SqliteMemoryStorageAdapterTests')) {
+                                    $Pattern = "(?ms)^\d+/\d+ Test: $([regex]::Escape($TestName))\r?\n.*?(?=^\d+/\d+ Testing:|\z)"
+                                    $TestBlocks = @([regex]::Matches($TestLogText, $Pattern))
+                                    if ($TestBlocks.Count -ne 1) { throw "Expected one CTest result block for $TestName; found $($TestBlocks.Count)" }
+                                    if ($TestBlocks[0].Value -notmatch '(?im)^Test Passed\.\r?$') { throw "The CTest result block for $TestName did not pass" }
+                                  }
+                                  if ($TestLogText -match $WarningPattern) { throw 'CTest log contains a libgcov checksum/overwrite warning' }
+                                  if ((Get-Item -LiteralPath $TestLog).LastWriteTimeUtc -lt (Get-Item -LiteralPath $Data).LastWriteTimeUtc) { throw 'CTest log predates gcda execution data' }
 
-                          New-Item -ItemType Directory -Force -Path $Reports | Out-Null
-                          $RunRoot = Join-Path $Reports ('Run-' + [guid]::NewGuid().ToString('N'))
-                          New-Item -ItemType Directory -Path $RunRoot | Out-Null
-                          Push-Location -LiteralPath $RunRoot
-                          try { $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Notes[0].FullName $Source 2>&1); $ExitCode = $LASTEXITCODE }
-                          finally { Pop-Location }
-                          $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
-                          if ($ExitCode -ne 0) { throw "gcov failed with exit ${ExitCode}: $OutputText" }
-                          if ($OutputText -match $WarningPattern) { throw "gcov reported stale/conflicting data: $OutputText" }
+                                  New-Item -ItemType Directory -Force -Path $Reports | Out-Null
+                                  $RunRoot = Join-Path $Reports ('Run-' + [guid]::NewGuid().ToString('N'))
+                                  New-Item -ItemType Directory -Path $RunRoot | Out-Null
+                                  Push-Location -LiteralPath $RunRoot
+                                  try { $Output = @(& $Gcov --json-format --branch-counts --preserve-paths -o $Notes[0].FullName $Source 2>&1); $ExitCode = $LASTEXITCODE }
+                                  finally { Pop-Location }
+                                  $OutputText = ($Output | ForEach-Object { [string]$_ }) -join "`n"
+                                  if ($ExitCode -ne 0) { throw "gcov failed with exit ${ExitCode}: $OutputText" }
+                                  if ($OutputText -match $WarningPattern) { throw "gcov reported stale/conflicting data: $OutputText" }
 
-                          $JsonFiles = @(Get-ChildItem -LiteralPath $RunRoot -File -Filter '*.gcov.json.gz')
-                          if ($JsonFiles.Count -ne 1) { throw "Expected one gcov JSON report; found $($JsonFiles.Count)" }
-                          $Json = Read-GcovJson $JsonFiles[0].FullName
-                          if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw 'Wrong gcov JSON format/GCC version' }
-                          $ExpectedSource = Normalize-Path $Source $Worktree
-                          $SourceRecords = @($Json.files | Where-Object { (Normalize-Path ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSource })
-                          if ($SourceRecords.Count -ne 1) { throw "Expected one exact SqliteMemoryStorageAdapter.cpp files[] record; found $($SourceRecords.Count)" }
+                                  $JsonFiles = @(Get-ChildItem -LiteralPath $RunRoot -File -Filter '*.gcov.json.gz')
+                                  if ($JsonFiles.Count -ne 1) { throw "Expected one gcov JSON report; found $($JsonFiles.Count)" }
+                                  $Json = Read-GcovJson $JsonFiles[0].FullName
+                                  if ([string]$Json.format_version -ne '2' -or [string]$Json.gcc_version -ne $ExpectedVersion) { throw 'Wrong gcov JSON format/GCC version' }
+                                  $ExpectedSource = Normalize-Path $Source $Worktree
+                                  $SourceRecords = @($Json.files | Where-Object { (Normalize-Path ([string]$_.file) ([string]$Json.current_working_directory)) -eq $ExpectedSource })
+                                  if ($SourceRecords.Count -ne 1) { throw "Expected one exact SqliteMemoryStorageAdapter.cpp files[] record; found $($SourceRecords.Count)" }
 
-                          $LineCoverage = @{}
-                          foreach ($Line in @($SourceRecords[0].lines)) {
-                            if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw 'Missing line_number/count in gcov JSON' }
-                            $Number = [int]$Line.line_number
-                            $Count = [long]$Line.count
-                            if ($Number -le 0 -or $Count -lt 0) { throw 'Invalid executable-line record' }
-                            if (-not $LineCoverage.ContainsKey($Number)) { $LineCoverage[$Number] = $false }
-                            if ($Count -gt 0) { $LineCoverage[$Number] = $true }
-                          }
-                          $Total = $LineCoverage.Count
-                          if ($Total -eq 0) { throw 'Executable-line denominator is empty' }
-                          $Covered = 0
-                          foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
-                          $Percent = 100.0 * $Covered / $Total
-                          $PercentText = $Percent.ToString('F2', [System.Globalization.CultureInfo]::InvariantCulture)
-                          Write-Output "SqliteMemoryStorageAdapter.cpp COVERED=$Covered EXECUTABLE=$Total PERCENT=$PercentText GCC=$($Json.gcc_version) GCOV=$ExpectedVersion JSON=2 REPORT=$($JsonFiles[0].FullName)"
-                          if (($Covered * 100) -lt ($Total * 80)) { throw "Coverage $PercentText% is below 80%" }
-                        } catch {
-                          [Console]::Error.WriteLine($_.Exception.Message)
-                          exit 1
-                        }
-                      LiveSideEffects: Forbidden
-                      NotRunReason: "使用任务构建目录内的隔离 SQLite 文件。"
-                    RiskLevel: High
-                    RiskOwnerRole: MemoryOwner
-                    RequiresCredentials: false
-                    RequiresExternalAccount: false
-                    Rules: {MustFollow: [SEC-001, API-001], SoftDefaults: [], ApprovedOverrides: []}
-                    Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+                                  $LineCoverage = @{}
+                                  foreach ($Line in @($SourceRecords[0].lines)) {
+                                    if ($null -eq $Line.line_number -or $null -eq $Line.count) { throw 'Missing line_number/count in gcov JSON' }
+                                    $Number = [int]$Line.line_number
+                                    $Count = [long]$Line.count
+                                    if ($Number -le 0 -or $Count -lt 0) { throw 'Invalid executable-line record' }
+                                    if (-not $LineCoverage.ContainsKey($Number)) { $LineCoverage[$Number] = $false }
+                                    if ($Count -gt 0) { $LineCoverage[$Number] = $true }
+                                  }
+                                  $Total = $LineCoverage.Count
+                                  if ($Total -eq 0) { throw 'Executable-line denominator is empty' }
+                                  $Covered = 0
+                                  foreach ($Hit in $LineCoverage.Values) { if ($Hit) { $Covered++ } }
+                                  $Percent = 100.0 * $Covered / $Total
+                                  $PercentText = $Percent.ToString('F2', [System.Globalization.CultureInfo]::InvariantCulture)
+                                  Write-Output "SqliteMemoryStorageAdapter.cpp COVERED=$Covered EXECUTABLE=$Total PERCENT=$PercentText GCC=$($Json.gcc_version) GCOV=$ExpectedVersion JSON=2 REPORT=$($JsonFiles[0].FullName)"
+                                  if (($Covered * 100) -lt ($Total * 80)) { throw "Coverage $PercentText% is below 80%" }
+                                } catch {
+                                  [Console]::Error.WriteLine($_.Exception.Message)
+                                  exit 1
+                                }
+                              LiveSideEffects: Forbidden
+                              NotRunReason: "使用任务构建目录内的隔离 SQLite 文件。"
+                            RiskLevel: High
+                            RiskOwnerRole: MemoryOwner
+                            RequiresCredentials: false
+                            RequiresExternalAccount: false
+                            Rules: {MustFollow: [SEC-001, API-001], SoftDefaults: [], ApprovedOverrides: []}
+                            Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
   - TaskId: ED-0145
     TaskRevision: 1
     EpicId: EP-06
