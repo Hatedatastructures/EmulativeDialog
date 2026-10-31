@@ -2670,13 +2670,13 @@ Tasks:
     TaskSpecProposalBranch: Task/ED-0144-R6-FinalValidationTaskSpec
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-FinalTaskSpec/Worktree
     TaskSpecProposalHeadCommit: bb2f3483fc093e6bfbce48369669d81e2fe81505
-    TaskSpecPullRequestNumber: Pending
-    TaskSpecPullRequestUrl: Pending
+    TaskSpecPullRequestNumber: 130
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/130
     TaskSpecPullRequestCreationBaseCommit: d1492e41d26c0af39abc3e3a916ef371b3a3c265
-    TaskSpecPullRequestCreatedHeadCommit: Pending
-    TaskSpecPullRequestCreatedAtUtc: Pending
-    TaskSpecPullRequestCreatedEventId: Pending
-    TaskSpecPullRequestHeadCommit: Pending
+    TaskSpecPullRequestCreatedHeadCommit: 923368513a122f074377391c0ff7537118d65b73
+    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T22:22:19Z"
+    TaskSpecPullRequestCreatedEventId: 915ad9b5-b675-47df-a190-0b5cc9e18352
+    TaskSpecPullRequestHeadCommit: 923368513a122f074377391c0ff7537118d65b73
     TaskSpecPullRequestHeadUpdatedEventId: Pending
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
     TaskSpecOwnerSlotId: Worker05
