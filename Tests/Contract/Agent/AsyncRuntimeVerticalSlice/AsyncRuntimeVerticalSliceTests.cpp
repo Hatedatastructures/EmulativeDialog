@@ -2010,8 +2010,10 @@ struct ScenarioExpectation final {
   const std::vector<Providers::JsonValue> WrongTypes{
       {R"({"query":7})"},
       {R"({"query":"x","amount":"2"})"},
-      {R"({"query":"x","count":1.0})"},
-      {R"({"query":"x","count":1e0})"},
+      {R"({"query":"x","count":1.1})"},
+      {R"({"query":"x","count":1e-1})"},
+      {R"({"query":"x","count":1.0000000000000000001})"},
+      {R"({"query":"x","count":9007199254740992.1})"},
       {R"({"query":"x","active":"true"})"},
       {R"({"query":"x","empty":false})"},
       {R"({"amount":1,"count":1,"active":true,"empty":null})"},
@@ -2020,6 +2022,25 @@ struct ScenarioExpectation final {
     Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
                         WrongTypes[Index], FullSchema),
                     "schema argument type/required rejection case " +
+                        std::to_string(Index));
+  }
+  const std::vector<std::string> MathematicalIntegers{
+      R"({"query":"x","count":1.0})",
+      R"({"query":"x","count":1e0})",
+      R"({"query":"x","count":1e-0})",
+      R"({"query":"x","count":10e-1})",
+      R"({"query":"x","count":10e-0001})",
+      R"({"query":"x","count":1.2300e2})",
+      R"({"query":"x","count":100e-2})",
+      R"({"query":"x","count":-0.00e-999999999999999999999})",
+      R"({"query":"x","count":1e+999999999999999999999})",
+      R"({"query":"x","count":9007199254740992.0})",
+  };
+  for (std::size_t Index = 0; Index < MathematicalIntegers.size(); ++Index) {
+    Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                        Providers::JsonValue{MathematicalIntegers[Index]},
+                        FullSchema),
+                    "integer schema accepts mathematical integer value " +
                         std::to_string(Index));
   }
 

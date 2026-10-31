@@ -753,6 +753,107 @@ bool ParseSupportedToolSchema(std::string_view JsonText,
   return true;
 }
 
+int CompareDecimalMagnitudeToSize(std::string_view Digits,
+                                  std::size_t Limit) noexcept {
+  while (Digits.size() > 1U && Digits.front() == '0') {
+    Digits.remove_prefix(1U);
+  }
+
+  std::size_t Value = 0U;
+  bool GreaterThanLimit = false;
+  for (const char Character : Digits) {
+    const std::size_t Digit =
+        static_cast<std::size_t>(Character - '0');
+    if (GreaterThanLimit) {
+      continue;
+    }
+    if (Value > Limit / 10U ||
+        (Value == Limit / 10U && Digit > Limit % 10U)) {
+      GreaterThanLimit = true;
+      continue;
+    }
+    Value = Value * 10U + Digit;
+  }
+  if (GreaterThanLimit) {
+    return 1;
+  }
+  if (Value < Limit) {
+    return -1;
+  }
+  return 0;
+}
+
+// Preserve the JSON number's decimal value exactly; floating-point conversion
+// could round a non-integer significand into an integer.
+bool IsMathematicalInteger(std::string_view Number) noexcept {
+  const std::size_t ExponentMarker = Number.find_first_of("eE");
+  const std::string_view Mantissa = Number.substr(0U, ExponentMarker);
+  std::string_view ExponentDigits{"0"};
+  bool NegativeExponent = false;
+  if (ExponentMarker != std::string_view::npos) {
+    ExponentDigits = Number.substr(ExponentMarker + 1U);
+    if (ExponentDigits.empty()) {
+      return false;
+    }
+    if (ExponentDigits.front() == '+' || ExponentDigits.front() == '-') {
+      NegativeExponent = ExponentDigits.front() == '-';
+      ExponentDigits.remove_prefix(1U);
+    }
+    if (ExponentDigits.empty()) {
+      return false;
+    }
+  }
+
+  std::size_t FractionalDigits = 0U;
+  const std::size_t DecimalPoint = Mantissa.find('.');
+  if (DecimalPoint != std::string_view::npos) {
+    FractionalDigits = Mantissa.size() - DecimalPoint - 1U;
+  }
+
+  bool HasNonzeroSignificandDigit = false;
+  for (const char Character : Mantissa) {
+    if (Character >= '1' && Character <= '9') {
+      HasNonzeroSignificandDigit = true;
+      break;
+    }
+  }
+  if (!HasNonzeroSignificandDigit) {
+    return true;
+  }
+
+  std::size_t TrailingZeros = 0U;
+  for (std::size_t Index = Mantissa.size(); Index > 0U; --Index) {
+    const char Character = Mantissa[Index - 1U];
+    if (Character == '.') {
+      continue;
+    }
+    if (Character != '0') {
+      break;
+    }
+    ++TrailingZeros;
+  }
+
+  const bool ExponentIsZero =
+      std::all_of(ExponentDigits.begin(), ExponentDigits.end(),
+                  [](char Digit) { return Digit == '0'; });
+  if (TrailingZeros >= FractionalDigits) {
+    const std::size_t MaximumNegativeExponent =
+        TrailingZeros - FractionalDigits;
+    if (!NegativeExponent || ExponentIsZero) {
+      return true;
+    }
+    return CompareDecimalMagnitudeToSize(ExponentDigits,
+                                         MaximumNegativeExponent) <= 0;
+  }
+  if (NegativeExponent) {
+    return false;
+  }
+  const std::size_t MinimumPositiveExponent =
+      FractionalDigits - TrailingZeros;
+  return CompareDecimalMagnitudeToSize(ExponentDigits,
+                                       MinimumPositiveExponent) >= 0;
+}
+
 bool MatchesPrimitive(const JsonNode& Value,
                       PrimitiveSchemaKind Expected) noexcept {
   switch (Expected) {
@@ -762,7 +863,7 @@ bool MatchesPrimitive(const JsonNode& Value,
     return Value.Kind == JsonKind::Number;
   case PrimitiveSchemaKind::Integer:
     return Value.Kind == JsonKind::Number &&
-           Value.Scalar.find_first_of(".eE") == std::string::npos;
+           IsMathematicalInteger(Value.Scalar);
   case PrimitiveSchemaKind::Boolean:
     return Value.Kind == JsonKind::Boolean;
   case PrimitiveSchemaKind::Null:
