@@ -4293,14 +4293,29 @@ Tasks:
         InputMode: 'Pipe the Script block verbatim to PowerShell standard input; require process exit code 0.'
         Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree
         ExpectedBranch: Task/ED-0150-AsyncBusinessActionRoundTrip
-        RequiredAbsent: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5
+        RequiredAbsent:
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Dependencies
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Reports
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs
         SourceRevisionRecord: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs/FreshBuildPreflight.txt
         Script: |-
           $ErrorActionPreference = 'Stop'
           $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree'
           $ExpectedBranch = 'Task/ED-0150-AsyncBusinessActionRoundTrip'
           $TaskRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5'
-          if (Test-Path -LiteralPath $TaskRoot) { throw "Fresh R5 validation root already exists: $TaskRoot" }
+          if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Assigned source worktree is missing: $Worktree" }
+          $RequiredAbsentArtifacts = @(
+            (Join-Path $TaskRoot 'WindowsAgentSlice')
+            (Join-Path $TaskRoot 'Dependencies')
+            (Join-Path $TaskRoot 'Reports')
+            (Join-Path $TaskRoot 'Execution')
+            (Join-Path $TaskRoot 'Logs')
+          )
+          foreach ($ArtifactPath in $RequiredAbsentArtifacts) {
+            if (Test-Path -LiteralPath $ArtifactPath) { throw "Fresh R5 artifact already exists: $ArtifactPath" }
+          }
           $Branch = (& git -C $Worktree branch --show-current 2>&1 | Out-String).Trim()
           if ($LASTEXITCODE -ne 0 -or $Branch -ne $ExpectedBranch) { throw "Wrong task branch: $Branch" }
           $Status = @(& git -C $Worktree status --porcelain --untracked-files=all 2>&1)
@@ -4308,7 +4323,6 @@ Tasks:
           if ($Status.Count -ne 0) { throw "Assigned source worktree is dirty before configure: $($Status -join '; ')" }
           $SourceHead = (& git -C $Worktree rev-parse HEAD 2>&1 | Out-String).Trim()
           if ($LASTEXITCODE -ne 0 -or $SourceHead -notmatch '^[0-9a-f]{40}$') { throw "Could not capture exact source HEAD: $SourceHead" }
-          $null = New-Item -ItemType Directory -Path $TaskRoot
           $Logs = Join-Path $TaskRoot 'Logs'
           $null = New-Item -ItemType Directory -Path $Logs
           $Evidence = @("SOURCE_BRANCH=$Branch", "SOURCE_HEAD=$SourceHead", 'SOURCE_STATUS_CLEAN=1') -join [Environment]::NewLine
