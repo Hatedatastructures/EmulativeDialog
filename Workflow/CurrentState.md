@@ -623,3 +623,13 @@
 
 ## PR #98 review correction
 - Worker06 found that the three closeout events omitted their Branch field. The original events are retained; append-only ProjectStateCorrection events bind their EventIds to Task/ED-0148-R4ConsentMatchingImpl: eae21ddc-71bd-467f-be3c-641fee1dd8be, 09700bce-01f5-4983-b114-d4ca432e6376, 0d9989c5-3de4-48d5-8cf3-fd42068dac4c.
+
+## 2026-10-31 ED-0150/R5 assignment activation candidate
+
+- PR #102 merged to main at `de7376a97f8e645f946c77056439f90618c31448` after Worker02 Owner and Worker04 independent approval of TaskSpec Base `0dc8626827827362e06c82f0e9dcafd67c30fffc` / Head `ec4bd16669a14928ea4b30f6f90661e1691c81e6`; Worker06 security review also approved. Both WindowsAgentSlice checks on the final TaskSpec Head passed (runs `41151041215` and `41151033335`).
+- R5 is assigned as a candidate to Worker02 `/root/luna02_ed0148_pr_ready` on `Task/ED-0150-AsyncBusinessActionRoundTrip`, product worktree `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree`, baseline `de7376a97f8e645f946c77056439f90618c31448`. The worktree is clean. `DependsOn` now uses controller TaskIds `ED-0108`, `ED-0149`, and `ED-0131`, each queried as Merged; ED-0150/R2 is included in the baseline.
+- Pre-merge WorkflowController query returns `State=Assigned`; `validate-assignment` returns `AssignmentAccepted` at exit 0. Evidence is `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-Activation/Logs/PreMerge-ValidateAssignment.txt` (SHA256 `A79EA6B64B9B0808E259F2B1E820E91D6EDB09CE2288A6CE4B81E492B2BA70F6`). This is only candidate evidence; product source writes remain gated until the assignment-ledger PR merges and post-merge validation returns `AssignmentAccepted`.
+- The fresh R5 validation artifact paths (`WindowsAgentSlice`, `Dependencies`, `Reports`, `Execution`, `Logs`) were absent before configure; no R5 configure, build, CTest, or gcov has run.
+- Assignment ledger PR #103 is open from base de7376a at initial head 073ae2d. Its four-path workflow diff is candidate-only; product writes still await merge and the post-merge Controller result.
+
+- Append-only correction for readiness event 6ae96fa9-67d1-43d5-bd41-ae21d02a5ac2 restores canonical dependency keys ED-0108, ED-0149, and ED-0131; events d5419847-ef03-419e-8dea-ad6aeba01f3e, f8b23526-9798-4241-b98c-741ddd8a0411, and 06d3539e-3b50-4e48-93d2-d393d6358e5d also record Worker02 R4 recovery and R5 candidate assignment. PR #103 remains the gate; product writes wait for merge and post-merge AssignmentAccepted.
