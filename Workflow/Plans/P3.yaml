@@ -5533,8 +5533,8 @@ Tasks:
     TaskSpecProposalBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
     ProposedTaskSpecBranch: Task/ED-0155-R3IntegrationHeadTaskSpec
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3-TaskSpec/Worktree
-    ProposedImplementationBranch: Task/ED-0155-R2BusinessActionRegistryLink
-    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree
+    ProposedImplementationBranch: Task/ED-0155-R3BusinessActionRegistryLink
+    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree
     ProposedBaselineCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
     TaskSpecStatusNote: >-
       CR-ED-0155-003 was approved by Owner Worker01 and independent Reviewer Worker04 and accepted by the Coordinator.
@@ -5669,6 +5669,15 @@ Tasks:
       ProductRuntimeBehaviorChanges: false
       DecisionEvidencePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3-TaskSpec/DecisionEvidence/CR-ED-0155-003-IntegrationHead-Decision.md
       DecisionEvidenceSha256: C637D61FED1AEC1682CB0E6270C55ACFD838659C3F1BB5B2331D4FD0538534B3
+      ScopeAmendment2OwnerDecision: APPROVE
+      ScopeAmendment2OwnerDecisionAgentId: "/root/luna01_ed0112_r8_audit"
+      ScopeAmendment2OwnerDecisionBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
+      ScopeAmendment2OwnerDecisionHeadCommit: 6339cc346cca3020a302c1a131897063c6a28156
+      ScopeAmendment2OwnerDecisionEvidencePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0155-R3-FreshPaths/Worker01-CR003-Amendment-2-Owner.md
+      ScopeAmendment2OwnerDecisionEvidenceSha256: E8FD8DCFF43CD3BF2D8FDAD863A73B63AD7FE4DD48F16A6B4522ED1DD42C89F2
+      ScopeAmendment2Description: >-
+        Both proposed implementation branch/worktree pairs and every active task/integration build, dependency-cache,
+        worktree, and command path use the new ED-0155-R3 root. Preserve all R2 paths and logs only under PreviousRevision2.
       DecisionBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
       TechnicalReviewEvidenceRefs:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Logs/R2-Integration-Targets-Verbose-20261031.log#SHA256=F63C27B2D9DB4145DCB8BB9AECDCCE93629CE5910BBC3515002F7D4CFCC35AAA
@@ -5680,8 +5689,8 @@ Tasks:
     TaskSpecCoordinatorDecision: Pending
     TaskSpecCoordinatorDecisionAgentId: "/root"
     TaskSpecCoordinatorDecisionRequired: true
-    ProposedOwnerImplementationBranch: Task/ED-0155-R2BusinessActionRegistryLink
-    ProposedOwnerImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree
+    ProposedOwnerImplementationBranch: Task/ED-0155-R3BusinessActionRegistryLink
+    ProposedOwnerImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree
     GoalAcceptanceDependencyApprovalGate: "Owner/ProjectOwner approves CR; Worker04 fixed-head review; Coordinator accepts and merges TaskSpec PR; create a fresh assignment ledger bound to then-current main; WorkflowController validate-assignment returns AssignmentAccepted before product writes."
     Acceptance:
       - AcceptanceId: AC-1
@@ -5721,23 +5730,23 @@ Tasks:
     Validation:
       RequiredTargets: [BusinessActionRegistryObject, AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests, CorePolicyAndActionContractTests, ToolCallRoundTripTests, WorkflowControllerContractTests, WorkflowController, ALL]
       RequiredCTestTests: [AgentRuntime.Contract, AgentRuntime.VerticalSlice, Core.PolicyAndAction, Agent.ToolCallRoundTrip]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree.build/windows-agent-slice
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree.build/windows-agent-slice
       DependencyCache:
-        TaskBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Dependencies
-        IntegrationBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationDependencies
+        TaskBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies
+        IntegrationBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationDependencies
         RequiredBoostCommit: afdfa32505af73e3d208144b3f623f0096cb62b6
         MustBeAbsentBeforeConfigure: true
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree.build/windows-agent-slice'
-        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Dependencies'
-        $IntegrationWorktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree'
-        $IntegrationBuild = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree.build/windows-agent-slice'
-        $IntegrationDependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationDependencies'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree.build/windows-agent-slice'
+        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies'
+        $IntegrationWorktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree'
+        $IntegrationBuild = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree.build/windows-agent-slice'
+        $IntegrationDependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationDependencies'
         if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Assigned implementation worktree is missing: $Worktree" }
         $Branch = git -C $Worktree branch --show-current
-        if ($LASTEXITCODE -ne 0 -or $Branch -ne 'Task/ED-0155-R2BusinessActionRegistryLink') { throw "Unexpected implementation branch: $Branch" }
+        if ($LASTEXITCODE -ne 0 -or $Branch -ne 'Task/ED-0155-R3BusinessActionRegistryLink') { throw "Unexpected implementation branch: $Branch" }
         $Head = git -C $Worktree rev-parse HEAD
         if ($LASTEXITCODE -ne 0 -or $Head -notmatch '^[0-9a-f]{40}$') { throw "Invalid implementation HEAD: $Head" }
         $Status = @(git -C $Worktree status --porcelain=v1)
@@ -5747,32 +5756,32 @@ Tasks:
         if (Test-Path -LiteralPath $IntegrationWorktree) { throw "Fresh integration worktree path already exists; preserve and stop: $IntegrationWorktree" }
         if (Test-Path -LiteralPath $IntegrationBuild) { throw "Fresh integration build path already exists; preserve and stop: $IntegrationBuild" }
         if (Test-Path -LiteralPath $IntegrationDependencies) { throw "Fresh integration dependency cache already exists; preserve and stop: $IntegrationDependencies" }
-        Write-Output 'ED0155_R2_FRESH_BUILD_PREFLIGHT_OK=1'
+        Write-Output 'ED0155_R3_FRESH_BUILD_PREFLIGHT_OK=1'
       TargetedBuild:
-        - "I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Dependencies -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
-        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree.build/windows-agent-slice --target BusinessActionRegistryObject AgentRuntimeContractTests AgentRuntimeVerticalSliceTests CorePolicyAndActionContractTests ToolCallRoundTripTests --verbose --parallel 4"
+        - "I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Dependencies -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
+        - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree.build/windows-agent-slice --target BusinessActionRegistryObject AgentRuntimeContractTests AgentRuntimeVerticalSliceTests CorePolicyAndActionContractTests ToolCallRoundTripTests --verbose --parallel 4"
         - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --parallel 4"
-        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree.build/windows-agent-slice -R ^(AgentRuntime\\.Contract|AgentRuntime\\.VerticalSlice|Core\\.PolicyAndAction|Agent\\.ToolCallRoundTrip)$ --no-tests=error --output-on-failure"
+        - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree.build/windows-agent-slice -R ^(AgentRuntime\\.Contract|AgentRuntime\\.VerticalSlice|Core\\.PolicyAndAction|Agent\\.ToolCallRoundTrip)$ --no-tests=error --output-on-failure"
       IntegrationReproduction:
         ProductPullRequestNumber: 104
         ProductPullRequestHeadCommit: 9ac7cfcd7256dc494b203e5edad7066e0b8d3a0a
         ProductPullRequestBaseCommit: 60916cd436b6f92257855c1258e0bcff0659bc56
         FailedMergeCommit: 4a8ef052e7cfa0aeee9667d3530cca706ce4c354
-        Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree
-        BuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree.build/windows-agent-slice
-        DependencyBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationDependencies
+        Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree
+        BuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree.build/windows-agent-slice
+        DependencyBaseDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationDependencies
         Commands:
           - "git fetch origin Task/ED-0150-AsyncBusinessActionRoundTrip --no-tags"
-          - "git worktree add --detach H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree 9ac7cfcd7256dc494b203e5edad7066e0b8d3a0a"
-          - "Copy-Item -LiteralPath H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree/Tests/Contract/Agent/CMakeLists.txt -Destination H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree/Tests/Contract/Agent/CMakeLists.txt"
-          - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree diff --name-only"
-          - "I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationDependencies -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
-          - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree.build/windows-agent-slice --target BusinessActionRegistryObject AgentRuntimeContractTests AgentRuntimeVerticalSliceTests CorePolicyAndActionContractTests ToolCallRoundTripTests --verbose --parallel 4"
+          - "git worktree add --detach H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree 9ac7cfcd7256dc494b203e5edad7066e0b8d3a0a"
+          - "Copy-Item -LiteralPath H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree/Tests/Contract/Agent/CMakeLists.txt -Destination H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree/Tests/Contract/Agent/CMakeLists.txt"
+          - "git -C H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree diff --name-only"
+          - "I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationDependencies -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON"
+          - "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree.build/windows-agent-slice --target BusinessActionRegistryObject AgentRuntimeContractTests AgentRuntimeVerticalSliceTests CorePolicyAndActionContractTests ToolCallRoundTripTests --verbose --parallel 4"
           - "I:/cmake/bin/cmake.exe --build --preset windows-agent-slice --parallel 4"
-          - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/IntegrationWorktree.build/windows-agent-slice -R ^(AgentRuntime\\.Contract|AgentRuntime\\.VerticalSlice|Core\\.PolicyAndAction|Agent\\.ToolCallRoundTrip)$ --no-tests=error --output-on-failure"
+          - "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/IntegrationWorktree.build/windows-agent-slice -R ^(AgentRuntime\\.Contract|AgentRuntime\\.VerticalSlice|Core\\.PolicyAndAction|Agent\\.ToolCallRoundTrip)$ --no-tests=error --output-on-failure"
         OverlayRule: >-
           The integration checkout must be detached at the exact recorded PR #104 head. Overlay only the committed
-          Tests/Contract/Agent/CMakeLists.txt from the ED-0155/R2 implementation head. Require the integration diff to
+          Tests/Contract/Agent/CMakeLists.txt from the ED-0155/R3 implementation worktree. Require the integration diff to
           contain exactly that path; never modify or check out files in the live ED-0150 worktree. Preserve all logs
           and build outputs outside both source worktrees.
       StaticChecks:
