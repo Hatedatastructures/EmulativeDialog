@@ -4109,13 +4109,13 @@ Tasks:
     EpicId: EP-06
     Title: 实现资源受限且结果安全的异步 AgentRuntime 工具回合
     TaskKind: CapabilitySlice
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
     OwnerAgentId: /root/luna02_ed0148_pr_ready
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0150-ResourceBoundedAsyncToolLoop
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree
     ReviewerRole: IndependentReviewer
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/luna04_ed0144_branch_review
@@ -4128,38 +4128,54 @@ Tasks:
     ProposedTaskSpecBranch: Task/ED-0150-R6ResourceBoundedAsyncToolLoopTaskSpec
     ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6-TaskSpec/Worktree
     TaskSpecProposedEventId: "12a386dc-19b8-4d11-935e-397c478fef06"
-    TaskSpecReviewStatus: Proposed
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
-    TaskSpecOwnerDecision: Pending
-    TaskSpecOwnerReviewBaseCommit: ""
-    TaskSpecOwnerReviewHeadCommit: ""
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerReviewBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
+    TaskSpecOwnerReviewHeadCommit: dff3471921666b59d8c7bfcaa1d44847cb490dc5
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewerDecision: Pending
-    TaskSpecReviewerReviewBaseCommit: ""
-    TaskSpecReviewerReviewHeadCommit: ""
-    TaskSpecReviewSource: PendingFixedHeadReview
-    TaskSpecHeadCommit: ""
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerReviewBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
+    TaskSpecReviewerReviewHeadCommit: dff3471921666b59d8c7bfcaa1d44847cb490dc5
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R6-TaskSpec/Worker04/FixedHeadReview-PR114-dff3471-20261031.md
+    TaskSpecReviewerReviewBundleSha256: 3996746B571E1F0375593AB643AC26E6F48136FF72AE1D59F17BA2D5717A7AF8
+    TaskSpecReviewSource: PR114FixedHeadReview
+    TaskSpecHeadCommit: dff3471921666b59d8c7bfcaa1d44847cb490dc5
     TaskSpecPullRequestNumber: 114
     TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/114
     TaskSpecPullRequestCreatedAtUtc: '2026-10-31T05:44:33Z'
     TaskSpecPullRequestCreatedEventId: 23472e2c-6642-4600-ad66-66e1f6fd9800
     TaskSpecPullRequestCreationBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
     TaskSpecPullRequestCreationHeadCommit: 35d207af60a8fd0ef8cfa24136d8c9fb7757bdcd
-    TaskSpecMergedToMainCommit: ""
-    TaskSpecMergeMethod: ""
-    TaskReadinessValidatedEventId: ""
-    TaskAssignedEventId: ""
+    TaskSpecMergedToMainCommit: b252e35121cde585bbb1de0bbbbcc89fc142e890
+    TaskSpecMergePullRequestNumber: 114
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/114
+    TaskSpecMergedAt: "2026-10-31T06:27:12Z"
+    TaskSpecMergedToMainEventId: 7548191f-b4e8-439c-bace-7892a68d4958
+    TaskSpecFinalPullRequestHeadCommit: dff3471921666b59d8c7bfcaa1d44847cb490dc5
+    TaskSpecCoordinatorDecisionAgentId: /root
+    TaskSpecCoordinatorDecisionHeadCommit: dff3471921666b59d8c7bfcaa1d44847cb490dc5
+    TaskSpecCoordinatorDecisionAtUtc: "2026-10-31T06:49:15Z"
+    TaskSpecMergeMethod: squash
+    TaskReadinessValidatedEventId: ed956261-9f3f-4946-a0dd-34157eb274a4
+    AssignmentValidationEventId: 1cab9bbf-3a82-4bb2-b4e3-0f2065bf7452
+    TaskAssignedEventId: 0d205353-0932-4243-8312-ec56c9725a8c
     DependencyStatesCorrectionEventId: ""
-    Worker02SlotRecoveryEventId: ""
-    Worker02SlotAssignmentEventId: ""
-    AssignmentLedgerPullRequestNumber: ""
-    TaskSpecCoordinatorDecision: Pending
+    Worker02SlotRecoveryEventId: cefb1134-07e5-4935-84c2-ef6e6e1afff4
+    Worker02SlotAssignmentEventId: d28734d6-2fd7-40e7-8f3f-7cb93b7ab8ae
+    AssignmentLedgerPullRequestNumber: 116
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/116
+    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-31T06:51:05Z"
+    AssignmentLedgerPullRequestCreationBaseCommit: a1b1deeb352795346ebc4ba269049e306c8a7f14
+    AssignmentLedgerPullRequestCreationHeadCommit: 55cfe7ddffd9f0ac9ce149c7bf1faa6d96c902f4
+    AssignmentLedgerCreatedEventId: 053355aa-c13f-49f4-81c5-83f015c55506
+    TaskSpecCoordinatorDecision: ACCEPTED
     TaskSpecStatusNote: >-
-      R5 remains historical at PR #104 head 9ac7cfcd. R6 addresses its fixed-head findings. ED-0157/R1 remains
-      Assigned and V3 remains Proposed; both must be closed/frozen before R6 assignment. ED-0155/R3 root CMake
-      wiring is merged at main@f34f6bc (PR #110). This PR records scope only; implementation remains unassigned
-      until TaskSpec approval, merge, separate assignment, and post-merge WorkflowController validation.
+      PR #114 approved the R6 TaskSpec at fixed Base 60734a43 and Head dff3471; it squash-merged to main at
+      b252e35. PR #113 merged the V3 contract at 60734a43 and PR #115 froze its status at main a1b1deeb.
+      R6 is now assigned as a candidate from main a1b1deeb to Worker02. Product writes remain gated until this
+      assignment-ledger PR merges and post-merge WorkflowController validation returns AssignmentAccepted.
     Goal: >-
       After ED-0157/R1 is Merged and AsyncAgentRuntimeContractV3.md is Frozen, re-establish the ED-0150 asynchronous
       C++ AgentRuntime tool round trip from current main while preserving trusted Core identity, scope, capability,
@@ -4185,7 +4201,7 @@ Tasks:
       - ED-0157
     ExternalInputs: []
     ContractVersion: AsyncAgentRuntimeContractV3 + AsyncBusinessActionContractV1 + CoreAgentContractV1.1-CoreActionReceipt + ModelProviderContractV1.2 + AsyncModelProviderContractV1
-    BaselineCommit: ""
+    BaselineCommit: a1b1deeb352795346ebc4ba269049e306c8a7f14
     HeadCommit: ''
     PullRequest: ''
     ChangeRequest:
@@ -6831,7 +6847,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结异步 AgentRuntime 流资源上限与超限语义
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -6843,7 +6859,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T04:28:38Z"
-    UpdatedAt: "2026-10-31T04:41:01Z"
+    UpdatedAt: "2026-10-31T06:33:28Z"
     ParallelGroup: AsyncAgentRuntimeContractV3
     ProposedImplementationBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3-Implementation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
@@ -6897,10 +6913,14 @@ Tasks:
     TaskSpecProposalEventHeadCommit: 2db692da636c550f38d9fe0094c962b81a51538b
     TaskSpecCreationEventId: 2a53c573-0cce-4b70-bb0c-8c23fcb688c9
     BaselineCommit: ae7a148310cefa154694c67b9dae9bd739c6172f
-    HeadCommit: ""
+    HeadCommit: 4916e2df69feb717d18740134c94b992b5ab0399
     Branch: Task/ED-0157-AsyncAgentRuntimeContractV3Implementation
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
-    PullRequest: ""
+    PullRequest: https://github.com/Hatedatastructures/EmulativeDialog/pull/113
+    MergedToMainCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
+    StatusFrozenByPullRequestNumber: 115
+    StatusFrozenByMainCommit: a1b1deeb352795346ebc4ba269049e306c8a7f14
+    TaskClosedEventId: 33bee088-f413-41a1-a610-6ac9afe758e9
     TaskReadinessValidatedEventId: dbafcd4b-0341-4139-8cc0-4219d0bef00f
     AssignmentValidationEventId: 9045fa5e-3cbb-47f8-a475-759a575a2dd3
     TaskAssignedEventId: 4faa2e77-013f-42c8-b607-98a0d8114d8e
@@ -6915,7 +6935,9 @@ Tasks:
     AssignmentLedgerCreatedEventId: 05b2d59c-e198-4c38-b7d7-1d407ffc0414
     PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-AssignmentLedger/Logs/PreMerge-ValidateAssignment-Retry1.log#SHA256=07DAEC50CB125F229F83CEB75A73A84FDF8D7DD2E051FFA40B57D6D7B448A106
     AssignmentStatusNote: >-
-      ED-0157/R1 is assigned as a contract-only task. The Worker02 implementation branch follows the WorkflowController PascalCase branch rule; the TaskSpec's proposed label remains historical. Product writes await assignment-ledger merge and post-merge AssignmentAccepted.
+      PR #113 merged the V3 contract at 60734a43 after Worker04 fixed-head approval; PR #115 merged the status-only
+      change at a1b1deeb and the contract now states Status: Frozen. ED-0157/R1 is closed as Merged; Worker02 is
+      released for the separate ED-0150/R6 assignment.
     Goal: >-
       在独立版本化的 Architecture/Contracts/AsyncAgentRuntimeContractV3.md 中冻结 AgentRuntime 对每次异步
       Provider 请求的事件、字符串和待处理工具调用资源上限及超限生命周期。V3 只扩展已冻结的
