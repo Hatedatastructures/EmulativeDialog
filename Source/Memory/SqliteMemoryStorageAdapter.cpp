@@ -357,6 +357,7 @@ MemoryStorageResult<Storage::MemoryRecord> ToStorageRecord(
       Record.MemoryId.empty() ||
       Record.MemoryId.size() > Storage::MaximumMemoryIdLength ||
       Record.SubjectId.empty() || Record.Content.empty() ||
+      Record.Content.find('\0') != std::string::npos ||
       Record.Content.size() > Storage::MaximumMemoryContentLength ||
       Record.SourceReference.empty() || Record.ConsentId.empty() ||
       Record.Version == 0 ||
