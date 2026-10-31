@@ -5516,7 +5516,7 @@ Tasks:
     EpicId: EP-06
     Title: 将异步业务动作实现对象接入 CoreChatService 测试目标
     TaskKind: Build
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: BuildAndWorkflowOwner
     OwnerSlotId: Worker01
@@ -5528,7 +5528,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: "/root/luna02_ed0148_pr_ready"
     CreatedAt: "2026-10-31T02:18:54Z"
-    UpdatedAt: "2026-10-31T03:02:03Z"
+    UpdatedAt: "2026-10-31T03:11:49Z"
     ParallelGroup: AgentRuntimeTestBuildIntegration
     TaskSpecProposalBaseCommit: 60916cd436b6f92257855c1258e0bcff0659bc56
     ProposedTaskSpecBranch: Task/ED-0155-R2TaskSpec
@@ -5536,12 +5536,32 @@ Tasks:
     ProposedImplementationBranch: Task/ED-0155-R2BusinessActionRegistryLink
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree
     ProposedBaselineCommit: 60916cd436b6f92257855c1258e0bcff0659bc56
+    BaselineCommit: b6730ffdfe90a87bcd64fb792c0239128a1402df
+    Branch: Task/ED-0155-R2BusinessActionRegistryLink
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Worktree
     TaskSpecStatusNote: >-
-      TaskSpec Owner Worker01, independent Reviewer Worker04, and Coordinator /root approved this proposal at fixed
-      Base 60916cd436b6f92257855c1258e0bcff0659bc56 / Head 866da270994b790a8f3f6f08db6e049d16bfcf17. Review status is
-      approved awaiting merge. ED-0155/R2 State remains Proposed; no implementation is Ready or authorized until PR #106
-      merges and a separate assignment passes post-merge Controller validation. R1 remains historically Merged. PR #104
-      at d3d3375 is a fixed integration input, not a task-state dependency.
+      PR #106 merged the approved TaskSpec to main at b6730ffdfe90a87bcd64fb792c0239128a1402df. Worker01 is the
+      implementation owner candidate and Worker06 the independent Reviewer. Source writes remain gated until this
+      assignment ledger merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted.
+      R1 remains historically Merged. PR #104 is a fixed integration input, not a task-state dependency.
+    TaskSpecHeadCommit: bc69abe3859ef64d717ce877e04256aa7b276526
+    TaskSpecPullRequestNumber: 106
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/106
+    TaskSpecMergedToMainCommit: b6730ffdfe90a87bcd64fb792c0239128a1402df
+    TaskSpecMergePullRequestNumber: 106
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/106
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainEventId: d968fe58-4175-44b8-b841-7bd5c75f2f7f
+    TaskReadinessValidatedEventId: f7ee3487-b96e-428c-87d6-070b504bca88
+    AssignmentValidationEventId: 122527e0-2c01-423e-91b3-c37a4c9a82ca
+    TaskAssignedEventId: 8e275e95-5139-4eff-9aff-137100ab3a94
+    Worker01SlotRecoveryEventId: c94bb281-5469-4c93-b91c-79abe110a071
+    Worker01SlotAssignmentEventId: 78ef150e-c2bd-4cb5-ae91-224f7150a306
+    AssignedToSlot: Worker01
+    PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2-AssignmentLedger/Logs/PreMerge-ValidateAssignment.log#SHA256=896EFEA5878326191CFB2651FFA3DC84BCF58BC22A060C19EAAB0A23B734079D
+    AssignmentNote: >-
+      Candidate assignment recorded after PR #106 merged. Product source and build outputs remain unauthorized until
+      this ledger PR merges and post-merge WorkflowController validate-assignment returns AssignmentAccepted.
     Goal: >-
       Preserve the R1 Boost.Asio compile-usage and verification-order edges on CoreChatServiceObject, and add one
       shared BusinessActionRegistryObject target so every AgentRuntime test executable consuming CoreChatServiceObject
@@ -5637,7 +5657,7 @@ Tasks:
     TaskSpecReviewerDecisionHeadCommit: 866da270994b790a8f3f6f08db6e049d16bfcf17
     TaskSpecReviewerDecisionEvidencePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2-TaskSpec/DecisionEvidence/TaskSpecReview-866da.md
     TaskSpecReviewerDecisionEvidenceSha256: A968008D3ADD900AA38D2EEB99586FAC2FB1BD4AC551042A6B2A646E660E5CCB
-    TaskSpecReviewStatus: ApprovedAwaitingMerge
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
     ChangeRequest:
       ChangeRequestId: CR-ED-0155-002
       TargetTaskRevision: 1
@@ -5818,7 +5838,7 @@ Tasks:
       LastCompletedAcceptance: "R1 is merged and verified; its historical review/build evidence is preserved under PreviousRevision1."
       CurrentFindingOrFailure: "PR #104 fails to link three BusinessActionRegistry symbols from AgentRuntimeVerticalSliceTests; the same target wiring must cover every CoreChatServiceObject consumer."
       TriedApproaches: []
-      NextAction: "Coordinator may merge the approved TaskSpec; after merge, create a separate assignment ledger and require post-merge Controller AssignmentAccepted before implementation."
+      NextAction: "Merge the assignment ledger, run post-merge WorkflowController validate-assignment, then implement and validate the frozen one-file CMake target graph."
       OpenMessageIds: []
       LastValidationResult: "No R2 product implementation or build has been run. PR #104 workflow job 124409342821 failed at link with the three recorded undefined BusinessActionRegistry references."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
@@ -6082,7 +6102,7 @@ Tasks:
     EpicId: EP-06
     Title: 补齐固定 Boost.Asio Windows 依赖闭包
     TaskKind: Build
-    State: Assigned
+    State: Merged
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -6095,6 +6115,10 @@ Tasks:
     CreatedAt: "2026-10-31"
     ProposedImplementationBranch: Task/ED-0156-R1BoostWinApiClosure
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0156-R1BoostWinApi/Worktree
+    SatisfactionDisposition: SatisfiedByExistingMainImplementation
+    SatisfiedByMainCommit: 19ddbfd161b4db76614fd625203c68cfcc86360e
+    TaskClosedEventId: 5aff4254-85dd-4b48-8c0d-aa72785c92dc
+    SlotRecoveryEventId: c94bb281-5469-4c93-b91c-79abe110a071
     TaskSpecProposalBaseCommit: aab5e24524270379b7b5149511a88db6381fe547
     TaskSpecReviewStatus: ApprovedAndMergedToMain
     TaskSpecOwnerDecision: APPROVE
