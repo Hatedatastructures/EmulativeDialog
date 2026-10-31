@@ -4109,9 +4109,11 @@ Tasks:
     EpicId: EP-06
     Title: 实现异步 AgentRuntime 的 Core 授权业务动作回合闭环
     TaskKind: CapabilitySlice
-    State: Assigned
+    State: Blocked
     BlockedBy: >-
-      Product source writes remain forbidden until this R5 assignment ledger is merged and the post-merge WorkflowController validate-assignment returns AssignmentAccepted.
+      PR #104 review findings require ED-0157/R1 contract freeze and a separate ED-0150/R6 TaskSpec before this implementation can be revised; the R5 product branch remains frozen.
+    ExecutionBlockerId: ED0150-R5-P2-REQUIRES-ED0157-V3
+    BlockingReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R5-PR104-FixedHead-9ac7/Worker03-Review.md#SHA256=328C0FD9323DA6198344BCF6F6C86D4FDE89F776E2F0FC03E5A0C1E91CB32F31
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -6692,7 +6694,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结异步 AgentRuntime 流资源上限与超限语义
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
@@ -6708,8 +6710,32 @@ Tasks:
     ParallelGroup: AsyncAgentRuntimeContractV3
     ProposedImplementationBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3-Implementation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
-    TaskSpecReviewStatus: PendingFixedHeadReview
-    TaskSpecReviewerDecision: Pending
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewerSlotId: Worker04
+    TaskSpecReviewerReviewBaseCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
+    TaskSpecReviewerReviewHeadCommit: 79ff4caaf2b59ddffd38b2ad2b9f8a1c80bdc66d
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0157-R1-TaskSpec/Worker04-FixedHeadReview-PR111-79ff4ca-20261031.md
+    TaskSpecReviewerReviewBundleSha256: 14D115DA0265958834C1CD8FB7B945556F8CD697F501DF39120E5D1BEF2DD0E1
+    TaskSpecReviewerDecisionEventId: 6b7359d2-2e6d-4bf3-8b2f-20d05e8ff7ab
+    TaskSpecOwnerDecisionEventId: 561277ce-14da-45e3-b77a-563fcfe742ad
+    TaskSpecCoordinatorDecision: ACCEPTED
+    TaskSpecCoordinatorDecisionAgentId: /root
+    TaskSpecCoordinatorDecisionHeadCommit: 79ff4caaf2b59ddffd38b2ad2b9f8a1c80bdc66d
+    TaskSpecReviewSource: PR111FixedHeadReview
+    TaskSpecHeadCommit: e7aa12a680296682708281485dd7fafb3c47c754
+    TaskSpecFinalPullRequestHeadCommit: 79ff4caaf2b59ddffd38b2ad2b9f8a1c80bdc66d
+    TaskSpecPullRequestNumber: 111
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/111
+    TaskSpecMergedToMainCommit: ae7a148310cefa154694c67b9dae9bd739c6172f
+    TaskSpecMergePullRequestNumber: 111
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/111
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: "2026-10-31T04:52:21Z"
+    TaskSpecMergedToMainEventId: 1729d320-94ff-43cb-8231-a494db9bf46d
+    TaskSpecStatusNote: >-
+      PR #111 merged the approved ED-0157/R1 contract-only TaskSpec to main at ae7a148. Worker02 Owner APPROVE remains bound to the TaskSpec content head e7aa12a; Worker04 approved the final PR head 79ff4ca. The TaskSpec is assigned only for the one-path V3 contract; no product C++ write is authorized by the registration PR.
     TaskSpecOwnerDecision: APPROVE
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
     PreviousTaskSpecOwnerReview:
@@ -6733,11 +6759,26 @@ Tasks:
     TaskSpecProposalHeadCommit: e7aa12a680296682708281485dd7fafb3c47c754
     TaskSpecProposalEventHeadCommit: 2db692da636c550f38d9fe0094c962b81a51538b
     TaskSpecCreationEventId: 2a53c573-0cce-4b70-bb0c-8c23fcb688c9
-    BaselineCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
+    BaselineCommit: ae7a148310cefa154694c67b9dae9bd739c6172f
     HeadCommit: ""
-    Branch: ""
-    Worktree: ""
+    Branch: Task/ED-0157-AsyncAgentRuntimeContractV3Implementation
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
     PullRequest: ""
+    TaskReadinessValidatedEventId: dbafcd4b-0341-4139-8cc0-4219d0bef00f
+    AssignmentValidationEventId: 9045fa5e-3cbb-47f8-a475-759a575a2dd3
+    TaskAssignedEventId: 4faa2e77-013f-42c8-b607-98a0d8114d8e
+    Worker02SlotRecoveryEventId: 61852aea-8273-4b4c-aad5-5c5307002968
+    Worker02SlotAssignmentEventId: 55a830d9-3bb3-45ef-8b54-91ee95983f86
+    AssignedToSlot: Worker02
+    AssignmentLedgerBaseCommit: ae7a148310cefa154694c67b9dae9bd739c6172f
+    AssignmentLedgerPullRequestNumber: 112
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/112
+    AssignmentLedgerHeadAtCreationCommit: 3fb36f03722d29242505dfbff6e0e0c895dd13c3
+    AssignmentLedgerPullRequestCreatedAtUtc: "2026-10-31T05:02:19Z"
+    AssignmentLedgerCreatedEventId: 05b2d59c-e198-4c38-b7d7-1d407ffc0414
+    PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-AssignmentLedger/Logs/PreMerge-ValidateAssignment-Retry1.log#SHA256=07DAEC50CB125F229F83CEB75A73A84FDF8D7DD2E051FFA40B57D6D7B448A106
+    AssignmentStatusNote: >-
+      ED-0157/R1 is assigned as a contract-only task. The Worker02 implementation branch follows the WorkflowController PascalCase branch rule; the TaskSpec's proposed label remains historical. Product writes await assignment-ledger merge and post-merge AssignmentAccepted.
     Goal: >-
       在独立版本化的 Architecture/Contracts/AsyncAgentRuntimeContractV3.md 中冻结 AgentRuntime 对每次异步
       Provider 请求的事件、字符串和待处理工具调用资源上限及超限生命周期。V3 只扩展已冻结的
@@ -6888,9 +6929,9 @@ Tasks:
       LastCompletedAcceptance: "ED-0149/R2 dependency verified Merged by WorkflowController against main@f34f6bc."
       CurrentFindingOrFailure: "No resource limits exist in AsyncAgentRuntimeContract V2; implementation remains outside this contract-freeze task."
       TriedApproaches: []
-      NextAction: "After this TaskSpec is reviewed and merged, assign the contract-only task; only after the V3 contract is merged may Coordinator prepare a separate ED-0150 revision for product code."
+      NextAction: "Merge this assignment ledger, require post-merge WorkflowController AssignmentAccepted, then write only AsyncAgentRuntimeContractV3.md; after that contract merges, prepare a separate ED-0150/R6 C++ implementation revision."
       OpenMessageIds: []
-      LastValidationResult: "TaskSpec registration candidate; proposal and contract implementation are not yet merged or authorized."
+      LastValidationResult: "PR #111 TaskSpec merged; pre-merge assignment validation returned AssignmentAccepted. Contract writes remain gated on assignment-ledger merge and post-merge validation."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
