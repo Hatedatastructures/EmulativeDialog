@@ -2427,6 +2427,21 @@ struct ScenarioExpectation final {
                     "Core identity configuration rejects duplicate capability grants");
   }
   {
+    const Core::IdentityPolicy LegacyPolicy(
+        3, {Core::IdentityBinding{
+                .Account = MakeChannelProfile(),
+                .Sender = Channels::SenderId{"async-sender"},
+                .Principal = Core::PrincipalId{"async-principal"},
+            }});
+    const Core::IdentityResolution LegacyResolution =
+        LegacyPolicy.Resolve(MakeInboundMessage().Envelope);
+    const auto* Resolved =
+        std::get_if<Core::ResolvedIdentity>(&LegacyResolution);
+    Passed &= Check(Resolved != nullptr &&
+                        Resolved->GrantedCapabilities.empty(),
+                    "legacy IdentityBinding aggregates default to no capability grants");
+  }
+  {
     Fixture TestFixture(FakeScenario::ToolRoundTrip, {});
     std::uint32_t HandlerCalls = 0;
     Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(

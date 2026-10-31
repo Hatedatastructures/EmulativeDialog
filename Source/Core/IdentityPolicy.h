@@ -29,7 +29,7 @@ struct IdentityBinding final {
   PrincipalId Principal;
   // Capability grants are trusted Core configuration, never envelope or
   // provider data. They are copied into each resolved turn context.
-  std::vector<std::string> GrantedCapabilities;
+  std::vector<std::string> GrantedCapabilities{};
 };
 
 enum class IdentityPolicyFailureCode : std::uint8_t {
