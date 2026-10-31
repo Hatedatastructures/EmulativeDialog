@@ -1,3 +1,12 @@
+# 2026-10-31 ED-0144/R7 Memory Validation Assignment
+
+- TaskSpec PR [#131](https://github.com/Hatedatastructures/EmulativeDialog/pull/131) merged to `main` at `66f82dd5cb2f43088c16b164646ab344df919e78`. Worker05 Owner and Worker04 independent fixed-head reviews both approved Head `92b75c6f2037748a3e27bf55ca383ca0453ed166`; both Windows CI checks passed.
+- Assignment ledger PR [#132](https://github.com/Hatedatastructures/EmulativeDialog/pull/132) is open from Base `66f82dd`. It assigns validation-only work to Worker05 on `Task/ED-0144-R6FinalHeadValidation`, with Worker04 independent Reviewer. Pre-merge Controller validation returned `AssignmentAccepted`; the separate assignment ledger must merge and Controller must return `AssignmentAccepted` again on merged `main` before any validation.
+- Coverage command syntax was corrected and statically parsed with PowerShell 7.6.9 (zero parser errors). The command was not executed. No R7 product worktree, configure, build, CTest, or coverage run has occurred.
+- The first fixed-head review of PR #132 requested two record corrections: approval/merge event time ordering and exact command text. The follow-up ledger uses append-only correction events tied to the original review files, GitHub merge timestamp, and Controller output log; it does not rewrite original event rows.
+- Product validation target remains merged Memory PR #124, Base `d6aa14022d5098378d230a0215aa9461c4a34a76` / Head `a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f`; each modified production source must meet the frozen 80% unique executable line threshold.
+- After ED-0144 closes, ED-0158 is the next product integration: scoped Memory/Context into asynchronous AgentRuntime. ED-0158 remains Proposed and has no product-write authorization.
+
 # 当前状态
 
 ## 2026-10-31 ED-0150/R6 Async AgentRuntime 工具回合收尾
