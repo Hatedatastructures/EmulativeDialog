@@ -1,5 +1,12 @@
 # 当前状态
 
+## 2026-10-31 ED-0150/R6 Async AgentRuntime 工具回合收尾
+
+- PR #117 已合并：产品 Base `c34e67b8e323f218a0c44a8c8c1820b1b494c332`、Head `20c6289cfbbed9e689341231a7a0716803e63d55`、merge `13c6b0dcb7b623da47283789e1d000ac69a30edb`。实现包含 C++20 异步工具交接、Core 授权、回执续跑、取消和资源上限。
+- 最终 Head Windows root CTest 4/4、异步 `Agent.AsyncRuntimeVerticalSlice` 1/1；五个生产源均高于 80% 覆盖率，最低 `AsyncAgentRuntime.cpp` 281/337（83.38%）。证据在 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6-FinalValidation3/`。
+- Worker04 固定头 ReviewBundle 为 APPROVE，SHA-256 `50FA7A7546B934AC8E22FF0D927A89766B4FD324104CA6EEF91E48D2B844C478`。GitHub 原生 review 仍为 0；API 以 422 拒绝同一登录身份批准自己的 PR。按已记录的一次性 closeout 决定保留此事实，并使用 Worker04 的独立固定头审查作为 PR #117 的审查证据。
+- ED-0150/R6 已关闭并释放 Worker02。ED-0144/R5 仍待最终头验证收尾；ED-0158 的 Core/Memory C++ 集成仍未获 assignment，因此没有开始其产品写入。
+
 ## 2026-10-31 ED-0144/R4 Memory C++ implementation
 
 - PR #122 merged the reviewed ED-0144/R4 TaskSpec to main@1816c64. Worker05 and Worker04 approved the same fixed Base/Head; Worker06's Windows support check passed.
