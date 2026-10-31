@@ -5525,7 +5525,7 @@ Tasks:
     ReviewerSlotId: Worker06
     ReviewerAgentId: "/root/luna06_capability_status_audit"
     ReviewerIndependence: Required
-    CreatedBy: Coordinator
+    CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: "/root/luna02_ed0148_pr_ready"
     CreatedAt: "2026-10-31T03:39:16Z"
     UpdatedAt: "2026-10-31T04:15:04Z"
