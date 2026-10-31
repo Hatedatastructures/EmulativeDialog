@@ -6709,6 +6709,14 @@ Tasks:
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1/Worktree
     TaskSpecReviewStatus: PendingFixedHeadReview
     TaskSpecReviewerDecision: Pending
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
+    TaskSpecOwnerDecisionAtUtc: "2026-10-31T04:31:39Z"
+    TaskSpecOwnerReviewFindingCount: 0
+    TaskSpecOwnerReviewBaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+    TaskSpecOwnerReviewHeadCommit: 3ded2de2d831fb26a091ef6f81bbb2dec12a42e0
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/DecisionEvidence/Worker02-OwnerReview-3ded2de-20261031.md
+    TaskSpecOwnerReviewBundleSha256: B6A7EA8CE7C02100358C20ED886399359CFAB7D3D845EC1F40F4791C0230F85D
     TaskSpecProposalBaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
     TaskSpecProposalBranch: Task/ED-0157-R1-AsyncAgentRuntimeContractV3
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0157-R1-TaskSpec/Worktree
