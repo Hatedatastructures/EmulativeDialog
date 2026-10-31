@@ -2512,8 +2512,9 @@ Tasks:
     ProposedImplementationBranch: Task/ED-0144-R4-MemoryContentUtf8Validation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
     TaskSpecProposalBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
-    TaskSpecProposalHeadCommit: 6a185ec04dcaba415b5baec86d026e6dda946ed4
+    TaskSpecProposalHeadCommit: 57fcb2f5889e3b35de622e1785ec9a124dba1e23
     TaskSpecProposalEventId: f1413537-95d2-40b5-a119-685756c731a8
+    LatestTaskSpecProposalEventId: 3b31f660-9852-4f9c-a362-4f66719cde39
     ChangeRequestProposedEventId: ad8e92e3-200c-4f95-9531-1aeba7df1600
     TaskSpecPullRequestNumber: 122
     TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/122
