@@ -7699,3 +7699,165 @@ Tasks:
       EventShard: Workflow/Events/CodexRewrite/P3.jsonl
       FollowUpTaskIds: [ED-0144]
       NotRunReason: "This task only freezes a data-contract rule; the later C++ enforcement task has not been registered or assigned."
+
+  - TaskId: ED-0158
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 将 Core 授权记忆和有界上下文送入异步 AgentRuntime
+    TaskKind: IntegrationTask
+    State: Proposed
+    Phase: P3
+    ParallelGroup: AgentMemoryContextIntegration
+    Goal: >-
+      在 Core 的可信身份与会话作用域内调用 ConversationMemory::Recall 和 ContextSelector，
+      再由 InstructionAssembler 固定 system/developer/低信任内容的优先级，最终把组装后的
+      Provider messages 交给 C++ AsyncAgentRuntime。当前渠道身份、记忆 consent、组作用域和预算必须由 Core
+      决定；模型输出和用户正文不得扩大可读记忆或改写策略。
+    OutOfScope:
+      - 修改 Memory 写入、consent、撤销、删除、SQLite schema 或持久化格式
+      - 修改 Responses、Chat Completions、Anthropic wire adapter 或 Provider 公共合同
+      - 添加 Shell、任意文件、主机状态、通用网络/MCP 工具或外部副作用
+      - 接入 QQ 真实登录/发送或微信
+      - 修改根 CMake、依赖锁、共享合同或 TaskIndex
+    OwnerRole: MemoryContextOwner
+    OwnerSlotId: Worker05
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
+    ReviewerIndependence: Required
+    CreatedBy: Coordinator
+    CreatedByAgentId: /root
+    CreatedAt: "2026-10-31T19:09:42.865Z"
+    UpdatedAt: "2026-10-31T19:09:42.865Z"
+    DependsOn: [ED-0102, ED-0103, ED-0104, ED-0105, ED-0106, ED-0109, ED-0113, ED-0115, ED-0144, ED-0150, ED-0157, ED-0160]
+    ModuleIds: [Core, AgentRuntime, ContextSelector, Memory]
+    CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]
+    ContractVersion:
+      - Architecture/Contracts/CoreAgentContract.md V1
+      - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
+      - Architecture/Contracts/ModelProviderContract.md V1.2
+      - Architecture/Contracts/AsyncAgentRuntimeContractV3.md V3 Frozen
+      - Architecture/Contracts/AsyncModelProviderContract.md V1 Frozen
+      - Architecture/Contracts/AsyncBusinessActionContract.md V1
+    Context:
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Architecture/ModuleMap.yaml
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Modules/MemoryStorage.yaml
+        - Architecture/Modules/Providers.yaml
+        - Architecture/Contracts/CoreAgentContract.md
+        - Architecture/Contracts/MemoryContract.md
+        - Architecture/Contracts/ModelProviderContract.md
+        - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
+        - Architecture/Contracts/AsyncModelProviderContract.md
+        - Architecture/Contracts/AsyncBusinessActionContract.md
+        - Source/Context/ContextSelector.hpp
+        - Source/Context/ContextSelector.cpp
+        - Source/Memory/ConversationMemory.hpp
+        - Source/Core/ConversationSessionState.hpp
+        - Source/Core/CoreChatService.h
+        - Source/Core/AgentRuntimePort.h
+        - Source/Providers/Contracts/AsyncModelProviderPort.hpp
+        - Source/Agent/InstructionAssembler.hpp
+        - Source/Core/InstructionPolicy.hpp
+        - Source/Agent/AsyncAgentRuntime.hpp
+        - Source/Agent/AsyncAgentRuntime.cpp
+        - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
+        - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
+      ForbiddenSet:
+        - Source/Providers/OpenAIResponses/
+        - Source/Providers/OpenAIChatCompletions/
+        - Source/Providers/AnthropicMessages/
+        - Source/Channels/QQ/
+        - Source/Channels/WeChat/
+        - CMakeLists.txt
+        - CMake/
+        - Architecture/Contracts/
+        - Workflow/TaskIndex.yaml
+      MaxReferenceFiles: 26
+      ExpansionReasonRequired: true
+      ExpansionReason: "ED-0158 must review both the frozen AsyncModelProvider contract and its public C++ port header to build the actual asynchronous request path; this adds read-only contract/API context and does not expand the product WriteSet."
+    WriteSet:
+      - Source/Core/AgentContextAssembler.hpp
+      - Source/Core/AgentContextAssembler.cpp
+      - Source/Core/CoreChatService.h
+      - Source/Core/CoreChatService.cpp
+      - Source/Core/AgentRuntimePort.h
+      - Source/Agent/AsyncAgentRuntime.cpp
+      - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
+      - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
+    SharedLocks: []
+    Acceptance:
+      - {AcceptanceId: AC-1, Description: "Memory::ConversationMemory::Recall receives AuthorizedMemoryContext constructed only from ResolvedIdentity and Core policy version; no model/user-supplied identity can change its scope, and unauthorized/expired/revoked/cross-account/cross-principal candidates never reach a Provider request.", Evidence: "Fake storage plus FakeProvider tests cover private/group consent, different principal/account/conversation, revoked and empty consent, and prove no unauthorized memory text appears in captured requests."}
+      - {AcceptanceId: AC-2, Description: "ContextSelector applies the frozen identity scope and token/byte budgets to current user text and recalled candidates; selection failure or memory recall failure is fail-closed and does not call AgentRuntime/Provider.", Evidence: "Boundary-budget, scope-mismatch, recall-error and provider-call-count assertions."}
+      - {AcceptanceId: AC-3, Description: "InstructionAssembler output preserves trusted system/developer precedence and mandatory AI disclosure; authorized memory remains lower-trust context and cannot replace policy or current-user role.", Evidence: "FakeProvider captures SystemInstructions, DeveloperInstructions and ordered CanonicalMessage roles; prompt-injection sentinel tests assert policy and disclosure remain present."}
+      - {AcceptanceId: AC-4, Description: "The selected context is consumed by AsyncAgentRuntime on the actual Core to FakeProvider to Mock Channel path, while existing tool handoff, cancellation, unknown-outcome and single-receipt behavior remain intact.", Evidence: "Agent.AsyncRuntimeVerticalSlice contract test plus existing lifecycle cases pass."}
+      - {AcceptanceId: AC-5, Description: "Every changed production source has at least 80 percent unique executable-line coverage from fresh GCC/gcov 16.1.0 JSON v2 reports.", Evidence: "Fresh per-source reports for AgentContextAssembler.cpp, CoreChatService.cpp and AsyncAgentRuntime.cpp with covered/total counts; no stale or ambiguous gcda/gcno pairs."}
+    Validation:
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice
+      DependencyDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
+      RequiredTargets: [AsyncRuntimeVerticalSliceTests]
+      RequiredCTestTests: [Agent.AsyncRuntimeVerticalSlice]
+      ConfigureCommand: >-
+        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice
+        -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice
+        -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe
+        -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20
+        -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug
+        -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage
+        -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
+        -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
+        -DEMULATIVE_DIALOG_OFFLINE=ON
+        -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice/Reports
+        -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe -DBUILD_TESTING=ON
+      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice --target AsyncRuntimeVerticalSliceTests --parallel 4"
+      CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice --output-on-failure --no-tests=error -R ^Agent\\.AsyncRuntimeVerticalSlice$"
+      ToolchainVersionCommands:
+        Gxx: "C:/msys64/ucrt64/bin/g++.exe --version"
+        Gcov: "C:/msys64/ucrt64/bin/gcov.exe --version"
+        ExpectedGccAndGcovVersion: "16.1.0"
+      Coverage:
+        Required: true
+        Tool: C:/msys64/ucrt64/bin/gcov.exe
+        Format: JSON v2
+        Command: "\"C:/Program Files/PowerShell/7/pwsh.exe\" -NoProfile -File H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/Validation/CoverageCommand.ps1"
+        CommandSha256: 193E9DAE9912378218F4FAD1448812B6B29A246D476785EF7E2B838765C1D5A6
+        OutputLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/Logs/CoverageCommandExecution.log
+        RawGcovLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/Logs/GcovOutput.log
+        RunAfter: Agent.AsyncRuntimeVerticalSlice CTest pass
+        ProductionSources:
+          - Source/Core/AgentContextAssembler.cpp
+          - Source/Core/CoreChatService.cpp
+          - Source/Agent/AsyncAgentRuntime.cpp
+        MinimumUniqueExecutableLinePercent: 80
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/windows-agent-slice/Reports
+        EvidenceRule: "Run the SHA-pinned PowerShell coverage command after CTest; require one fresh gcno/gcda pair and one exact JSON files[].file record per production source, reject gcov warnings/errors, count unique executable source lines using integer threshold comparison, and record clean source HEAD, numerator/denominator, compiler version, gcov version, CTest pass, report path, and command SHA."
+      StaticChecks:
+        - "After a separate assignment ledger merges and WorkflowController returns AssignmentAccepted, preflight binds the exact implementation branch, worktree and current-main baseline recorded by that ledger; the worktree is clean before implementation."
+        - "git diff --check assigned BaselineCommit..HeadCommit exits 0 and changed paths exactly equal the eight frozen WriteSet paths."
+        - "Core scope and Memory recall tests prove unauthorized candidate content is absent before provider invocation."
+        - "The fresh standalone Windows C++20 target and named CTest pass with FakeProvider/Mock Channel only."
+        - "The external CoverageCommand.ps1 parses without errors and its SHA-256 exactly matches Coverage.CommandSha256 before execution."
+        - "Coverage reports bind to the final implementation PR Head and each changed production source meets the 80 percent threshold."
+      LiveSideEffects: Forbidden
+      RequiresCredentials: false
+      RequiresExternalAccount: false
+      NotRunReason: "All provider/channel behavior uses offline fakes; no real provider key, QQ login, or external send is permitted."
+    RiskLevel: High
+    RiskOwnerRole: MemoryContextOwner
+    Rules: {MustFollow: [SEC-001, SEC-002, API-001, CTX-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/CodexRewrite/P3.jsonl
+      FollowUpTaskIds: []
+    TaskSpecPullRequestNumber: 128
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/128
+    TaskSpecPullRequestBaseCommit: 8bf9da2018af8e7b02130bbd8356f65e53d7c4a7
+    TaskSpecPullRequestHeadCommit: 0a593f9fb35620e3f53e7497fcc67b9055f656dc
+    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T19:15:11Z"
+    TaskSpecPullRequestCreatedEventId: 6fbfc5a5-ee33-406f-8d2f-890193746334
