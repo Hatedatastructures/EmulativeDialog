@@ -952,12 +952,21 @@ ParallelGroups:
   - ChangeRequestId: CR-ED-0144-R6-FINAL-HEAD-001
     RequestedByRole: Coordinator
     RequestedByAgentId: /root
-    Decision: Proposed
-    OwnerDecision: Pending
+    Decision: Accepted
+    OwnerDecision: APPROVE
     OwnerAgentId: /root/luna05_async_runtime_taskroute
-    IndependentReviewerDecision: Pending
+    OwnerReviewHeadCommit: 29e299c407d2990275f4d123599be160ff657eec
+    OwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R6-TaskSpec/Worker05-OwnerReview-29e299c.md
+    OwnerReviewBundleSha256: F84B7C111854DD9535D3F2927A28D576315B312E29C4BC20439245F3D4D3A344
+    IndependentReviewerDecision: APPROVE
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
-    CoordinatorDecision: Pending
+    IndependentReviewerReviewHeadCommit: 29e299c407d2990275f4d123599be160ff657eec
+    IndependentReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R6-TaskSpec/Worker04-FixedHeadReview-29e299c.md
+    IndependentReviewerReviewBundleSha256: FC5004E173D4106B6C4DF0D9B99374F1C771A842940D2311C84F1F726D2A08F6
+    CoordinatorDecision: ACCEPTED
+    CoordinatorDecisionAtUtc: "2026-10-31T23:04:00Z"
+    TaskSpecMergedToMainCommit: 2642c6c583d919f93d49b6ab4bcc1a83e25d9cfd
+    TaskSpecMergePullRequestNumber: 130
     TaskIds: [ED-0144]
     TaskRevisionTransitions:
       - {TaskId: ED-0144, FromRevision: 5, ToRevision: 6}
@@ -972,6 +981,43 @@ ParallelGroups:
     Rollback: "If review or validation fails, keep the merged PR #124 source unchanged, leave R6 Proposed/Assigned as applicable, preserve prior artifacts, and do not mark ED-0144 closed."
     PreserveGoalDependenciesContractsAcceptanceProductScopeAndOwnerReviewer: true
     ProductWriteAuthorization: None
+
+  - ChangeRequestId: CR-ED-0144-R7-CONTROLLER-BRANCH-001
+    RequestedByRole: Coordinator
+    RequestedByAgentId: /root
+    Decision: ProposedAwaitingOwnerAndIndependentFixedHeadReview
+    OwnerDecision: Pending
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
+    IndependentReviewerDecision: Pending
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    CoordinatorDecision: Pending
+    TaskIds: [ED-0144]
+    TaskRevisionTransitions:
+      - {TaskId: ED-0144, FromRevision: 6, ToRevision: 7}
+    Scope: >-
+      Change the invalid assigned validation branch from Task/ED-0144-R6-FinalHeadValidation to the Controller-accepted
+      Task/ED-0144-R6FinalHeadValidation, and move all fresh validation outputs from ED-0144-R6-Authorized-20261101
+      to the separate ED-0144-R7-Authorized-20261101 root. Update the frozen preflight, coverage command, helper path,
+      expected branch, log paths and artifact references. Correct the PowerShell 7 Coverage.CommandTemplate invocation
+      with the call operator and explicit quoting so the frozen full command parses. Preserve Goal, product WriteSet,
+      dependencies, contracts, tested PR #124 Base/Head, validation behavior and 80 percent per-source coverage threshold.
+      No product writes.
+    Reason: >-
+      WorkflowController IsAllowedBranch requires the branch topic after Task/ED-0144- to contain only alphanumeric
+      characters and begin uppercase. The R6 frozen topic R6-FinalHeadValidation contains additional hyphens, so the
+      candidate validate-assignment command exited 1 before any product validation worktree or build was created.
+      The exact failure is preserved in the referenced log; this revision uses the valid PascalCase topic R6FinalHeadValidation.
+      Worker05's fixed-head review also found that Coverage.CommandTemplate quoted pwsh.exe but omitted PowerShell's
+      invocation operator, making the frozen command unparsable. R7 corrects that command syntax and will reparse its
+      exact frozen text before assignment; no validation command or product build is run during TaskSpec review.
+    Impact: "Only TaskSpec validation command syntax, branch identity, and fresh validation artifact paths change; product code, data, schema, behavior, dependencies, Goal, WriteSet, Owner and Reviewer remain unchanged."
+    Rollback: "If review or validation fails, keep PR #124 source unchanged, preserve both artifact roots, leave ED-0144/R7 unassigned, and do not close the task."
+    PreserveGoalDependenciesContractsProductScopeAndOwnerReviewer: true
+    ProductWriteAuthorization: None
+    EvidenceRefs:
+      - Tools/WorkflowController/WorkflowController.cpp#L599-L610
+      - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Assignment/Logs/PreMerge-ValidateAssignment.log#SHA256=134E929939CDAE6E67F805B6E315FA51C19ADF6B0774C63B8E97AC5950183F5A
+      - Workflow/Plans/P3.yaml#TaskId=ED-0144&TaskRevision=7
 
 Tasks:
   - TaskId: ED-0104
@@ -2512,10 +2558,10 @@ Tasks:
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: [ED-0104, ED-0105, ED-0106]}
 
   - TaskId: ED-0144
-    TaskRevision: 6
-    SupersedesTaskRevision: 5
-    RevisionTransition: {FromRevision: 5, ToRevision: 6}
-    ChangeRequestId: CR-ED-0144-R6-FINAL-HEAD-001
+    TaskRevision: 7
+    SupersedesTaskRevision: 6
+    RevisionTransition: {FromRevision: 6, ToRevision: 7}
+    ChangeRequestId: CR-ED-0144-R7-CONTROLLER-BRANCH-001
     EpicId: EP-06
     Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
     TaskKind: IntegrationTask
@@ -2530,8 +2576,8 @@ Tasks:
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     CreatedByAgentId: /root
-    CreatedAt: "2026-10-31T22:15:07Z"
-    UpdatedAt: "2026-10-31T22:15:07Z"
+    CreatedAt: "2026-10-31T23:04:00Z"
+    UpdatedAt: "2026-10-31T23:04:00Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2586,57 +2632,57 @@ Tasks:
       - {AcceptanceId: AC-4, Description: "Content validation is limited to durable Content; existing exact opaque ProposalId bytes, including permitted embedded NUL and non-UTF-8 values, remain unchanged.", Evidence: "Existing SQLite real-file ProposalId write, read, close/reopen, backup, consent recall, and restore tests continue to pass unchanged."}
       - {AcceptanceId: AC-5, Description: "Memory V1 behavior, schema, consent, scope, TTL, tombstone, backup, and legacy Recall behavior remain unchanged; no data migration is performed.", Evidence: "Existing Memory contract CTests pass; the diff is confined to the four frozen WriteSet paths."}
       - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage tied to the final implementation PR head.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution. CoverageSummary records the exact expected branch and PR Head SHA and confirms the worktree was clean before and after collection."}
-      - {AcceptanceId: AC-7, Description: "Before ED-0144/R6 may close, every required validation-command invocation and retry listed under Validation has one parseable unique CommandExecuted event bound to TaskId ED-0144, TaskRevision 6, the assigned validation branch, and the expected implementation Head. Each event records the exact full Command, WorkingDirectory, ExitCode, DurationMs, OutputFile or EvidencePath, CorrelationId, and EvidenceRefs. Missing, malformed, duplicate, failed, or binding-mismatched command evidence, or a missing referenced output, blocks R6 acceptance and TaskClosed.", Evidence: "The event ledger is reconciled one-to-one with the frozen preflight, configure, targeted build, full build, CTest, compiler/gcov version, CoverageHelperSyntaxCommand (verifies the pinned helper SHA and PowerShell parser), and coverage-collection invocations including every retry. Event values match nonempty logs and final branch/Head; all required exits are 0, event IDs are unique, and referenced files are present in the fresh R6 artifact root."}
+      - {AcceptanceId: AC-7, Description: "Before ED-0144/R7 may close, every required validation-command invocation and retry listed under Validation has one parseable unique CommandExecuted event bound to TaskId ED-0144, TaskRevision 7, the assigned validation branch, and the expected implementation Head. Each event records the exact full Command, WorkingDirectory, ExitCode, DurationMs, OutputFile or EvidencePath, CorrelationId, and EvidenceRefs. Missing, malformed, duplicate, failed, or binding-mismatched command evidence, or a missing referenced output, blocks R7 acceptance and TaskClosed.", Evidence: "The event ledger is reconciled one-to-one with the frozen preflight, configure, targeted build, full build, CTest, compiler/gcov version, CoverageHelperSyntaxCommand (verifies the pinned helper SHA and PowerShell parser), and coverage-collection invocations including every retry. Event values match nonempty logs and final branch/Head; all required exits are 0, event IDs are unique, and referenced files are present in the fresh R7 artifact root."}
     Validation:
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory
       Execution:
-        LogDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs
-        EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Execution
-        FreshBuildPreflightOutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs/FreshBuildPreflight.txt
+        LogDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Logs
+        EvidenceDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Execution
+        FreshBuildPreflightOutputFile: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Logs/FreshBuildPreflight.txt
         RequiredLogFiles: [Configure.log, TargetedBuild.log, Build.log, CTest.log, GxxVersion.log, GcovVersion.log, CoverageHelperSyntax.log, CoverageCommand.log]
       FreshBuildPreflight: |-
         $ErrorActionPreference = 'Stop'
-        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Worktree'
-        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory'
-        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Dependencies'
+        $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Worktree'
+        $Build = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory'
+        $Dependencies = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Dependencies'
         $Reports = Join-Path $Build 'Reports'
-        $Logs = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs'
-        $Execution = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Execution'
-        $ExpectedBranch = 'Task/ED-0144-R6-FinalHeadValidation'
+        $Logs = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Logs'
+        $Execution = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Execution'
+        $ExpectedBranch = 'Task/ED-0144-R6FinalHeadValidation'
         $ExpectedHead = 'a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f'
         $ActualBranch = (& git -C $Worktree branch --show-current 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or $ActualBranch -ne $ExpectedBranch) { throw "Unexpected product branch: $ActualBranch" }
         $ActualHead = (& git -C $Worktree rev-parse HEAD 2>&1 | Out-String).Trim()
         if ($LASTEXITCODE -ne 0 -or $ActualHead -ne $ExpectedHead) { throw "Unexpected product HEAD: $ActualHead" }
         $Status = @(& git -C $Worktree status --porcelain=v1 --untracked-files=all 2>&1)
-        if ($LASTEXITCODE -ne 0 -or $Status.Count -ne 0) { throw 'Product worktree must be clean before R6 validation' }
+        if ($LASTEXITCODE -ne 0 -or $Status.Count -ne 0) { throw 'Product worktree must be clean before R7 validation' }
         foreach ($Path in @($Build, $Dependencies, $Reports, $Logs, $Execution)) {
-          if (Test-Path -LiteralPath $Path) { throw "Preserve existing R6 artifacts and stop: $Path" }
+          if (Test-Path -LiteralPath $Path) { throw "Preserve existing R7 artifacts and stop: $Path" }
         }
         New-Item -ItemType Directory -Path $Logs | Out-Null
         $PreflightOutputFile = Join-Path $Logs 'FreshBuildPreflight.txt'
-        $Record = "R6_PRECONFIGURE_OK=1`nBranch=$ActualBranch`nHead=$ActualHead`nWorktree=clean"
+        $Record = "R7_PRECONFIGURE_OK=1`nBranch=$ActualBranch`nHead=$ActualHead`nWorktree=clean"
         [System.IO.File]::WriteAllText($PreflightOutputFile, $Record + "`n", [System.Text.UTF8Encoding]::new($false))
         Write-Output $Record
       ConfigureCommand: >-
-        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Dependencies -DFETCHCONTENT_SOURCE_DIR_SQLITE=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Dependencies/sqlite-src -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON
+        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Worktree/Tests/Contract/Memory -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=--coverage -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Dependencies -DFETCHCONTENT_SOURCE_DIR_SQLITE=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5/Dependencies/sqlite-src -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DBUILD_TESTING=ON
       RequiredBuildTargets: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
       RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests, SqliteStoreTests, SQLiteBuildProbe]
-      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
-      BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory --parallel 4"
-      CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory --output-on-failure --no-tests=error"
+      TargetedBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory --target ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
+      BuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory --parallel 4"
+      CTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory --output-on-failure --no-tests=error"
       ToolchainVersionCommands:
         Gxx: "C:/msys64/ucrt64/bin/g++.exe --version"
         Gcov: "C:/msys64/ucrt64/bin/gcov.exe --version"
         ExpectedGccAndGcovVersion: "16.1.0"
       CoverageHelperSyntaxCommand: >-
-        & 'C:/Program Files/PowerShell/7/pwsh.exe' -NoLogo -NoProfile -File 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageHelperSyntaxCheck.ps1' -ScriptPath 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageCommand.ps1' -ExpectedSha256 'CD68C49EA51B3437F0E0743748D986A0FD7F114B07CF5CE28F9A2C9ED816F11C' *> 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs/CoverageHelperSyntax.log'
+        & 'C:/Program Files/PowerShell/7/pwsh.exe' -NoLogo -NoProfile -File 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Validation/CoverageHelperSyntaxCheck.ps1' -ScriptPath 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Validation/CoverageCommand.ps1' -ExpectedSha256 'CD68C49EA51B3437F0E0743748D986A0FD7F114B07CF5CE28F9A2C9ED816F11C' *> 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Logs/CoverageHelperSyntax.log'
       CoverageHelperSyntaxExecutor: PowerShell 7
-      CoverageHelperSyntaxCheckScript: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageHelperSyntaxCheck.ps1
+      CoverageHelperSyntaxCheckScript: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Validation/CoverageHelperSyntaxCheck.ps1
       CoverageHelperSyntaxCheckScriptSha256: DF0387D4BF0374C9D22D9A8CF6EBD93F932EA16AC70BE59FE2D20EA569E87B2A
-      CoverageHelperSyntaxWorkingDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation
+      CoverageHelperSyntaxWorkingDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Validation
       CoverageHelperSyntaxExpectedExitCode: 0
-      CoverageHelperSyntaxOutputLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs/CoverageHelperSyntax.log
+      CoverageHelperSyntaxOutputLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Logs/CoverageHelperSyntax.log
       Coverage:
         Required: true
         Tool: C:/msys64/ucrt64/bin/gcov.exe
@@ -2644,27 +2690,27 @@ Tasks:
         ProductionSources: [Source/Memory/ConversationMemory.cpp, Source/Memory/SqliteMemoryStorageAdapter.cpp]
         MinimumUniqueExecutableLinePercent: 80
         ThresholdRule: "For each source, covered_unique_executable_lines * 100 >= total_unique_executable_lines * 80; compare integer counts before display rounding."
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory/Reports
         CommandTemplate: >-
-          "C:/Program Files/PowerShell/7/pwsh.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ReportDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory/Reports" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-R6-FinalHeadValidation" -ExpectedHeadCommit "a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f"
-        ScriptPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageCommand.ps1
+          & 'C:/Program Files/PowerShell/7/pwsh.exe' -NoLogo -NoProfile -ExecutionPolicy Bypass -File 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Validation/CoverageCommand.ps1' -WorktreeRoot 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Worktree' -BuildDirectory 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory' -GxxPath 'C:/msys64/ucrt64/bin/g++.exe' -GcovPath 'C:/msys64/ucrt64/bin/gcov.exe' -ReportDirectory 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Memory/Reports' -ExpectedGccVersion '16.1.0' -MinimumLinePercent 80 -ExpectedBranch 'Task/ED-0144-R6FinalHeadValidation' -ExpectedHeadCommit 'a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f'
+        ScriptPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Validation/CoverageCommand.ps1
         ScriptSha256: CD68C49EA51B3437F0E0743748D986A0FD7F114B07CF5CE28F9A2C9ED816F11C
         ExpectedImplementationPR: {Number: 124, ExpectedBaseBranch: main, ExpectedBaseCommit: d6aa14022d5098378d230a0215aa9461c4a34a76, ExpectedHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f}
-        ExpectedHeadCommitBinding: "Immediately before R6 validation, GitHub must report PR #124 Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f and Base branch main. Stop if either live ref differs; any later product-head change requires a revised binding before coverage."
+        ExpectedHeadCommitBinding: "Immediately before R7 validation, GitHub must report PR #124 Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f and Base branch main. Stop if either live ref differs; any later product-head change requires a revised binding before coverage."
         GitBinding: "Reject wrong branch/head and any tracked/untracked worktree changes before and after collection; record actual branch, HEAD and clean status in CoverageSummary.json."
         WindowsPathPolicy: "gcov runs without --preserve-paths in a unique per-object output directory; preserve exact files[].file source identity."
         AggregationRule: "Merge ConversationMemory.cpp reports from both test executables by unique source line; count a line hit if either reports execution. Measure SqliteMemoryStorageAdapter.cpp from its adapter test object."
       StaticChecks:
-        - "Controller query returns ED-0144/R6 State=Proposed; GitHub PR #124 live Head equals the frozen ExpectedHeadCommit; product Branch/Worktree remain unassigned until the separate post-merge assignment ledger."
+        - "Controller query returns ED-0144/R7 State=Proposed; GitHub PR #124 live Head equals the frozen ExpectedHeadCommit; product Branch/Worktree remain unassigned until the separate post-merge assignment ledger."
         - "git diff --check exits 0; registration diff is exactly P3.yaml and P3.jsonl; implementation WriteSet remains the exact four frozen Memory paths."
         - "Fresh Windows C++20 configure, both targeted builds, full standalone build, and all four required CTests exit 0."
         - "CoverageHelperSyntaxCommand runs via PowerShell 7, verifies the pinned CoverageCommand SHA, parses it without errors, and writes CoverageHelperSyntax.log; coverage branch/head/cleanliness guards reject mismatched or dirty checkouts."
         - "Fresh GCC/gcov 16.1 JSON v2 reports meet at least 80 percent unique executable lines for both production sources."
         - "CoverageSummary includes covered/total counts; threshold compares integer unique-line counts without rounding, independently per production source. Any libgcov checksum/overwrite or gcov warning/error/stale/corrupt/missing-file diagnostic invalidates evidence."
-        - "R4/R5 build, report, and gcov artifacts are never reused, copied into, or overwritten. Only the pinned SQLite source directory at ED-0144-R5/Dependencies/sqlite-src is read; fresh R6 Memory, Dependencies, Reports, Logs, and Execution paths are checked before configure. No product code, schema, user data, or behavior changes are authorized by this revision."
+        - "R4/R5 build, report, and gcov artifacts are never reused, copied into, or overwritten. Only the pinned SQLite source directory at ED-0144-R5/Dependencies/sqlite-src is read; fresh R7 Memory, Dependencies, Reports, Logs, and Execution paths are checked before configure. No product code, schema, user data, or behavior changes are authorized by this revision."
       ProductWriteAuthorization: None
-    ProposedImplementationBranch: Task/ED-0144-R6-FinalHeadValidation
-    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Worktree
+    ProposedImplementationBranch: Task/ED-0144-R6FinalHeadValidation
+    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-Authorized-20261101/Worktree
     Branch: ""
     Worktree: ""
     AssignmentStatus: NotAssigned
@@ -2672,21 +2718,21 @@ Tasks:
     ImplementationPullRequestNumber: 124
     ImplementationPullRequestBaseCommit: d6aa14022d5098378d230a0215aa9461c4a34a76
     ImplementationPullRequestHeadCommit: a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f
-    AssignmentNote: "Validation only. No product-source writes are authorized. After the TaskSpec is merged, create a separate assignment ledger, wait for its merge, and require post-merge WorkflowController AssignmentAccepted before running the fresh R6 validation."
-    TaskSpecProposalBaseCommit: d1492e41d26c0af39abc3e3a916ef371b3a3c265
-    TaskSpecProposalEventId: 4df9fa69-7770-498c-a193-d339ae3609ff
-    ChangeRequestProposedEventId: 7f59c50d-e151-4a3b-8a49-0dc23d3f7403
-    TaskSpecProposalBranch: Task/ED-0144-R6-FinalValidationTaskSpec
-    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-FinalTaskSpec/Worktree
-    TaskSpecProposalHeadCommit: bb2f3483fc093e6bfbce48369669d81e2fe81505
-    TaskSpecPullRequestNumber: 130
-    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/130
-    TaskSpecPullRequestCreationBaseCommit: d1492e41d26c0af39abc3e3a916ef371b3a3c265
-    TaskSpecPullRequestCreatedHeadCommit: 923368513a122f074377391c0ff7537118d65b73
-    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T22:22:19Z"
-    TaskSpecPullRequestCreatedEventId: 915ad9b5-b675-47df-a190-0b5cc9e18352
-    TaskSpecPullRequestHeadCommit: 12d5bec99fe1125a752cc4be9a2038cb35c08d06
-    TaskSpecPullRequestHeadUpdatedEventId: 093e180f-09a1-4cb0-aaec-d2d277357d18
+    AssignmentNote: "Validation only. R7 corrects the Controller branch format and uses a distinct fresh artifact root. A separate assignment ledger must merge and post-merge WorkflowController must return AssignmentAccepted before validation."
+    TaskSpecProposalBaseCommit: 2642c6c583d919f93d49b6ab4bcc1a83e25d9cfd
+    TaskSpecProposalEventId: bd0c14d8-38c0-4b0b-a0dc-02348285fb8a
+    ChangeRequestProposedEventId: b3bff883-f385-4130-8d0a-8a940c5c09af
+    TaskSpecProposalBranch: Task/ED-0144-R7BranchCorrectionTaskSpec
+    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R7-BranchCorrection/Worktree
+    TaskSpecProposalHeadCommit: 2769678dd6d2bbc551775aaa0801e8abcbd24f43
+    TaskSpecPullRequestNumber: 131
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/131
+    TaskSpecPullRequestCreationBaseCommit: 2642c6c583d919f93d49b6ab4bcc1a83e25d9cfd
+    TaskSpecPullRequestCreatedHeadCommit: 2769678dd6d2bbc551775aaa0801e8abcbd24f43
+    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T23:08:32Z"
+    TaskSpecPullRequestCreatedEventId: 7c2dc92c-aaa3-4d4a-9ecc-52f6dd1a999d
+    TaskSpecPullRequestHeadCommit: 8cbb7fec0c5f9eada81b46b9c0cc95f234cb9839
+    TaskSpecPullRequestHeadUpdatedEventId: 020e673a-d14b-4de0-9f2f-9f6cf2170d85
     TaskSpecPullRequestHeadTrackingSemantics: "PRHeadUpdated records the latest pushed PR head snapshot before the commit appending that event; the event commit necessarily becomes the next live PR head. The exact head used for final Owner/Reviewer approval is captured by its fixed-head review evidence and by the post-merge TaskSpecReviewCompleted event."
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
     TaskSpecOwnerSlotId: Worker05
@@ -2698,25 +2744,40 @@ Tasks:
     TaskSpecReviewerDecision: Pending
     TaskSpecReviewStatus: Pending
     TaskSpecCoordinatorDecision: Pending
-    AssignmentStatusNote: "No R6 assignment exists. A separate assignment ledger and post-merge Controller AssignmentAccepted are required before R6 validation."
+    AssignmentStatusNote: "R7 TaskSpec and branch correction are proposed; no product validation worktree or product-source write is authorized."
     ProductWriteAuthorization: None
     TaskSpecStatusNote: >-
-      R5 remains historical for the old PR #124 head d693d05. PR #127 is closed and unmerged; its candidate does not authorize validation.
-      R6 binds the final merged PR #124 Base d6aa140 / Head a2a107a and uses the distinct fresh root ED-0144-R6-Authorized-20261101.
-      No validation is authorized until this TaskSpec and a separate assignment ledger are merged and the post-merge Controller returns AssignmentAccepted.
-      The R6 run must re-check the live PR #124 Base/Head and write CommandExecuted evidence with exact command, working directory, exit code, duration, and log path.
+      Revision 7 corrects the Controller-incompatible branch name and allocates a new validation root; the R6 candidate was rejected before any product worktree or build was created.
+      Worker05's prior fixed-head review found the Coverage.CommandTemplate omitted PowerShell's call operator; R7 now uses valid invocation syntax and its exact command parses without errors. Worker04 approved the prior head; both roles must review the new pushed head.
+      PR #130 merged the R6 TaskSpec at main@2642c6; its final-head scope remains PR #124 Base d6aa14022d5098378d230a0215aa9461c4a34a76 / Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f.
+      R7 remains unassigned; no product validation or product-source write is authorized until the corrected TaskSpec, separate assignment ledger, and post-merge Controller AssignmentAccepted.
+    PreviousRevision6:
+      TaskRevision: 6
+      Disposition: SupersededByProposedRevision7ControllerBranchCorrection
+      StateAtSupersession: Proposed
+      ChangeRequestId: CR-ED-0144-R6-FINAL-HEAD-001
+      TaskSpecPullRequestNumber: 130
+      TaskSpecPullRequestHeadCommit: 29e299c407d2990275f4d123599be160ff657eec
+      TaskSpecMergedToMainCommit: 2642c6c583d919f93d49b6ab4bcc1a83e25d9cfd
+      TaskSpecMergedToMainEventId: b7dd2b9e-ba67-4ab2-97eb-1d4616c8d75e
+      TaskSpecReviewCompletedEventId: 1e15cba0-3ab0-4c0b-aa90-57631de923ee
+      ChangeRequestAcceptedEventId: 9ee19fdf-8c38-40a3-92e7-7705fc90b817
+      InvalidImplementationBranch: Task/ED-0144-R6-FinalHeadValidation
+      FailedAssignmentPreflight: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Assignment/Logs/PreMerge-ValidateAssignment.log#SHA256=134E929939CDAE6E67F805B6E315FA51C19ADF6B0774C63B8E97AC5950183F5A
+      ProductWriteAuthorization: None
     RiskLevel: High
     RiskOwnerRole: MemoryOwner
     RequiresCredentials: false
     RequiresExternalAccount: false
     Rules: {MustFollow: [CODE-002, DEP-001, SEC-001], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "R5 AC-6 is historical at d693d05; no R6 validation acceptance is complete."
-      CurrentFindingOrFailure: "PR #124 is fast-forwarded to main@d6aa140 with live Head a2a107a; R5 ExpectedHeadCommitBinding prohibits reusing coverage evidence from d693d05."
-      TriedApproaches: []
-      NextAction: "Approve/merge R6 TaskSpec, create the separate R6 assignment ledger, then run the exact fresh R6 Windows acceptance."
+      LastCompletedAcceptance: "The exact Coverage.CommandTemplate parses with PowerShell 7.6.9 (ERROR_COUNT=0); static parse only, no validation command was executed."
+      CurrentFindingOrFailure: "Worker05 requested a call operator for the PowerShell executable path; corrected on the new TaskSpec head and awaiting both fixed-head reviews. No product validation has run."
+      TriedApproaches:
+        - "Candidate validate-assignment returned exit 1 with the recorded branch-format error; no product worktree or output directory was created."
+      NextAction: "Review and merge R7 branch-format ChangeRequest, then create the separate assignment ledger; after post-merge AssignmentAccepted, run fresh R7 Windows C++20 validation."
       OpenMessageIds: []
-      LastValidationResult: "R6 TaskSpec proposal only; no R6 configure, build, CTest, coverage, or product-source write has run."
+      LastValidationResult: "TaskSpec correction proposed; no product configure, build, CTest, coverage, or source write has run."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
     SupersededPriorRevision6Proposal:
       PullRequestNumber: 127
