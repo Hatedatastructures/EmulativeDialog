@@ -20,7 +20,7 @@ struct AuthorizedTurnContext final {
   Channels::CanonicalMessage Message;
   // Populated by IdentityPolicy from trusted Core bindings. Model output and
   // ChannelEnvelope fields never supply this set.
-  std::vector<std::string> GrantedCapabilities;
+  std::vector<std::string> GrantedCapabilities{};
 };
 
 enum class AgentRunStatus : std::uint8_t {

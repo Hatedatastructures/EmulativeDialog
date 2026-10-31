@@ -2440,6 +2440,15 @@ struct ScenarioExpectation final {
     Passed &= Check(Resolved != nullptr &&
                         Resolved->GrantedCapabilities.empty(),
                     "legacy IdentityBinding aggregates default to no capability grants");
+    if (Resolved != nullptr) {
+      const Channels::InboundChannelMessage LegacyInbound = MakeInboundMessage();
+      const Core::AuthorizedTurnContext LegacyContext{
+          Resolved->Principal, Resolved->Scope,
+          MakeTurnId(LegacyInbound.Envelope), LegacyInbound.Message};
+      Passed &= Check(
+          LegacyContext.GrantedCapabilities.empty(),
+          "legacy AuthorizedTurnContext aggregates default to no capability grants");
+    }
   }
   {
     Fixture TestFixture(FakeScenario::ToolRoundTrip, {});
