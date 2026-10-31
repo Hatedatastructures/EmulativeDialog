@@ -2669,7 +2669,7 @@ Tasks:
     ChangeRequestProposedEventId: 7f59c50d-e151-4a3b-8a49-0dc23d3f7403
     TaskSpecProposalBranch: Task/ED-0144-R6-FinalValidationTaskSpec
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-FinalTaskSpec/Worktree
-    TaskSpecProposalHeadCommit: PendingInitialCommit
+    TaskSpecProposalHeadCommit: bb2f3483fc093e6bfbce48369669d81e2fe81505
     TaskSpecPullRequestNumber: Pending
     TaskSpecPullRequestUrl: Pending
     TaskSpecPullRequestCreationBaseCommit: d1492e41d26c0af39abc3e3a916ef371b3a3c265
