@@ -5528,7 +5528,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: "/root/luna02_ed0148_pr_ready"
     CreatedAt: "2026-10-31T03:39:16Z"
-    UpdatedAt: "2026-10-31T04:13:54Z"
+    UpdatedAt: "2026-10-31T04:15:04Z"
     ParallelGroup: AgentRuntimeTestBuildIntegration
     TaskSpecProposalBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
     ProposedTaskSpecBranch: Task/ED-0155-R3IntegrationHeadTaskSpec
@@ -5554,6 +5554,10 @@ Tasks:
     Worker01SlotAssignmentEventId: c69bffd5-1f83-4b78-8d57-634d7dd23574
     AssignedToSlot: Worker01
     AssignmentLedgerBaseCommit: 74ba2bcc55aaee36a400bbfc99df5f8962124c9e
+    AssignmentLedgerHeadAtCreation: 3389e1d32e15df93465d96f7e7f40138bd86228f
+    AssignmentLedgerPullRequestNumber: 109
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/109
+    AssignmentLedgerCreatedEventId: 8a76020f-f27c-42a1-b750-c608500ae590
     PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3-AssignmentLedger/Logs/PreMerge-ValidateAssignment.log#SHA256=6146F65A792C9A1CACF4FDAAB888AFFD17FF8CFB072D4DE226F19739BE592F69
     TaskSpecStatusNote: >-
       PR #108 merged the approved R3 TaskSpec to main at 74ba2bcc55aaee36a400bbfc99df5f8962124c9e after Worker01 Owner

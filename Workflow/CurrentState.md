@@ -645,3 +645,7 @@
 - PR #108 merged ED-0155/R3 TaskSpec to main at 74ba2bcc55aaee36a400bbfc99df5f8962124c9e; Worker01 Owner and Worker04 fixed-head reviewer approved the same Base/Head.
 - Worker01's superseded R2 assignment is released and R3 is assigned as a candidate on Task/ED-0155-R3BusinessActionRegistryLink, worktree H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree, baseline 74ba2bcc55aaee36a400bbfc99df5f8962124c9e.
 - Pre-merge WorkflowController validation is recorded in the assignment ledger. Product writes remain gated until this ledger merges and post-merge validation on main returns AssignmentAccepted.
+## 2026-10-31 ED-0155/R3 assignment PR
+
+- Assignment ledger PR #109 is open at Base 74ba2bcc55aaee36a400bbfc99df5f8962124c9e / creation Head 3389e1d32e15df93465d96f7e7f40138bd86228f. The four-path workflow diff is ready for Worker04 fixed-head review; remote branch capacity is 4/4.
+- Product source writes remain gated on PR merge and a post-merge Controller AssignmentAccepted result.
