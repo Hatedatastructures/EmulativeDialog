@@ -1,6 +1,6 @@
 # Async Agent Runtime Contract V3 — Per-Request Stream Resource Bounds
 
-Status: Proposed for fixed-head review. This exact revision becomes Frozen only after independent review approval and merge; before that merge it is a proposal, not a product runtime guarantee.
+Status: Frozen. Worker04 independently approved fixed PR #113 head `4916e2df69feb717d18740134c94b992b5ab0399`, and that one-path contract change merged to `main` at `60734a43a1cf219680d70d7c7bb7ca47b66542ef`. This freezes the V3 contract semantics only; it does not claim ED-0150 product implementation is complete or authorize implementation outside its separate assignment gate.
 
 ## Purpose and compatibility
 
