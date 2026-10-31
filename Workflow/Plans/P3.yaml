@@ -2462,7 +2462,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T12:40:15Z"
-    UpdatedAt: "2026-10-31T15:35:14.149Z"
+    UpdatedAt: "2026-10-31T16:14:56Z"
     ParallelGroup: DurableMemoryContentV2
     Goal: >-
       在 durable MemoryRecord.Content 的所有新增持久化边界实施 MemoryContract V2：Core Write/Update 与整批 RestoreBackup 校验严格 UTF-8 且拒绝 U+0000；SQLite adapter 对直接写入执行相同校验。有效字节保持原值，拒绝不泄露正文。
@@ -2571,6 +2571,13 @@ Tasks:
     TaskSpecProposalBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
     TaskSpecProposalEventId: 1c86e7e5-b2d3-43ce-9763-758c22edc762
     ChangeRequestProposedEventId: 1d5c8c47-f524-444a-8b63-7d41bcd6354c
+    TaskSpecProposalHeadCommit: f125284a9a365c08b18a0dc3a0e041ada6ffe700
+    TaskSpecPullRequestNumber: 125
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/125
+    TaskSpecPullRequestCreationBaseCommit: 77e30f1193a4cb3e79465d87e13ad962e35ff010
+    TaskSpecPullRequestCreatedHeadCommit: f125284a9a365c08b18a0dc3a0e041ada6ffe700
+    TaskSpecPullRequestCreatedAtUtc: "2026-10-31T16:14:39Z"
+    TaskSpecPullRequestCreatedEventId: 7fc6536c-2fab-4957-a358-b56bf90c73b9
     TaskSpecProposalBranch: Task/ED-0144-R5CoverageValidationTaskSpec
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R5-TaskSpec/Worktree
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
