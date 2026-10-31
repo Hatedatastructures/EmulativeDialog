@@ -27,6 +27,9 @@ struct IdentityBinding final {
   Channels::AccountProfile Account;
   Channels::SenderId Sender;
   PrincipalId Principal;
+  // Capability grants are trusted Core configuration, never envelope or
+  // provider data. They are copied into each resolved turn context.
+  std::vector<std::string> GrantedCapabilities{};
 };
 
 enum class IdentityPolicyFailureCode : std::uint8_t {
@@ -44,6 +47,7 @@ struct ResolvedIdentity final {
   PrincipalId Principal;
   ConversationScope Scope;
   Channels::AccountProfile Account;
+  std::vector<std::string> GrantedCapabilities;
 };
 
 using IdentityResolution = std::variant<ResolvedIdentity, IdentityPolicyFailure>;

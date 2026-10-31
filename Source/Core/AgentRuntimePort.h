@@ -5,6 +5,7 @@
 #include <stop_token>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "Source/Channels/Contracts/ChannelAdapterPort.h"
 #include "Source/Core/IdentityPolicy.h"
@@ -17,6 +18,9 @@ struct AuthorizedTurnContext final {
   ConversationScope Scope;
   Providers::AgentTurnId AgentTurn;
   Channels::CanonicalMessage Message;
+  // Populated by IdentityPolicy from trusted Core bindings. Model output and
+  // ChannelEnvelope fields never supply this set.
+  std::vector<std::string> GrantedCapabilities{};
 };
 
 enum class AgentRunStatus : std::uint8_t {

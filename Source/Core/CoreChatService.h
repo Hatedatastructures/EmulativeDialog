@@ -10,7 +10,8 @@
 
 #include "Source/Channels/Contracts/ChannelAdapterPort.h"
 #include "Source/Core/AgentRuntimePort.h"
-#include "Source/Core/AsyncAgentRuntimePort.hpp"
+#include "Source/Core/AsyncAgentToolRuntimePort.hpp"
+#include "Source/Core/BusinessActionRegistry.hpp"
 #include "Source/Core/CredentialLease.h"
 #include "Source/Core/IdentityPolicy.h"
 #include "Source/Core/OperationRecord.h"
@@ -82,6 +83,17 @@ public:
                   CoreActionIdSource& ActionIdSource,
                   OperationRecordObserver* RecordObserver = nullptr);
 
+  CoreChatService(const IdentityPolicy& Policy,
+                  AgentRuntimePort& AgentRuntime,
+                  Providers::ModelProviderPort& Provider,
+                  const Providers::ModelProviderProfile& ProviderProfile,
+                  const Providers::CredentialLease& ProviderLease,
+                  Channels::ChannelAdapterPort& Channel,
+                  const CredentialLease& ChannelLease,
+                  CoreActionIdSource& ActionIdSource,
+                  const BusinessActionRegistry& BusinessActions,
+                  OperationRecordObserver* RecordObserver = nullptr);
+
   [[nodiscard]] CoreChatResult Process(
       const Channels::InboundChannelMessage& Message,
       std::stop_token CancellationToken = {});
@@ -89,6 +101,12 @@ public:
   [[nodiscard]] boost::asio::awaitable<CoreChatResult> ProcessAsync(
       Channels::InboundChannelMessage Message,
       AsyncAgentRuntimePort& AsyncAgentRuntime,
+      Providers::AsyncModelProviderPort& AsyncProvider,
+      std::stop_token CancellationToken = {});
+
+  [[nodiscard]] boost::asio::awaitable<CoreChatResult> ProcessAsync(
+      Channels::InboundChannelMessage Message,
+      AsyncAgentToolRuntimePort& AsyncAgentRuntime,
       Providers::AsyncModelProviderPort& AsyncProvider,
       std::stop_token CancellationToken = {});
 
@@ -114,6 +132,7 @@ private:
   const CredentialLease& ChannelLease;
   CoreActionIdSource& ActionIdSource;
   OperationRecordObserver* RecordObserver{};
+  const BusinessActionRegistry* BusinessActions{};
   std::mutex StateMutex;
   std::unordered_set<std::string> ProcessedDeduplicationIds;
   std::unordered_set<std::string> IssuedActionIds;

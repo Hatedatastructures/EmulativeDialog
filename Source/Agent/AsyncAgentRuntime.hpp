@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Source/Core/AsyncAgentRuntimePort.hpp"
+#include "Source/Core/AsyncAgentToolRuntimePort.hpp"
 
 #include <boost/asio/awaitable.hpp>
 
@@ -8,7 +8,7 @@ namespace EmulativeDialog::Agent {
 
 // The concrete coroutine loop is implemented by the dependent AgentRuntime
 // capability task. This declaration fixes its public Core port boundary.
-class AsyncAgentRuntime final : public Core::AsyncAgentRuntimePort {
+class AsyncAgentRuntime final : public Core::AsyncAgentToolRuntimePort {
 public:
   ~AsyncAgentRuntime() override = default;
 
@@ -18,6 +18,15 @@ public:
                const Providers::ModelProviderProfile& Profile,
                const Providers::CredentialLease& Lease,
                std::stop_token CancellationToken) override;
+
+  [[nodiscard]] boost::asio::awaitable<Core::AgentRunResult>
+  RunTurnWithToolsAsync(
+      const Core::AuthorizedTurnContext& Context,
+      Providers::AsyncModelProviderPort& Provider,
+      const Providers::ModelProviderProfile& Profile,
+      const Providers::CredentialLease& Lease,
+      Core::AsyncBusinessActionDispatcherPort& Dispatcher,
+      std::stop_token CancellationToken) override;
 };
 
 } // namespace EmulativeDialog::Agent

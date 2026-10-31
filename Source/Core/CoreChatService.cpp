@@ -7,7 +7,9 @@
 #include <cctype>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "Source/Core/CoreAuthorizedAction.h"
 
@@ -120,6 +122,200 @@ bool IsValidCompletionKind(Providers::CompletionKind Completion) noexcept {
   return Completion == Providers::CompletionKind::FinalAnswer ||
          Completion == Providers::CompletionKind::Refusal;
 }
+
+bool SameScope(const ConversationScope& Left,
+               const ConversationScope& Right) noexcept {
+  return Left.Principal.Value == Right.Principal.Value &&
+         Left.Channel.Value == Right.Channel.Value &&
+         Left.Account.Value == Right.Account.Value &&
+         Left.Mode.Value == Right.Mode.Value &&
+         Left.Conversation.Value == Right.Conversation.Value &&
+         Left.ConversationType == Right.ConversationType &&
+         Left.Sender.Value == Right.Sender.Value;
+}
+
+bool SameAuthorizedContext(const AuthorizedTurnContext& Left,
+                           const AuthorizedTurnContext& Right) noexcept {
+  return Left.Principal.Value == Right.Principal.Value &&
+         SameScope(Left.Scope, Right.Scope) &&
+         Left.AgentTurn.Value == Right.AgentTurn.Value &&
+         Left.GrantedCapabilities == Right.GrantedCapabilities;
+}
+
+bool HasCapability(const std::vector<std::string>& Granted,
+                   std::string_view Required) noexcept {
+  return std::find(Granted.begin(), Granted.end(), Required) != Granted.end();
+}
+
+bool ScopeMatches(const BusinessActionScopeRequirement& Requirement,
+                  const AuthorizedTurnContext& Context) noexcept {
+  return (!Requirement.ChannelId.has_value() ||
+          Context.Scope.Channel.Value == *Requirement.ChannelId) &&
+         (!Requirement.ConversationId.has_value() ||
+          Context.Scope.Conversation.Value == *Requirement.ConversationId);
+}
+
+bool IsSafeResultCode(std::string_view Value) noexcept {
+  return !Value.empty() && Value.size() <= 64U &&
+         std::all_of(Value.begin(), Value.end(), [](char Character) {
+           const auto Byte = static_cast<unsigned char>(Character);
+           return (Byte >= 'A' && Byte <= 'Z') ||
+                  (Byte >= 'a' && Byte <= 'z') ||
+                  (Byte >= '0' && Byte <= '9') || Character == '_' ||
+                  Character == '-';
+         });
+}
+
+std::string DefiniteActionCode(const BusinessActionExecutionResult& Result) {
+  if (IsSafeResultCode(Result.SanitizedCode)) {
+    return Result.SanitizedCode;
+  }
+  return Result.Status == BusinessActionExecutionStatus::Succeeded
+             ? "Succeeded"
+             : "ActionFailed";
+}
+
+class CoreOwnedAsyncBusinessActionDispatcher final
+    : public AsyncBusinessActionDispatcherPort {
+public:
+  CoreOwnedAsyncBusinessActionDispatcher(
+      const BusinessActionRegistry& RegistryValue,
+      AuthorizedTurnContext ContextValue)
+      : Registry(RegistryValue), Context(std::move(ContextValue)) {}
+
+  std::vector<Providers::ToolDefinition> GetToolDefinitions(
+      const AuthorizedTurnContext& Candidate) const override {
+    std::vector<Providers::ToolDefinition> Tools;
+    if (!SameAuthorizedContext(Context, Candidate)) {
+      return Tools;
+    }
+    for (const BusinessActionDefinition* Definition :
+         Registry.GetAsyncDefinitions()) {
+      if (Definition == nullptr || !Definition->AsyncHandler ||
+          Definition->EffectClass !=
+              BusinessActionEffectClass::InProcessReadOnly ||
+          !ScopeMatches(Definition->Scope, Context)) {
+        continue;
+      }
+      const bool Authorized = std::all_of(
+          Definition->RequiredCapabilities.begin(),
+          Definition->RequiredCapabilities.end(),
+          [this](const std::string& Capability) {
+            return HasCapability(Context.GrantedCapabilities, Capability);
+          });
+      if (Authorized) {
+        Tools.push_back(Definition->ModelTool);
+      }
+    }
+    return Tools;
+  }
+
+  boost::asio::awaitable<std::vector<CoreActionReceipt>> DispatchAsync(
+      const AuthorizedTurnContext& Candidate,
+      const Providers::RequestId& Request,
+      std::vector<Providers::FunctionCall> Calls,
+      std::stop_token CancellationToken) override {
+    if (!SameAuthorizedContext(Context, Candidate) ||
+        Request.Value.empty() || Context.AgentTurn.Value.empty()) {
+      throw std::logic_error("Async action context is not Core-authorized");
+    }
+    std::vector<CoreActionReceipt> Receipts;
+    Receipts.reserve(Calls.size());
+    for (const Providers::FunctionCall& Call : Calls) {
+      if (CancellationToken.stop_requested()) {
+        co_return Receipts;
+      }
+      const BusinessActionDefinition* Definition = Registry.Find(Call.Name);
+      const std::string ReceiptName =
+          Definition == nullptr ? "UnknownAction" : Definition->Name;
+      auto Emit = [&Receipts, &Call, &Request, this, &ReceiptName](
+                     CoreActionReceiptStatus Status,
+                     std::string Code) {
+        Receipts.push_back(CoreActionReceipt{
+            .ToolCall = Call.Id,
+            .Request = Request,
+            .Turn = Context.AgentTurn,
+            .ActionName = ReceiptName,
+            .Status = Status,
+            .SanitizedCode = std::move(Code),
+        });
+      };
+
+      if (Call.Id.Value.empty() ||
+          !SeenToolCallIds.emplace(Call.Id.Value).second) {
+        Emit(CoreActionReceiptStatus::Rejected, "ReplayRejected");
+        continue;
+      }
+      if (Definition == nullptr || !Definition->AsyncHandler) {
+        Emit(CoreActionReceiptStatus::Rejected, "UnknownAction");
+        continue;
+      }
+      if (Definition->EffectClass !=
+          BusinessActionEffectClass::InProcessReadOnly) {
+        Emit(CoreActionReceiptStatus::Rejected, "ActionIneligible");
+        continue;
+      }
+      if (!BusinessActionRegistry::ValidateArguments(
+              Call.Arguments, Definition->ModelTool)) {
+        Emit(CoreActionReceiptStatus::Rejected, "InvalidArguments");
+        continue;
+      }
+      if (!ScopeMatches(Definition->Scope, Context)) {
+        Emit(CoreActionReceiptStatus::Rejected, "ScopeMismatch");
+        continue;
+      }
+      const bool Authorized = std::all_of(
+          Definition->RequiredCapabilities.begin(),
+          Definition->RequiredCapabilities.end(),
+          [this](const std::string& Capability) {
+            return HasCapability(Context.GrantedCapabilities, Capability);
+          });
+      if (!Authorized) {
+        Emit(CoreActionReceiptStatus::Rejected, "MissingCapability");
+        continue;
+      }
+
+      const BusinessActionInvocation Invocation{
+          .Name = Definition->Name,
+          .ToolCallId = Call.Id.Value,
+          .Arguments = Call.Arguments,
+          .Principal = Context.Principal,
+          .Scope = Context.Scope,
+          .Turn = Context.AgentTurn,
+      };
+      BusinessActionExecutionResult Result;
+      try {
+        Result = co_await Definition->AsyncHandler(Invocation,
+                                                   CancellationToken);
+      } catch (...) {
+        if (CancellationToken.stop_requested()) {
+          co_return Receipts;
+        }
+        Emit(CoreActionReceiptStatus::Failed, "HandlerFailed");
+        continue;
+      }
+      if (CancellationToken.stop_requested()) {
+        co_return Receipts;
+      }
+      if (Result.Status == BusinessActionExecutionStatus::UnknownOutcome) {
+        // This status is forbidden for a read-only in-process handler. Stop
+        // the turn rather than inventing a receipt or continuing the model.
+        throw std::logic_error("Read-only action returned an unknown outcome");
+      }
+      if (Result.Status == BusinessActionExecutionStatus::Succeeded) {
+        Emit(CoreActionReceiptStatus::Succeeded, DefiniteActionCode(Result));
+      } else {
+        Emit(CoreActionReceiptStatus::Failed, DefiniteActionCode(Result));
+      }
+    }
+    co_return Receipts;
+  }
+
+private:
+  const BusinessActionRegistry& Registry;
+  const AuthorizedTurnContext Context;
+  std::unordered_set<std::string> SeenToolCallIds;
+};
 
 bool IsValidIdentifiers(const CoreActionIdentifiers& Identifiers) noexcept {
   if (!IsNonEmpty(Identifiers.ActionId.Value) ||
@@ -240,6 +436,21 @@ CoreChatService::CoreChatService(
       ChannelLease(ChannelLease), ActionIdSource(ActionIdSource),
       RecordObserver(RecordObserver) {}
 
+CoreChatService::CoreChatService(
+    const IdentityPolicy& Policy, AgentRuntimePort& AgentRuntime,
+    Providers::ModelProviderPort& Provider,
+    const Providers::ModelProviderProfile& ProviderProfile,
+    const Providers::CredentialLease& ProviderLease,
+    Channels::ChannelAdapterPort& Channel, const CredentialLease& ChannelLease,
+    CoreActionIdSource& ActionIdSource,
+    const BusinessActionRegistry& BusinessActions,
+    OperationRecordObserver* RecordObserver)
+    : Policy(Policy), AgentRuntime(AgentRuntime), Provider(Provider),
+      ProviderProfile(ProviderProfile), ProviderLease(ProviderLease),
+      Channel(Channel), ChannelLease(ChannelLease),
+      ActionIdSource(ActionIdSource), RecordObserver(RecordObserver),
+      BusinessActions(&BusinessActions) {}
+
 std::optional<CoreChatResult> CoreChatService::PrepareTurn(
     const Channels::InboundChannelMessage& Message,
     std::stop_token CancellationToken,
@@ -340,7 +551,8 @@ std::optional<CoreChatResult> CoreChatService::PrepareTurn(
   try {
     Context.emplace(AuthorizedTurnContext{
         Identity->Principal, Identity->Scope,
-        MakeAgentTurnId(Message.Envelope), Message.Message});
+        MakeAgentTurnId(Message.Envelope), Message.Message,
+        Identity->GrantedCapabilities});
   } catch (...) {
     return CoreChatResult{CoreChatStatus::Failed,
                           CoreChatFailureCode::InvalidAgentResult,
@@ -666,6 +878,44 @@ boost::asio::awaitable<CoreChatResult> CoreChatService::ProcessAsync(
     co_return CoreChatResult{CoreChatStatus::UnknownOutcome,
                              CoreChatFailureCode::None,
                              std::nullopt, std::nullopt, std::nullopt};
+  }
+  co_return CompleteTurn(*Identity, *Context, std::move(AgentResult),
+                         CancellationToken);
+}
+
+boost::asio::awaitable<CoreChatResult> CoreChatService::ProcessAsync(
+    Channels::InboundChannelMessage Message,
+    AsyncAgentToolRuntimePort& AsyncAgentRuntime,
+    Providers::AsyncModelProviderPort& AsyncProvider,
+    std::stop_token CancellationToken) {
+  if (BusinessActions == nullptr) {
+    co_return co_await ProcessAsync(
+        std::move(Message),
+        static_cast<AsyncAgentRuntimePort&>(AsyncAgentRuntime),
+        AsyncProvider, CancellationToken);
+  }
+
+  std::optional<ResolvedIdentity> Identity;
+  std::optional<AuthorizedTurnContext> Context;
+  if (const std::optional<CoreChatResult> Failure =
+          PrepareTurn(Message, CancellationToken, Identity, Context)) {
+    co_return *Failure;
+  }
+
+  const TurnBudgetCleanup BudgetCleanup{
+      Agent::OutputBudgetController::Shared(), Context->AgentTurn};
+  CoreOwnedAsyncBusinessActionDispatcher Dispatcher{*BusinessActions, *Context};
+  AgentRunResult AgentResult =
+      AgentRunResult::Failed(AgentRunFailureCode::InternalError);
+  try {
+    AgentResult = co_await AsyncAgentRuntime.RunTurnWithToolsAsync(
+        *Context, AsyncProvider, ProviderProfile, ProviderLease, Dispatcher,
+        CancellationToken);
+  } catch (...) {
+    co_return CoreChatResult{CoreChatStatus::Failed,
+                             CoreChatFailureCode::InvalidAgentResult,
+                             AgentRunFailureCode::InternalError,
+                             std::nullopt, std::nullopt};
   }
   co_return CompleteTurn(*Identity, *Context, std::move(AgentResult),
                          CancellationToken);

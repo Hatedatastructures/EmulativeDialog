@@ -65,6 +65,9 @@ Core::BusinessActionDefinition MakeLookupAction(
               .ConversationId = std::string{"conversation-1"},
           },
       .Handler = std::move(Handler),
+      .ModelTool = {},
+      .EffectClass = Core::BusinessActionEffectClass::Unspecified,
+      .AsyncHandler = {},
   };
 }
 
@@ -863,9 +866,26 @@ void MissingUsageCannotAuthorizeBufferedToolDispatch() {
   Budget.EndTurn(Turn);
 }
 
+void EscapedJsonKeysAreDecodedBeforeSchemaValidation() {
+  const Providers::ToolDefinition Schema{
+      .Name = "LookupProfile",
+      .Description = "test schema",
+      .Parameters = Providers::JsonSchema{
+          R"({"type":"object","properties":{"Mode":{"type":"string"}},"required":[],"additionalProperties":true})"},
+      .Strict = true,
+  };
+  Check(Core::BusinessActionRegistry::ValidateArguments(
+            Providers::JsonValue{R"({"\u004dode":7})"}, Schema) == false,
+        "escaped property names must decode before schema type validation");
+  Check(Core::BusinessActionRegistry::ValidateArguments(
+            Providers::JsonValue{R"({"Mode":"safe","\u004dode":7})"},
+            Schema) == false,
+        "equivalent literal and escaped property names must be rejected as duplicates");
+}
+
 } // namespace
 
-int main() {
+void RunLegacyToolCallRoundTripTests() {
   RegistryRejectsUnsafeOrInvalidDefinitions();
   ArgumentValidationAcceptsOnlyStrictObjects();
   FullRoundTripThroughProjectorExecutesOnce();
@@ -878,6 +898,13 @@ int main() {
   TurnMismatchAndEmptySinkAreHandled();
   DuplicateTerminalsFailClosed();
   MissingUsageCannotAuthorizeBufferedToolDispatch();
+  EscapedJsonKeysAreDecodedBeforeSchemaValidation();
   std::cout << "ToolCallRoundTrip contract tests passed\n";
+}
+
+#ifndef EMULATIVE_DIALOG_EMBEDDED_TOOLCALL_TESTS
+int main() {
+  RunLegacyToolCallRoundTripTests();
   return 0;
 }
+#endif
