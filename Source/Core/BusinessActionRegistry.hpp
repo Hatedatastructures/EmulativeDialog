@@ -119,6 +119,21 @@ public:
       const Providers::JsonValue& Arguments,
       const Providers::ToolDefinition& Tool) noexcept;
 
+  // Measures the deterministic compact JSON representation used by Core
+  // validation without materializing a second serialized string. Object key
+  // order does not affect the measured byte length; arrays retain input order.
+  // NestedStringBytes reports decoded UTF-8 key/value bytes for the separately
+  // retained parsed representation. ExceedsLimit is set before any result is
+  // retained when either bounded measure would cross its allowance.
+  [[nodiscard]] static bool MeasureCanonicalArgumentJson(
+      const Providers::JsonValue& Arguments,
+      std::size_t MaximumInputBytes,
+      std::size_t MaximumCanonicalBytes,
+      std::size_t MaximumNestedStringBytes,
+      std::size_t& CanonicalBytes,
+      std::size_t& NestedStringBytes,
+      bool& ExceedsLimit) noexcept;
+
 private:
   std::vector<BusinessActionDefinition> Definitions;
 };

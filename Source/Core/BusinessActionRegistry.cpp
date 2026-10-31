@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <iterator>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -650,6 +651,121 @@ private:
   std::size_t Position{0};
 };
 
+bool AddBounded(std::size_t Delta, std::size_t Maximum,
+                std::size_t& Used, bool& ExceedsLimit) noexcept {
+  if (Used > Maximum || Delta > Maximum - Used) {
+    ExceedsLimit = true;
+    return false;
+  }
+  Used += Delta;
+  return true;
+}
+
+bool CountCanonicalString(std::string_view Value,
+                          std::size_t MaximumCanonicalBytes,
+                          std::size_t MaximumNestedStringBytes,
+                          std::size_t& CanonicalBytes,
+                          std::size_t& NestedStringBytes,
+                          bool& ExceedsLimit) noexcept {
+  if (!AddBounded(Value.size(), MaximumNestedStringBytes,
+                  NestedStringBytes, ExceedsLimit) ||
+      !AddBounded(2U, MaximumCanonicalBytes, CanonicalBytes, ExceedsLimit)) {
+    return false;
+  }
+  for (const unsigned char Character : Value) {
+    std::size_t EncodedBytes = 1U;
+    switch (Character) {
+    case '"':
+    case '\\':
+    case '\b':
+    case '\f':
+    case '\n':
+    case '\r':
+    case '\t':
+      EncodedBytes = 2U;
+      break;
+    default:
+      if (Character < 0x20U) {
+        EncodedBytes = 6U;
+      }
+      break;
+    }
+    if (!AddBounded(EncodedBytes, MaximumCanonicalBytes, CanonicalBytes,
+                    ExceedsLimit)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool CountCanonicalNode(const JsonNode& Node,
+                        std::size_t MaximumCanonicalBytes,
+                        std::size_t MaximumNestedStringBytes,
+                        std::size_t& CanonicalBytes,
+                        std::size_t& NestedStringBytes,
+                        bool& ExceedsLimit) noexcept {
+  switch (Node.Kind) {
+  case JsonKind::Object: {
+    if (!AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                    ExceedsLimit)) {
+      return false;
+    }
+    for (std::size_t Index = 0; Index < Node.Properties.size(); ++Index) {
+      if (Index != 0U &&
+          !AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                      ExceedsLimit)) {
+        return false;
+      }
+      const auto& [Key, Value] = Node.Properties[Index];
+      if (!CountCanonicalString(Key, MaximumCanonicalBytes,
+                                MaximumNestedStringBytes, CanonicalBytes,
+                                NestedStringBytes, ExceedsLimit) ||
+          !AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                      ExceedsLimit) ||
+          !CountCanonicalNode(Value, MaximumCanonicalBytes,
+                              MaximumNestedStringBytes, CanonicalBytes,
+                              NestedStringBytes, ExceedsLimit)) {
+        return false;
+      }
+    }
+    return AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                      ExceedsLimit);
+  }
+  case JsonKind::Array: {
+    if (!AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                    ExceedsLimit)) {
+      return false;
+    }
+    for (std::size_t Index = 0; Index < Node.Elements.size(); ++Index) {
+      if ((Index != 0U &&
+           !AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                       ExceedsLimit)) ||
+          !CountCanonicalNode(Node.Elements[Index], MaximumCanonicalBytes,
+                              MaximumNestedStringBytes, CanonicalBytes,
+                              NestedStringBytes, ExceedsLimit)) {
+        return false;
+      }
+    }
+    return AddBounded(1U, MaximumCanonicalBytes, CanonicalBytes,
+                      ExceedsLimit);
+  }
+  case JsonKind::String:
+    return CountCanonicalString(Node.Scalar, MaximumCanonicalBytes,
+                                MaximumNestedStringBytes, CanonicalBytes,
+                                NestedStringBytes, ExceedsLimit);
+  case JsonKind::Number:
+    // Number tokens are kept as exact decimal text. This avoids lossy double
+    // conversion while whitespace and object ordering are canonicalized.
+    return AddBounded(Node.Scalar.size(), MaximumCanonicalBytes,
+                      CanonicalBytes, ExceedsLimit);
+  case JsonKind::Boolean:
+  case JsonKind::Null:
+    return AddBounded(Node.Scalar.size(), MaximumCanonicalBytes,
+                      CanonicalBytes, ExceedsLimit);
+  }
+  return false;
+}
+
 const JsonNode* FindProperty(const JsonNode& Object,
                              std::string_view Name) noexcept {
   if (Object.Kind != JsonKind::Object) {
@@ -981,6 +1097,16 @@ bool BusinessActionRegistry::ValidateArguments(
     if (!Parser.Parse(Root) || Root.Kind != JsonKind::Object) {
       return false;
     }
+    std::size_t CanonicalBytes = 0U;
+    std::size_t NestedStringBytes = 0U;
+    bool ExceedsLimit = false;
+    if (!CountCanonicalNode(Root, std::numeric_limits<std::size_t>::max(),
+                            std::numeric_limits<std::size_t>::max(),
+                            CanonicalBytes, NestedStringBytes,
+                            ExceedsLimit) ||
+        ExceedsLimit) {
+      return false;
+    }
     for (const std::string& Required : Schema.Required) {
       if (FindProperty(Root, Required) == nullptr) {
         return false;
@@ -1000,6 +1126,36 @@ bool BusinessActionRegistry::ValidateArguments(
         return false;
       }
     }
+    return true;
+  } catch (...) {
+    return false;
+  }
+}
+
+bool BusinessActionRegistry::MeasureCanonicalArgumentJson(
+    const Providers::JsonValue& Arguments,
+    std::size_t MaximumInputBytes,
+    std::size_t MaximumCanonicalBytes,
+    std::size_t MaximumNestedStringBytes,
+    std::size_t& CanonicalBytes,
+    std::size_t& NestedStringBytes,
+    bool& ExceedsLimit) noexcept {
+  CanonicalBytes = 0U;
+  NestedStringBytes = 0U;
+  ExceedsLimit = false;
+  if (Arguments.JsonText.size() > MaximumInputBytes) {
+    ExceedsLimit = true;
+    return true;
+  }
+  try {
+    JsonNode Root;
+    JsonDocumentParser Parser(Arguments.JsonText);
+    if (!Parser.Parse(Root)) {
+      return false;
+    }
+    static_cast<void>(CountCanonicalNode(
+        Root, MaximumCanonicalBytes, MaximumNestedStringBytes,
+        CanonicalBytes, NestedStringBytes, ExceedsLimit));
     return true;
   } catch (...) {
     return false;

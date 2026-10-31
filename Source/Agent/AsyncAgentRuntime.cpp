@@ -1,6 +1,7 @@
 #include "Source/Agent/AsyncAgentRuntime.hpp"
 
 #include "Source/Agent/OutputBudgetController.hpp"
+#include "Source/Core/BusinessActionRegistry.hpp"
 #include "Source/Agent/AsyncToolCallCoordinator.hpp"
 
 #include <algorithm>
@@ -117,41 +118,13 @@ bool FitsRemaining(std::uint64_t Used, std::size_t Delta,
   return static_cast<std::uint64_t>(Delta) <= Maximum - Used;
 }
 
-std::optional<std::size_t> CompactJsonByteCount(
-    std::string_view Json) noexcept {
-  std::size_t Count = 0;
-  bool InString = false;
-  bool Escaped = false;
-  for (const char Character : Json) {
-    if (InString) {
-      if (Count == std::numeric_limits<std::size_t>::max()) {
-        return std::nullopt;
-      }
-      ++Count;
-      if (Escaped) {
-        Escaped = false;
-      } else if (Character == '\\') {
-        Escaped = true;
-      } else if (Character == '"') {
-        InString = false;
-      }
-      continue;
-    }
-    if (Character == '"') {
-      InString = true;
-    } else if (Character == ' ' || Character == '\t' ||
-               Character == '\n' || Character == '\r') {
-      continue;
-    }
-    if (Count == std::numeric_limits<std::size_t>::max()) {
-      return std::nullopt;
-    }
-    ++Count;
+bool AddDynamicStringBytes(std::string_view Value,
+                           std::size_t& Total) noexcept {
+  if (Value.size() > std::numeric_limits<std::size_t>::max() - Total) {
+    return false;
   }
-  if (InString || Escaped) {
-    return std::nullopt;
-  }
-  return Count;
+  Total += Value.size();
+  return true;
 }
 
 class StreamAccumulator final {
@@ -176,54 +149,90 @@ public:
     std::size_t ArgumentDelta = 0;
     std::string_view PendingId;
     bool AddsPendingCall = false;
+    bool PayloadExceedsLimit = false;
     const bool PayloadMeasured = std::visit(
         [&](const auto& Value) {
           using EventType = std::decay_t<decltype(Value)>;
           if constexpr (std::is_same_v<EventType,
-                                       Providers::TextDeltaEvent>) {
-            DynamicDelta = Value.Utf8Delta.size();
+                                       Providers::ResponseStartedEvent>) {
+            return true;
+          } else if constexpr (std::is_same_v<EventType,
+                                              Providers::TextDeltaEvent>) {
+            if (!AddDynamicStringBytes(Value.Utf8Delta, DynamicDelta)) {
+              return false;
+            }
             TextDelta = Value.Utf8Delta.size();
           } else if constexpr (std::is_same_v<
                                    EventType,
                                    Providers::RefusalDeltaEvent>) {
-            DynamicDelta = Value.Utf8Delta.size();
+            if (!AddDynamicStringBytes(Value.Utf8Delta, DynamicDelta)) {
+              return false;
+            }
             TextDelta = Value.Utf8Delta.size();
           } else if constexpr (std::is_same_v<
                                    EventType,
                                    Providers::ToolCallStartedEvent>) {
-            DynamicDelta = Value.Call.Value.size();
             PendingId = Value.Call.Value;
             AddsPendingCall = !PendingCalls.contains(Value.Call.Value);
+            if (AddsPendingCall &&
+                !AddDynamicStringBytes(Value.Call.Value, DynamicDelta)) {
+              return false;
+            }
           } else if constexpr (std::is_same_v<
                                    EventType,
                                    Providers::ToolArgumentDeltaEvent>) {
-            if (Value.Call.Value.size() >
-                std::numeric_limits<std::size_t>::max() -
-                    Value.JsonTextDelta.size()) {
+            if (!AddDynamicStringBytes(Value.JsonTextDelta, DynamicDelta)) {
               return false;
             }
-            DynamicDelta = Value.Call.Value.size() + Value.JsonTextDelta.size();
           } else if constexpr (std::is_same_v<
                                    EventType,
                                    Providers::ToolCallReadyEvent>) {
-            if (Value.Call.Value.size() >
-                    std::numeric_limits<std::size_t>::max() -
-                        Value.ToolName.size() ||
-                Value.Call.Value.size() + Value.ToolName.size() >
-                    std::numeric_limits<std::size_t>::max() -
-                        Value.Arguments.JsonText.size()) {
-              return false;
-            }
-            DynamicDelta = Value.Call.Value.size() + Value.ToolName.size() +
-                           Value.Arguments.JsonText.size();
-            const std::optional<std::size_t> CompactBytes =
-                CompactJsonByteCount(Value.Arguments.JsonText);
-            if (!CompactBytes.has_value()) {
-              return false;
-            }
-            ArgumentDelta = *CompactBytes;
             PendingId = Value.Call.Value;
             AddsPendingCall = !PendingCalls.contains(Value.Call.Value);
+            std::size_t CallIdCopies = AddsPendingCall ? 3U : 2U;
+            while (CallIdCopies > 0U) {
+              if (!AddDynamicStringBytes(Value.Call.Value, DynamicDelta)) {
+                return false;
+              }
+              --CallIdCopies;
+            }
+            if (
+                !AddDynamicStringBytes(Value.ToolName, DynamicDelta) ||
+                !AddDynamicStringBytes(Value.Arguments.JsonText,
+                                       DynamicDelta)) {
+              return false;
+            }
+            if (!FitsRemaining(DynamicStringBytes, DynamicDelta,
+                               MaximumDynamicStringBytes)) {
+              PayloadExceedsLimit = true;
+              return true;
+            }
+            std::size_t CanonicalBytes = 0U;
+            std::size_t NestedStringBytes = 0U;
+            bool JsonExceedsLimit = false;
+            const std::size_t RemainingDynamicBytes =
+                MaximumDynamicStringBytes - DynamicStringBytes -
+                DynamicDelta;
+            const std::size_t RemainingArgumentBytes =
+                MaximumToolArgumentBytes - ToolArgumentBytes;
+            if (!Core::BusinessActionRegistry::MeasureCanonicalArgumentJson(
+                    Value.Arguments, MaximumDynamicStringBytes,
+                    RemainingArgumentBytes, RemainingDynamicBytes,
+                    CanonicalBytes,
+                    NestedStringBytes, JsonExceedsLimit)) {
+              return false;
+            }
+            if (JsonExceedsLimit) {
+              PayloadExceedsLimit = true;
+              return true;
+            }
+            if (DynamicDelta >
+                std::numeric_limits<std::size_t>::max() -
+                    NestedStringBytes) {
+              return false;
+            }
+            DynamicDelta += NestedStringBytes;
+            ArgumentDelta = CanonicalBytes;
           }
           return true;
         },
@@ -231,6 +240,10 @@ public:
     if (!PayloadMeasured) {
       Invalid = true;
       return StreamAdmission::Invalid;
+    }
+    if (PayloadExceedsLimit) {
+      ResourceLimitLatched = true;
+      return StreamAdmission::ResourceLimit;
     }
     if (!FitsRemaining(DynamicStringBytes, DynamicDelta,
                        MaximumDynamicStringBytes) ||
@@ -296,6 +309,11 @@ public:
       const Providers::AgentTurnId& ExpectedTurn) {
     std::lock_guard<std::mutex> Lock(Mutex);
     if (ResourceLimitLatched) {
+      if (std::holds_alternative<
+              Providers::ResponseOutcomeUnknownEvent>(Event) &&
+          FitsRemaining(EventCount, 1U, MaximumCanonicalEvents)) {
+        ++EventCount;
+      }
       return StreamAdmission::ResourceLimit;
     }
     if (Invalid) {
@@ -314,27 +332,12 @@ public:
                             EventType,
                             Providers::ResponseOutputLimitedEvent>) {
             if (Value.SafeGeneratedText.has_value()) {
-              DynamicDelta = Value.SafeGeneratedText->size();
+              if (!AddDynamicStringBytes(*Value.SafeGeneratedText,
+                                         DynamicDelta)) {
+                return false;
+              }
               SafeTextDelta = Value.SafeGeneratedText->size();
             }
-          } else if constexpr (std::is_same_v<
-                                   EventType,
-                                   Providers::ResponseCompletedEvent>) {
-            if (Value.StopSequenceCode.has_value()) {
-              DynamicDelta = Value.StopSequenceCode->Value.size();
-            }
-          } else if constexpr (std::is_same_v<
-                                   EventType,
-                                   Providers::ResponseFailedEvent>) {
-            DynamicDelta = Value.Failure.SanitizedDescription.size();
-          } else if constexpr (std::is_same_v<
-                                   EventType,
-                                   Providers::ResponseCancelledEvent>) {
-            DynamicDelta = Value.Reason.Code.Value.size();
-          } else if constexpr (std::is_same_v<
-                                   EventType,
-                                   Providers::ResponseOutcomeUnknownEvent>) {
-            DynamicDelta = Value.Reason.Code.Value.size();
           }
           return true;
         },
@@ -551,6 +554,8 @@ AsyncAgentRuntime::RunTurnAsync(
         },
         *Terminal);
 
+    const StreamAdmission TerminalAdmission = Accumulator.AcceptTerminal(
+        *Terminal, RequestId, Context.AgentTurn);
     if (std::holds_alternative<Providers::ResponseOutcomeUnknownEvent>(
             *Terminal)) {
       static_cast<void>(Budget.CompleteRequest(Context.AgentTurn, RequestId,
@@ -558,8 +563,6 @@ AsyncAgentRuntime::RunTurnAsync(
                                                ToolHandoff));
       co_return AgentRunResult::UnknownOutcome();
     }
-    const StreamAdmission TerminalAdmission = Accumulator.AcceptTerminal(
-        *Terminal, RequestId, Context.AgentTurn);
     if (TerminalAdmission == StreamAdmission::ResourceLimit ||
         Accumulator.IsResourceLimitLatched()) {
       static_cast<void>(Budget.CompleteRequest(Context.AgentTurn, RequestId,
@@ -809,6 +812,8 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
           },
           *Terminal);
 
+      const StreamAdmission TerminalAdmission = Accumulator.AcceptTerminal(
+          *Terminal, RequestId, Context.AgentTurn);
       if (std::holds_alternative<Providers::ResponseOutcomeUnknownEvent>(
               *Terminal)) {
         static_cast<void>(ToolCoordinator.Complete(*Terminal, false));
@@ -817,8 +822,6 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
             ProviderToolHandoff));
         co_return AgentRunResult::UnknownOutcome();
       }
-      const StreamAdmission TerminalAdmission = Accumulator.AcceptTerminal(
-          *Terminal, RequestId, Context.AgentTurn);
       if (TerminalAdmission == StreamAdmission::ResourceLimit ||
           Accumulator.IsResourceLimitLatched()) {
         static_cast<void>(ToolCoordinator.Complete(*Terminal, false));
@@ -968,10 +971,8 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
         co_return AgentRunResult::Failed(AgentRunFailureCode::InternalError);
       }
 
-      Providers::CanonicalMessage AssistantCalls;
-      AssistantCalls.Role = MessageRole::Assistant;
-      AssistantCalls.FunctionCalls = Calls;
-      Transcript.push_back(std::move(AssistantCalls));
+      std::vector<Providers::CanonicalMessage> ToolResults;
+      ToolResults.reserve(Calls.size());
       for (std::size_t Index = 0; Index < Calls.size(); ++Index) {
         const Core::CoreActionReceipt& Receipt = Receipts[Index];
         const Providers::FunctionCall& Call = Calls[Index];
@@ -1002,6 +1003,14 @@ AsyncAgentRuntime::RunTurnWithToolsAsync(
         ToolResult.ToolCallResultId = Receipt.ToolCall;
         ToolResult.ContentParts.emplace_back(
             TextContentPart{.Text = Receipt.SanitizedCode});
+        ToolResults.push_back(std::move(ToolResult));
+      }
+
+      Providers::CanonicalMessage AssistantCalls;
+      AssistantCalls.Role = MessageRole::Assistant;
+      AssistantCalls.FunctionCalls = std::move(Calls);
+      Transcript.push_back(std::move(AssistantCalls));
+      for (Providers::CanonicalMessage& ToolResult : ToolResults) {
         Transcript.push_back(std::move(ToolResult));
       }
 

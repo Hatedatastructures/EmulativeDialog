@@ -58,6 +58,7 @@ enum class FakeScenario : std::uint8_t {
   ToolRoundTripBadArguments,
   ToolRoundTripUnknownSecond,
   ToolHandoffLoop,
+  ToolHandoffTwoCallsLoop,
   ToolCallOverflow,
   ToolCallDuplicate,
   ToolProposalFinal,
@@ -213,6 +214,7 @@ public:
         Scenario == FakeScenario::ToolRoundTripBadArguments ||
         Scenario == FakeScenario::ToolRoundTripUnknownSecond ||
         Scenario == FakeScenario::ToolHandoffLoop ||
+        Scenario == FakeScenario::ToolHandoffTwoCallsLoop ||
         Scenario == FakeScenario::ToolCallOverflow ||
         Scenario == FakeScenario::ToolCallDuplicate ||
         Scenario == FakeScenario::ToolProposalFinal;
@@ -247,6 +249,24 @@ public:
     AwaitingProvider.store(true);
     co_await Suspension.async_wait(Asio::use_awaitable);
     AwaitingProvider.store(false);
+
+    if (CustomEventScript && CustomTerminalScript) {
+      CustomEventScript(Request, CancellationToken, Sink);
+      if (CustomTerminalDelay > std::chrono::milliseconds::zero()) {
+        AwaitingProvider.store(true);
+        Asio::steady_timer TerminalDelay(Executor);
+        TerminalDelay.expires_after(CustomTerminalDelay);
+        co_await TerminalDelay.async_wait(Asio::use_awaitable);
+        AwaitingProvider.store(false);
+      }
+      if (BeforeCustomTerminal) {
+        BeforeCustomTerminal();
+      }
+      Providers::CanonicalTerminalEvent Terminal =
+          CustomTerminalScript(Request);
+      ++FinalTerminalCount;
+      co_return Terminal;
+    }
 
     const auto SendFinalUsage = [&Sink, &Request]() {
       Providers::UsageUpdatedEvent Usage;
@@ -284,6 +304,7 @@ public:
 
       const bool AlwaysHandoff =
           Scenario == FakeScenario::ToolHandoffLoop ||
+          Scenario == FakeScenario::ToolHandoffTwoCallsLoop ||
           Scenario == FakeScenario::ToolCallOverflow ||
           Scenario == FakeScenario::ToolCallDuplicate;
       const bool FirstHandoff = RequestNumber == 1U;
@@ -291,6 +312,8 @@ public:
         std::uint32_t CallCount = 1U;
         if (Scenario == FakeScenario::ToolCallOverflow) {
           CallCount = 9U;
+        } else if (Scenario == FakeScenario::ToolHandoffTwoCallsLoop) {
+          CallCount = 2U;
         } else if (Scenario == FakeScenario::ToolCallDuplicate) {
           CallCount = 2U;
         }
@@ -302,8 +325,10 @@ public:
           std::string ToolCallId;
           if (Scenario == FakeScenario::ToolCallDuplicate) {
             ToolCallId = "duplicate-call";
-          } else if (Scenario == FakeScenario::ToolHandoffLoop) {
-            ToolCallId = "loop-call-" + std::to_string(RequestNumber);
+          } else if (Scenario == FakeScenario::ToolHandoffLoop ||
+                     Scenario == FakeScenario::ToolHandoffTwoCallsLoop) {
+            ToolCallId = "loop-call-" + std::to_string(RequestNumber) +
+                         "-" + std::to_string(Index + 1U);
           } else {
             ToolCallId = "fake-tool-call-" + std::to_string(Index + 1U);
           }
@@ -503,6 +528,13 @@ public:
   std::atomic<bool> AwaitingProvider{false};
   std::atomic<std::uint32_t> FinalTerminalCount{0};
   std::function<void()> OnDispatched;
+  std::function<void(const Providers::CanonicalModelRequest&,
+                     std::stop_token,
+                     const Providers::EventSink&)> CustomEventScript;
+  std::function<Providers::CanonicalTerminalEvent(
+      const Providers::CanonicalModelRequest&)> CustomTerminalScript;
+  std::function<void()> BeforeCustomTerminal;
+  std::chrono::milliseconds CustomTerminalDelay{};
   std::chrono::milliseconds StreamDelay{2};
 
 private:
@@ -962,6 +994,35 @@ public:
     return *Result;
   }
 
+  [[nodiscard]] Core::CoreChatResult RunToolAsyncObservingTerminal(
+      bool& CoreReturnedBeforeProviderTerminal,
+      std::stop_token CancellationToken = {}) {
+    Asio::io_context Context;
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Provider.BeforeCustomTerminal = [&]() {
+      CoreReturnedBeforeProviderTerminal = Result.has_value();
+    };
+    Core::AsyncAgentToolRuntimePort& ToolRuntime = Runtime;
+    Asio::co_spawn(
+        Context,
+        Service.ProcessAsync(Inbound(), ToolRuntime, Provider,
+                             CancellationToken),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    if (Failure) {
+      std::rethrow_exception(Failure);
+    }
+    if (!Result.has_value()) {
+      throw std::runtime_error("terminal observation produced no Core result");
+    }
+    return *Result;
+  }
+
   [[nodiscard]] Channels::InboundChannelMessage Inbound() const {
     return InboundSink.Events.front();
   }
@@ -1028,6 +1089,44 @@ public:
 
 private:
   Core::AgentRunResult Result;
+};
+
+class ThrowAfterProviderDispatchRuntime final
+    : public Core::AsyncAgentToolRuntimePort {
+public:
+  [[nodiscard]] Asio::awaitable<Core::AgentRunResult> RunTurnAsync(
+      const Core::AuthorizedTurnContext&,
+      Providers::AsyncModelProviderPort&,
+      const Providers::ModelProviderProfile&,
+      const Providers::CredentialLease&,
+      std::stop_token) override {
+    co_return Core::AgentRunResult::Failed(
+        Core::AgentRunFailureCode::InternalError);
+  }
+
+  [[nodiscard]] Asio::awaitable<Core::AgentRunResult>
+  RunTurnWithToolsAsync(
+      const Core::AuthorizedTurnContext& Context,
+      Providers::AsyncModelProviderPort& Provider,
+      const Providers::ModelProviderProfile& Profile,
+      const Providers::CredentialLease& Lease,
+      Core::AsyncBusinessActionDispatcherPort&,
+      std::stop_token CancellationToken) override {
+    Providers::CanonicalModelRequest Request;
+    Request.Id = Providers::RequestId{"throw-after-provider-start"};
+    Request.TurnId = Context.AgentTurn;
+    Request.CreatedAt = std::chrono::system_clock::now();
+    Request.Messages.push_back(Providers::CanonicalMessage{
+        .Role = Providers::MessageRole::User,
+        .ContentParts = {Providers::TextContentPart{.Text = "hello"}},
+        .FunctionCalls = {},
+        .ToolCallResultId = std::nullopt,
+    });
+    static_cast<void>(co_await Provider.StreamTurnAsync(
+        Profile, Lease, Request, CancellationToken,
+        [](const Providers::CanonicalNonTerminalEvent&) {}));
+    throw std::runtime_error("runtime escaped after provider request start");
+  }
 };
 
 [[nodiscard]] Core::CoreChatResult RunWithRuntimeStub(
@@ -2135,6 +2234,44 @@ struct ScenarioExpectation final {
   return Passed;
 }
 
+[[nodiscard]] bool TestCanonicalArgumentMeasurement() {
+  const Providers::JsonValue Arguments{
+      R"json({ "z" : "\u00E9", "a" : ["\n", 2] })json"};
+  std::size_t CanonicalBytes = 0U;
+  std::size_t NestedStringBytes = 0U;
+  bool ExceedsLimit = false;
+  const bool Measured = Core::BusinessActionRegistry::
+      MeasureCanonicalArgumentJson(Arguments, 256U, 23U, 5U,
+                                    CanonicalBytes, NestedStringBytes,
+                                    ExceedsLimit);
+  bool Passed = Check(Measured && !ExceedsLimit && CanonicalBytes == 23U &&
+                          NestedStringBytes == 5U,
+                      "canonical argument measure sorts keys, compacts whitespace, normalizes escapes and counts decoded nested UTF-8 strings");
+
+  std::size_t SmallerCanonicalBytes = 0U;
+  std::size_t SmallerNestedStringBytes = 0U;
+  bool SmallerExceedsLimit = false;
+  const bool SmallerMeasured = Core::BusinessActionRegistry::
+      MeasureCanonicalArgumentJson(Arguments, 256U, 22U, 5U,
+                                    SmallerCanonicalBytes,
+                                    SmallerNestedStringBytes,
+                                    SmallerExceedsLimit);
+  Passed &= Check(SmallerMeasured && SmallerExceedsLimit,
+                  "canonical argument counting stops when the remaining byte allowance is exceeded");
+
+  const Providers::JsonValue DuplicateKeys{
+      R"json({"query":"x","\u0071uery":"y"})json"};
+  std::size_t DuplicateCanonicalBytes = 0U;
+  std::size_t DuplicateNestedStringBytes = 0U;
+  bool DuplicateExceedsLimit = false;
+  Passed &= Check(!Core::BusinessActionRegistry::MeasureCanonicalArgumentJson(
+                      DuplicateKeys, 128U, 128U, 128U,
+                      DuplicateCanonicalBytes, DuplicateNestedStringBytes,
+                      DuplicateExceedsLimit),
+                  "canonical argument counting rejects duplicate keys after Unicode escape decoding");
+  return Passed;
+}
+
 [[nodiscard]] bool TestBusinessActionAsyncRegistrationEdges() {
   bool Passed = true;
   const auto Handler = [](const Core::BusinessActionInvocation&,
@@ -2726,6 +2863,28 @@ struct ScenarioExpectation final {
                     "the fifth handoff stops after four dispatched cycles");
   }
   {
+    Fixture TestFixture(FakeScenario::ToolHandoffTwoCallsLoop);
+    std::uint32_t HandlerCalls = 0U;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ReadOnly"};
+                })).has_value(),
+          "eight-call turn-bound test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 8U &&
+                        TestFixture.Provider.DispatchCount.load() == 5U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "four handoff cycles dispatch exactly eight calls and reject the fifth cycle before a ninth call or reply");
+  }
+  {
     Fixture TestFixture(FakeScenario::ToolCallOverflow);
     std::uint32_t HandlerCalls = 0;
     Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
@@ -2747,6 +2906,644 @@ struct ScenarioExpectation final {
                     "the ninth proposed call is rejected before any handler runs");
   }
   return Passed;
+}
+
+[[nodiscard]] bool TestV3PerRequestResourceLimits() {
+  constexpr std::size_t MaximumEvents = 1024U;
+  constexpr std::size_t MaximumDynamicBytes = 256U * 1024U;
+  constexpr std::size_t MaximumTextBytes = 64U * 1024U;
+  constexpr std::size_t MaximumArgumentBytes = 64U * 1024U;
+
+  const auto EmitUsage = [](const Providers::CanonicalModelRequest& Request,
+                            const Providers::EventSink& Sink,
+                            std::uint64_t Sequence) {
+    Providers::UsageUpdatedEvent Usage;
+    Usage.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Usage.Usage.InputTokens = 5U;
+    Usage.Usage.OutputTokens = 2U;
+    Usage.Usage.TotalTokens = 7U;
+    Usage.Usage.Completeness = Providers::UsageCompleteness::Final;
+    Sink(Providers::CanonicalNonTerminalEvent{std::move(Usage)});
+  };
+  const auto MakeFinal = [](const Providers::CanonicalModelRequest& Request,
+                            std::uint64_t Sequence)
+      -> Providers::CanonicalTerminalEvent {
+    Providers::ResponseCompletedEvent Final;
+    Final.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Final.Kind = Providers::CompletionKind::FinalAnswer;
+    Providers::UsageSnapshot Usage;
+    Usage.InputTokens = 5U;
+    Usage.OutputTokens = 2U;
+    Usage.TotalTokens = 7U;
+    Usage.Completeness = Providers::UsageCompleteness::Final;
+    Final.FinalUsage = Usage;
+    return Final;
+  };
+  const auto MakeHandoff = [](const Providers::CanonicalModelRequest& Request,
+                              std::uint64_t Sequence)
+      -> Providers::CanonicalTerminalEvent {
+    Providers::ResponseCompletedEvent Handoff;
+    Handoff.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Handoff.Kind = Providers::CompletionKind::ToolHandoff;
+    Providers::UsageSnapshot Usage;
+    Usage.InputTokens = 5U;
+    Usage.OutputTokens = 2U;
+    Usage.TotalTokens = 7U;
+    Usage.Completeness = Providers::UsageCompleteness::Final;
+    Handoff.FinalUsage = Usage;
+    return Handoff;
+  };
+  const auto MakeProviderFailure = [](
+      const Providers::CanonicalModelRequest& Request,
+      std::uint64_t Sequence) -> Providers::CanonicalTerminalEvent {
+    Providers::ResponseFailedEvent Failed;
+    Failed.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Failed.Failure = {Providers::FailureCode::ProviderRejected, false,
+                      "bounded resource test"};
+    return Failed;
+  };
+  const auto EmitText = [](const Providers::CanonicalModelRequest& Request,
+                           const Providers::EventSink& Sink,
+                           std::uint64_t Sequence, std::string Text) {
+    Providers::TextDeltaEvent Delta;
+    Delta.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Delta.Item = Providers::ItemId{"resource-text"};
+    Delta.Utf8Delta = std::move(Text);
+    Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+  };
+  const auto MakeToolCall = [](const Providers::CanonicalModelRequest& Request,
+                               std::uint64_t Sequence, std::string CallId,
+                               std::string JsonText) {
+    Providers::ToolCallReadyEvent Tool;
+    Tool.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Tool.Item = Providers::ItemId{"resource-tool-item"};
+    Tool.Call = Providers::ToolCallId{std::move(CallId)};
+    Tool.ToolName = "LookupProfile";
+    Tool.Arguments = Providers::JsonValue{std::move(JsonText)};
+    return Providers::CanonicalNonTerminalEvent{std::move(Tool)};
+  };
+  const auto MakeSizedToolCall = [](
+      const Providers::CanonicalModelRequest& Request,
+      std::uint64_t Sequence, std::string CallId, std::string ToolName,
+      std::string JsonText) {
+    Providers::ToolCallReadyEvent Tool;
+    Tool.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Tool.Item = Providers::ItemId{"sized-tool-item"};
+    Tool.Call = Providers::ToolCallId{std::move(CallId)};
+    Tool.ToolName = std::move(ToolName);
+    Tool.Arguments = Providers::JsonValue{std::move(JsonText)};
+    return Providers::CanonicalNonTerminalEvent{std::move(Tool)};
+  };
+  const auto EmitRefusal = [](const Providers::CanonicalModelRequest& Request,
+                              const Providers::EventSink& Sink,
+                              std::uint64_t Sequence, std::string Text) {
+    Providers::RefusalDeltaEvent Delta;
+    Delta.Metadata = {Request.Id, Request.TurnId, Sequence};
+    Delta.Item = Providers::ItemId{"resource-refusal"};
+    Delta.Utf8Delta = std::move(Text);
+    Delta.Category = Providers::RefusalCategory::GeneralHarms;
+    Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+  };
+
+  bool Passed = true;
+
+  // The terminal is the 1,024th event and is admitted. The next nonterminal
+  // event after 1,024 admitted events latches the stop before retention.
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumEvents](const Providers::CanonicalModelRequest& Request,
+           std::stop_token, const Providers::EventSink& Sink) {
+          for (std::uint64_t Sequence = 1U; Sequence < MaximumEvents - 1U;
+               ++Sequence) {
+            Providers::ResponseStartedEvent Started;
+            Started.Metadata = {Request.Id, Request.TurnId, Sequence};
+            Sink(Providers::CanonicalNonTerminalEvent{std::move(Started)});
+          }
+          Providers::TextDeltaEvent Delta;
+          Delta.Metadata = {Request.Id, Request.TurnId,
+                            MaximumEvents - 1U};
+          Delta.Item = Providers::ItemId{"event-limit-final"};
+          Delta.Utf8Delta = "ok";
+          Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal, MaximumEvents](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, MaximumEvents);
+        };
+    TestFixture.Provider.BeforeCustomTerminal = [] {};
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "1,023 nonterminal events plus terminal exactly fit the 1,024-event request limit");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeenAtOverflow = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [&StopSeenAtOverflow, EmitText,
+         MaximumEvents](const Providers::CanonicalModelRequest& Request,
+                              std::stop_token Token,
+                              const Providers::EventSink& Sink) {
+          for (std::uint64_t Sequence = 1U; Sequence <= MaximumEvents;
+               ++Sequence) {
+            Providers::ResponseStartedEvent Started;
+            Started.Metadata = {Request.Id, Request.TurnId, Sequence};
+            Sink(Providers::CanonicalNonTerminalEvent{std::move(Started)});
+          }
+          EmitText(Request, Sink, MaximumEvents + 1U, "must be ignored");
+          StopSeenAtOverflow = Token.stop_requested();
+          EmitText(Request, Sink, MaximumEvents + 2U,
+                   "ignored-after-limit");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal, MaximumEvents](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, MaximumEvents + 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeenAtOverflow &&
+                        Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "event 1,025 latches stop, ignores later callbacks, awaits the definitive terminal, and never replies");
+  }
+
+  // Text/refusal/safe-generated text share the exact 64 KiB accumulator cap.
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, MaximumTextBytes](
+            const Providers::CanonicalModelRequest& Request,
+                   std::stop_token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U, std::string(MaximumTextBytes, 't'));
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal](const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, 2U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U &&
+                        TestFixture.Channel.GetSendObservations().front()
+                                .TextPayload.size() == MaximumTextBytes,
+                    "exactly 64 KiB of text is admitted and sent intact");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeenAfterOverflow = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [&StopSeenAfterOverflow, EmitText, MaximumTextBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U,
+                   std::string(MaximumTextBytes + 1U, 'x'));
+          StopSeenAfterOverflow = Token.stop_requested();
+          EmitText(Request, Sink, 2U, "late-payload");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeFinal](const Providers::CanonicalModelRequest& Request) {
+          return MakeFinal(Request, 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeenAfterOverflow &&
+                        Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "text over 64 KiB stops the provider, ignores later text, waits for terminal, and exposes no partial answer");
+  }
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, EmitRefusal, MaximumTextBytes](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          const std::size_t Half = MaximumTextBytes / 2U;
+          EmitText(Request, Sink, 1U, std::string(Half, 't'));
+          EmitRefusal(Request, Sink, 2U,
+                      std::string(MaximumTextBytes - Half, 'r'));
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 3U);
+        };
+    const auto ExactCombined = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(ExactCombined.Status == Core::CoreChatStatus::Failed &&
+                        ExactCombined.AgentFailure ==
+                            Core::AgentRunFailureCode::ProviderRejected &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "text and refusal deltas together use the inclusive 64 KiB combined-output limit");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, EmitRefusal, MaximumTextBytes, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          const std::size_t Half = MaximumTextBytes / 2U;
+          EmitText(Request, Sink, 1U, std::string(Half, 't'));
+          EmitRefusal(Request, Sink, 2U,
+                      std::string(MaximumTextBytes - Half + 1U, 'r'));
+          StopSeen = Token.stop_requested();
+          EmitText(Request, Sink, 3U, "ignored-after-combined-limit");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 4U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto OverCombined = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && OverCombined.Status == Core::CoreChatStatus::Failed &&
+                        OverCombined.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "text plus refusal byte 65,537 latches stop and waits for a definitive terminal without a partial reply");
+  }
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest&,
+           std::stop_token, const Providers::EventSink&) {};
+    TestFixture.Provider.CustomTerminalScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutputLimitedEvent Limited;
+          Limited.Metadata = {Request.Id, Request.TurnId, 1U};
+          Limited.Kind = Providers::LimitKind::OutputTokens;
+          Limited.SafeGeneratedText = std::string(MaximumTextBytes, 's');
+          return Providers::CanonicalTerminalEvent{std::move(Limited)};
+        };
+    const auto ExactSafeText = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(ExactSafeText.Status == Core::CoreChatStatus::Failed &&
+                        ExactSafeText.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "safe generated text at exactly 64 KiB remains a non-sendable output-limited terminal");
+  }
+  {
+    Fixture TestFixture;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest&,
+           std::stop_token, const Providers::EventSink&) {};
+    TestFixture.Provider.CustomTerminalScript =
+        [MaximumTextBytes](const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutputLimitedEvent Limited;
+          Limited.Metadata = {Request.Id, Request.TurnId, 1U};
+          Limited.Kind = Providers::LimitKind::OutputTokens;
+          Limited.SafeGeneratedText = std::string(MaximumTextBytes + 1U, 's');
+          return Providers::CanonicalTerminalEvent{std::move(Limited)};
+        };
+    const auto OverSafeText = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(OverSafeText.Status == Core::CoreChatStatus::Failed &&
+                        OverSafeText.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "safe generated text over 64 KiB fails closed without a receipt");
+  }
+
+  // The ToolCallReady ID is retained by the accumulator pending set, the
+  // coordinator's duplicate-ID set, and the pending FunctionCall. The tool
+  // name, source JSON, and decoded JSON strings are retained separately.
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumDynamicBytes, MakeSizedToolCall,
+         &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          constexpr std::size_t ToolNameBytes = 15U;
+          constexpr std::size_t SourceJsonBytes = 13U;
+          constexpr std::size_t NestedJsonStringBytes = 6U;
+          constexpr std::size_t FixedBytes =
+              ToolNameBytes + SourceJsonBytes + NestedJsonStringBytes;
+          const std::size_t CallIdBytes =
+              (MaximumDynamicBytes - FixedBytes) / 3U;
+          const std::string ToolCallId(CallIdBytes, 'c');
+          Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                 "LookupProfileXY",
+                                 R"({"query":"p"})"));
+          StopSeen = Token.stop_requested();
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 2U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(!StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::ProviderRejected &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "exactly 262,144 retained bytes across the three ToolCallId copies are admitted");
+  }
+  {
+    Fixture TestFixture;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [MaximumDynamicBytes, MakeSizedToolCall, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          constexpr std::size_t ToolNameBytes = 16U;
+          constexpr std::size_t SourceJsonBytes = 13U;
+          constexpr std::size_t NestedJsonStringBytes = 6U;
+          constexpr std::size_t FixedBytes =
+              ToolNameBytes + SourceJsonBytes + NestedJsonStringBytes;
+          const std::size_t CallIdBytes =
+              (MaximumDynamicBytes - (FixedBytes - 1U)) / 3U;
+          const std::string ToolCallId(CallIdBytes, 'c');
+          Sink(MakeSizedToolCall(Request, 1U, ToolCallId,
+                                 "LookupProfileXYZ",
+                                 R"({"query":"p"})"));
+          StopSeen = Token.stop_requested();
+          Sink(MakeSizedToolCall(Request, 2U, "late-id", "LookupProfile",
+                                 R"({"query":"late"})"));
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeProviderFailure](
+            const Providers::CanonicalModelRequest& Request) {
+          return MakeProviderFailure(Request, 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "retained ToolCallId copies plus one extra tool-name byte reach 262,145, latch stop, ignore later input, and await terminal");
+  }
+
+  // Complete tool argument bytes use the exact compact canonical JSON length.
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+        })));
+    const auto ExactJson = std::string(R"({"query":")") +
+                           std::string(MaximumArgumentBytes - 12U, 'a') +
+                           R"("})";
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitText, EmitUsage, ExactJson](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          if (Request.Messages.size() == 1U) {
+            Sink(MakeToolCall(Request, 1U, "exact-argument", ExactJson));
+            EmitUsage(Request, Sink, 2U);
+          } else {
+            EmitText(Request, Sink, 1U, "done");
+            EmitUsage(Request, Sink, 2U);
+          }
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff, MakeFinal](
+            const Providers::CanonicalModelRequest& Request)
+            -> Providers::CanonicalTerminalEvent {
+          return Request.Messages.size() == 1U ? MakeHandoff(Request, 3U)
+                                              : MakeFinal(Request, 3U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "64 KiB of compact canonical complete-tool JSON is admitted and dispatched");
+  }
+  {
+    Fixture TestFixture;
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "MustNotRun"};
+        })));
+    const auto OverJson = std::string(R"({"query":")") +
+                          std::string(MaximumArgumentBytes - 11U, 'a') +
+                          R"("})";
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitUsage, OverJson,
+         &StopSeen](const Providers::CanonicalModelRequest& Request,
+                    std::stop_token Token, const Providers::EventSink& Sink) {
+          Sink(MakeToolCall(Request, 1U, "over-argument", OverJson));
+          StopSeen = Token.stop_requested();
+          EmitUsage(Request, Sink, 2U);
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff](const Providers::CanonicalModelRequest& Request) {
+          return MakeHandoff(Request, 3U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "the 65,537th canonical tool-argument byte stops the provider and prevents every dispatch or receipt");
+  }
+
+  // Eight complete calls are admitted; an incomplete ninth consumes the
+  // ninth pending slot and prevents dispatch of all eight earlier proposals.
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+        })));
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitText, EmitUsage](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token, const Providers::EventSink& Sink) {
+          if (Request.Messages.size() == 1U) {
+            for (std::uint64_t Index = 1U; Index <= 8U; ++Index) {
+              Sink(MakeToolCall(Request, Index,
+                                "pending-" + std::to_string(Index),
+                                R"({"query":"p"})"));
+            }
+            EmitUsage(Request, Sink, 9U);
+          } else {
+            EmitText(Request, Sink, 1U, "done");
+            EmitUsage(Request, Sink, 2U);
+          }
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff, MakeFinal](
+            const Providers::CanonicalModelRequest& Request)
+            -> Providers::CanonicalTerminalEvent {
+          return Request.Messages.size() == 1U ? MakeHandoff(Request, 10U)
+                                              : MakeFinal(Request, 3U);
+        };
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 8U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "all eight distinct pending tool calls are admitted and dispatched at the inclusive limit");
+  }
+  {
+    Fixture TestFixture;
+    std::uint32_t HandlerCalls = 0U;
+    static_cast<void>(TestFixture.BusinessActions.Register(MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "MustNotRun"};
+        })));
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [MakeToolCall, EmitUsage, &StopSeen](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          for (std::uint64_t Index = 1U; Index <= 8U; ++Index) {
+            Sink(MakeToolCall(Request, Index,
+                              "pending-" + std::to_string(Index),
+                              R"({"query":"p"})"));
+          }
+          Providers::ToolCallStartedEvent Ninth;
+          Ninth.Metadata = {Request.Id, Request.TurnId, 9U};
+          Ninth.Item = Providers::ItemId{"ninth-pending"};
+          Ninth.Call = Providers::ToolCallId{"pending-9"};
+          Ninth.ToolName = "LookupProfile";
+          Sink(Providers::CanonicalNonTerminalEvent{std::move(Ninth)});
+          StopSeen = Token.stop_requested();
+          Sink(MakeToolCall(Request, 10U, "pending-9",
+                            R"({"query":"late"})"));
+          EmitUsage(Request, Sink, 11U);
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [MakeHandoff](const Providers::CanonicalModelRequest& Request) {
+          return MakeHandoff(Request, 12U);
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal);
+    Passed &= Check(StopSeen && Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "an incomplete ninth call latches the pending limit before retention and prevents dispatch, receipt, and continuation");
+  }
+
+  // An uncertain terminal wins over a local text limit and caller cancellation.
+  {
+    Fixture TestFixture;
+    std::stop_source CallerCancellation;
+    bool StopSeen = false;
+    bool CoreReturnedBeforeTerminal = false;
+    TestFixture.Provider.CustomEventScript =
+        [EmitText, &StopSeen, &CallerCancellation](
+            const Providers::CanonicalModelRequest& Request,
+            std::stop_token Token, const Providers::EventSink& Sink) {
+          EmitText(Request, Sink, 1U, std::string(MaximumTextBytes + 1U, 'u'));
+          StopSeen = Token.stop_requested();
+          CallerCancellation.request_stop();
+          EmitText(Request, Sink, 2U, "ignored-unknown-path");
+        };
+    TestFixture.Provider.CustomTerminalScript =
+        [](const Providers::CanonicalModelRequest& Request) {
+          Providers::ResponseOutcomeUnknownEvent Unknown;
+          Unknown.Metadata = {Request.Id, Request.TurnId, 3U};
+          Unknown.Reason.Code.Value = "uncertain-after-limit";
+          return Providers::CanonicalTerminalEvent{std::move(Unknown)};
+        };
+    TestFixture.Provider.CustomTerminalDelay = std::chrono::milliseconds(5);
+    const auto Result = TestFixture.RunToolAsyncObservingTerminal(
+        CoreReturnedBeforeTerminal, CallerCancellation.get_token());
+    Passed &= Check(StopSeen &&
+                        Result.Status == Core::CoreChatStatus::UnknownOutcome &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                        !CoreReturnedBeforeTerminal &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "an uncertain terminal is counted and returned as UnknownOutcome ahead of a latched limit and caller cancellation");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestRuntimeExceptionAfterProviderMayHaveDispatchedIsUnknown() {
+  Fixture TestFixture;
+  ThrowAfterProviderDispatchRuntime Runtime;
+  Asio::io_context Context;
+  std::optional<Core::CoreChatResult> Result;
+  std::exception_ptr Failure;
+  Core::AsyncAgentToolRuntimePort& ToolRuntime = Runtime;
+  Asio::co_spawn(
+      Context,
+      TestFixture.Service.ProcessAsync(TestFixture.Inbound(), ToolRuntime,
+                                       TestFixture.Provider),
+      [&Result, &Failure](std::exception_ptr Exception,
+                          Core::CoreChatResult Value) {
+        Failure = std::move(Exception);
+        Result = std::move(Value);
+      });
+  Context.run();
+  if (Failure) {
+    std::rethrow_exception(Failure);
+  }
+  return Check(Result.has_value() &&
+                   Result->Status == Core::CoreChatStatus::UnknownOutcome &&
+                   TestFixture.Provider.DispatchCount.load() == 1U &&
+                   TestFixture.Provider.FinalTerminalCount.load() == 1U &&
+                   TestFixture.Channel.GetSendActionCallCount() == 0U &&
+                   TestFixture.IdSource.NextSequence.load() == 1U &&
+                   TestFixture.OperationObserver.Snapshot().empty() &&
+                   !EmulativeDialog::Agent::OutputBudgetController::Shared()
+                        .HasActiveTurn(MakeTurnId(TestFixture.Inbound().Envelope)),
+               "a V2 runtime exception after a provider request may have started is UnknownOutcome with no retry, operation receipt, or channel send");
 }
 
 [[nodiscard]] bool TestCancellationDuringReadOnlyAction() {
@@ -2821,6 +3618,7 @@ bool RunAllTests() {
   Passed &= TestChannelAndTerminalValidationFailures();
   Passed &= TestCorePolicyAndReceiptStateCoverage();
   Passed &= TestBusinessActionSchemaParserEdges();
+  Passed &= TestCanonicalArgumentMeasurement();
   Passed &= TestBusinessActionAsyncRegistrationEdges();
   Passed &= TestCoreAuthorizedReadOnlyToolRoundTrip();
   Passed &= TestReadOnlyToolAuthorizationAndSchemaRejections();
@@ -2828,7 +3626,9 @@ bool RunAllTests() {
   Passed &= TestV2TerminalFailureMatrix();
   Passed &= TestReadOnlyActionFailureAndUnknownAreNotReplayed();
   Passed &= TestToolCycleAndCallLimits();
+  Passed &= TestV3PerRequestResourceLimits();
   Passed &= TestCancellationDuringReadOnlyAction();
+  Passed &= TestRuntimeExceptionAfterProviderMayHaveDispatchedIsUnknown();
   Passed &= TestConcreteAsyncRuntimePreservesLegacyConstructor();
   return Passed;
 }

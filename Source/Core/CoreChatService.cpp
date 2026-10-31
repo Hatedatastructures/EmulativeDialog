@@ -912,10 +912,11 @@ boost::asio::awaitable<CoreChatResult> CoreChatService::ProcessAsync(
         *Context, AsyncProvider, ProviderProfile, ProviderLease, Dispatcher,
         CancellationToken);
   } catch (...) {
-    co_return CoreChatResult{CoreChatStatus::Failed,
-                             CoreChatFailureCode::InvalidAgentResult,
-                             AgentRunFailureCode::InternalError,
-                             std::nullopt, std::nullopt};
+    // An async tool runtime may have already started a provider request. An
+    // escaped exception cannot prove that the remote outcome is safe to retry.
+    co_return CoreChatResult{CoreChatStatus::UnknownOutcome,
+                             CoreChatFailureCode::None,
+                             std::nullopt, std::nullopt, std::nullopt};
   }
   co_return CompleteTurn(*Identity, *Context, std::move(AgentResult),
                          CancellationToken);
