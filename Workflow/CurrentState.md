@@ -639,3 +639,13 @@
 - Assignment ledger PR #103 is open from base de7376a at initial head 073ae2d. Its four-path workflow diff is candidate-only; product writes still await merge and the post-merge Controller result.
 
 - Append-only correction for readiness event 6ae96fa9-67d1-43d5-bd41-ae21d02a5ac2 restores canonical dependency keys ED-0108, ED-0149, and ED-0131; events d5419847-ef03-419e-8dea-ad6aeba01f3e, f8b23526-9798-4241-b98c-741ddd8a0411, and 06d3539e-3b50-4e48-93d2-d393d6358e5d also record Worker02 R4 recovery and R5 candidate assignment. PR #103 remains the gate; product writes wait for merge and post-merge AssignmentAccepted.
+
+## 2026-10-31 ED-0155/R3 assignment candidate
+
+- PR #108 merged ED-0155/R3 TaskSpec to main at 74ba2bcc55aaee36a400bbfc99df5f8962124c9e; Worker01 Owner and Worker04 fixed-head reviewer approved the same Base/Head.
+- Worker01's superseded R2 assignment is released and R3 is assigned as a candidate on Task/ED-0155-R3BusinessActionRegistryLink, worktree H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree, baseline 74ba2bcc55aaee36a400bbfc99df5f8962124c9e.
+- Pre-merge WorkflowController validation is recorded in the assignment ledger. Product writes remain gated until this ledger merges and post-merge validation on main returns AssignmentAccepted.
+## 2026-10-31 ED-0155/R3 assignment PR
+
+- Assignment ledger PR #109 is open at Base 74ba2bcc55aaee36a400bbfc99df5f8962124c9e / creation Head 3389e1d32e15df93465d96f7e7f40138bd86228f. The four-path workflow diff is ready for Worker04 fixed-head review; remote branch capacity is 4/4.
+- Product source writes remain gated on PR merge and a post-merge Controller AssignmentAccepted result.
