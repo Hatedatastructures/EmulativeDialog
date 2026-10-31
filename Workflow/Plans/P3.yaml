@@ -2409,7 +2409,7 @@ Tasks:
     EpicId: EP-06
     Title: 在 Memory Core 与 SQLite Adapter 边界执行严格 Content 校验
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
@@ -2435,7 +2435,7 @@ Tasks:
     ContractVersion:
       - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
       - Architecture/Contracts/MemoryContract.md MemoryRecord V1
-    BaselineCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+    BaselineCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
     ModuleIds: [Memory]
     Context:
       ModuleId: Memory
@@ -2500,7 +2500,7 @@ Tasks:
         MinimumUniqueExecutableLinePercent: 80
         ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory/Reports
         CommandTemplate: >-
-          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-R4-MemoryContentUtf8Validation" -ExpectedHeadCommit "<FinalImplementationPRHeadCommit>"
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4-TaskSpecV2/ValidationDraft/CoverageCommand.ps1" -WorktreeRoot "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree" -BuildDirectory "H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Memory" -GxxPath "C:/msys64/ucrt64/bin/g++.exe" -GcovPath "C:/msys64/ucrt64/bin/gcov.exe" -ExpectedGccVersion "16.1.0" -MinimumLinePercent 80 -ExpectedBranch "Task/ED-0144-MemoryContentUtf8Validation" -ExpectedHeadCommit "<FinalImplementationPRHeadCommit>"
         ExpectedHeadCommitBinding: "Before invocation, replace the placeholder with the exact 40-character HeadCommit of the final implementation PR under review; do not resolve the branch dynamically inside the command."
         ScriptSha256: AFEBFC66C47C44EC53A2E4872EBD9380C5E0DA31F3AFA0F3E9C9F8090AAAD784
         GitBinding: "The script rejects a branch or HEAD mismatch and any tracked/untracked worktree changes, verifies these conditions again after collection, and records the branch, HEAD and clean status in CoverageSummary.json."
@@ -2513,8 +2513,18 @@ Tasks:
         - "Coverage reports are generated from the fresh build only and both production sources meet 80 percent."
         - "CoverageCommand fails on a wrong branch, mismatched final implementation PR Head, or dirty/untracked worktree, then records the exact branch and Head in CoverageSummary.json."
         - "No schema, data, user content, secrets, or generated source-tree files are changed."
-    ProposedImplementationBranch: Task/ED-0144-R4-MemoryContentUtf8Validation
+    ProposedImplementationBranch: Task/ED-0144-MemoryContentUtf8Validation
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
+    Branch: Task/ED-0144-MemoryContentUtf8Validation
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R4/Worktree
+    AssignmentStatus: AssignedCandidate
+    BranchNameCorrection:
+      PreviousProposedBranch: Task/ED-0144-R4-MemoryContentUtf8Validation
+      CorrectedBranch: Task/ED-0144-MemoryContentUtf8Validation
+      Reason: "WorkflowController IsAllowedBranch requires an alphanumeric topic after Task/ED-0144-."
+      ScopeImpact: "No change to Goal, ReadSet, WriteSet, dependencies, Acceptance, or product behavior."
+      Review: RequiredOnAssignmentPullRequestFixedHead
+      CorrectionEventId: aa4cb6eb-c4d2-4d39-9e0f-d344f2250eca
     TaskSpecProposalBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
     TaskSpecProposalHeadCommit: ac8b1afc58ecd09b3f707d26622d82a12c7d83ff
     TaskSpecProposalEventId: f1413537-95d2-40b5-a119-685756c731a8
@@ -2532,16 +2542,48 @@ Tasks:
     TaskSpecOwnerSlotId: Worker05
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerIndependence: Required
-    TaskSpecOwnerDecision: Pending
-    TaskSpecReviewerDecision: Pending
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
+    TaskSpecOwnerReviewBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+    TaskSpecOwnerReviewHeadCommit: b3acb21ce3f578826ea62aef468b181455d40ead
+    TaskSpecOwnerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker05/Worker05-OwnerReview-PR122-b3acb21.md
+    TaskSpecOwnerReviewBundleSha256: 82FF4DA9A2BE3991DC28E8512369EB05242F3F07E4BF0B97084F1AB792C90A1C
+    TaskSpecReviewerDecision: APPROVE
+    TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
+    TaskSpecReviewerReviewBaseCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+    TaskSpecReviewerReviewHeadCommit: b3acb21ce3f578826ea62aef468b181455d40ead
+    TaskSpecReviewerReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker04/Worker04-FixedHeadReview-PR122-b3acb21-20261031.md
+    TaskSpecReviewerReviewBundleSha256: 48441E96FB2E4F14C59511EC5B1805DD850ECAE1D394692FC95FD01897D67A5E
+    TaskSpecCoordinatorDecision: ACCEPTED
+    TaskSpecCoordinatorAgentId: /root
+    TaskSpecReviewCompletedEventId: c133cecf-b74e-4378-b4f9-e09912e81d8b
+    TaskSpecMergedEventId: 86e3daa4-361c-4279-b3ec-ab04b8edf489
+    TaskSpecMergedToMainCommit: 1816c64488228bfbdb5019d8230b2d415329c2a8
+    TaskSpecMergePullRequestNumber: 122
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/122
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedAt: "2026-10-31T13:32:50Z"
+    TaskAssignedEventId: c6340a40-0d04-440b-a2ec-2834e7c85b40
+    AgentSlotAssignedEventId: ac313b0c-fa61-4488-8f1d-fe5a0dd303a5
+    ReviewerSlotAssignedEventId: 76f0b151-20f9-4b06-9129-792a0ef1a12e
+    TaskReadinessValidatedEventId: a49bfe0c-78c9-4a9d-a90e-dd82e5905d56
+    AssignmentValidationEventId: 3fc575f5-b0bd-4d14-9bf4-5c0ccd6675c8
+    UpdatedAt: "2026-10-31T13:44:12Z"
     ChangeRequest:
       ChangeRequestId: CR-ED-0144-R4-CONTENT-VALIDATION-001
       TargetTaskRevision: 4
       RequestedByRole: Coordinator
       RequestedByAgentId: /root
-      OwnerDecision: Pending
-      IndependentReviewerDecision: Pending
-      Decision: Proposed
+      OwnerDecision: APPROVE
+      OwnerReviewEvidenceRef: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker05/Worker05-OwnerReview-PR122-b3acb21.md#SHA256=82FF4DA9A2BE3991DC28E8512369EB05242F3F07E4BF0B97084F1AB792C90A1C
+      IndependentReviewerDecision: APPROVE
+      IndependentReviewerEvidenceRef: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0144-R4-TaskSpec/Worker04/Worker04-FixedHeadReview-PR122-b3acb21-20261031.md#SHA256=48441E96FB2E4F14C59511EC5B1805DD850ECAE1D394692FC95FD01897D67A5E
+      Decision: Accepted
+      ApprovedByRole: Coordinator
+      ApprovedByAgentId: /root
+      AcceptedAtUtc: "2026-10-31T13:32:50Z"
+      AcceptedEventId: 28fcdd03-9180-433b-8ffb-6c876279ed7d
       Scope: >-
         Replace the blocked R3 adapter-only path with a four-file Memory Content V2 implementation: validate strict UTF-8 and no U+0000 at Core Write/Update, prevalidate the full RestoreBackup candidate set before any ApplyAtomically, and independently reject invalid direct SQLite adapter writes. Preserve existing errors, opaque identifier bytes, all legacy read behavior and the SQLite schema. The implementation WriteSet is exactly the two Core files and two adapter files listed in this TaskSpec.
       Reason: >-
@@ -7209,7 +7251,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结持久化 Memory Content 的 UTF-8 与 NUL 规则
     TaskKind: IntegrationTask
-    State: Review
+    State: Merged
     Phase: P3
     ChangeRequestId: CR-ED-0160-R1-MEMORY-CONTENT-UTF8-001
     TaskSpecReviewStatus: ApprovedAndMergedToMain
@@ -7237,6 +7279,12 @@ Tasks:
     Branch: Task/ED-0160-MemoryContentUtf8V2
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1/Worktree
     PullRequest: "https://github.com/Hatedatastructures/EmulativeDialog/pull/120"
+    PullRequestNumber: 120
+    PullRequestState: Merged
+    PullRequestMergeCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
+    PullRequestMergedAtUtc: "2026-10-31T12:23:56Z"
+    TaskClosedEventId: 0b255a8e-4e02-41de-a142-e01c8b21e0f0
+    OwnerSlotRecoveredEventId: 7b0a9ca0-e3b4-4f67-9b41-aed9edce9022
     Goal: >-
       在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结新 durable MemoryRecord.Content 的严格 UTF-8
       与 U+0000/NUL 输入规则，使用已有 InvalidArgument 错误码且拒绝正文不落日志。Write/Update 校验

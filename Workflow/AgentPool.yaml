@@ -88,7 +88,7 @@ Slots:
     HostSessionRef: "/root/luna04_ed0144_branch_review"
     ModuleIds:
       - ProviderOpenAIChatCompletions
-    CurrentTaskId: ""
+    CurrentTaskId: ED-0144/R4-MemoryContentUtf8Validation (IndependentReviewer)
     Status: Active
   - SlotId: Worker05
     RoleFamily: AnthropicProviderAndMemoryOwner
@@ -100,7 +100,7 @@ Slots:
       - ProviderAnthropicMessages
       - Memory
       - ContextSelector
-    CurrentTaskId: ED-0160/R1-MemoryContractV2
+    CurrentTaskId: ED-0144/R4-MemoryContentUtf8Validation
     Status: Active
   - SlotId: Worker06
     RoleFamily: IntegrationAndValidationSupport
