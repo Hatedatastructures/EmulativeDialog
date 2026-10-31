@@ -4102,62 +4102,66 @@ Tasks:
 
 
   - TaskId: ED-0150
-    TaskRevision: 5
-    SupersedesTaskRevision: 4
-    RevisionTransition: {FromRevision: 4, ToRevision: 5}
-    ChangeRequestId: CR-ED-0150-R4-ASYNC-TOOL-HANDOFF-001
+    TaskRevision: 6
+    SupersedesTaskRevision: 5
+    RevisionTransition: {FromRevision: 5, ToRevision: 6}
+    ChangeRequestId: CR-ED-0150-R5-RESOURCE-UNKNOWN-001
     EpicId: EP-06
-    Title: 实现异步 AgentRuntime 的 Core 授权业务动作回合闭环
+    Title: 实现资源受限且结果安全的异步 AgentRuntime 工具回合
     TaskKind: CapabilitySlice
-    State: Blocked
-    BlockedBy: >-
-      PR #104 review findings require ED-0157/R1 contract freeze and a separate ED-0150/R6 TaskSpec before this implementation can be revised; the R5 product branch remains frozen.
-    ExecutionBlockerId: ED0150-R5-P2-REQUIRES-ED0157-V3
-    BlockingReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R5-PR104-FixedHead-9ac7/Worker03-Review.md#SHA256=328C0FD9323DA6198344BCF6F6C86D4FDE89F776E2F0FC03E5A0C1E91CB32F31
+    State: Proposed
     Phase: P3
     OwnerRole: AgentRuntimeOwner
     OwnerSlotId: Worker02
     OwnerAgentId: /root/luna02_ed0148_pr_ready
-    Branch: Task/ED-0150-AsyncBusinessActionRoundTrip
-    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree
+    Branch: ""
+    Worktree: ""
     ReviewerRole: IndependentReviewer
     ReviewerSlotId: Worker04
     ReviewerAgentId: /root/luna04_ed0144_branch_review
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     CreatedAt: '2026-10-30T23:55:45Z'
-    UpdatedAt: '2026-10-31T00:47:14Z'
+    UpdatedAt: '2026-10-31T05:42:57Z'
     ParallelGroup: AgentRuntimeToolLoop
-    TaskSpecProposalBaseCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
-    ProposedTaskSpecBranch: Task/ED-0150-R5-AsyncBusinessActionTaskSpec
-    ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5-TaskSpec/Worktree
-    TaskSpecProposedEventId: 22878b42-dfdc-43e9-8807-54dfd3c76638
-    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecProposalBaseCommit: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
+    ProposedTaskSpecBranch: Task/ED-0150-R6ResourceBoundedAsyncToolLoopTaskSpec
+    ProposedTaskSpecWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6-TaskSpec/Worktree
+    TaskSpecProposedEventId: ""
+    TaskSpecReviewStatus: Proposed
     TaskSpecOwnerAgentId: /root/luna02_ed0148_pr_ready
-    TaskSpecOwnerDecision: APPROVE
-    TaskSpecOwnerReviewBaseCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
-    TaskSpecOwnerReviewHeadCommit: ec4bd16669a14928ea4b30f6f90661e1691c81e6
+    TaskSpecOwnerDecision: Pending
+    TaskSpecOwnerReviewBaseCommit: ""
+    TaskSpecOwnerReviewHeadCommit: ""
     TaskSpecReviewerSlotId: Worker04
     TaskSpecReviewerAgentId: /root/luna04_ed0144_branch_review
-    TaskSpecReviewerDecision: APPROVE
-    TaskSpecReviewerReviewBaseCommit: 0dc8626827827362e06c82f0e9dcafd67c30fffc
-    TaskSpecReviewerReviewHeadCommit: ec4bd16669a14928ea4b30f6f90661e1691c81e6
-    TaskSpecReviewSource: InternalFixedHeadReview
-    TaskSpecHeadCommit: ec4bd16669a14928ea4b30f6f90661e1691c81e6
-    TaskSpecPullRequestNumber: 102
-    TaskSpecMergedToMainCommit: de7376a97f8e645f946c77056439f90618c31448
-    TaskSpecMergeMethod: squash
-    TaskReadinessValidatedEventId: 6ae96fa9-67d1-43d5-bd41-ae21d02a5ac2
-    TaskAssignedEventId: 4d76c942-2e2b-4370-8df7-6fd1f12b4744
-    DependencyStatesCorrectionEventId: d5419847-ef03-419e-8dea-ad6aeba01f3e
-    Worker02SlotRecoveryEventId: f8b23526-9798-4241-b98c-741ddd8a0411
-    Worker02SlotAssignmentEventId: 06d3539e-3b50-4e48-93d2-d393d6358e5d
-    AssignmentLedgerPullRequestNumber: 103
-    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecReviewerDecision: Pending
+    TaskSpecReviewerReviewBaseCommit: ""
+    TaskSpecReviewerReviewHeadCommit: ""
+    TaskSpecReviewSource: PendingFixedHeadReview
+    TaskSpecHeadCommit: ""
+    TaskSpecPullRequestNumber: ""
+    TaskSpecMergedToMainCommit: ""
+    TaskSpecMergeMethod: ""
+    TaskReadinessValidatedEventId: ""
+    TaskAssignedEventId: ""
+    DependencyStatesCorrectionEventId: ""
+    Worker02SlotRecoveryEventId: ""
+    Worker02SlotAssignmentEventId: ""
+    AssignmentLedgerPullRequestNumber: ""
+    TaskSpecCoordinatorDecision: Pending
     TaskSpecStatusNote: >-
-      PR #102 merged after Owner and independent Reviewer approval of Base 0dc8626 / Head ec4bd16 and Coordinator acceptance. The assignment candidate corrects DependsOn to the WorkflowController's bare TaskId format; ED-0150/R2 is already contained in the product baseline de7376a. Source writes remain gated on the post-merge AssignmentAccepted result.
+      R5 is preserved as a frozen historical revision with PR #104 at head 9ac7cfcd. R6 supersedes it after the
+      two fixed-head review findings and depends on the now-frozen AsyncAgentRuntimeContractV3. This TaskSpec PR
+      records scope only; implementation remains unassigned until the TaskSpec merges and a separate assignment
+      ledger passes post-merge WorkflowController validation.
     Goal: >-
-      Implement the bounded asynchronous tool round trip in native C++20: the async runtime streams canonical function-call proposals, waits for a terminal handoff, Core validates and dispatches only a registered `EffectClass::InProcessReadOnly` scoped/capability-authorized action, and deterministic CoreActionReceipts become the next provider request input before one final Mock Channel reply. R5 handlers cannot perform I/O or mutate persistent/cross-turn state.
+      Re-establish the ED-0150 asynchronous C++ AgentRuntime tool-round-trip as a mergeable implementation from
+      the current main baseline, preserving the trusted Core identity/scope/capability checks, bounded read-only
+      action dispatch, correlated CoreActionReceipt continuation, and final Mock Channel receipt. In addition,
+      implement the frozen AsyncAgentRuntimeContractV3 per-request resource counters, stop/await lifecycle, and
+      UnknownOutcome precedence so the complete slice can merge without carrying the frozen R5 PR as an ancestor.
+      Implement the bounded asynchronous tool round trip in native C++20: the async runtime streams canonical function-call proposals, waits for a terminal handoff, Core validates and dispatches only a registered `EffectClass::InProcessReadOnly` scoped/capability-authorized action, and deterministic CoreActionReceipts become the next provider request input before one final Mock Channel reply. R6 handlers cannot perform I/O or mutate persistent/cross-turn state.
     OutOfScope:
       - Real provider network requests and credentials
       - Real QQ login, sending, or any WeChat work
@@ -4170,33 +4174,56 @@ Tasks:
       - ED-0108
       - ED-0149
       - ED-0131
+      - ED-0157
     ExternalInputs: []
-    ContractVersion: AsyncAgentRuntimeContractV2 + AsyncBusinessActionContractV1 + CoreAgentContractV1.1-CoreActionReceipt + ModelProviderContractV1.2 + AsyncModelProviderContractV1
-    BaselineCommit: de7376a97f8e645f946c77056439f90618c31448
+    ContractVersion: AsyncAgentRuntimeContractV3 + AsyncBusinessActionContractV1 + CoreAgentContractV1.1-CoreActionReceipt + ModelProviderContractV1.2 + AsyncModelProviderContractV1
+    BaselineCommit: ""
     HeadCommit: ''
     PullRequest: ''
     ChangeRequest:
-      ChangeRequestId: CR-ED-0150-R4-ASYNC-TOOL-HANDOFF-001
-      TargetTaskRevision: 4
-      ProposedTaskRevision: 5
+      ChangeRequestId: CR-ED-0150-R5-RESOURCE-UNKNOWN-001
+      TargetTaskRevision: 5
+      ProposedTaskRevision: 6
       Reason: >-
-        The merged async vertical slice currently returns Unsupported on ToolCallReady/ToolHandoff. CoreAgentContract V1.1 adds a narrow receipt for a definite in-process read-only action; this enables the bounded async tool round trip without treating an action result as an external ChannelReceipt. External side-effecting actions remain subject to OperationRecord plus definite ChannelReceipt and are deferred to a separate task.
+        Fixed-head review of PR #104 found that AsyncAgentRuntime text/refusal accumulation and pending tool-call
+        state lack cumulative request resource ceilings, and exceptions crossing the Core tool-runtime path can be
+        reported as a definite failure even when provider work may have started. ED-0157/R1 has now frozen V3 limits
+        and precedence semantics at main commit 60734a43.
       Scope: >-
-        Replace the validation-only R4 task as the current ED-0150 revision with an implementation task; freeze additive AsyncAgentRuntimeContract V2, AsyncBusinessActionContract V1 and CoreAgentContract V1.1. Limit registered handlers to EffectClass::InProcessReadOnly and make registry rejection of ExternalWrite/ExternalIo enforceable before advertising or invocation. Add CoreActionReceipt as the definite result for these read-only actions; do not use it as a ChannelReceipt or OperationRecord success. External-write handlers are deferred to a separate OperationRecord/ChannelReceipt-backed task. Preserve the full R4 record under PreviousRevision4. No provider wire protocol, real channel, or non-chat tool is added.
+        Supersede the blocked/frozen R5 submission with a fresh implementation branch from current main. Re-establish
+        the complete 16-path deterministic async business-action round trip and implement V3 admission, overflow,
+        stop/await, and UnknownOutcome behavior in the existing runtime/Core/test paths. Preserve all R5 security,
+        identity, scope, receipt, read-only action, compatibility, and no-live-side-effect requirements.
       ImpactPaths:
-        - Architecture/Contracts/AsyncAgentRuntimeContractV2.md
-        - Architecture/Contracts/AsyncBusinessActionContract.md
-        - Architecture/Contracts/CoreAgentContract.md
-        - Workflow/CodexCapabilityMap/AgentCore.yaml
         - Workflow/Plans/P3.yaml
         - Workflow/Events/CodexRewrite/P3.jsonl
+        - Source/Core/IdentityPolicy.h
+        - Source/Core/IdentityPolicy.cpp
+        - Source/Core/AgentRuntimePort.h
+        - Source/Core/BusinessActionRegistry.hpp
+        - Source/Core/BusinessActionRegistry.cpp
+        - Source/Agent/AsyncToolCallCoordinator.hpp
+        - Source/Agent/AsyncToolCallCoordinator.cpp
+        - Source/Core/AsyncBusinessActionDispatcherPort.hpp
+        - Source/Core/AsyncAgentToolRuntimePort.hpp
+        - Source/Agent/AsyncAgentRuntime.hpp
+        - Source/Agent/AsyncAgentRuntime.cpp
+        - Source/Core/CoreChatService.h
+        - Source/Core/CoreChatService.cpp
+        - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
+        - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
+        - Tests/Contract/Agent/ToolCallRoundTripTests.cpp
       CompatibilityAndSecurityImpact: >-
-        Existing AsyncAgentRuntimeContract V1 and synchronous ports remain unchanged. The new V2 tool loop is opt-in. Core remains the only owner of identity, scope, capability grants, effect classification, action registration, receipt creation, and dispatch. Only in-process read-only actions are eligible in R5; external writes require OperationRecord before dispatch and a definite ChannelReceipt, and are deferred to a separate task.
+        The tool-loop entry remains additive and V1 synchronous/async APIs remain source-compatible. Only Core-registered
+        EffectClass::InProcessReadOnly actions may execute. Core remains the sole identity, scope, grant, schema,
+        receipt, and dispatch authority. V3 limits retained canonical state and does not bound provider wire buffers,
+        authorize external I/O, or enable real providers, QQ, WeChat, Shell, host state, files, or MCP.
       Rollback: >-
-        If either fixed-head review rejects the proposal, keep the R4 historical record and its validation-only evidence intact, do not assign Worker02 to R5, and do not modify any product source. A corrected contract/task proposal must receive a new revision and fixed-head review.
-      OwnerDecision: APPROVE
-      IndependentReviewerDecision: APPROVE
-      CoordinatorDecision: Accepted
+        Keep PR #104 and its fixed R5 head as immutable historical evidence; do not cherry-pick or alter that branch.
+        If the R6 proposal is rejected, leave ED-0150/R5 Blocked and do not create an implementation assignment.
+      OwnerDecision: Pending
+      IndependentReviewerDecision: Pending
+      CoordinatorDecision: Pending
     ModuleIds: [AgentRuntime, Core]
     Context:
       ModuleId: AgentRuntime
@@ -4208,16 +4235,17 @@ Tasks:
         - Architecture/Modules/HostCoreAgent.yaml
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/AsyncAgentRuntimeContractV2.md
+        - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
         - Architecture/Contracts/AsyncBusinessActionContract.md
         - Architecture/Contracts/AsyncModelProviderContract.md
         - Source/Core/IdentityPolicy.h
         - Source/Core/AgentRuntimePort.h
         - Source/Core/BusinessActionRegistry.hpp
-        - Source/Agent/ToolCallCoordinator.hpp
         - Source/Core/AsyncAgentRuntimePort.hpp
         - Source/Agent/AsyncAgentRuntime.hpp
         - Source/Core/CoreChatService.h
       OnDemandSet:
+        - Source/Agent/ToolCallCoordinator.hpp
         - Architecture/Contracts/AsyncAgentRuntimeContract.md
         - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
         - Source/Core/IdentityPolicy.cpp
@@ -4263,7 +4291,7 @@ Tasks:
       - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
       - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
       - Tests/Contract/Agent/ToolCallRoundTripTests.cpp
-    SharedLocks: [AsyncAgentRuntimeContractV2, AsyncBusinessActionContractV1, AsyncModelProviderContractV1, CoreAgentContractV1.1-CoreActionReceipt]
+    SharedLocks: [AsyncAgentRuntimeContractV3, AsyncBusinessActionContractV1, AsyncModelProviderContractV1, CoreAgentContractV1.1-CoreActionReceipt]
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
@@ -4282,7 +4310,7 @@ Tasks:
           An end-to-end co_spawn/io_context test proves Mock inbound -> Core identity/policy -> async FakeProvider ToolHandoff -> registered read-only Core action -> correlated CoreActionReceipt -> sanitized tool result -> second FakeProvider final answer -> exactly one final Mock Channel receipt. Tests assert matching ToolCallId/RequestId/AgentTurnId/action and prove CoreActionReceipt is not treated as a ChannelReceipt or OperationRecord success, plus cycle/call bound cases.
       - AcceptanceId: AC-4
         Description: >-
-          Read-only handler failure/cancellation and Core rejection/unsupported are mapped without manufacturing an external receipt. R5 never dispatches an ExternalWrite/ExternalIo handler; such actions are rejected before invocation. Provider UnknownOutcome still stops the turn without provider continuation or replay.
+          Read-only handler failure/cancellation and Core rejection/unsupported are mapped without manufacturing an external receipt. R6 never dispatches an ExternalWrite/ExternalIo handler; such actions are rejected before invocation. Provider UnknownOutcome still stops the turn without provider continuation or replay.
         Evidence: >-
           Controlled read-only handlers cover success, failure, cancellation, rejected, and unsupported outcomes; registration/dispatch attempts classified ExternalWrite or ExternalIo invoke no handler. A test proves no result becomes a tool-role message without a matching CoreActionReceipt; provider UnknownOutcome leaves FakeProvider call count unchanged.
       - AcceptanceId: AC-5
@@ -4299,30 +4327,59 @@ Tasks:
         Description: >-
           Every changed production source in the frozen WriteSet reaches at least 80 percent unique executable-line coverage.
         Evidence: >-
-          FreshBuildPreflight fails closed unless the exact assigned branch is clean and records its full source HEAD before configure. CoverageCommand rechecks the same branch, unchanged HEAD, and clean status against that record before any report/log write; final acceptance verifies the recorded HEAD equals the implementation PR HeadCommit. After a successful named CTest, the pinned post-preflight bootstrap substitutes only the exact R5 Worktree, Build, five-source, source-revision-guard, and Reports/Logs initialization literals once each, writes only Execution/CoverageCommand.ps1, and reports its SHA256. A fresh Windows gcov JSON v2 report for each modified .cpp source is tied to that source HEAD, named CTest, and unique .gcno/.gcda pair, prints covered/total unique executable lines, and fails below 80 percent.
+          FreshBuildPreflight fails closed unless the exact assigned branch is clean and records its full source HEAD before configure. CoverageCommand rechecks the same branch, unchanged HEAD, and clean status against that record before any report/log write; final acceptance verifies the recorded HEAD equals the implementation PR HeadCommit. After a successful named CTest, the pinned post-preflight bootstrap substitutes only the exact R6 Worktree, Build, five-source, source-revision-guard, and Reports/Logs initialization literals once each, writes only Execution/CoverageCommand.ps1, and reports its SHA256. A fresh Windows gcov JSON v2 report for each modified .cpp source is tied to that source HEAD, named CTest, and unique .gcno/.gcda pair, prints covered/total unique executable lines, and fails below 80 percent.
+      - AcceptanceId: AC-8
+        Description: >-
+          For every provider request the runtime admits at most 1,024 canonical events including the returned terminal,
+          256 KiB cumulative retained dynamic UTF-8 string payload, 64 KiB combined text/refusal/safe generated text,
+          64 KiB aggregate compact canonical UTF-8 JSON bytes for complete tool arguments, and eight distinct pending
+          tool calls. KiB is 1,024 bytes; counters reset only at a new provider request and all limit checks precede
+          retention with overflow-safe remaining-capacity arithmetic.
+        Evidence: >-
+          Targeted tests cover exact-limit admission and single/multi-event overflow for each counter, including incomplete
+          and ready-but-not-dispatched calls; contract and code review verify nested strings and canonical JSON byte rules.
+      - AcceptanceId: AC-9
+        Description: >-
+          On the first resource breach the runtime latches the limit, requests stop through its owned stop_source,
+          promptly ignores later callback payloads without retention, awaits provider completion, and performs no partial
+          tool dispatch, CoreActionReceipt creation, next request, retry, replay, or continuation. Definitive provider
+          completion after a local limit returns OutputLimitReached; ResponseOutcomeUnknown or uncertain post-dispatch
+          exception takes precedence over local limit and caller cancellation and is never replayed.
+        Evidence: >-
+          FakeProvider tests observe stop-token propagation and awaited completion, verify no handler/receipt/channel reply
+          after limit, and cover definitive terminal, unknown terminal, exception after possible dispatch, and invalid prior
+          event followed by unknown terminal.
+      - AcceptanceId: AC-10
+        Description: >-
+          The V3 per-request eight-pending-call bound does not relax the V2 per-turn maximum of four dispatched tool cycles
+          and eight dispatched calls. Tool-runtime exceptions crossing CoreChatService after provider dispatch may have
+          started map to UnknownOutcome with no channel success reply or retry.
+        Evidence: >-
+          Vertical-slice cases cover per-request pending calls separately from per-turn dispatch limits, and inject a
+          throwing async tool runtime to assert UnknownOutcome and exactly one provider attempt.
     Validation:
       RequiredTargets: [AsyncRuntimeVerticalSliceTests]
-      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice
+      TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice
       Configure:
-        - 'I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Reports'
+        - 'I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports'
       FreshBuildPreflight:
         RunBefore: Configure
         Invocation: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command -'
         InputMode: 'Pipe the Script block verbatim to PowerShell standard input; require process exit code 0.'
-        Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree
-        ExpectedBranch: Task/ED-0150-AsyncBusinessActionRoundTrip
+        Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree
+        ExpectedBranch: Task/ED-0150-ResourceBoundedAsyncToolLoop
         RequiredAbsent:
-          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice
-          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Dependencies
-          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Reports
-          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution
-          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs
-        SourceRevisionRecord: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs/FreshBuildPreflight.txt
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Logs
+        SourceRevisionRecord: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Logs/FreshBuildPreflight.txt
         Script: |-
           $ErrorActionPreference = 'Stop'
-          $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree'
-          $ExpectedBranch = 'Task/ED-0150-AsyncBusinessActionRoundTrip'
-          $TaskRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5'
+          $Worktree = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree'
+          $ExpectedBranch = 'Task/ED-0150-ResourceBoundedAsyncToolLoop'
+          $TaskRoot = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6'
           if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Assigned source worktree is missing: $Worktree" }
           $RequiredAbsentArtifacts = @(
             (Join-Path $TaskRoot 'WindowsAgentSlice')
@@ -4332,7 +4389,7 @@ Tasks:
             (Join-Path $TaskRoot 'Logs')
           )
           foreach ($ArtifactPath in $RequiredAbsentArtifacts) {
-            if (Test-Path -LiteralPath $ArtifactPath) { throw "Fresh R5 artifact already exists: $ArtifactPath" }
+            if (Test-Path -LiteralPath $ArtifactPath) { throw "Fresh R6 artifact already exists: $ArtifactPath" }
           }
           $Branch = (& git -C $Worktree branch --show-current 2>&1 | Out-String).Trim()
           if ($LASTEXITCODE -ne 0 -or $Branch -ne $ExpectedBranch) { throw "Wrong task branch: $Branch" }
@@ -4352,16 +4409,16 @@ Tasks:
           Write-Output "SOURCE_STATUS_CLEAN=1"
           Write-Output "EVIDENCE=$EvidencePath"
       TargetedBuild:
-        - 'I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice --target AsyncRuntimeVerticalSliceTests --parallel 4'
+        - 'I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice --target AsyncRuntimeVerticalSliceTests --parallel 4'
       ContractFixtures:
-        - 'I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice --output-on-failure --no-tests=error -R "^Agent\.AsyncRuntimeVerticalSlice$"'
+        - 'I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice --output-on-failure --no-tests=error -R "^Agent\.AsyncRuntimeVerticalSlice$"'
       StaticChecks:
         - 'The implementation diff changes exactly the 16 paths listed in WriteSet.'
         - 'Only explicitly declared EffectClass::InProcessReadOnly definitions are offered; missing/unknown, ExternalWrite, and ExternalIo registration/dispatch fails before handler invocation.'
         - 'Every read-only action tool result correlates to a CoreActionReceipt with ToolCallId, RequestId, AgentTurnId, action name, status, and sanitized code; it is never treated as a ChannelReceipt or OperationRecord success.'
         - 'No handler executes before the correlated ResponseCompleted(ToolHandoff) terminal and budget authorization.'
         - 'Every provider continuation uses a fresh RequestId, the original AgentTurnId, matching tool-result ids, and bounded loop counters.'
-        - 'R5 handlers do not mutate persistent/cross-turn state or perform filesystem/database/network/provider/channel I/O; side-effecting actions are deferred to a separate OperationRecord plus ChannelReceipt task.'
+        - 'R6 handlers do not mutate persistent/cross-turn state or perform filesystem/database/network/provider/channel I/O; side-effecting actions are deferred to a separate OperationRecord plus ChannelReceipt task.'
         - 'CoreActionReceipt is never converted into a ChannelReceipt or used to mark an OperationRecord successful.'
         - 'FreshBuildPreflight verifies the expected branch, requires git status --porcelain --untracked-files=all to be empty, records the exact source HEAD, and runs before configure; CoverageCommand rechecks that branch, clean status, and unchanged HEAD before the first report/log write; final PR HeadCommit equals the recorded source HEAD; CoverageCommand creates and verifies Reports and Logs before writes and records pinned-template/generated-script SHA256.'
         - 'The new V2 async tool entry is additive and existing V1 synchronous and async single-request APIs remain unchanged.'
@@ -4371,15 +4428,15 @@ Tasks:
         ProductionSources: [Source/Core/IdentityPolicy.cpp, Source/Core/BusinessActionRegistry.cpp, Source/Agent/AsyncToolCallCoordinator.cpp, Source/Agent/AsyncAgentRuntime.cpp, Source/Core/CoreChatService.cpp]
         TestDriverSource: Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
         MinimumLinePercent: 80
-        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Reports
+        ReportDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports
       CoverageCommandBootstrap:
         RunAfter: 'Successful configure, required target build, named CTest, and GCC/gcov version capture; this is the first operation allowed to create Execution.'
         Invocation: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command -'
         InputMode: 'Pipe the ScriptContent block verbatim to PowerShell standard input; require process exit code 0.'
         TemplatePath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/CoverageCommand-Frozen-ShortPath-Run3.ps1
         ExpectedTemplateSha256: F5E84F7816AC9ECD441E70055CAE1E304ADC4C561467939E0373A095864C21AF
-        OutputPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution/CoverageCommand.ps1
-        WritesOnly: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution/CoverageCommand.ps1
+        OutputPath: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution/CoverageCommand.ps1
+        WritesOnly: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution/CoverageCommand.ps1
         ScriptContent: |-
           $ErrorActionPreference = 'Stop'
           $Template = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R2-F004-FrozenCoverage-20261030/CoverageCommand-Frozen-ShortPath-Run3.ps1'
@@ -4388,8 +4445,8 @@ Tasks:
           if ($ActualTemplateHash -ne $ExpectedTemplateHash) { throw "Coverage template hash mismatch: $ActualTemplateHash" }
           $Content = [System.IO.File]::ReadAllText($Template)
           $SourceHeadGuard = @(
-            '$ExpectedHeadFile = ''H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Logs/FreshBuildPreflight.txt'''
-            '$ExpectedSourceBranch = ''Task/ED-0150-AsyncBusinessActionRoundTrip'''
+            '$ExpectedHeadFile = ''H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Logs/FreshBuildPreflight.txt'''
+            '$ExpectedSourceBranch = ''Task/ED-0150-ResourceBoundedAsyncToolLoop'''
             '$PreflightText = [System.IO.File]::ReadAllText($ExpectedHeadFile)'
             'if ($PreflightText -notmatch ''(?m)^SOURCE_HEAD=([0-9a-f]{40})$'') { throw ''FreshBuildPreflight source HEAD record is missing or malformed'' }'
             '$ExpectedSourceHead = $Matches[1]'
@@ -4406,8 +4463,8 @@ Tasks:
           ) -join [System.Environment]::NewLine
           $GuardedTestName = $SourceHeadGuard + [System.Environment]::NewLine + '$TestName = ''Agent.AsyncRuntimeVerticalSlice'''
           $Replacements = @(
-            [PSCustomObject]@{ Old = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'; New = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Worktree' },
-            [PSCustomObject]@{ Old = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED0150/F004-Run3/Windows'; New = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/WindowsAgentSlice' },
+            [PSCustomObject]@{ Old = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R1/Worktree'; New = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree' },
+            [PSCustomObject]@{ Old = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED0150/F004-Run3/Windows'; New = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice' },
             [PSCustomObject]@{ Old = "`$Sources = @('Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')"; New = "`$Sources = @('Source/Core/IdentityPolicy.cpp', 'Source/Core/BusinessActionRegistry.cpp', 'Source/Agent/AsyncToolCallCoordinator.cpp', 'Source/Agent/AsyncAgentRuntime.cpp', 'Source/Core/CoreChatService.cpp')" },
             [PSCustomObject]@{ Old = "`$TestName = 'Agent.AsyncRuntimeVerticalSlice'"; New = $GuardedTestName },
             [PSCustomObject]@{ Old = 'if (-not (Test-Path -LiteralPath $Report -PathType Container)) { throw "Missing report directory: $Report" }'; New = 'foreach ($Directory in @($Report, $Logs)) { if (-not (Test-Path -LiteralPath $Directory -PathType Container)) { $null = New-Item -ItemType Directory -Path $Directory }; if (-not (Test-Path -LiteralPath $Directory -PathType Container)) { throw "Missing coverage directory: $Directory" } }' }
@@ -4419,17 +4476,17 @@ Tasks:
             $NewCount = [System.Text.RegularExpressions.Regex]::Matches($Content, [System.Text.RegularExpressions.Regex]::Escape($Replacement.New)).Count
             if ($NewCount -ne 1) { throw "Expected exactly one generated replacement literal, found $NewCount : $($Replacement.New)" }
           }
-          $ExecutionDirectory = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution'
+          $ExecutionDirectory = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution'
           if (Test-Path -LiteralPath $ExecutionDirectory) { throw "Execution path must still be absent before coverage bootstrap: $ExecutionDirectory" }
           $null = New-Item -ItemType Directory -Path $ExecutionDirectory
-          $OutputPath = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution/CoverageCommand.ps1'
+          $OutputPath = 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution/CoverageCommand.ps1'
           [System.IO.File]::WriteAllText($OutputPath, $Content, [System.Text.UTF8Encoding]::new($false))
           $GeneratedHash = (Get-FileHash -LiteralPath $OutputPath -Algorithm SHA256).Hash
           Write-Output "COVERAGE_TEMPLATE_SHA256=$ActualTemplateHash"
           Write-Output "GENERATED_COVERAGE_COMMAND=$OutputPath"
           Write-Output "GENERATED_COVERAGE_COMMAND_SHA256=$GeneratedHash"
         CaptureGeneratedSha256In: 'The bootstrap CommandExecuted event and ED-0150 task report; do not rewrite or add a helper file.'
-      CoverageCommand: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R5/Execution/CoverageCommand.ps1'
+      CoverageCommand: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution/CoverageCommand.ps1'
       LiveSideEffects: Forbidden
       NotRunReason: 'All provider responses, action handlers and channel receipts are deterministic in-process fakes; no provider or social channel transport is enabled.'
     RiskLevel: High
@@ -4438,13 +4495,25 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: ''
-      CurrentFindingOrFailure: 'Proposal only; contract/task review and assignment gates have not passed.'
-      TriedApproaches: []
-      NextAction: 'Obtain fixed-head Owner and independent Reviewer approval, merge contract/task PR, then separately assign R5 and require post-merge Controller AssignmentAccepted before product writes.'
+      LastCompletedAcceptance: "ED-0157/R1 AsyncAgentRuntimeContractV3 is frozen at main@60734a43."
+      CurrentFindingOrFailure: "R5 PR #104 is frozen at 9ac7cfcd with two P2 review findings; R6 TaskSpec is proposed and no source write is authorized yet."
+      TriedApproaches: ["R5 source branch remains immutable; R6 will replay its five reviewed commits on a fresh current-main implementation branch."]
+      NextAction: "Obtain fixed-head R6 TaskSpec owner/reviewer/coordinator approval, merge registration, then create separate assignment PR and require post-merge Controller AssignmentAccepted before source edits."
       OpenMessageIds: []
-      LastValidationResult: ''
+      LastValidationResult: "TaskSpec proposal only; no product build or source validation has run."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
+
+    PreviousRevision5:
+      TaskRevision: 5
+      Disposition: SupersededByRevision6AfterBlockedReviewFindings
+      State: Blocked
+      BaselineCommit: de7376a97f8e645f946c77056439f90618c31448
+      ProductBranch: Task/ED-0150-AsyncBusinessActionRoundTrip
+      ProductHeadCommit: 9ac7cfcd7256dc494b203e5edad7066e0b8d3a0a
+      ProductPullRequestNumber: 104
+      ProductPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/104
+      BlockingReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0150-R5-PR104-FixedHead-9ac7/Worker03-Review.md
+      RetainedInMainHistoryAt: 60734a43a1cf219680d70d7c7bb7ca47b66542ef
     PreviousRevision4:
       Disposition: SupersededByRevision5AfterApprovalAndMerge
       TaskRevision: 4
