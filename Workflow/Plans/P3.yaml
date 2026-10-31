@@ -39,7 +39,7 @@ EntryGate:
       DoesNotUnblock: [ED-0114, ED-0144, ED-0145]
 TaskSpecRegistration:
   RequiredCapabilityTaskIds: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0114]
-  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154, ED-0155, ED-0156, ED-0157]
+  AdditionalInfrastructureTaskIds: [ED-0121, ED-0122, ED-0123, ED-0147, ED-0148, ED-0154, ED-0155, ED-0156, ED-0157, ED-0160]
   AllTaskSpecsFrozenBeforeAssignment: true
   ValidationCommandChangeRequestId: CR-ED-0126-001
 
@@ -739,8 +739,8 @@ ChangeRequests:
     AcceptedAt: "2026-10-29T23:08:46Z"
 ParallelGroups:
   - GroupId: DurableMemory
-    TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
-    OrderedDependencies: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0144]
+    TaskIds: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0160, ED-0144]
+    OrderedDependencies: [ED-0122, ED-0123, ED-0113, ED-0148, ED-0160, ED-0144]
   - GroupId: WindowsTransportAndProviderAdapters
     TaskIds: [ED-0121, ED-0104, ED-0105, ED-0106]
     DependsOn: [ED-0120, ED-0015, ED-0146, ED-0147]
@@ -799,6 +799,35 @@ ParallelGroups:
     ChangeRequestPullRequestCreatedHeadCommit: fc03bb38e8795dcacac98fddd73410869d84f524
     ChangeRequestPullRequestCreatedAtUtc: "2026-10-30T02:16:04Z"
     ChangeRequestPullRequestCreatedEventId: 083163bb-8f6a-48b2-8f7d-00d02b12fba1
+
+  - ChangeRequestId: CR-ED-0160-R1-MEMORY-CONTENT-UTF8-001
+    TargetTaskId: ED-0160
+    TargetTaskRevision: 1
+    RequestedByRole: MemoryOwner
+    RequestedByAgentId: /root/luna05_async_runtime_taskroute
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
+    OwnerCRDecision: Pending
+    IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
+    IndependentReviewerDecision: Pending
+    ReviewerIndependence: Required
+    CoordinatorDecision: Pending
+    Decision: Proposed
+    Scope: >-
+      Add a new MemoryContract V2 rule for durable MemoryRecord.Content only: require strict valid UTF-8 and reject
+      U+0000/NUL before any durable write or restore. Define stable content rejection codes and prohibit logging or
+      otherwise recording the rejected body. Preserve every other V1 memory, consent, scope, TTL, backup and schema
+      rule. This text contract change must not validate or rewrite opaque identifiers; ProposalId and all other IDs
+      continue to preserve their exact byte sequences, including embedded NUL and non-UTF-8 bytes where already
+      permitted by their contracts.
+    Reason: >-
+      MemoryContract V1 lists durable Content but does not establish an encoding/NUL rule. The product needs a stable
+      contract boundary before changing ConversationMemory or storage code. ED-0144/R3 remains an unmerged draft
+      consumer; V2 is forward-compatible with its adapter-only scope, so the contract can merge first. PR #105 must
+      then synchronize to the updated mainline and rerun its frozen validation before it can merge.
+    ContractWriteSet: [Architecture/Contracts/MemoryContract.md]
+    TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
+    PreserveV1ConsentScopeTtlOpaqueIdentifierAndPhysicalSchemaSemantics: true
+    NoProductSourceWriteAuthorizedByTaskSpecProposal: true
 
 Tasks:
   - TaskId: ED-0104
@@ -7096,3 +7125,190 @@ Tasks:
       TaskReportFile: false
       EventShard: Workflow/Events/CodexRewrite/P3.jsonl
       FollowUpTaskIds: [ED-0150]
+
+  - TaskId: ED-0160
+    TaskRevision: 1
+    EpicId: EP-06
+    Title: 冻结持久化 Memory Content 的 UTF-8 与 NUL 规则
+    TaskKind: IntegrationTask
+    State: Proposed
+    Phase: P3
+    ChangeRequestId: CR-ED-0160-R1-MEMORY-CONTENT-UTF8-001
+    TaskSpecReviewStatus: PendingOwnerAndReviewerReview
+    TaskSpecOwnerDecision: Pending
+    TaskSpecIndependentReviewerDecision: Pending
+    TaskSpecCoordinatorDecision: Pending
+    OwnerRole: MemoryOwner
+    OwnerSlotId: Worker05
+    OwnerAgentId: /root/luna05_async_runtime_taskroute
+    ReviewerRole: IndependentReviewer
+    ReviewerSlotId: Worker04
+    ReviewerAgentId: /root/luna04_ed0144_branch_review
+    ReviewerIndependence: Required
+    CreatedBy: AgentRuntimeOwner
+    CreatedByAgentId: /root/luna02_ed0148_pr_ready
+    CreatedAt: "2026-10-31T10:46:00Z"
+    UpdatedAt: "2026-10-31T10:51:43Z"
+    ParallelGroup: DurableMemory
+    TaskSpecProposalBaseCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
+    TaskSpecProposalBranch: Task/ED-0160-R1-MemoryContractV2TaskSpec
+    TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1-MemoryContractV2/Worktree
+    ProposedImplementationBranch: Task/ED-0160-MemoryContentUtf8V2
+    ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1/Worktree
+    BaselineCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
+    Branch: ""
+    Worktree: ""
+    PullRequest: ""
+    Goal: >-
+      在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结 durable MemoryRecord.Content 的 UTF-8 与
+      U+0000/NUL 拒绝规则、稳定拒绝码和正文不落日志要求。保留现有 V1 scope/consent、ProposalId 字节语义、
+      TTL、backup、physical schema 和所有未修改条款；本 TaskSpec 只注册合同任务，不授权 C++ 源码修改。
+    OutOfScope:
+      - 修改任何 C++ 生产源码、测试源码、CMake、SQLite schema 或已持久化数据
+      - 改变 scope、identity、consent、ProposalId 编码、TTL、backup、tombstone 或删除语义
+      - 对 ProposalId、MemoryId、ScopeKey 或其他 opaque identifiers 拒绝、规范化或转码 NUL/任意字节
+      - 实现 durable Content 校验；后续实现必须由单独 TaskSpec/WriteSet/assignment 授权
+    DependsOn: [ED-0148]
+    DependencyRationale: >-
+      ED-0148/R6 supplies the merged exact ProposalId consent semantics that V2 must preserve. ED-0144/R3 is not a
+      contract-task dependency: its adapter-only PR remains draft and must synchronize to main after this contract
+      and the separate content-enforcement implementation are merged, then rerun its frozen validation before merge.
+      The later ED-0161/R1 content-enforcement task depends on ED-0160/R1 and must include Core-side input rejection.
+    ContractVersion:
+      - Architecture/Contracts/MemoryContract.md V1 (current frozen baseline)
+      - Architecture/Contracts/MemoryContract.md V2 (proposed output of this contract-only task)
+    ModuleIds: [Memory]
+    Context:
+      ModuleId: Memory
+      ReadSet:
+        - AGENTS.md
+        - Workflow/CurrentState.md
+        - Workflow/TaskIndex.yaml
+        - Workflow/AgentExecutionStandard.md
+        - Workflow/TaskLifecycle.md
+        - Workflow/Plans/P3.yaml#TaskId=ED-0144&TaskRevision=3
+        - Architecture/ModuleMap.yaml#ModuleId=Memory
+        - Architecture/Modules/MemoryStorage.yaml#ModuleId=Memory
+        - Architecture/Contracts/MemoryContract.md
+        - Source/Memory/ConversationMemory.hpp
+        - Source/Memory/ConversationMemory.cpp
+        - Tests/Contract/Memory/ConversationMemoryTests.cpp
+      OnDemandSet:
+        - Workflow/Plans/P3.yaml#TaskId=ED-0148&TaskRevision=6
+        - Source/Memory/SqliteMemoryStorageAdapter.hpp
+        - Source/Memory/SqliteMemoryStorageAdapter.cpp
+        - Source/Storage/SqliteStore.hpp
+        - Source/Storage/SqliteStore.cpp
+        - Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp
+      ForbiddenSet:
+        - Source/Agent/
+        - Source/Providers/
+        - Source/Channels/
+        - CMakeLists.txt
+        - CMakePresets.json
+      Budget:
+        CoreDocumentsTargetPercent: 10
+        TaskReferencesTargetPercent: 25
+        ImplementationContextReserveMinimumPercent: 50
+        MeasurementMode: EstimateUntilTelemetryExists
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: true
+    WriteSet:
+      - Architecture/Contracts/MemoryContract.md
+    TaskSpecRegistrationWriteSet:
+      - Workflow/Plans/P3.yaml
+      - Workflow/Events/CodexRewrite/P3.jsonl
+    SharedLocks: [MemoryContract]
+    Acceptance:
+      - AcceptanceId: AC-1
+        Description: >-
+          V2 normatively limits the new encoding rule to durable MemoryRecord.Content, including content supplied by
+          MemoryWriteRequest. The payload is a byte sequence that must be strict well-formed UTF-8: reject malformed
+          leading/continuation bytes, truncation, overlong encodings, surrogate encodings and values above U+10FFFF;
+          reject U+0000/NUL byte 0x00. Do not normalize or silently rewrite accepted bytes, and do not broaden this
+          rule to unrelated identifiers.
+        Evidence: >-
+          Fixed-head contract review maps every named validation condition to V2 prose and confirms the rule applies
+          only at durable Content boundaries.
+      - AcceptanceId: AC-2
+        Description: >-
+          V2 defines stable machine-readable rejection codes MemoryContentContainsNul and MemoryContentInvalidUtf8,
+          with NUL taking precedence if both conditions are present. Every durable write/update/restore/import path
+          validates before persistent side effects; invalid legacy persisted Content fails closed on recall/restore.
+        Evidence: >-
+          Contract review checks exact code spelling, precedence, pre-write/restore ordering, and fail-closed handling
+          of invalid stored bytes without adding a physical schema change or migration.
+      - AcceptanceId: AC-3
+        Description: >-
+          Rejection diagnostics may identify only the stable rejection code and safe non-content record/operation IDs.
+          They must not include raw, escaped, truncated, encoded, hashed or otherwise derived rejected Content in logs,
+          events, errors or crash diagnostics; rejection cannot report a successful write or restore.
+        Evidence: >-
+          Fixed-head security review verifies that all rejection and logging language prohibits recording the body or
+          a recoverable representation of it.
+      - AcceptanceId: AC-4
+        Description: >-
+          The rule does not alter any opaque identifier bytes: ProposalId, MemoryId, ScopeKey and other identifiers
+          retain their existing exact byte semantics, including embedded NUL and non-UTF-8 ProposalId bytes where
+          already permitted. All V1 consent, scope, TTL, backup and tombstone semantics remain unchanged; the SQLite
+          physical schema and existing persisted rows are not rewritten or deleted by this contract task.
+        Evidence: >-
+          Fixed-head review compares V2 scope with the existing ED-0144/R2 ProposalId encoding and verifies no
+          migration, schema change, broad ID validation, or unrelated V1 behavior change is authorized.
+      - AcceptanceId: AC-5
+        Description: >-
+          The contract task's implementation WriteSet is exactly Architecture/Contracts/MemoryContract.md. Its
+          registration PR WriteSet is separately exactly P3.yaml plus append-only P3.jsonl; that registration does not
+          authorize product code or tests. A later ED-0161/R1 content-enforcement task must depend on ED-0160/R1,
+          include Core-side input rejection, define its own product WriteSet and pass post-merge assignment validation.
+          The ED-0144/R3 PR #105 must synchronize to the resulting mainline and rerun its frozen validation before merge.
+        Evidence: >-
+          Fixed-head path audit, Controller Proposed query, and lifecycle review verify the two write sets remain
+          separate and no implementation authorization is inferred from the TaskSpec PR.
+    Validation:
+      RequiredTargets: []
+      RequiredCTestTests: []
+      TaskBuildDirectory: ""
+      TargetedBuild: []
+      ContractFixtures: []
+      StaticChecks:
+        - "WorkflowController query P3 ED-0160 1 returns Proposed while the registration PR is pending; no assignment event is implied."
+        - "git diff --check exits 0 and the registration PR changes exactly Workflow/Plans/P3.yaml and append-only Workflow/Events/CodexRewrite/P3.jsonl."
+        - "The future contract task's implementation diff contains exactly Architecture/Contracts/MemoryContract.md."
+        - "Contract text defines strict UTF-8, U+0000/NUL rejection, exact stable rejection codes, and body-free diagnostics."
+        - "Contract text explicitly preserves embedded-NUL/non-UTF-8 opaque identifiers, ProposalId semantics, V1 consent/TTL/backup rules, and physical SQLite schema."
+        - "TaskSpec stays Proposed until fixed-head reviews, merge, dependency completion and a separate assignment ledger; no product source write is authorized here."
+      Coverage:
+        Required: false
+        ProductionSources: []
+        MinimumLinePercent: 80
+        NotApplicable: true
+        NotApplicableReason: Contract-only task; it changes no production source or executable target.
+        ReportDirectory: ""
+      LiveSideEffects: Forbidden
+      NotRunReason: "Contract-only TaskSpec/contract text review; no C++ source, CMake, SQLite data, or live-channel operation is in scope."
+    RiskLevel: High
+    RiskOwnerRole: MemoryOwner
+    RequiresCredentials: false
+    RequiresExternalAccount: false
+    Rules:
+      MustFollow: [CODE-002, DEP-001, SEC-001]
+      SoftDefaults: []
+      ApprovedOverrides: []
+    Checkpoint:
+      LastCompletedAcceptance: "ED-0148/R6 is merged with exact ProposalId consent semantics; ED-0144/R3 remains an unmerged adapter-only draft."
+      CurrentFindingOrFailure: "MemoryContract V1 does not define strict UTF-8 or NUL policy for durable Content; no product fix is authorized by this proposal."
+      TriedApproaches: []
+      NextAction: >-
+        Complete independent fixed-head review and merge this one-file contract task. Then register and assign a
+        separate ED-0161/R1 ConversationMemory content-enforcement task depending on ED-0160/R1 and implementing
+        Core-side input rejection with its own exact source/test WriteSet. Before PR #105 merges, synchronize ED-0144/R3
+        to main after the contract and required enforcement changes, then rerun its frozen validation.
+      OpenMessageIds: []
+      LastValidationResult: "TaskSpec proposal only; no contract file or product source has been changed."
+    Deliverable:
+      PullRequestSummaryRequired: true
+      TaskReportFile: false
+      EventShard: Workflow/Events/CodexRewrite/P3.jsonl
+      FollowUpTaskIds: []
+      NotRunReason: "This task only freezes a data-contract rule; the later C++ enforcement task has not been registered or assigned."
