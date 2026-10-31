@@ -4151,17 +4151,20 @@ Tasks:
     AssignmentLedgerPullRequestNumber: ""
     TaskSpecCoordinatorDecision: Pending
     TaskSpecStatusNote: >-
-      R5 is preserved as a frozen historical revision with PR #104 at head 9ac7cfcd. R6 supersedes it after the
-      two fixed-head review findings and depends on the now-frozen AsyncAgentRuntimeContractV3. This TaskSpec PR
-      records scope only; implementation remains unassigned until the TaskSpec merges and a separate assignment
-      ledger passes post-merge WorkflowController validation.
+      R5 remains historical at PR #104 head 9ac7cfcd. R6 addresses its fixed-head findings. ED-0157/R1 remains
+      Assigned and V3 remains Proposed; both must be closed/frozen before R6 assignment. ED-0155/R3 root CMake
+      wiring is merged at main@f34f6bc (PR #110). This PR records scope only; implementation remains unassigned
+      until TaskSpec approval, merge, separate assignment, and post-merge WorkflowController validation.
     Goal: >-
-      Re-establish the ED-0150 asynchronous C++ AgentRuntime tool-round-trip as a mergeable implementation from
-      the current main baseline, preserving the trusted Core identity/scope/capability checks, bounded read-only
-      action dispatch, correlated CoreActionReceipt continuation, and final Mock Channel receipt. In addition,
-      implement the frozen AsyncAgentRuntimeContractV3 per-request resource counters, stop/await lifecycle, and
-      UnknownOutcome precedence so the complete slice can merge without carrying the frozen R5 PR as an ancestor.
-      Implement the bounded asynchronous tool round trip in native C++20: the async runtime streams canonical function-call proposals, waits for a terminal handoff, Core validates and dispatches only a registered `EffectClass::InProcessReadOnly` scoped/capability-authorized action, and deterministic CoreActionReceipts become the next provider request input before one final Mock Channel reply. R6 handlers cannot perform I/O or mutate persistent/cross-turn state.
+      After ED-0157/R1 is Merged and AsyncAgentRuntimeContractV3.md is Frozen, re-establish the ED-0150 asynchronous
+      C++ AgentRuntime tool round trip from current main while preserving trusted Core identity, scope, capability,
+      bounded read-only action dispatch, correlated CoreActionReceipt continuation, and one final Mock Channel receipt.
+      Implement the V3 per-request resource counters, stop/await lifecycle, and UnknownOutcome precedence so the
+      complete slice merges without carrying frozen R5 PR #104 as an ancestor. The async runtime streams canonical
+      function-call proposals, waits for a terminal handoff, Core validates and dispatches only registered
+      `EffectClass::InProcessReadOnly` scoped/capability-authorized actions, and deterministic CoreActionReceipts
+      become the next provider request input before the final Mock Channel reply. Handlers perform no I/O or
+      persistent/cross-turn mutation.
     OutOfScope:
       - Real provider network requests and credentials
       - Real QQ login, sending, or any WeChat work
@@ -4187,8 +4190,7 @@ Tasks:
       Reason: >-
         Fixed-head review of PR #104 found that AsyncAgentRuntime text/refusal accumulation and pending tool-call
         state lack cumulative request resource ceilings, and exceptions crossing the Core tool-runtime path can be
-        reported as a definite failure even when provider work may have started. ED-0157/R1 has now frozen V3 limits
-        and precedence semantics at main commit 60734a43.
+        reported as a definite failure even when provider work may have started. ED-0157/R1 has submitted V3 contract content at main@60734a43, but the task remains Assigned and the document remains Proposed. R6 assignment waits for completion and Frozen status. ED-0155/R3 root CMake wiring merged through PR #110 at f34f6bc.
       Scope: >-
         Supersede the blocked/frozen R5 submission with a fresh implementation branch from current main. Re-establish
         the complete 16-path deterministic async business-action round trip and implement V3 admission, overflow,
@@ -4234,7 +4236,7 @@ Tasks:
       ReadSet:
         - Architecture/Modules/HostCoreAgent.yaml
         - Architecture/Contracts/CoreAgentContract.md
-        - Architecture/Contracts/AsyncAgentRuntimeContractV2.md
+        - Source/Agent/AsyncToolCallCoordinator.hpp
         - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
         - Architecture/Contracts/AsyncBusinessActionContract.md
         - Architecture/Contracts/AsyncModelProviderContract.md
@@ -4245,8 +4247,10 @@ Tasks:
         - Source/Agent/AsyncAgentRuntime.hpp
         - Source/Core/CoreChatService.h
       OnDemandSet:
+        - Architecture/Contracts/AsyncAgentRuntimeContractV2.md
         - Source/Agent/ToolCallCoordinator.hpp
         - Architecture/Contracts/AsyncAgentRuntimeContract.md
+        - Tests/Contract/Agent/CMakeLists.txt
         - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
         - Source/Core/IdentityPolicy.cpp
         - Source/Core/BusinessActionRegistry.cpp
@@ -4315,9 +4319,9 @@ Tasks:
           Controlled read-only handlers cover success, failure, cancellation, rejected, and unsupported outcomes; registration/dispatch attempts classified ExternalWrite or ExternalIo invoke no handler. A test proves no result becomes a tool-role message without a matching CoreActionReceipt; provider UnknownOutcome leaves FakeProvider call count unchanged.
       - AcceptanceId: AC-5
         Description: >-
-          Existing synchronous Process/RunTurn and AsyncAgentRuntimeContract V1 callers remain source-compatible; the new V2 tool-loop entry is additive and performs no blocking wait or detached work.
+          Existing synchronous Process/RunTurn and AsyncAgentRuntimeContract V1 callers remain source-compatible; the new V2 tool-loop entry is additive and performs no blocking wait or detached work. ED-0155/R3 shared BusinessActionRegistryObject wiring is merged in PR #110 at main@f34f6bc.
         Evidence: >-
-          Existing AgentRuntime.Contract and AgentRuntime.VerticalSlice targets pass, the new async test target compiles under C++20 with warnings-as-errors, and static review finds no future::get, blocking wait, thread-per-request, or detached coroutine.
+          The root WindowsAgentSlice builds AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests, CorePolicyAndActionContractTests, and ToolCallRoundTripTests, and their four CTests pass. The isolated async target builds under C++20 with warnings-as-errors and its named CTest passes. PR #110 main@f34f6bc wires one shared BusinessActionRegistryObject to all four root consumers. Static review finds no future::get, blocking wait, thread-per-request, or detached coroutine.
       - AcceptanceId: AC-6
         Description: >-
           The deterministic test path uses only an in-process asynchronous FakeProvider, EffectClass::InProcessReadOnly fake business actions, CoreActionReceipt, and MockChannelAdapter for the final user reply, with no action-side persistence/I/O, provider network, credentials, real QQ, or WeChat.
@@ -4357,9 +4361,22 @@ Tasks:
         Evidence: >-
           Vertical-slice cases cover per-request pending calls separately from per-turn dispatch limits, and inject a
           throwing async tool runtime to assert UnknownOutcome and exactly one provider attempt.
+      - AcceptanceId: AC-11
+        Description: >-
+          No ED-0150/R6 assignment or product write begins until WorkflowController reports ED-0157/R1 Merged and the merged AsyncAgentRuntimeContractV3.md states Status: Frozen. Root integration uses the ED-0155/R3 CMake repair merged at main commit f34f6bc (PR #110).
+        Evidence: >-
+          Before assignment, record Controller query outputs for ED-0157/R1 and ED-0155/R3, verify the V3 status line at merged main HEAD, and verify f34f6bc is an ancestor of that HEAD. Post-merge validate-assignment must return AssignmentAccepted for ED-0150/R6.
     Validation:
-      RequiredTargets: [AsyncRuntimeVerticalSliceTests]
+      RequiredTargets: [AgentRuntimeContractTests, AgentRuntimeVerticalSliceTests, CorePolicyAndActionContractTests, ToolCallRoundTripTests, AsyncRuntimeVerticalSliceTests]
+      RequiredCTestTests: [AgentRuntime.Contract, AgentRuntime.VerticalSlice, Core.PolicyAndAction, Agent.ToolCallRoundTrip, Agent.AsyncRuntimeVerticalSlice]
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice
+      RootBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build/windows-agent-slice
+      RootConfigure:
+        - 'I:/cmake/bin/cmake.exe --preset windows-agent-slice -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON'
+      RootTargetedBuild:
+        - 'I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build/windows-agent-slice --target AgentRuntimeContractTests AgentRuntimeVerticalSliceTests CorePolicyAndActionContractTests ToolCallRoundTripTests --parallel 4'
+      RootContractFixtures:
+        - 'I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build/windows-agent-slice --no-tests=error --output-on-failure -R "^(AgentRuntime\\.Contract|AgentRuntime\\.VerticalSlice|Core\\.PolicyAndAction|Agent\\.ToolCallRoundTrip)$"'
       Configure:
         - 'I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe -DCMAKE_C_COMPILER=C:/msys64/ucrt64/bin/gcc.exe -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_EXE_LINKER_FLAGS=--coverage -DFETCHCONTENT_BASE_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies -DBUILD_TESTING=ON -DEMULATIVE_DIALOG_OFFLINE=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON -DASYNC_RUNTIME_REPORT_DIR=H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports'
       FreshBuildPreflight:
@@ -4370,6 +4387,7 @@ Tasks:
         ExpectedBranch: Task/ED-0150-ResourceBoundedAsyncToolLoop
         RequiredAbsent:
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/WindowsAgentSlice
+          - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Worktree.build
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Dependencies
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Reports
           - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0150-R6/Execution
@@ -4383,6 +4401,7 @@ Tasks:
           if (-not (Test-Path -LiteralPath $Worktree -PathType Container)) { throw "Assigned source worktree is missing: $Worktree" }
           $RequiredAbsentArtifacts = @(
             (Join-Path $TaskRoot 'WindowsAgentSlice')
+            (Join-Path $TaskRoot 'Worktree.build')
             (Join-Path $TaskRoot 'Dependencies')
             (Join-Path $TaskRoot 'Reports')
             (Join-Path $TaskRoot 'Execution')
@@ -4495,12 +4514,12 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [SEC-001, API-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "ED-0157/R1 AsyncAgentRuntimeContractV3 is frozen at main@60734a43."
-      CurrentFindingOrFailure: "R5 PR #104 is frozen at 9ac7cfcd with two P2 review findings; R6 TaskSpec is proposed and no source write is authorized yet."
+      LastCompletedAcceptance: "R5 review findings recorded; PR #114 proposes R6, but ED-0157/R1 remains Assigned and V3 remains Proposed."
+      CurrentFindingOrFailure: "R5 PR #104 is frozen at 9ac7cfcd with two P2 findings; ED-0157/R1 remains Assigned and V3 Proposed; R6 source writes remain unauthorized."
       TriedApproaches: ["R5 source branch remains immutable; R6 will replay its five reviewed commits on a fresh current-main implementation branch."]
-      NextAction: "Obtain fixed-head R6 TaskSpec owner/reviewer/coordinator approval, merge registration, then create separate assignment PR and require post-merge Controller AssignmentAccepted before source edits."
+      NextAction: "Complete ED-0157/R1 contract freeze; obtain new fixed-head R6 TaskSpec approval and merge; then assign R6 and require post-merge Controller AssignmentAccepted before source edits."
       OpenMessageIds: []
-      LastValidationResult: "TaskSpec proposal only; no product build or source validation has run."
+      LastValidationResult: "ED-0155/R3 PR #110 merged its CMake integration at f34f6bc; R5 diagnostic integration CTest passed 1/1. No R6 product build has run."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
 
     PreviousRevision5:
