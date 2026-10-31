@@ -2586,7 +2586,7 @@ Tasks:
       - {AcceptanceId: AC-4, Description: "Content validation is limited to durable Content; existing exact opaque ProposalId bytes, including permitted embedded NUL and non-UTF-8 values, remain unchanged.", Evidence: "Existing SQLite real-file ProposalId write, read, close/reopen, backup, consent recall, and restore tests continue to pass unchanged."}
       - {AcceptanceId: AC-5, Description: "Memory V1 behavior, schema, consent, scope, TTL, tombstone, backup, and legacy Recall behavior remain unchanged; no data migration is performed.", Evidence: "Existing Memory contract CTests pass; the diff is confined to the four frozen WriteSet paths."}
       - {AcceptanceId: AC-6, Description: "Modified production sources each achieve at least 80 percent unique executable source-line coverage tied to the final implementation PR head.", Evidence: "Fresh GCC/gcov 16.1 JSON v2 reports show at least 80 percent for ConversationMemory.cpp and SqliteMemoryStorageAdapter.cpp; ConversationMemory.cpp reports from both test executables are merged by unique source line, with a line covered when either object reports execution. CoverageSummary records the exact expected branch and PR Head SHA and confirms the worktree was clean before and after collection."}
-      - {AcceptanceId: AC-7, Description: "Before ED-0144/R6 may close, every required validation-command invocation and retry listed under Validation has one parseable unique CommandExecuted event bound to TaskId ED-0144, TaskRevision 6, the assigned validation branch, and the expected implementation Head. Each event records the exact full Command, WorkingDirectory, ExitCode, DurationMs, OutputFile or EvidencePath, CorrelationId, and EvidenceRefs. Missing, malformed, duplicate, failed, or binding-mismatched command evidence, or a missing referenced output, blocks R6 acceptance and TaskClosed.", Evidence: "The event ledger is reconciled one-to-one with the frozen preflight, configure, targeted build, full build, CTest, compiler/gcov version, CoverageHelperSyntaxCommand, and coverage-collection invocations including every retry. Event values match nonempty logs and final branch/Head; all required exits are 0, event IDs are unique, and referenced files are present in the fresh R6 artifact root."}
+      - {AcceptanceId: AC-7, Description: "Before ED-0144/R6 may close, every required validation-command invocation and retry listed under Validation has one parseable unique CommandExecuted event bound to TaskId ED-0144, TaskRevision 6, the assigned validation branch, and the expected implementation Head. Each event records the exact full Command, WorkingDirectory, ExitCode, DurationMs, OutputFile or EvidencePath, CorrelationId, and EvidenceRefs. Missing, malformed, duplicate, failed, or binding-mismatched command evidence, or a missing referenced output, blocks R6 acceptance and TaskClosed.", Evidence: "The event ledger is reconciled one-to-one with the frozen preflight, configure, targeted build, full build, CTest, compiler/gcov version, CoverageHelperSyntaxCommand (verifies the pinned helper SHA and PowerShell parser), and coverage-collection invocations including every retry. Event values match nonempty logs and final branch/Head; all required exits are 0, event IDs are unique, and referenced files are present in the fresh R6 artifact root."}
     Validation:
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Memory
       Execution:
@@ -2630,7 +2630,10 @@ Tasks:
         Gcov: "C:/msys64/ucrt64/bin/gcov.exe --version"
         ExpectedGccAndGcovVersion: "16.1.0"
       CoverageHelperSyntaxCommand: >-
-        "C:/Program Files/PowerShell/7/pwsh.exe" -NoLogo -NoProfile -Command "$tokens = $null; $parseErrors = $null; [System.Management.Automation.Language.Parser]::ParseFile('H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageCommand.ps1', [ref]$tokens, [ref]$parseErrors) | Out-Null; if ($parseErrors.Count -gt 0) { $parseErrors | Out-String | Write-Error; exit 1 }; Write-Output 'CoverageCommand syntax parsed successfully.'"
+        & 'C:/Program Files/PowerShell/7/pwsh.exe' -NoLogo -NoProfile -File 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageHelperSyntaxCheck.ps1' -ScriptPath 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageCommand.ps1' -ExpectedSha256 'CD68C49EA51B3437F0E0743748D986A0FD7F114B07CF5CE28F9A2C9ED816F11C' *> 'H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs/CoverageHelperSyntax.log'
+      CoverageHelperSyntaxExecutor: PowerShell 7
+      CoverageHelperSyntaxCheckScript: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation/CoverageHelperSyntaxCheck.ps1
+      CoverageHelperSyntaxCheckScriptSha256: DF0387D4BF0374C9D22D9A8CF6EBD93F932EA16AC70BE59FE2D20EA569E87B2A
       CoverageHelperSyntaxWorkingDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Validation
       CoverageHelperSyntaxExpectedExitCode: 0
       CoverageHelperSyntaxOutputLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0144-R6-Authorized-20261101/Logs/CoverageHelperSyntax.log
@@ -2655,7 +2658,7 @@ Tasks:
         - "Controller query returns ED-0144/R6 State=Proposed; GitHub PR #124 live Head equals the frozen ExpectedHeadCommit; product Branch/Worktree remain unassigned until the separate post-merge assignment ledger."
         - "git diff --check exits 0; registration diff is exactly P3.yaml and P3.jsonl; implementation WriteSet remains the exact four frozen Memory paths."
         - "Fresh Windows C++20 configure, both targeted builds, full standalone build, and all four required CTests exit 0."
-        - "CoverageHelperSyntaxCommand exits 0 and CoverageHelperSyntax.log exists; the pinned CoverageCommand SHA matches, and branch/head/cleanliness guards reject mismatched or dirty checkouts."
+        - "CoverageHelperSyntaxCommand runs via PowerShell 7, verifies the pinned CoverageCommand SHA, parses it without errors, and writes CoverageHelperSyntax.log; coverage branch/head/cleanliness guards reject mismatched or dirty checkouts."
         - "Fresh GCC/gcov 16.1 JSON v2 reports meet at least 80 percent unique executable lines for both production sources."
         - "CoverageSummary includes covered/total counts; threshold compares integer unique-line counts without rounding, independently per production source. Any libgcov checksum/overwrite or gcov warning/error/stale/corrupt/missing-file diagnostic invalidates evidence."
         - "R4/R5 build, report, and gcov artifacts are never reused, copied into, or overwritten. Only the pinned SQLite source directory at ED-0144-R5/Dependencies/sqlite-src is read; fresh R6 Memory, Dependencies, Reports, Logs, and Execution paths are checked before configure. No product code, schema, user data, or behavior changes are authorized by this revision."
@@ -2682,8 +2685,9 @@ Tasks:
     TaskSpecPullRequestCreatedHeadCommit: 923368513a122f074377391c0ff7537118d65b73
     TaskSpecPullRequestCreatedAtUtc: "2026-10-31T22:22:19Z"
     TaskSpecPullRequestCreatedEventId: 915ad9b5-b675-47df-a190-0b5cc9e18352
-    TaskSpecPullRequestHeadCommit: 168684773a021c363fa9bbcab7b00158ce928908
-    TaskSpecPullRequestHeadUpdatedEventId: e75ec37e-38a4-4708-b12f-7f98a116bd60
+    TaskSpecPullRequestHeadCommit: 12d5bec99fe1125a752cc4be9a2038cb35c08d06
+    TaskSpecPullRequestHeadUpdatedEventId: 093e180f-09a1-4cb0-aaec-d2d277357d18
+    TaskSpecPullRequestHeadTrackingSemantics: "PRHeadUpdated records the latest pushed PR head snapshot before the commit appending that event; the event commit necessarily becomes the next live PR head. The exact head used for final Owner/Reviewer approval is captured by its fixed-head review evidence and by the post-merge TaskSpecReviewCompleted event."
     TaskSpecRegistrationWriteSet: [Workflow/Plans/P3.yaml, Workflow/Events/CodexRewrite/P3.jsonl]
     TaskSpecOwnerSlotId: Worker05
     TaskSpecOwnerAgentId: /root/luna05_async_runtime_taskroute
