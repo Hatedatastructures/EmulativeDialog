@@ -806,12 +806,12 @@ ParallelGroups:
     RequestedByRole: MemoryOwner
     RequestedByAgentId: /root/luna05_async_runtime_taskroute
     OwnerAgentId: /root/luna05_async_runtime_taskroute
-    OwnerCRDecision: Pending
+    OwnerCRDecision: APPROVE
     IndependentReviewerAgentId: /root/luna04_ed0144_branch_review
-    IndependentReviewerDecision: Pending
+    IndependentReviewerDecision: APPROVE
     ReviewerIndependence: Required
-    CoordinatorDecision: Pending
-    Decision: Proposed
+    CoordinatorDecision: ACCEPTED
+    Decision: Accepted
     Scope: >-
       Add a MemoryContract V2 rule for new durable MemoryRecord.Content: require strict valid UTF-8 and reject
       U+0000/NUL at each input boundary. Write/update validates MemoryWriteRequest.Content. Restore/import validates
@@ -2376,8 +2376,8 @@ Tasks:
     EpicId: EP-06
     Title: 连接 ConversationMemory 与 SqliteStore 的生产存储适配
     TaskKind: IntegrationTask
-    State: Assigned
-    AssignmentNote: "The R3 TaskSpec merged through PR #99 at 86c7e84bdc2e4e80059ec577b9eccb6db0c36217. Assignment PR #100 merged and post-merge validation returned AssignmentAccepted; PR #101 records TaskStarted but remains the activation gate. Product writes begin only after PR #101 merges. PR #25 still needs the accepted TTL-preservation behavior and fresh R3 validation."
+    State: Blocked
+    AssignmentNote: "R3 is blocked pending MemoryContract V2 and its integrated Core plus SQLite adapter successor. PR #105 remains an unmerged draft; do not continue its isolated adapter-only change. Preserve its branch for later supersession review after ED-0144/R4 merges."
     WriteSetChangeRequest:
       ChangeRequestId: CR-ED-0144-002
       Decision: Accepted
@@ -7135,13 +7135,13 @@ Tasks:
     EpicId: EP-06
     Title: 冻结持久化 Memory Content 的 UTF-8 与 NUL 规则
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0160-R1-MEMORY-CONTENT-UTF8-001
-    TaskSpecReviewStatus: PendingOwnerAndReviewerReview
-    TaskSpecOwnerDecision: Pending
-    TaskSpecIndependentReviewerDecision: Pending
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecOwnerDecision: APPROVE
+    TaskSpecIndependentReviewerDecision: APPROVE
+    TaskSpecCoordinatorDecision: ACCEPTED
     OwnerRole: MemoryOwner
     OwnerSlotId: Worker05
     OwnerAgentId: /root/luna05_async_runtime_taskroute
@@ -7159,9 +7159,9 @@ Tasks:
     TaskSpecProposalWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1-MemoryContractV2/Worktree
     ProposedImplementationBranch: Task/ED-0160-MemoryContentUtf8V2
     ProposedImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1/Worktree
-    BaselineCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
-    Branch: ""
-    Worktree: ""
+    BaselineCommit: 51235c2596e8216c7d2c068255765295aec5ca96
+    Branch: Task/ED-0160-MemoryContentUtf8V2
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0160-R1/Worktree
     PullRequest: ""
     Goal: >-
       在单独的 Architecture/Contracts/MemoryContract.md V2 中冻结新 durable MemoryRecord.Content 的严格 UTF-8
