@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 
 namespace EmulativeDialog::Core {
@@ -52,6 +53,13 @@ IdentityPolicy::IdentityPolicy(std::uint64_t PolicyVersion,
         !IsNonEmpty(Binding.Principal.Value)) {
       throw std::invalid_argument("Identity bindings require nonempty opaque identifiers");
     }
+    std::unordered_set<std::string> Capabilities;
+    for (const std::string& Capability : Binding.GrantedCapabilities) {
+      if (Capability.empty() || !Capabilities.emplace(Capability).second) {
+        throw std::invalid_argument(
+            "Identity capability grants must be nonempty and unique");
+      }
+    }
     for (std::size_t EarlierIndex = 0; EarlierIndex < Index; ++EarlierIndex) {
       if (SameBindingKey(Binding, this->Bindings[EarlierIndex])) {
         throw std::invalid_argument("Identity policy contains a duplicate sender binding");
@@ -92,7 +100,12 @@ IdentityResolution IdentityPolicy::Resolve(
     Scope.Conversation = Envelope.Conversation;
     Scope.ConversationType = Envelope.ConversationType;
     Scope.Sender = Envelope.Sender;
-    return ResolvedIdentity{Binding.Principal, std::move(Scope), Binding.Account};
+    return ResolvedIdentity{
+        .Principal = Binding.Principal,
+        .Scope = std::move(Scope),
+        .Account = Binding.Account,
+        .GrantedCapabilities = Binding.GrantedCapabilities,
+    };
   }
 
   if (!AccountFound) {

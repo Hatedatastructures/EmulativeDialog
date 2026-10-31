@@ -30,6 +30,8 @@
 #include <utility>
 #include <vector>
 
+void RunLegacyToolCallRoundTripTests();
+
 namespace {
 
 namespace Asio = boost::asio;
@@ -52,6 +54,13 @@ enum class FakeScenario : std::uint8_t {
   ProfileRejected,
   CapabilitiesRejected,
   UnsupportedCapabilities,
+  ToolRoundTrip,
+  ToolRoundTripBadArguments,
+  ToolRoundTripUnknownSecond,
+  ToolHandoffLoop,
+  ToolCallOverflow,
+  ToolCallDuplicate,
+  ToolProposalFinal,
 };
 
 class StreamActivity final {
@@ -199,8 +208,17 @@ public:
       Cancelled.Reason.Code.Value = "cancelled-before-dispatch";
       co_return Cancelled;
     }
+    const bool ToolFlow =
+        Scenario == FakeScenario::ToolRoundTrip ||
+        Scenario == FakeScenario::ToolRoundTripBadArguments ||
+        Scenario == FakeScenario::ToolRoundTripUnknownSecond ||
+        Scenario == FakeScenario::ToolHandoffLoop ||
+        Scenario == FakeScenario::ToolCallOverflow ||
+        Scenario == FakeScenario::ToolCallDuplicate ||
+        Scenario == FakeScenario::ToolProposalFinal;
     if (Profile.Id.Value.empty() || Profile.ModelName.empty() ||
-        Lease.GetAuthenticationSecret().empty() || Request.Messages.size() != 1) {
+        Lease.GetAuthenticationSecret().empty() || Request.Messages.empty() ||
+        (!ToolFlow && Request.Messages.size() != 1U)) {
       Providers::ResponseFailedEvent Failed;
       Failed.Metadata = {Request.Id, Request.TurnId, 1};
       Failed.Failure = {Providers::FailureCode::InvalidRequest, false,
@@ -209,13 +227,14 @@ public:
     }
 
     const StreamActivity Activity{ActiveStreamCount, MaxActiveStreamCount};
-    ++DispatchCount;
+    const std::uint32_t RequestNumber = DispatchCount.fetch_add(1) + 1U;
     if (OnDispatched) {
       OnDispatched();
     }
     {
       std::lock_guard Lock(RequestMutex);
       LastRequestText.clear();
+      Requests.push_back(Request);
       for (const Providers::ContentPart& Part : Request.Messages.front().ContentParts) {
         if (const auto* Text = std::get_if<Providers::TextContentPart>(&Part)) {
           LastRequestText += Text->Text;
@@ -228,6 +247,115 @@ public:
     AwaitingProvider.store(true);
     co_await Suspension.async_wait(Asio::use_awaitable);
     AwaitingProvider.store(false);
+
+    const auto SendFinalUsage = [&Sink, &Request]() {
+      Providers::UsageUpdatedEvent Usage;
+      Usage.Metadata = {Request.Id, Request.TurnId, 2};
+      Usage.Usage.InputTokens = 5;
+      Usage.Usage.OutputTokens = 2;
+      Usage.Usage.TotalTokens = 7;
+      Usage.Usage.Completeness = Providers::UsageCompleteness::Final;
+      Sink(Providers::CanonicalNonTerminalEvent{std::move(Usage)});
+    };
+    const auto MakeUsage = []() {
+      Providers::UsageSnapshot Usage;
+      Usage.InputTokens = 5;
+      Usage.OutputTokens = 2;
+      Usage.TotalTokens = 7;
+      Usage.Completeness = Providers::UsageCompleteness::Final;
+      return Usage;
+    };
+    const auto MakeHandoff = [&Request, &MakeUsage]() {
+      Providers::ResponseCompletedEvent Handoff;
+      Handoff.Metadata = {Request.Id, Request.TurnId, 3};
+      Handoff.Kind = Providers::CompletionKind::ToolHandoff;
+      Handoff.FinalUsage = MakeUsage();
+      return Providers::CanonicalTerminalEvent{std::move(Handoff)};
+    };
+
+    if (ToolFlow) {
+      if (Scenario == FakeScenario::ToolRoundTripUnknownSecond &&
+          RequestNumber > 1U) {
+        Providers::ResponseOutcomeUnknownEvent Unknown;
+        Unknown.Metadata = {Request.Id, Request.TurnId, 1};
+        Unknown.Reason.Code.Value = "unknown-after-read-only-tool";
+        co_return Unknown;
+      }
+
+      const bool AlwaysHandoff =
+          Scenario == FakeScenario::ToolHandoffLoop ||
+          Scenario == FakeScenario::ToolCallOverflow ||
+          Scenario == FakeScenario::ToolCallDuplicate;
+      const bool FirstHandoff = RequestNumber == 1U;
+      if (AlwaysHandoff || FirstHandoff) {
+        std::uint32_t CallCount = 1U;
+        if (Scenario == FakeScenario::ToolCallOverflow) {
+          CallCount = 9U;
+        } else if (Scenario == FakeScenario::ToolCallDuplicate) {
+          CallCount = 2U;
+        }
+        for (std::uint32_t Index = 0; Index < CallCount; ++Index) {
+          Providers::ToolCallReadyEvent Tool;
+          Tool.Metadata = {Request.Id, Request.TurnId,
+                           static_cast<std::uint64_t>(Index + 1U)};
+          Tool.Item = Providers::ItemId{"fake-tool-item"};
+          std::string ToolCallId;
+          if (Scenario == FakeScenario::ToolCallDuplicate) {
+            ToolCallId = "duplicate-call";
+          } else if (Scenario == FakeScenario::ToolHandoffLoop) {
+            ToolCallId = "loop-call-" + std::to_string(RequestNumber);
+          } else {
+            ToolCallId = "fake-tool-call-" + std::to_string(Index + 1U);
+          }
+          Tool.Call = Providers::ToolCallId{std::move(ToolCallId)};
+          Tool.ToolName = "LookupProfile";
+          Tool.Arguments = Providers::JsonValue{
+              Scenario == FakeScenario::ToolRoundTripBadArguments
+                  ? R"({"query":7})"
+                  : R"({"query":"profile"})"};
+          Sink(Providers::CanonicalNonTerminalEvent{std::move(Tool)});
+        }
+        Providers::UsageUpdatedEvent Usage;
+        Usage.Metadata = {Request.Id, Request.TurnId,
+                          static_cast<std::uint64_t>(CallCount + 1U)};
+        Usage.Usage = MakeUsage();
+        Sink(Providers::CanonicalNonTerminalEvent{std::move(Usage)});
+        if (Scenario == FakeScenario::ToolProposalFinal) {
+          Providers::ResponseCompletedEvent Final;
+          Final.Metadata = {Request.Id, Request.TurnId,
+                            static_cast<std::uint64_t>(CallCount + 2U)};
+          Final.Kind = Providers::CompletionKind::FinalAnswer;
+          Final.FinalUsage = MakeUsage();
+          co_return Final;
+        }
+        auto Terminal = MakeHandoff();
+        std::visit(
+            [&CallCount](auto& Value) {
+              using ValueType = std::decay_t<decltype(Value)>;
+              if constexpr (std::is_same_v<
+                                ValueType,
+                                Providers::ResponseCompletedEvent>) {
+                Value.Metadata.SequenceNumber =
+                    static_cast<std::uint64_t>(CallCount + 2U);
+              }
+            },
+            Terminal);
+        co_return Terminal;
+      }
+
+      Providers::TextDeltaEvent Delta;
+      Delta.Metadata = {Request.Id, Request.TurnId, 1};
+      Delta.Item = Providers::ItemId{"tool-roundtrip-final"};
+      Delta.Utf8Delta = "profile result is ready";
+      Sink(Providers::CanonicalNonTerminalEvent{std::move(Delta)});
+      SendFinalUsage();
+      Providers::ResponseCompletedEvent Final;
+      Final.Metadata = {Request.Id, Request.TurnId, 3};
+      Final.Kind = Providers::CompletionKind::FinalAnswer;
+      Final.FinalUsage = MakeUsage();
+      ++FinalTerminalCount;
+      co_return Final;
+    }
 
     if (Scenario == FakeScenario::ThrowAfterDispatch) {
       throw std::runtime_error("synthetic unknown provider outcome");
@@ -264,6 +392,15 @@ public:
       Providers::ResponseCompletedEvent Handoff;
       Handoff.Metadata = {Request.Id, Request.TurnId, 1};
       Handoff.Kind = Providers::CompletionKind::ToolHandoff;
+      Handoff.FinalUsage = Providers::UsageSnapshot{
+          .InputTokens = 5,
+          .OutputTokens = 2,
+          .TotalTokens = 7,
+          .CachedInputReadTokens = std::nullopt,
+          .CachedInputWriteTokens = std::nullopt,
+          .ReasoningOutputTokens = std::nullopt,
+          .Completeness = Providers::UsageCompleteness::Final,
+      };
       co_return Handoff;
     }
     if (Scenario == FakeScenario::ToolCall) {
@@ -354,6 +491,12 @@ public:
     return LastRequestText;
   }
 
+  [[nodiscard]] std::vector<Providers::CanonicalModelRequest>
+  GetRequests() const {
+    std::lock_guard Lock(RequestMutex);
+    return Requests;
+  }
+
   std::atomic<std::uint32_t> DispatchCount{0};
   std::atomic<std::uint32_t> ActiveStreamCount{0};
   std::atomic<std::uint32_t> MaxActiveStreamCount{0};
@@ -368,6 +511,7 @@ private:
       true, true, true, true, true, true};
   mutable std::mutex RequestMutex;
   std::string LastRequestText;
+  std::vector<Providers::CanonicalModelRequest> Requests;
 };
 
 class ScriptedActionIdSource final : public Core::CoreActionIdSource {
@@ -655,6 +799,37 @@ private:
   return Profile;
 }
 
+[[nodiscard]] Core::BusinessActionDefinition MakeAsyncLookup(
+    std::function<Asio::awaitable<Core::BusinessActionExecutionResult>(
+        const Core::BusinessActionInvocation&, std::stop_token)> Handler,
+    Core::BusinessActionEffectClass Effect =
+        Core::BusinessActionEffectClass::InProcessReadOnly,
+    std::string RequiredCapability = "Chat.Lookup",
+    std::string RequiredConversation = "async-conversation") {
+  return Core::BusinessActionDefinition{
+      .Name = "LookupProfile",
+      .RequiredArgumentFields = {"query"},
+      .RequiredCapabilities =
+          RequiredCapability.empty()
+              ? std::vector<std::string>{}
+              : std::vector<std::string>{std::move(RequiredCapability)},
+      .Scope = Core::BusinessActionScopeRequirement{
+          .ChannelId = std::string{"Mock"},
+          .ConversationId = std::move(RequiredConversation),
+      },
+      .Handler = {},
+      .ModelTool = Providers::ToolDefinition{
+          .Name = "LookupProfile",
+          .Description = "Look up a profile using trusted in-process data",
+          .Parameters = Providers::JsonSchema{
+              R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query"],"additionalProperties":false})"},
+          .Strict = true,
+      },
+      .EffectClass = Effect,
+      .AsyncHandler = std::move(Handler),
+  };
+}
+
 [[nodiscard]] Testing::MockChannelConfiguration MakeMockConfiguration(
     const Channels::AccountProfile& Profile) {
   std::vector<Testing::MockActionReceipt> Receipts;
@@ -708,7 +883,9 @@ private:
 
 class Fixture final {
 public:
-  explicit Fixture(FakeScenario Scenario = FakeScenario::Final)
+  explicit Fixture(
+      FakeScenario Scenario = FakeScenario::Final,
+      std::vector<std::string> GrantedCapabilities = {"Chat.Lookup"})
       : ChannelProfile(MakeChannelProfile()),
         Channel(MakeMockConfiguration(ChannelProfile)),
         ProviderProfile(MakeProviderProfile(Scenario)),
@@ -716,10 +893,12 @@ public:
                        .Account = ChannelProfile,
                        .Sender = Channels::SenderId{"async-sender"},
                        .Principal = Core::PrincipalId{"async-principal"},
+                       .GrantedCapabilities =
+                           std::move(GrantedCapabilities),
                    }}),
         Service(Policy, SyncRuntime, SyncProvider, ProviderProfile,
                 ProviderLease, Channel, ChannelLease, IdSource,
-                &OperationObserver),
+                BusinessActions, &OperationObserver),
         Provider(Scenario) {
     const bool Started =
         Channel.Start(ChannelProfile, ChannelLease).Status ==
@@ -747,6 +926,32 @@ public:
     return Service.Process(Message);
   }
 
+  [[nodiscard]] Core::CoreChatResult RunToolAsync(
+      Channels::InboundChannelMessage Message,
+      std::stop_token CancellationToken = {}) {
+    Asio::io_context Context;
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Core::AsyncAgentToolRuntimePort& ToolRuntime = Runtime;
+    Asio::co_spawn(
+        Context,
+        Service.ProcessAsync(std::move(Message), ToolRuntime, Provider,
+                             CancellationToken),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    if (Failure) {
+      std::rethrow_exception(Failure);
+    }
+    if (!Result.has_value()) {
+      throw std::runtime_error("tool coroutine produced no CoreChatResult");
+    }
+    return *Result;
+  }
+
   [[nodiscard]] Channels::InboundChannelMessage Inbound() const {
     return InboundSink.Events.front();
   }
@@ -761,6 +966,7 @@ public:
   ScriptedActionIdSource IdSource;
   CollectingOperationObserver OperationObserver;
   Core::IdentityPolicy Policy;
+  Core::BusinessActionRegistry BusinessActions;
   Core::CoreChatService Service;
   CollectingSink InboundSink;
   EmulativeDialog::Agent::AsyncAgentRuntime Runtime;
@@ -776,8 +982,10 @@ private:
     std::exception_ptr Failure;
     Asio::co_spawn(
         Context,
-        Service.ProcessAsync(std::move(Message), Runtime, Provider,
-                             CancellationToken),
+        Service.ProcessAsync(
+            std::move(Message),
+            static_cast<Core::AsyncAgentRuntimePort&>(Runtime), Provider,
+            CancellationToken),
         [&Result, &Failure](std::exception_ptr Exception,
                             Core::CoreChatResult Value) {
           Failure = std::move(Exception);
@@ -991,7 +1199,9 @@ struct ScenarioExpectation final {
     Asio::co_spawn(
         Context,
         TestFixture.Service.ProcessAsync(
-            Message, TestFixture.Runtime, TestFixture.Provider,
+            Message,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider,
             Cancellation.get_token()),
         [&Result, &Failure](std::exception_ptr Exception,
                             Core::CoreChatResult Value) {
@@ -1037,7 +1247,9 @@ struct ScenarioExpectation final {
     Asio::co_spawn(
         Context,
         TestFixture.Service.ProcessAsync(
-            Message, TestFixture.Runtime, TestFixture.Provider,
+            Message,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider,
             Cancellation.get_token()),
         [&Result, &Failure](std::exception_ptr Exception,
                             Core::CoreChatResult Value) {
@@ -1407,8 +1619,10 @@ struct ScenarioExpectation final {
     std::exception_ptr SecondFailure;
     Asio::co_spawn(
         Context,
-        TestFixture.Service.ProcessAsync(FirstMessage, TestFixture.Runtime,
-                                         TestFixture.Provider),
+        TestFixture.Service.ProcessAsync(
+            FirstMessage,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider),
         [&FirstResult, &FirstFailure](std::exception_ptr Exception,
                                       Core::CoreChatResult Value) {
           FirstFailure = std::move(Exception);
@@ -1416,8 +1630,10 @@ struct ScenarioExpectation final {
         });
     Asio::co_spawn(
         Context,
-        TestFixture.Service.ProcessAsync(SecondMessage, TestFixture.Runtime,
-                                         TestFixture.Provider),
+        TestFixture.Service.ProcessAsync(
+            SecondMessage,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider),
         [&SecondResult, &SecondFailure](std::exception_ptr Exception,
                                         Core::CoreChatResult Value) {
           SecondFailure = std::move(Exception);
@@ -1500,8 +1716,10 @@ struct ScenarioExpectation final {
     std::exception_ptr AsyncFailure;
     Asio::co_spawn(
         Context,
-        TestFixture.Service.ProcessAsync(AsyncMessage, TestFixture.Runtime,
-                                         TestFixture.Provider),
+        TestFixture.Service.ProcessAsync(
+            AsyncMessage,
+            static_cast<Core::AsyncAgentRuntimePort&>(TestFixture.Runtime),
+            TestFixture.Provider),
         [&AsyncResult, &AsyncFailure](std::exception_ptr Exception,
                                       Core::CoreChatResult Value) {
           AsyncFailure = std::move(Exception);
@@ -1712,8 +1930,479 @@ struct ScenarioExpectation final {
   return Passed;
 }
 
+[[nodiscard]] bool TestCoreAuthorizedReadOnlyToolRoundTrip() {
+  Fixture TestFixture(FakeScenario::ToolRoundTrip);
+  std::uint32_t HandlerCalls = 0;
+  Core::BusinessActionInvocation ObservedInvocation;
+  const auto Registration = TestFixture.BusinessActions.Register(
+      MakeAsyncLookup(
+          [&HandlerCalls, &ObservedInvocation](
+              const Core::BusinessActionInvocation& Invocation,
+              std::stop_token) -> Asio::awaitable<
+                  Core::BusinessActionExecutionResult> {
+            ++HandlerCalls;
+            ObservedInvocation = Invocation;
+            co_return Core::BusinessActionExecutionResult{
+                Core::BusinessActionExecutionStatus::Succeeded,
+                "ProfileFound"};
+          }));
+  if (!Check(!Registration.has_value(),
+             "Core must accept a valid in-process read-only action")) {
+    return false;
+  }
+
+  const Channels::InboundChannelMessage Inbound = TestFixture.Inbound();
+  const Core::CoreChatResult Result = TestFixture.RunToolAsync(Inbound);
+  const auto Requests = TestFixture.Provider.GetRequests();
+  const auto ChannelReceipt = TestFixture.Channel.GetLastSendActionReceipt();
+  const auto Operations = TestFixture.OperationObserver.Snapshot();
+  bool Passed = true;
+  Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                      Result.Completion ==
+                          Providers::CompletionKind::FinalAnswer,
+                  "Core completes the user turn after an authorized tool round trip");
+  Passed &= Check(HandlerCalls == 1U && Requests.size() == 2U &&
+                      TestFixture.Provider.DispatchCount.load() == 2U,
+                  "one terminal-authorized action runs before a second provider request");
+  Passed &= Check(
+      ObservedInvocation.Principal.Value == "async-principal" &&
+          ObservedInvocation.Scope.Conversation.Value == "async-conversation" &&
+          ObservedInvocation.Turn.Value == MakeTurnId(Inbound.Envelope).Value &&
+          ObservedInvocation.ToolCallId == "fake-tool-call-1" &&
+          ObservedInvocation.Arguments.JsonText == R"({"query":"profile"})",
+      "action receives the trusted Core identity, scope, turn and canonical arguments");
+  Passed &= Check(Requests[0].ToolDefinitions.size() == 1U &&
+                      Requests[0].ToolDefinitions.front().Name ==
+                          "LookupProfile" &&
+                      Requests[1].Id.Value != Requests[0].Id.Value &&
+                      Requests[0].TurnId.Value == Requests[1].TurnId.Value,
+                  "Core advertises only the registered tool and continuation uses a fresh request id on the same turn");
+  Passed &= Check(
+      Requests[1].Messages.size() == 3U &&
+          Requests[1].Messages[0].Role == Providers::MessageRole::User &&
+          Requests[1].Messages[1].Role == Providers::MessageRole::Assistant &&
+          Requests[1].Messages[1].FunctionCalls.size() == 1U &&
+          Requests[1].Messages[1].FunctionCalls.front().Id.Value ==
+              "fake-tool-call-1" &&
+          Requests[1].Messages[2].Role == Providers::MessageRole::Tool &&
+          Requests[1].Messages[2].ToolCallResultId.has_value() &&
+          Requests[1].Messages[2].ToolCallResultId->Value ==
+              "fake-tool-call-1" &&
+          std::get<Providers::TextContentPart>(
+              Requests[1].Messages[2].ContentParts.front()).Text ==
+              "ProfileFound",
+      "only the correlated sanitized CoreActionReceipt becomes a tool result");
+  Passed &= Check(ChannelReceipt.has_value() &&
+                      ChannelReceipt->Status ==
+                          Channels::ReceiptStatus::Succeeded,
+                  "the final Mock Channel receipt is successful");
+  Passed &= Check(TestFixture.Channel.GetSendActionCallCount() == 1U,
+                  "the final user reply is sent exactly once");
+  const bool OneFinalOperation =
+      !Operations.empty() &&
+      std::all_of(Operations.begin(), Operations.end(),
+                  [](const Core::OperationRecord& Record) {
+                    return Record.GetOperationId().Value ==
+                               "async-operation-1" &&
+                           Record.GetActionId().Value == "async-action-1";
+                  }) &&
+      Operations.back().GetState() == Core::OperationState::Succeeded;
+  Passed &= Check(OneFinalOperation,
+                  "only the final channel send creates one successful OperationRecord lifecycle; CoreActionReceipt creates none");
+  Passed &= Check(!EmulativeDialog::Agent::OutputBudgetController::Shared()
+                       .HasActiveTurn(MakeTurnId(Inbound.Envelope)),
+                  "Core releases output-budget state after the complete async tool turn");
+  const Core::CoreChatResult Duplicate =
+      TestFixture.RunToolAsync(Inbound);
+  Passed &= Check(Duplicate.Status == Core::CoreChatStatus::Duplicate &&
+                      HandlerCalls == 1U &&
+                      TestFixture.Provider.DispatchCount.load() == 2U &&
+                      TestFixture.Channel.GetSendActionCallCount() == 1U,
+                  "the shared Core dedupe reservation prevents a repeated async tool turn");
+  return Passed;
+}
+
+[[nodiscard]] bool TestReadOnlyToolAuthorizationAndSchemaRejections() {
+  bool Passed = true;
+  {
+    bool RejectedDuplicateGrant = false;
+    try {
+      static_cast<void>(Core::IdentityPolicy(
+          3, {Core::IdentityBinding{
+                  .Account = MakeChannelProfile(),
+                  .Sender = Channels::SenderId{"async-sender"},
+                  .Principal = Core::PrincipalId{"async-principal"},
+                  .GrantedCapabilities = {"Chat.Lookup", "Chat.Lookup"},
+              }}));
+    } catch (const std::invalid_argument&) {
+      RejectedDuplicateGrant = true;
+    }
+    Passed &= Check(RejectedDuplicateGrant,
+                    "Core identity configuration rejects duplicate capability grants");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip, {});
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "read-only test action registers for an identity without its grant");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 0U && Requests.size() == 2U &&
+                        Requests.front().ToolDefinitions.empty() &&
+                        std::get<Providers::TextContentPart>(
+                            Requests.back().Messages.back().ContentParts.front())
+                                .Text == "MissingCapability",
+                    "model-proposed calls cannot supply missing Core capability grants");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTripBadArguments);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "schema test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 0U && Requests.size() == 2U &&
+                        std::get<Providers::TextContentPart>(
+                            Requests.back().Messages.back().ContentParts.front())
+                                .Text == "InvalidArguments",
+                    "Core validates tool JSON types before invoking the handler");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    auto External = MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "Unsafe"};
+        },
+        Core::BusinessActionEffectClass::ExternalWrite);
+    const auto Rejected = TestFixture.BusinessActions.Register(std::move(External));
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Rejected.has_value() &&
+                        Rejected->Code ==
+                            Core::BusinessActionRegistrationErrorCode::
+                                IneligibleEffectClass &&
+                        TestFixture.BusinessActions.Count() == 0U &&
+                        HandlerCalls == 0U &&
+                        Result.Status == Core::CoreChatStatus::Completed &&
+                        Requests.front().ToolDefinitions.empty(),
+                    "ExternalWrite is rejected before registration, advertisement or handler invocation");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    auto ExternalIo = MakeAsyncLookup(
+        [&HandlerCalls](const Core::BusinessActionInvocation&,
+                       std::stop_token)
+            -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+          ++HandlerCalls;
+          co_return Core::BusinessActionExecutionResult{
+              Core::BusinessActionExecutionStatus::Succeeded, "Unsafe"};
+        },
+        Core::BusinessActionEffectClass::ExternalIo);
+    const auto Rejected = TestFixture.BusinessActions.Register(std::move(ExternalIo));
+    Passed &= Check(Rejected.has_value() &&
+                        Rejected->Code ==
+                            Core::BusinessActionRegistrationErrorCode::
+                                IneligibleEffectClass &&
+                        HandlerCalls == 0U,
+                    "ExternalIo registration fails closed without executing its handler");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestToolHandoffTerminalAndUnknownOutcomeRules() {
+  bool Passed = true;
+  {
+    Fixture TestFixture(FakeScenario::ToolProposalFinal);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "terminal-only test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::InvalidStream &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "ToolCallReady followed by a final terminal is discarded without dispatch");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTripUnknownSecond);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ProfileFound"};
+                })).has_value(),
+          "unknown provider outcome test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::UnknownOutcome &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 2U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "unknown provider outcome after a read-only action stops without replay or send");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolCallDuplicate);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "duplicate-call test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::InvalidStream &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U,
+                    "duplicate ToolCallIds invalidate the correlated proposal batch");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestV2TerminalFailureMatrix() {
+  const std::vector<ScenarioExpectation> Cases{
+      {FakeScenario::Final, Core::CoreChatStatus::Completed, std::nullopt, true},
+      {FakeScenario::Refusal, Core::CoreChatStatus::Completed, std::nullopt, true},
+      {FakeScenario::OutputLimited, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::OutputLimitReached, false},
+      {FakeScenario::Failed, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::ProviderRejected, false},
+      {FakeScenario::Cancelled, Core::CoreChatStatus::Cancelled, std::nullopt,
+       false},
+      {FakeScenario::Unknown, Core::CoreChatStatus::UnknownOutcome, std::nullopt,
+       false},
+      {FakeScenario::InvalidSequence, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::InvalidStream, false},
+      {FakeScenario::UnsupportedCapabilities, Core::CoreChatStatus::Unsupported,
+       std::nullopt, false},
+      {FakeScenario::ToolHandoff, Core::CoreChatStatus::Failed,
+       Core::AgentRunFailureCode::InvalidStream, false},
+  };
+
+  bool Passed = true;
+  for (const ScenarioExpectation& Expected : Cases) {
+    Fixture TestFixture(Expected.Scenario);
+    const Core::CoreChatResult Result =
+        TestFixture.RunToolAsync(TestFixture.Inbound());
+    const bool FailureMatches =
+        Expected.Failure.has_value()
+            ? Result.AgentFailure == Expected.Failure
+            : !Result.AgentFailure.has_value();
+    const std::string Label =
+        "V2 terminal scenario #" +
+        std::to_string(static_cast<unsigned>(Expected.Scenario));
+    Passed &= Check(Result.Status == Expected.Status && FailureMatches &&
+                        TestFixture.Channel.GetSendActionCallCount() ==
+                            (Expected.SendsAction ? 1U : 0U),
+                    Label + " maps the terminal and send behavior");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestReadOnlyActionFailureAndUnknownAreNotReplayed() {
+  bool Passed = true;
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Failed,
+                      "ProfileUnavailable"};
+                })).has_value(),
+          "definite failure action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    const auto Requests = TestFixture.Provider.GetRequests();
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Completed &&
+                        HandlerCalls == 1U && Requests.size() == 2U &&
+                        std::get<Providers::TextContentPart>(
+                            Requests.back().Messages.back().ContentParts.front())
+                                .Text == "ProfileUnavailable" &&
+                        TestFixture.Channel.GetSendActionCallCount() == 1U,
+                    "a definite read-only failure yields a sanitized Core receipt for the next request");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolRoundTrip);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::UnknownOutcome,
+                      "MustNotLeak"};
+                })).has_value(),
+          "read-only unknown test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::InternalError &&
+                        HandlerCalls == 1U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "an impossible unknown action status stops without receipt, continuation or replay");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestToolCycleAndCallLimits() {
+  bool Passed = true;
+  {
+    Fixture TestFixture(FakeScenario::ToolHandoffLoop);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ReadOnly"};
+                })).has_value(),
+          "loop-limit test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 4U &&
+                        TestFixture.Provider.DispatchCount.load() == 5U &&
+                        TestFixture.Channel.GetSendActionCallCount() == 0U,
+                    "the fifth handoff stops after four dispatched cycles");
+  }
+  {
+    Fixture TestFixture(FakeScenario::ToolCallOverflow);
+    std::uint32_t HandlerCalls = 0;
+    Passed &= Check(!TestFixture.BusinessActions.Register(MakeAsyncLookup(
+                [&HandlerCalls](const Core::BusinessActionInvocation&,
+                               std::stop_token)
+                    -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+                  ++HandlerCalls;
+                  co_return Core::BusinessActionExecutionResult{
+                      Core::BusinessActionExecutionStatus::Succeeded,
+                      "ShouldNotRun"};
+                })).has_value(),
+          "call-limit test action registers");
+    const auto Result = TestFixture.RunToolAsync(TestFixture.Inbound());
+    Passed &= Check(Result.Status == Core::CoreChatStatus::Failed &&
+                        Result.AgentFailure ==
+                            Core::AgentRunFailureCode::OutputLimitReached &&
+                        HandlerCalls == 0U &&
+                        TestFixture.Provider.DispatchCount.load() == 1U,
+                    "the ninth proposed call is rejected before any handler runs");
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestCancellationDuringReadOnlyAction() {
+  Fixture TestFixture(FakeScenario::ToolRoundTrip);
+  std::stop_source StopSource;
+  std::uint32_t HandlerCalls = 0;
+  const bool ActionRegistered =
+      !TestFixture.BusinessActions.Register(MakeAsyncLookup(
+              [&HandlerCalls, &StopSource](
+                  const Core::BusinessActionInvocation&,
+                  std::stop_token) -> Asio::awaitable<
+                      Core::BusinessActionExecutionResult> {
+                ++HandlerCalls;
+                const auto Executor = co_await Asio::this_coro::executor;
+                Asio::steady_timer Timer(Executor);
+                Timer.expires_after(std::chrono::milliseconds(1));
+                co_await Timer.async_wait(Asio::use_awaitable);
+                StopSource.request_stop();
+                co_return Core::BusinessActionExecutionResult{
+                    Core::BusinessActionExecutionStatus::Succeeded,
+                    "ProfileFound"};
+              })).has_value();
+  const auto Result =
+      TestFixture.RunToolAsync(TestFixture.Inbound(), StopSource.get_token());
+  return Check(ActionRegistered &&
+                   Result.Status == Core::CoreChatStatus::Cancelled &&
+                   HandlerCalls == 1U &&
+                   TestFixture.Provider.DispatchCount.load() == 1U &&
+                   TestFixture.Channel.GetSendActionCallCount() == 0U,
+               "cancellation during a read-only handler creates no receipt, continuation or channel send");
+}
+
+[[nodiscard]] bool TestConcreteAsyncRuntimePreservesLegacyConstructor() {
+  Fixture TestFixture(FakeScenario::Final);
+  Core::CoreChatService LegacyService(
+      TestFixture.Policy, TestFixture.SyncRuntime, TestFixture.SyncProvider,
+      TestFixture.ProviderProfile, TestFixture.ProviderLease,
+      TestFixture.Channel, TestFixture.ChannelLease, TestFixture.IdSource,
+      &TestFixture.OperationObserver);
+
+  Asio::io_context Context;
+  std::optional<Core::CoreChatResult> Result;
+  std::exception_ptr Failure;
+  Asio::co_spawn(
+      Context,
+      LegacyService.ProcessAsync(TestFixture.Inbound(), TestFixture.Runtime,
+                                 TestFixture.Provider),
+      [&Result, &Failure](std::exception_ptr Exception,
+                          Core::CoreChatResult Value) {
+        Failure = std::move(Exception);
+        Result = std::move(Value);
+      });
+  Context.run();
+  if (Failure) {
+    std::rethrow_exception(Failure);
+  }
+  return Check(Result.has_value() &&
+                   Result->Status == Core::CoreChatStatus::Completed &&
+                   TestFixture.Provider.DispatchCount.load() == 1U &&
+                   TestFixture.Channel.GetSendActionCallCount() == 1U,
+               "a concrete AsyncAgentRuntime keeps the V1 path with the original CoreChatService constructor");
+}
+
 bool RunAllTests() {
   bool Passed = true;
+  RunLegacyToolCallRoundTripTests();
   Passed &= TestSuccessfulMockToMockCoroutineSlice();
   Passed &= TestTerminalAndProviderFailureMatrix();
   Passed &= TestCancellationAndInputOrdering();
@@ -1721,6 +2410,14 @@ bool RunAllTests() {
   Passed &= TestDistinctConcurrentMessagesAndIdentifierSafety();
   Passed &= TestChannelAndTerminalValidationFailures();
   Passed &= TestCorePolicyAndReceiptStateCoverage();
+  Passed &= TestCoreAuthorizedReadOnlyToolRoundTrip();
+  Passed &= TestReadOnlyToolAuthorizationAndSchemaRejections();
+  Passed &= TestToolHandoffTerminalAndUnknownOutcomeRules();
+  Passed &= TestV2TerminalFailureMatrix();
+  Passed &= TestReadOnlyActionFailureAndUnknownAreNotReplayed();
+  Passed &= TestToolCycleAndCallLimits();
+  Passed &= TestCancellationDuringReadOnlyAction();
+  Passed &= TestConcreteAsyncRuntimePreservesLegacyConstructor();
   return Passed;
 }
 

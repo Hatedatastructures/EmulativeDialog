@@ -4,9 +4,12 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <boost/asio/awaitable.hpp>
 
 #include "Source/Core/IdentityPolicy.h"
 #include "Source/Providers/Contracts/ModelProviderPort.h"
@@ -40,6 +43,13 @@ struct BusinessActionScopeRequirement final {
   std::optional<std::string> ConversationId;
 };
 
+enum class BusinessActionEffectClass : std::uint8_t {
+  Unspecified,
+  InProcessReadOnly,
+  ExternalWrite,
+  ExternalIo,
+};
+
 struct BusinessActionDefinition final {
   std::string Name;
   std::vector<std::string> RequiredArgumentFields;
@@ -48,6 +58,12 @@ struct BusinessActionDefinition final {
   std::function<BusinessActionExecutionResult(
       const BusinessActionInvocation&)>
       Handler;
+  Providers::ToolDefinition ModelTool;
+  BusinessActionEffectClass EffectClass{
+      BusinessActionEffectClass::Unspecified};
+  std::function<boost::asio::awaitable<BusinessActionExecutionResult>(
+      const BusinessActionInvocation&, std::stop_token)>
+      AsyncHandler;
 };
 
 enum class BusinessActionRegistrationErrorCode : std::uint8_t {
@@ -56,6 +72,8 @@ enum class BusinessActionRegistrationErrorCode : std::uint8_t {
   ForbiddenActionName,
   EmptyHandler,
   InvalidSchemaField,
+  InvalidToolDefinition,
+  IneligibleEffectClass,
 };
 
 struct BusinessActionRegistrationError final {
@@ -76,6 +94,8 @@ public:
 
   [[nodiscard]] const BusinessActionDefinition* Find(
       std::string_view Name) const noexcept;
+  [[nodiscard]] std::vector<const BusinessActionDefinition*>
+  GetAsyncDefinitions() const;
   [[nodiscard]] std::size_t Count() const noexcept {
     return Definitions.size();
   }
@@ -90,6 +110,14 @@ public:
   [[nodiscard]] static bool ValidateArguments(
       std::string_view JsonText,
       const std::vector<std::string>& RequiredFields) noexcept;
+
+  // Validates the contract-supported JSON Schema subset and the complete
+  // argument object, including primitive types and additionalProperties.
+  [[nodiscard]] static bool IsValidToolDefinition(
+      const Providers::ToolDefinition& Tool) noexcept;
+  [[nodiscard]] static bool ValidateArguments(
+      const Providers::JsonValue& Arguments,
+      const Providers::ToolDefinition& Tool) noexcept;
 
 private:
   std::vector<BusinessActionDefinition> Definitions;
