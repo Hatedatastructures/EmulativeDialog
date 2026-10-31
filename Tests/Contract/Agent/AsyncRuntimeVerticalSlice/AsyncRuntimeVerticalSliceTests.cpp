@@ -830,6 +830,16 @@ private:
   };
 }
 
+[[nodiscard]] Providers::ToolDefinition MakeRegistrySchemaTool(
+    std::string SchemaText) {
+  return Providers::ToolDefinition{
+      .Name = "InspectRecord",
+      .Description = "validate a canonical in-process tool schema",
+      .Parameters = Providers::JsonSchema{std::move(SchemaText)},
+      .Strict = true,
+  };
+}
+
 [[nodiscard]] Testing::MockChannelConfiguration MakeMockConfiguration(
     const Channels::AccountProfile& Profile) {
   std::vector<Testing::MockActionReceipt> Receipts;
@@ -1930,6 +1940,361 @@ struct ScenarioExpectation final {
   return Passed;
 }
 
+[[nodiscard]] bool TestBusinessActionSchemaParserEdges() {
+  bool Passed = true;
+  const Providers::ToolDefinition FullSchema = MakeRegistrySchemaTool(
+      R"({"type":"object","properties":{"query":{"type":"string"},"amount":{"type":"number"},"count":{"type":"integer"},"active":{"type":"boolean"},"empty":{"type":"null"}},"required":["query"],"additionalProperties":true})");
+
+  const Providers::JsonValue AllJsonKindsAndEscapes{
+      R"({"query":"quote \" slash \\ / backspace \b formfeed \f newline \n return \r tab \t latin \u00e9 euro \u20AC face \uD83D\uDE00","amount":-1.25e+2,"count":-5,"active":true,"empty":null,"extra":{"items":[false,null,0,2.5,1E-2,{"key":"value"}]}})"};
+  Passed &= Check(Core::BusinessActionRegistry::IsValidToolDefinition(FullSchema),
+                  "the five supported primitive schema types form a valid tool definition");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      AllJsonKindsAndEscapes, FullSchema),
+                  "JSON parser accepts escapes, Unicode surrogate pairs, nested values and numeric forms");
+
+  const std::vector<std::string> LegacyRequiredFields{"query"};
+  const std::vector<std::string> LegacyValidJson{
+      R"({"query":"escaped \" \\ / \b \f \n \r \t \u00e9 \u20AC \uD83D\uDE00"})",
+      R"({"query":"ok","nested":{"items":[true,false,null,-1.25e+2,0,2.5,1E-2]}})",
+      R"({ "query" : "ok" , "array" : [] , "object" : {} })",
+  };
+  for (std::size_t Index = 0; Index < LegacyValidJson.size(); ++Index) {
+    Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                        LegacyValidJson[Index], LegacyRequiredFields),
+                    "legacy JSON parser accepts valid nested/escaped input " +
+                        std::to_string(Index));
+  }
+  const std::vector<std::string> LegacyInvalidJson{
+      "",
+      "[]",
+      R"({"query":})",
+      R"({"query":"bad\q"})",
+      R"json({"query":"truncated escape\)json",
+      R"({"query":"\u12"})",
+      R"({"query":"unterminated})",
+      R"({"query":"ok","number":01})",
+      R"({"query":"ok","number":-})",
+      R"({"query":"ok","number":1.})",
+      R"({"query":"ok","number":1e})",
+      R"({"query":"ok","flag":tru})",
+      R"({"query":"ok",})",
+      R"({"query":"ok","query":"duplicate"})",
+      R"({"nested":[1]})",
+      R"({"query":"ok"} trailing)",
+  };
+  std::vector<std::string> LegacyInvalidCases = LegacyInvalidJson;
+  std::string LegacyDeepArray{R"({"query":"ok","nested":)"};
+  LegacyDeepArray.append(40U, '[');
+  LegacyDeepArray.push_back('0');
+  LegacyDeepArray.append(40U, ']');
+  LegacyDeepArray.push_back('}');
+  LegacyInvalidCases.push_back(std::move(LegacyDeepArray));
+  for (std::size_t Index = 0; Index < LegacyInvalidCases.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                        LegacyInvalidCases[Index], LegacyRequiredFields),
+                    "legacy JSON parser rejects malformed input " +
+                        std::to_string(Index));
+  }
+  const std::string LegacyRawControl = "{\"query\":\"bad\ncontrol\"}";
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      LegacyRawControl, LegacyRequiredFields),
+                  "legacy JSON parser rejects unescaped control characters");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      R"({"optional":true})", std::vector<std::string>{}),
+                  "legacy JSON parser allows a valid object with no required fields");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      "{}", std::vector<std::string>{}),
+                  "legacy JSON parser accepts an empty object when no fields are required");
+
+  const std::vector<Providers::JsonValue> WrongTypes{
+      {R"({"query":7})"},
+      {R"({"query":"x","amount":"2"})"},
+      {R"({"query":"x","count":1.0})"},
+      {R"({"query":"x","count":1e0})"},
+      {R"({"query":"x","active":"true"})"},
+      {R"({"query":"x","empty":false})"},
+      {R"({"amount":1,"count":1,"active":true,"empty":null})"},
+  };
+  for (std::size_t Index = 0; Index < WrongTypes.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                        WrongTypes[Index], FullSchema),
+                    "schema argument type/required rejection case " +
+                        std::to_string(Index));
+  }
+
+  const Providers::ToolDefinition NoExtrasSchema = MakeRegistrySchemaTool(
+      R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query"],"additionalProperties":false})");
+  Passed &= Check(Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok"})"},
+                      NoExtrasSchema),
+                  "declared required properties are accepted when extras are disabled");
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok","extra":1})"},
+                      NoExtrasSchema),
+                  "additionalProperties false rejects undeclared fields");
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok","query":"duplicate"})"},
+                      FullSchema),
+                  "duplicate object keys are rejected after JSON key decoding");
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{R"({"query":"ok","extra":{"key":1,"key":2}})"},
+                      FullSchema),
+                  "duplicate keys in nested objects are rejected");
+
+  std::string DeepArray{R"({"query":"ok","extra":)"};
+  DeepArray.append(40U, '[');
+  DeepArray.push_back('0');
+  DeepArray.append(40U, ']');
+  DeepArray.push_back('}');
+
+  const std::vector<Providers::JsonValue> InvalidJson{
+      {""},
+      {R"([])"},
+      {R"({"query":)"},
+      {R"({"query":"bad\q"})"},
+      {R"({"query":"\u0x00"})"},
+      {R"({"query":"\uDC00"})"},
+      {R"({"query":"\uD800"})"},
+      {R"({"query":"\uD800\u0041"})"},
+      {R"({"query":"\u12"})"},
+      {R"({"query":"unterminated})"},
+      {R"({"query":"ok","extra":01})"},
+      {R"({"query":"ok","extra":-})"},
+      {R"({"query":"ok","extra":1.})"},
+      {R"({"query":"ok","extra":1e})"},
+      {R"({"query":"ok","extra":tru})"},
+      {R"({"query":"ok",})"},
+      Providers::JsonValue{DeepArray},
+  };
+  for (std::size_t Index = 0; Index < InvalidJson.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                        InvalidJson[Index], FullSchema),
+                    "malformed JSON parser rejection case " +
+                        std::to_string(Index));
+  }
+  const std::string RawControlCharacter = "{\"query\":\"bad\ncontrol\"}";
+  Passed &= Check(!Core::BusinessActionRegistry::ValidateArguments(
+                      Providers::JsonValue{RawControlCharacter}, FullSchema),
+                  "unescaped JSON control characters are rejected");
+
+  std::vector<std::string> InvalidSchemas{
+      "",
+      "not-json",
+      R"([])",
+      R"({"type":"object","properties":{},"required":[]})",
+      R"({"type":2,"properties":{},"required":[],"additionalProperties":false})",
+      R"({"type":"array","properties":{},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":[],"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":{},"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":[],"additionalProperties":"false"})",
+      R"({"type":"object","properties":{"bad field":{"type":"string"}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"string","format":"email"}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":true}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"array"}},"required":[],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":[2],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"string"}},"required":["bad field"],"additionalProperties":false})",
+      R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query","query"],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":["query"],"additionalProperties":false})",
+      R"({"type":"object","properties":{},"required":[],"additionalProperties":false,"unsupported":true})",
+  };
+  InvalidSchemas.push_back(
+      "{\"type\":\"object\",\"properties\":{\"\":{\"type\":\"string\"}},\"required\":[],\"additionalProperties\":false}");
+  InvalidSchemas.push_back(
+      "{\"type\":\"object\",\"properties\":{\"" +
+      std::string(65U, 'a') +
+      "\":{\"type\":\"string\"}},\"required\":[],\"additionalProperties\":false}");
+  for (std::size_t Index = 0; Index < InvalidSchemas.size(); ++Index) {
+    Passed &= Check(!Core::BusinessActionRegistry::IsValidToolDefinition(
+                        MakeRegistrySchemaTool(InvalidSchemas[Index])),
+                    "unsupported tool schema rejection case " +
+                        std::to_string(Index));
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestBusinessActionAsyncRegistrationEdges() {
+  bool Passed = true;
+  const auto Handler = [](const Core::BusinessActionInvocation&,
+                          std::stop_token)
+      -> Asio::awaitable<Core::BusinessActionExecutionResult> {
+    co_return Core::BusinessActionExecutionResult{
+        Core::BusinessActionExecutionStatus::Succeeded, "ReadOnly"};
+  };
+
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.EffectClass = Core::BusinessActionEffectClass::Unspecified;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           IneligibleEffectClass &&
+                        Registry.GetAsyncDefinitions().empty(),
+                    "unspecified async effects cannot be registered or advertised");
+  }
+  for (const Core::BusinessActionEffectClass Effect : {
+           Core::BusinessActionEffectClass::ExternalWrite,
+           Core::BusinessActionEffectClass::ExternalIo}) {
+    Core::BusinessActionRegistry Registry;
+    const auto Error = Registry.Register(MakeAsyncLookup(Handler, Effect));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           IneligibleEffectClass &&
+                        Registry.GetAsyncDefinitions().empty(),
+                    "side-effecting or external-I/O async actions are rejected before advertisement");
+  }
+  for (const std::string& Name : {
+           std::string{}, std::string(65U, 'A'), std::string{"Lookup-Profile"}}) {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = Name;
+    Definition.ModelTool.Name = Name;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidActionName,
+                    "empty, overlong, and punctuation-bearing action names are rejected");
+  }
+  for (const std::string& Name : {std::string{"FileCatalog"},
+                                 std::string{"OpenBrowser"},
+                                 std::string{"Mcp"}}) {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = Name;
+    Definition.ModelTool.Name = Name;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           ForbiddenActionName,
+                    "file, browser, and MCP action names are denied by exact, prefix, or Pascal-word rules");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.ModelTool.Name = "OtherAction";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidToolDefinition,
+                    "model tool name must match the Core registry name");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.RequiredArgumentFields = {"other"};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidToolDefinition,
+                    "declared required fields must match the canonical schema");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.RequiredCapabilities = {"Chat.Lookup", "Chat.Lookup"};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidSchemaField,
+                    "duplicate capability requirements are rejected");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.RequiredCapabilities = {""};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidSchemaField,
+                    "empty capability requirements are rejected");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.ModelTool.Parameters.JsonText = R"({"type":"object","properties":{},"required":[],"additionalProperties":false,"extra":true})";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidToolDefinition,
+                    "unsupported schema keywords fail registration");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = "ReadFile";
+    Definition.ModelTool.Name = "ReadFile";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           ForbiddenActionName,
+                    "generic file actions are forbidden before schema registration");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.Name = "lookupProfile";
+    Definition.ModelTool.Name = "lookupProfile";
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidActionName,
+                    "non-PascalCase action names fail registration");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Passed &= Check(!Registry.Register(Definition).has_value() &&
+                        Registry.GetAsyncDefinitions().size() == 1U,
+                    "a valid async read-only definition is available for advertisement");
+    const auto Duplicate = Registry.Register(std::move(Definition));
+    Passed &= Check(Duplicate.has_value() &&
+                        Duplicate->Code == Core::BusinessActionRegistrationErrorCode::
+                                               DuplicateAction,
+                    "duplicate action names cannot replace the registered definition");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.AsyncHandler = {};
+    Definition.Handler = {};
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           EmptyHandler,
+                    "definitions without a sync or async handler are rejected");
+  }
+  const auto SyncHandler = [](const Core::BusinessActionInvocation&) {
+    return Core::BusinessActionExecutionResult{
+        Core::BusinessActionExecutionStatus::Succeeded, "SyncReadOnly"};
+  };
+  for (const std::vector<std::string>& RequiredFields : {
+           std::vector<std::string>{"bad field"},
+           std::vector<std::string>{"query", "query"}}) {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.AsyncHandler = {};
+    Definition.Handler = SyncHandler;
+    Definition.RequiredArgumentFields = RequiredFields;
+    const auto Error = Registry.Register(std::move(Definition));
+    Passed &= Check(Error.has_value() &&
+                        Error->Code == Core::BusinessActionRegistrationErrorCode::
+                                           InvalidSchemaField,
+                    "sync-only registrations reject invalid or duplicate required argument fields");
+  }
+  {
+    Core::BusinessActionRegistry Registry;
+    auto Definition = MakeAsyncLookup(Handler);
+    Definition.AsyncHandler = {};
+    Definition.Handler = SyncHandler;
+    Passed &= Check(!Registry.Register(std::move(Definition)).has_value() &&
+                        Registry.GetAsyncDefinitions().empty(),
+                    "sync-only registrations are not included in async model-tool advertisement");
+  }
+  return Passed;
+}
+
 [[nodiscard]] bool TestCoreAuthorizedReadOnlyToolRoundTrip() {
   Fixture TestFixture(FakeScenario::ToolRoundTrip);
   std::uint32_t HandlerCalls = 0;
@@ -2410,6 +2775,8 @@ bool RunAllTests() {
   Passed &= TestDistinctConcurrentMessagesAndIdentifierSafety();
   Passed &= TestChannelAndTerminalValidationFailures();
   Passed &= TestCorePolicyAndReceiptStateCoverage();
+  Passed &= TestBusinessActionSchemaParserEdges();
+  Passed &= TestBusinessActionAsyncRegistrationEdges();
   Passed &= TestCoreAuthorizedReadOnlyToolRoundTrip();
   Passed &= TestReadOnlyToolAuthorizationAndSchemaRejections();
   Passed &= TestToolHandoffTerminalAndUnknownOutcomeRules();
