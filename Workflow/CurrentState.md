@@ -1,10 +1,10 @@
-# 2026-11-01 ED-0144/R7 Memory final validation
+# 2026-11-01 ED-0144/R7 Memory validation closed
 
-- Assignment PR #132 merged to main at 30e5fd335e4758746712aa9953ed5a052e91a311. The post-merge Controller returned AssignmentAccepted (exit 0; log SHA-256 6E9C7B0A474451ED2BF74BAC951D79A39C7A51728A98607EE5BB079B466BEFB9).
-- Validation was bound to merged Memory PR #124 Base d6aa14022d5098378d230a0215aa9461c4a34a76 / Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f; the clean Windows C++20 worktree changed no product source or tests.
-- Configure, both targeted builds, full build, compiler/gcov version checks, coverage helper check, coverage command, and all four CTests passed. ConversationMemory.cpp: 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp: 402/424 (94.81%).
-- Worker04's fixed-evidence review confirmed the build, tests, and coverage, and requested the nine formal P3 CommandExecuted records plus precise preflight newline wording. Evidence PR #133 records the nine uniquely correlated events and the CRLF/LF normalization clarification; fixed-head review and final closeout remain pending.
-- ED-0158 remains the next C++ Memory/Context-to-AsyncAgentRuntime integration task. Product writes remain unauthorized until ED-0144/R7 is formally closed and ED-0158 receives its own accepted assignment.
+- Product PR #124 remains the implementation under validation. Fresh Windows C++20 configure/build completed; all four Memory CTests passed. ConversationMemory.cpp coverage: 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp: 402/424 (94.81%).
+- Validation evidence PR #133 merged to main at 243b8f35457b85988d1f83b22c52b2ecd86f64ee after Worker04 APPROVE at fixed Base 30e5fd335e4758746712aa9953ed5a052e91a311 / Head 58fbb4c1310410e4b1170ed75ed67c6f8507bdd5, Worker06 support PASS, and WindowsAgentSlice run 41256641699 success.
+- ED-0144/R7 is closed as Merged; Worker04 and Worker05 have been released from this task.
+- Workflow closeout PR #134 is open at the fixed branch head; independent review and merge are pending.
+- ED-0158 remains Proposed with no product-write authorization. Its implementation must wait for the separate accepted assignment gate.
 
 # 当前状态
 
