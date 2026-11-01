@@ -8419,6 +8419,11 @@ Tasks:
         ContractVersion: "CoreMemoryRecallAuthorizationContract V1; see ED-0161"
     TaskSpecPullRequestNumber: 135
     TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergedToMainCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    TaskSpecMergePullRequestNumber: 135
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainEventId: 63f7d4a4-a04e-45d2-b562-782fbe6ea89f
 
   - TaskId: ED-0162
     TaskRevision: 1
@@ -8609,13 +8614,18 @@ Tasks:
       FollowUpTaskIds: []
     TaskSpecPullRequestNumber: 135
     TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergedToMainCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    TaskSpecMergePullRequestNumber: 135
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainEventId: c4f40c0a-ad2e-4e56-8ae7-167bc907d742
 
   - TaskId: ED-0161
     TaskRevision: 1
     EpicId: EP-06
     Title: 冻结 Core 到 Memory 的授权 Recall 接口合同
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
     OwnerRole: AgentRuntimeContractOwner
@@ -8628,7 +8638,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-11-01T01:15:14Z"
-    UpdatedAt: "2026-11-01T01:15:14Z"
+    UpdatedAt: "2026-11-01T07:51:24Z"
     ParallelGroup: CoreMemoryRecallAuthorization
     DependsOn: [ED-0109, ED-0113, ED-0160]
     Goal: >-
@@ -8759,6 +8769,25 @@ Tasks:
       TaskReportFile: false
       EventShard: Workflow/Events/CodexRewrite/P3.jsonl
       FollowUpTaskIds: [ED-0158, ED-0162]
+    TaskSpecPullRequestNumber: 135
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergedToMainCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    TaskSpecMergePullRequestNumber: 135
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainEventId: 0690c23e-db5f-4f3b-ae87-025cc43d2d15
+    TaskReadinessValidatedEventId: 14f66def-8465-44d9-8e36-8f25f5516104
+    AssignmentValidationEventId: f4622f42-82db-4e6e-a53d-11710bb09337
+    TaskAssignedEventId: 9371b40c-5215-4df7-b288-2f805fc7a1fd
+    Worker02SlotAssignmentEventId: eb6e6e2b-9c9e-44d4-ba5a-bc955a72f42d
+    AssignedToSlot: Worker02
+    BaselineCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    Branch: Task/ED-0161-CoreMemoryRecallAuthorization
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0161-R1/Worktree
+    AssignmentLedgerBaseCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    AssignmentLedgerBranch: Task/ED-0161-R1AssignmentLedger
+    AssignmentLedgerWorktree: C:/Users/C1373/.codex/worktrees/ed-0158-takeover/EmulativeDialog
+    AssignmentLedgerPullRequestCreatedEventId: 3c5f2722-b7dd-4260-aba3-1a83243970d7
     ChangeRequest:
       ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
       ChangeRequestProposedEventId: 36b364a2-8af8-4041-8119-6f88f94b2ec8
@@ -8814,12 +8843,22 @@ Tasks:
         Fixed-head owner and independent review; verify the three-path WriteSet, module dependency direction, exact
         contract wording, YAML/JSONL parsing, and git diff --check. No C++ behavior or product tests apply.
       Decision:
-        Status: Proposed
+        Status: Accepted
         DecisionOwner: Coordinator
-        DecisionDate: ""
-        Rationale: "Awaiting Worker02 owner approval, Worker04 independent fixed-head review, and Coordinator acceptance."
+        DecisionDate: "2026-11-01"
+        ChangeRequestAcceptedEventId: 7402f5b9-2e2b-48eb-a818-5a7a44c63910
+        OwnerDecision: Approve
+        OwnerAgentId: /root/luna02_ed0148_pr_ready
+        IndependentReviewerDecision: Approve
+        ReviewerAgentId: /root/luna04_ed0144_branch_review
+        Rationale: "Accepted after Worker02 owner readiness and Worker04 fixed-head approval recorded by PR #135; PR #135 merged to main at a819cb8."
         NewTaskId: ED-0161
         NewTaskRevision: 1
         ContractVersion: "CoreMemoryRecallAuthorization V1"
     TaskSpecPullRequestNumber: 135
     TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergedToMainCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    TaskSpecMergePullRequestNumber: 135
+    TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
+    TaskSpecMergeMethod: squash
+    TaskSpecMergedToMainEventId: 0690c23e-db5f-4f3b-ae87-025cc43d2d15

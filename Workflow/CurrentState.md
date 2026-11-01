@@ -1,11 +1,10 @@
-# 2026-11-01 ED-0158 TaskSpec PR #135 open; product implementation pending
+# 2026-11-01 接管 ED-0158：Core 授权 Memory Recall
 
-- Remote `main` is `e7c084d11b7fc70424c5342017af7ed42ef2038c`. PR #134 has merged; PR #133 records final validation for product PR #124. The root checkout remains intentionally untouched because it is dirty and 89 commits behind.
-- ED-0158/R2 was superseded while still Proposed, before assignment or product writes. ED-0158/R3 remains a ten-path Core/Memory implementation proposal. Its review correction adds the existing Core.PolicyAndAction suite and explicit Core object/Asio composition to the standalone Memory build; Memory tests must also exercise CoreChatService::ProcessAsync Recall success and fail-closed paths for Core coverage.
-- ED-0162/R1 remains the sequential AsyncAgentRuntime proposal. Before mapping a candidate into ContextSelector's narrower key, it must compare the complete trusted scope, including IntegrationMode and SenderId; its acceptance path now places AsyncAgentRuntime around its internal ContextSelector and InstructionAssembler calls. Product WriteSets remain disjoint, and the async task reuses R3's callable Memory contract test entry.
-- ED-0161/R1 remains the contract-only prerequisite. CoreAgent V1.1 and AsyncBusinessAction V1 from PR #102 still require P3 activation evidence; the new Recall contract must merge and activate before ED-0158/R3 assignment.
-- `AsyncRuntimeVerticalSlice` remains a standalone Windows C++20 target; ED-0162/R1 keeps its fresh configure/build/CTest and requires at least 80 percent unique executable-line coverage for `AsyncAgentRuntime.cpp`. ED-0158/R3 requires a fresh standalone Memory C++20 build with both in-memory and SQLite Recall suites and the same threshold for each changed production source.
-- Worker04 approved fixed Base/Head `e7c084d..a7e9cf6`; Worker02 and Worker05 confirmed owner readiness for their task slices. TaskSpec PR #135 is open with that reviewed candidate. No product C++ is authorized before its merge; each implementation then requires its own merged assignment ledger and post-merge Controller `AssignmentAccepted`. No product build or test result is claimed.
+- PR #135 已 squash 合并到 `main@a819cb8d4a846f112e2cb0243321ed40fa089ce5`，注册 ED-0158/R3、ED-0161/R1、ED-0162/R1；本 assignment ledger 正在对齐合并记录并办理 ED-0161 派工。
+- ED-0161/R1 是当前前置：ED-0109/R4、ED-0113/R4、ED-0160/R1 均已合并。PR #102 冻结 CoreAgent V1.1；PR #117 提供 CoreActionReceipt 与异步授权回合的实现、Windows 构建/CTest/覆盖率及 Worker04 固定头批准。派工候选将由 Coordinator 在 TaskReadinessValidated 中记录这些 P3 激活依据。
+- ED-0161/R1 只冻结 Core→Memory Recall 合同和两个模块分片。产品写入仍等待 assignment ledger 合并及 post-merge Controller `AssignmentAccepted`。
+- ED-0158/R3 保持十路径 Core/Memory 实现，包含 Core.PolicyAndAction 目标、真实 Core 授权的内存与 SQLite Recall、ProcessAsync 成功和 fail-closed 覆盖。ED-0162/R1 按顺序消费 DTO；其派工再记录 AsyncBusinessAction V1 与 Recall 合同激活证据。
+- P3 EntryGate 已通过。根 checkout 仍保持原样（dirty 且落后）；本工作使用隔离 worktree。当前没有新增产品 C++、产品构建或测试结果。
 
 # 当前状态
 
