@@ -8120,36 +8120,19 @@ Tasks:
         Evidence: "PR #120 merged MemoryContract V2; PR #121 records post-merge activation. Recheck exact task state at assignment."
     Context:
       ReadSet:
-        - AGENTS.md
-        - Workflow/CurrentState.md
-        - Workflow/TaskIndex.yaml
-        - Architecture/ModuleMap.yaml
-        - Architecture/Modules/HostCoreAgent.yaml
-        - Architecture/Modules/MemoryStorage.yaml
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/MemoryContract.md
         - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md
         - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
-        - Architecture/Contracts/AsyncModelProviderContract.md
-        - Architecture/Contracts/AsyncBusinessActionContract.md
         - Source/Core/IdentityPolicy.h
         - Source/Core/CoreChatService.cpp
-        - Source/Core/AgentRuntimePort.h
-        - Source/Memory/ConversationMemory.hpp
-        - Source/Memory/ConversationMemory.cpp
         - Source/Agent/AsyncAgentRuntime.cpp
-      OnDemandSet:
         - Source/Context/ContextSelector.hpp
-        - Source/Context/ContextSelector.cpp
-        - Source/Core/ConversationSessionState.hpp
-        - Source/Core/CoreChatService.h
-        - Source/Providers/Contracts/AsyncModelProviderPort.hpp
         - Source/Agent/InstructionAssembler.hpp
-        - Source/Core/InstructionPolicy.hpp
-        - Source/Agent/AsyncAgentRuntime.hpp
         - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp
         - Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt
         - Tests/Contract/Memory/ConversationMemoryTests.cpp
+      OnDemandSet: []
       ForbiddenSet:
         - Source/Providers/OpenAIResponses/
         - Source/Providers/OpenAIChatCompletions/
@@ -8158,13 +8141,8 @@ Tasks:
         - Source/Channels/WeChat/
         - CMakeLists.txt
         - CMake/
-      MaxReferenceFiles: 18
-      ExpansionReasonRequired: true
-      ExpansionReason: >-
-        WorkflowController assembles the task ReadSet and does not load OnDemandSet. Add only the six existing
-        implementation files needed to trace trusted identity/policy scope, Core grant issuance and runtime handoff,
-        the current Memory Recall API/behavior, and the AsyncAgentRuntime consumer. Keep the existing contract,
-        workflow, and module references unchanged; all other implementation and test files remain on-demand.
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: false
     WriteSet:
       - Source/Core/AgentContextAssembler.hpp
       - Source/Core/AgentContextAssembler.cpp
@@ -8406,15 +8384,10 @@ Tasks:
     Context:
       ModuleId: Core
       ReadSet:
-        - AGENTS.md
-        - Workflow/CurrentState.md
-        - Workflow/TaskIndex.yaml
-        - Workflow/AgentExecutionStandard.md
-        - Workflow/TaskLifecycle.md
-        - Workflow/Plans/P3.yaml#TaskId=ED-0158&TaskRevision=2
         - Architecture/ModuleMap.yaml
         - Architecture/Modules/HostCoreAgent.yaml
         - Architecture/Modules/MemoryStorage.yaml
+        - Workflow/Plans/P3.yaml#TaskId=ED-0158&TaskRevision=2
         - Architecture/Contracts/CoreAgentContract.md
         - Architecture/Contracts/MemoryContract.md
         - Architecture/Contracts/AsyncAgentRuntimeContractV3.md
@@ -8423,9 +8396,7 @@ Tasks:
         - Source/Core/CoreChatService.cpp
         - Source/Memory/ConversationMemory.hpp
         - Source/Memory/ConversationMemory.cpp
-      OnDemandSet:
-        - Architecture/Contracts/AsyncModelProviderContract.md
-        - Architecture/Contracts/AsyncBusinessActionContract.md
+      OnDemandSet: []
       ForbiddenSet:
         - Tests/
         - CMakeLists.txt
@@ -8436,14 +8407,8 @@ Tasks:
         TaskReferencesTargetPercent: 25
         ImplementationContextReserveMinimumPercent: 50
         MeasurementMode: EstimateUntilTelemetryExists
-      MaxReferenceFiles: 17
-      ExpansionReasonRequired: true
-      ExpansionReason: >-
-        WorkflowController assembles the task ReadSet and does not load OnDemandSet. Add only the five existing
-        Core and Memory source files needed to establish the trusted identity/scope input, current issuance/handoff
-        path, and existing Recall API and SessionScopeVolatile behavior. Preserve the mandatory workflow, module,
-        and versioned-contract references; the remaining optional source and provider/action contract references
-        stay on-demand.
+      MaxReferenceFiles: 12
+      ExpansionReasonRequired: false
     WriteSet:
       - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md
       - Architecture/Modules/HostCoreAgent.yaml
