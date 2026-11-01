@@ -8653,7 +8653,7 @@ Tasks:
       - 修改 CoreAgentContract、MemoryContract、AsyncAgentRuntimeContract 或 AsyncModelProviderContract
       - 接入真实 QQ、任何 WeChat、credentials、live provider request 或外部副作用
     ContractVersion:
-      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged at de7376a97f8e645f946c77056439f90618c31448; P3 activation pending; header remains Frozen candidate)"
+      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged at de7376a97f8e645f946c77056439f90618c31448; TaskReadinessValidated records activation evidence for the ED-0161 assignment gate; header remains Frozen candidate)"
       - "Architecture/Contracts/MemoryContract.md V1 (header remains Frozen candidate) + MemoryRecord Content V2 addendum (PR #120 merged 30e33b842f7f2ee578a09c383232263e2ec62a64; PR #121 activation recorded at 38feb8e14444557102dceee36c341ad4cd1f3ff9)"
       - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed output)
     ModuleIds: [Core, Memory, AgentRuntime, ContextSelector]
@@ -8786,8 +8786,6 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0161-R1/Worktree
     AssignmentLedgerBaseCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
     AssignmentLedgerBranch: Task/ED-0161-R1AssignmentLedger
-    AssignmentLedgerWorktree: C:/Users/C1373/.codex/worktrees/ed-0158-takeover/EmulativeDialog
-    AssignmentLedgerPullRequestCreatedEventId: 3c5f2722-b7dd-4260-aba3-1a83243970d7
     ChangeRequest:
       ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
       ChangeRequestProposedEventId: 36b364a2-8af8-4041-8119-6f88f94b2ec8
