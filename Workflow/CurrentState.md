@@ -1,10 +1,11 @@
-# 2026-11-01 ED-0144/R7 Memory validation closed
+# 2026-11-01 ED-0158 TaskSpec PR #135 open; product implementation pending
 
-- Product PR #124 remains the implementation under validation. Fresh Windows C++20 configure/build completed; all four Memory CTests passed. ConversationMemory.cpp coverage: 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp: 402/424 (94.81%).
-- Validation evidence PR #133 merged to main at 243b8f35457b85988d1f83b22c52b2ecd86f64ee after Worker04 APPROVE at fixed Base 30e5fd335e4758746712aa9953ed5a052e91a311 / Head 58fbb4c1310410e4b1170ed75ed67c6f8507bdd5, Worker06 support PASS, and WindowsAgentSlice run 41256641699 success.
-- ED-0144/R7 is closed as Merged; Worker04 and Worker05 have been released from this task.
-- Workflow closeout PR #134 is open at the fixed branch head; independent review and merge are pending.
-- ED-0158 remains Proposed with no product-write authorization. Its implementation must wait for the separate accepted assignment gate.
+- Remote `main` is `e7c084d11b7fc70424c5342017af7ed42ef2038c`. PR #134 has merged; PR #133 records final validation for product PR #124. The root checkout remains intentionally untouched because it is dirty and 89 commits behind.
+- ED-0158/R2 was superseded while still Proposed, before assignment or product writes. ED-0158/R3 remains a ten-path Core/Memory implementation proposal. Its review correction adds the existing Core.PolicyAndAction suite and explicit Core object/Asio composition to the standalone Memory build; Memory tests must also exercise CoreChatService::ProcessAsync Recall success and fail-closed paths for Core coverage.
+- ED-0162/R1 remains the sequential AsyncAgentRuntime proposal. Before mapping a candidate into ContextSelector's narrower key, it must compare the complete trusted scope, including IntegrationMode and SenderId; its acceptance path now places AsyncAgentRuntime around its internal ContextSelector and InstructionAssembler calls. Product WriteSets remain disjoint, and the async task reuses R3's callable Memory contract test entry.
+- ED-0161/R1 remains the contract-only prerequisite. CoreAgent V1.1 and AsyncBusinessAction V1 from PR #102 still require P3 activation evidence; the new Recall contract must merge and activate before ED-0158/R3 assignment.
+- `AsyncRuntimeVerticalSlice` remains a standalone Windows C++20 target; ED-0162/R1 keeps its fresh configure/build/CTest and requires at least 80 percent unique executable-line coverage for `AsyncAgentRuntime.cpp`. ED-0158/R3 requires a fresh standalone Memory C++20 build with both in-memory and SQLite Recall suites and the same threshold for each changed production source.
+- Worker04 approved fixed Base/Head `e7c084d..a7e9cf6`; Worker02 and Worker05 confirmed owner readiness for their task slices. TaskSpec PR #135 is open with that reviewed candidate. No product C++ is authorized before its merge; each implementation then requires its own merged assignment ledger and post-merge Controller `AssignmentAccepted`. No product build or test result is claimed.
 
 # 当前状态
 
@@ -18,7 +19,7 @@
 ## 2026-10-31 ED-0144/R4 Memory C++ implementation
 
 - PR #122 merged the reviewed ED-0144/R4 TaskSpec to main@1816c64. Worker05 and Worker04 approved the same fixed Base/Head; Worker06's Windows support check passed.
-- ED-0160/R1 is closed as merged: PR #120 added MemoryContract V2 at 30e33b8 and PR #121 recorded its post-merge activation evidence at 38feb8e. Worker05 is released for the successor implementation.
+- ED-0160/R1 is closed as merged: PR #120 added strict UTF-8/NUL rules for durable MemoryRecord.Content to the existing MemoryContract V1; PR #121 recorded activation of that Content V2 addendum at 38feb8e. Worker05 is released for the successor implementation.
 - This assignment candidate assigns Worker05 to `Task/ED-0144-MemoryContentUtf8Validation` and Worker04 as independent Reviewer. Its implementation baseline is main@1816c64; the product WriteSet remains the four frozen Memory Core/SQLite source and test files.
 - Product C++ edits begin only after the assignment PR merges and the main-worktree WorkflowController check returns `AssignmentAccepted`; the next action is the four-file implementation and Windows coverage run.
 
