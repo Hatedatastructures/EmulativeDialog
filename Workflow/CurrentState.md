@@ -1,10 +1,11 @@
-# 2026-11-01 ED-0158/R2 Memory/Context integration proposed
+# 2026-11-01 ED-0158/R3 Core-Memory and ED-0162/R1 AsyncRuntime split proposed
 
 - Remote `main` is `e7c084d11b7fc70424c5342017af7ed42ef2038c`. PR #134 has merged; PR #133 records final validation for product PR #124. The root checkout remains intentionally untouched because it is dirty and 89 commits behind.
-- ED-0158/R2 is proposed with its existing 11-path product WriteSet for the Core → Memory → ContextSelector/InstructionAssembler → AsyncAgentRuntime slice. It has no product-write authorization.
-- ED-0161/R1 is proposed as the separate Core-to-Memory Recall contract and module-shard correction. PR #102 CoreAgent V1.1 and AsyncBusinessAction V1 headers still say Frozen candidate; the reviewed assignment ledger must record their P3 activation. ED-0158/R2 also requires activation evidence for the new Recall contract before assignment.
-- `AsyncRuntimeVerticalSlice` remains a standalone Windows C++20 target; the root preset does not build it. R2 therefore keeps a fresh isolated configure/build/CTest and requires at least 80 percent unique executable-line coverage for each changed production source.
-- Owner and independent fixed-head review plus the TaskSpec PR are the remaining spec gates. After the contract task is assigned and its contract PR merges, the ED-0158 assignment ledger must record activation evidence; post-merge Controller AssignmentAccepted is still required before any product C++ write.
+- ED-0158/R2 was superseded while still Proposed, before assignment or product writes. ED-0158/R3 now covers the Core-issued MemoryReadGrant, Core-owned Recall port/DTO, Memory implementation, and Core-authorized in-memory/SQLite Recall tests in a ten-path WriteSet and one standalone Memory build.
+- ED-0162/R1 is the sequential follow-up: it consumes R3's DTO in AsyncAgentRuntime, ContextSelector, and InstructionAssembler, then verifies the FakeProvider/Mock Channel slice. The implementation WriteSets are disjoint; the async task reuses R3's callable Memory contract test entry.
+- ED-0161/R1 remains the contract-only prerequisite. CoreAgent V1.1 and AsyncBusinessAction V1 from PR #102 still require P3 activation evidence; the new Recall contract must merge and activate before ED-0158/R3 assignment.
+- `AsyncRuntimeVerticalSlice` remains a standalone Windows C++20 target; ED-0162/R1 keeps its fresh configure/build/CTest and requires at least 80 percent unique executable-line coverage for `AsyncAgentRuntime.cpp`. ED-0158/R3 requires a fresh standalone Memory C++20 build with both in-memory and SQLite Recall suites and the same threshold for each changed production source.
+- No product C++ is authorized yet. The immediate gate is owner approval plus independent fixed-head review and merge of these TaskSpecs; each implementation then requires its own merged assignment ledger and post-merge Controller `AssignmentAccepted` before source edits.
 
 # 当前状态
 
