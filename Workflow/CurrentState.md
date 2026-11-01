@@ -1,10 +1,10 @@
-# 2026-11-01 ED-0158/R2 Memory/Context implementation gate proposed
+# 2026-11-01 ED-0158/R2 Memory/Context integration proposed
 
 - Remote `main` is `e7c084d11b7fc70424c5342017af7ed42ef2038c`. PR #134 has merged; PR #133 records final validation for product PR #124. The root checkout remains intentionally untouched because it is dirty and 89 commits behind.
-- ED-0158/R2 is proposed with an 11-path product WriteSet for the real Core → Memory → ContextSelector/InstructionAssembler → AsyncAgentRuntime behavior slice. It has no product-write authorization yet.
-- ED-0161/R1 is proposed as a separate versioned Core-to-Memory Recall contract and module-shard correction. Worker02 is the contract owner; Worker04 is the independent reviewer. ED-0158/R2 depends on ED-0161.
+- ED-0158/R2 is proposed with its existing 11-path product WriteSet for the Core → Memory → ContextSelector/InstructionAssembler → AsyncAgentRuntime slice. It has no product-write authorization.
+- ED-0161/R1 is proposed as the separate Core-to-Memory Recall contract and module-shard correction. PR #102 CoreAgent V1.1 and AsyncBusinessAction V1 headers still say Frozen candidate; the reviewed assignment ledger must record their P3 activation. ED-0158/R2 also requires activation evidence for the new Recall contract before assignment.
 - `AsyncRuntimeVerticalSlice` remains a standalone Windows C++20 target; the root preset does not build it. R2 therefore keeps a fresh isolated configure/build/CTest and requires at least 80 percent unique executable-line coverage for each changed production source.
-- The fixed-head task-spec review and PR are the next gates. After both task specs merge, a separate assignment ledger and post-merge Controller `AssignmentAccepted` are required before Worker02 writes the contract or Worker05 writes product C++.
+- Owner and independent fixed-head review plus the TaskSpec PR are the remaining spec gates. After the contract task is assigned and its contract PR merges, the ED-0158 assignment ledger must record activation evidence; post-merge Controller AssignmentAccepted is still required before any product C++ write.
 
 # 当前状态
 

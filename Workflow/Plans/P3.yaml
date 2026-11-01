@@ -8104,18 +8104,14 @@ Tasks:
     ModuleIds: [Core, AgentRuntime, ContextSelector, Memory]
     CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]
     ContractVersion:
-      - Architecture/Contracts/CoreAgentContract.md V1.1
+      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged; P3 activation pending; current header remains Frozen candidate)"
       - Architecture/Contracts/MemoryContract.md MemoryRecord Content V2
       - Architecture/Contracts/ModelProviderContract.md V1.2
       - Architecture/Contracts/AsyncAgentRuntimeContractV3.md V3 Frozen
       - Architecture/Contracts/AsyncModelProviderContract.md V1 Frozen
-      - Architecture/Contracts/AsyncBusinessActionContract.md V1
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 Frozen by ED-0161
+      - "Architecture/Contracts/AsyncBusinessActionContract.md V1 (PR #102 merged; P3 activation pending; current header remains Frozen candidate)"
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed by ED-0161; activation evidence required after merge)
     FrozenContractEvidence:
-      CoreAgentContractV1_1:
-        PullRequest: 102
-        MergeCommit: de7376a97f8e645f946c77056439f90618c31448
-        Evidence: "PR #102 states it freezes CoreAgentContract V1.1 with the independently reviewed CoreActionReceipt change; recheck the current P3 freeze record before assignment."
       MemoryContractV2:
         PullRequest: 120
         MergeCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
@@ -8196,7 +8192,7 @@ Tasks:
       RequiredTargets: [AsyncRuntimeVerticalSliceTests]
       RequiredCTestTests: [Agent.AsyncRuntimeVerticalSlice]
       ConfigureCommand: >-
-        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R1/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice
+        I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R2/Worktree/Tests/Contract/Agent/AsyncRuntimeVerticalSlice
         -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R2/Async
         -G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=C:/msys64/ucrt64/bin/mingw32-make.exe
         -DCMAKE_CXX_COMPILER=C:/msys64/ucrt64/bin/g++.exe -DCMAKE_CXX_STANDARD=20
@@ -8232,6 +8228,10 @@ Tasks:
         EvidenceRule: "Run the SHA-pinned PowerShell coverage command after CTest; require one fresh gcno/gcda pair and one exact JSON files[].file record per production source, reject gcov warnings/errors, count unique executable source lines using integer threshold comparison, and record clean source HEAD, numerator/denominator, compiler version, gcov version, CTest pass, report path, and command SHA."
       StaticChecks:
         - "After a separate assignment ledger merges and WorkflowController returns AssignmentAccepted, preflight binds the exact implementation branch, worktree and current-main baseline recorded by that ledger; the worktree is clean before implementation."
+        - >-
+          The implementation assignment ledger must cite P3 activation evidence for CoreAgentContract V1.1,
+          AsyncBusinessActionContract V1, and CoreMemoryRecallAuthorizationContract V1. WorkflowController does not
+          validate ContractVersion state; the Coordinator must verify these references before assignment.
         - "git diff --check assigned BaselineCommit..HeadCommit exits 0 and changed paths exactly equal the eleven frozen WriteSet paths."
         - "Core scope and Memory recall tests prove unauthorized candidate content is absent before provider invocation."
         - "The fresh standalone Windows C++20 target compiles AsyncRuntimeVerticalSliceTests; Agent.AsyncRuntimeVerticalSlice passes and runs the embedded ConversationMemory contract suite without a test-only MemoryReadGrant constructor."
@@ -8366,7 +8366,8 @@ Tasks:
       - 修改 CoreAgentContract、MemoryContract、AsyncAgentRuntimeContract 或 AsyncModelProviderContract
       - 接入真实 QQ、任何 WeChat、credentials、live provider request 或外部副作用
     ContractVersion:
-      - Architecture/Contracts/CoreAgentContract.md V1.1 (frozen by PR #102, main de7376a97f8e645f946c77056439f90618c31448)
+      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged at de7376a97f8e645f946c77056439f90618c31448; P3 activation pending; header remains Frozen candidate)"
+      - "Architecture/Contracts/AsyncBusinessActionContract.md V1 (PR #102 merged; P3 activation pending; current header remains Frozen candidate)"
       - Architecture/Contracts/MemoryContract.md V2 (merged by PR #120, activated by PR #121 at main 38feb8e14444557102dceee36c341ad4cd1f3ff9)
       - Architecture/Contracts/AsyncAgentRuntimeContractV3.md V3 (frozen by PR #115 at main a1b1deeb352795346ebc4ba269049e306c8a7f14)
       - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed output)
@@ -8462,6 +8463,11 @@ Tasks:
       RequiredCTestTests: []
       StaticChecks:
         - "git diff --check assigned BaselineCommit..HeadCommit exits 0 and changed paths equal the three frozen contract/module-shard WriteSet paths."
+        - >-
+          Keep ED-0161 Proposed and unassigned until a reviewed assignment ledger records P3 activation evidence
+          for both PR #102 contract artifacts, CoreAgent V1.1 and AsyncBusinessAction V1. Their headers still say
+          Frozen candidate; WorkflowController.ValidateAssignment checks assignment and dependencies but not
+          ContractVersion state, so the Coordinator must cite activation evidence in TaskReadinessValidated.
         - "The new contract states only Frozen after its implementation PR merges and its separate activation evidence is recorded."
         - "Fixed-head independent review verifies no C++ source, test, CMake, persistent-data, provider-wire, or channel-wire behavior is changed."
       Coverage:
@@ -8480,5 +8486,65 @@ Tasks:
       TaskReportFile: false
       EventShard: Workflow/Events/CodexRewrite/P3.jsonl
       FollowUpTaskIds: [ED-0158]
+    ChangeRequest:
+      ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
+      ChangeRequestProposedEventId: 36b364a2-8af8-4041-8119-6f88f94b2ec8
+      RelatedTaskId: ED-0158
+      RequesterRole: Coordinator
+      Date: "2026-11-01"
+      RuleIdContractVersion: "SEC-001; CoreAgentContract V1.1; MemoryContract V2"
+      Severity: MUST
+      TriggerEvidence: >-
+        ED-0158/R2 requires an independently versioned Core-owned Recall boundary before implementation. The current
+        ConversationMemory API accepts caller-constructible AuthorizedMemoryContext with IdentityVerified and returns
+        ContextSelector::ContextCandidate directly. CoreMemoryRecallAuthorizationContractV1.md does not yet exist on
+        main. CoreAgent V1.1 and AsyncBusinessAction V1 were merged by PR #102 but their headers still say Frozen candidate;
+        MemoryContract V2 already has activation evidence in PR #121.
+      OriginalGoal: >-
+        Implement the authorized Core to Memory Recall boundary needed by ED-0158/R2 without changing established
+        memory consent, scope, TTL, persistence, deletion, or provider/channel behavior.
+      OriginalWriteSet: >-
+        ED-0158/R2 has eleven product/test paths. This contract task is limited to the new contract and two module
+        shards so the public boundary can be frozen and reviewed before those product writes are assigned.
+      OriginalAcceptance: >-
+        ED-0158/R2 AC-1 through AC-5 require a Core-issued single-turn grant, neutral Recall DTOs, pure ContextSelector
+        inputs, fail-closed behavior, and preserved async AgentRuntime behavior.
+      ExistingWorkAndEvidence: >-
+        PR #128 registered ED-0158/R1 only and did not authorize product writes. PR #102 merged CoreAgent V1.1 and
+        AsyncBusinessAction V1, but both current headers remain Frozen candidate pending P3 activation evidence.
+        PR #120 introduced MemoryContract V2 and PR #121 recorded its activation.
+      ProposedChange: >-
+        Freeze CoreMemoryRecallAuthorizationContract V1 defining the Core-issued move-only one-shot grant, the
+        Core-owned MemoryRecallPort, neutral candidate DTOs, exact trusted scope/policy/turn binding, and failure
+        behavior. Update Memory and ContextSelector module dependency declarations; keep ContextSelector pure and
+        Memory independent of Context types.
+      Alternatives:
+        - Keep the caller-settable IdentityVerified flag as Recall authority; rejected because callers can forge it.
+        - Define the shared API only inside ED-0158 product implementation; rejected because dependent code would
+          be written before the public contract is independently versioned and reviewed.
+        - Put ContextSelector behind Memory; rejected because it reverses module ownership and couples Memory to UI
+          selection types.
+      AffectedApiDataModules: >-
+        Core owns grant issuance, the Recall port, and neutral DTOs; Memory implements Recall and enforces existing
+        MemoryContract rules; AgentRuntime maps candidates to pure ContextSelector inputs.
+      ImpactPaths:
+        - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md
+        - Architecture/Modules/HostCoreAgent.yaml
+        - Architecture/Modules/MemoryStorage.yaml
+      SecurityPrivacyCompatibilityRollback: >-
+        The contract tightens authorization and does not change durable formats or data. The grant contains no
+        serialized or diagnostic representation. Rollback requires a reviewed contract/task revision before product
+        assignment; no stored-data migration is involved.
+      TargetedValidation: >-
+        Fixed-head owner and independent review; verify the three-path WriteSet, module dependency direction, exact
+        contract wording, YAML/JSONL parsing, and git diff --check. No C++ behavior or product tests apply.
+      Decision:
+        Status: Proposed
+        DecisionOwner: Coordinator
+        DecisionDate: ""
+        Rationale: "Awaiting Worker02 owner approval, Worker04 independent fixed-head review, and Coordinator acceptance."
+        NewTaskId: ED-0161
+        NewTaskRevision: 1
+        ContractVersion: "CoreMemoryRecallAuthorization V1"
     TaskSpecPullRequestNumber: null
     TaskSpecPullRequestUrl: ""
