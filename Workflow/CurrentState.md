@@ -1,10 +1,10 @@
-# 2026-11-01 ED-0144/R7 Memory validation closed
+# 2026-11-01 ED-0158/R2 Memory/Context implementation gate proposed
 
-- Product PR #124 remains the implementation under validation. Fresh Windows C++20 configure/build completed; all four Memory CTests passed. ConversationMemory.cpp coverage: 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp: 402/424 (94.81%).
-- Validation evidence PR #133 merged to main at 243b8f35457b85988d1f83b22c52b2ecd86f64ee after Worker04 APPROVE at fixed Base 30e5fd335e4758746712aa9953ed5a052e91a311 / Head 58fbb4c1310410e4b1170ed75ed67c6f8507bdd5, Worker06 support PASS, and WindowsAgentSlice run 41256641699 success.
-- ED-0144/R7 is closed as Merged; Worker04 and Worker05 have been released from this task.
-- Workflow closeout PR #134 is open at the fixed branch head; independent review and merge are pending.
-- ED-0158 remains Proposed with no product-write authorization. Its implementation must wait for the separate accepted assignment gate.
+- Remote `main` is `e7c084d11b7fc70424c5342017af7ed42ef2038c`. PR #134 has merged; PR #133 records final validation for product PR #124. The root checkout remains intentionally untouched because it is dirty and 89 commits behind.
+- ED-0158/R2 is proposed with an 11-path product WriteSet for the real Core → Memory → ContextSelector/InstructionAssembler → AsyncAgentRuntime behavior slice. It has no product-write authorization yet.
+- ED-0161/R1 is proposed as a separate versioned Core-to-Memory Recall contract and module-shard correction. Worker02 is the contract owner; Worker04 is the independent reviewer. ED-0158/R2 depends on ED-0161.
+- `AsyncRuntimeVerticalSlice` remains a standalone Windows C++20 target; the root preset does not build it. R2 therefore keeps a fresh isolated configure/build/CTest and requires at least 80 percent unique executable-line coverage for each changed production source.
+- The fixed-head task-spec review and PR are the next gates. After both task specs merge, a separate assignment ledger and post-merge Controller `AssignmentAccepted` are required before Worker02 writes the contract or Worker05 writes product C++.
 
 # 当前状态
 
