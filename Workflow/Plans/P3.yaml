@@ -8099,7 +8099,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-10-31T19:09:42.865Z"
-    UpdatedAt: "2026-11-01T03:11:57Z"
+    UpdatedAt: "2026-11-01T07:17:01Z"
     DependsOn: [ED-0102, ED-0109, ED-0113, ED-0144, ED-0160, ED-0161]
     ModuleIds: [Core, Memory]
     CapabilityIds: [ScopedChatMemory]
@@ -8127,7 +8127,7 @@ Tasks:
         - Tests/Contract/Memory/ConversationMemoryTests.cpp
         - Tests/Contract/Memory/SqliteMemoryStorageAdapterTests.cpp
         - Tests/Contract/Memory/CMakeLists.txt
-        - CMake/BoostAsioDependency.cmake
+        - Tests/Contract/Core/CorePolicyAndActionContractTests.cpp
       OnDemandSet: []
       ForbiddenSet:
         - Source/Providers/OpenAIResponses/
@@ -8204,8 +8204,11 @@ Tasks:
           Each changed production .cpp has at least 80 percent unique executable-line coverage using fresh GCC/gcov
           16.1.0 JSON v2 reports bound to the final Head.
         Evidence: >-
-          Per-source reports record covered/total counts for CoreChatService.cpp and ConversationMemory.cpp; no stale
-          or ambiguous gcda/gcno pairs.
+          Core.PolicyAndAction preserves broad existing synchronous Core coverage, while ConversationMemoryTests
+          exercises the newly authorized asynchronous Recall success and fail-closed paths through
+          CoreChatService::ProcessAsync. ConversationMemoryTests, SqliteMemoryStorageAdapterTests, and
+          Core.PolicyAndAction all use the same CoreChatService object. Per-source reports record covered/total
+          counts for CoreChatService.cpp and ConversationMemory.cpp; no stale or ambiguous gcda/gcno pairs.
     OriginalAcceptanceCoverage:
       - {OriginalAcceptanceId: AC-1, ImplementedBy: [ED-0158/R3]}
       - {OriginalAcceptanceId: AC-2, ImplementedBy: [ED-0158/R3, ED-0162/R1]}
@@ -8222,8 +8225,25 @@ Tasks:
       MemoryBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Memory
       BuildDirectoryAbsentBeforeConfigure: true
       DependencyDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
-      RequiredTargets: [CoreMemoryRecallTestSupport, ConversationMemoryObject, ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
-      RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
+      RequiredTargets: [CoreMemoryRecallTestSupport, ConversationMemoryObject, ConversationMemoryTests, SqliteMemoryStorageAdapterTests, CorePolicyAndActionContractTests]
+      RequiredCTestTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests, Core.PolicyAndAction]
+      StandaloneComposition:
+        CMakeDependency:
+          Include: CMake/BoostAsioDependency.cmake
+          LinkTarget: EmulativeDialogBoostAsio
+          VerificationTarget: EmulativeDialogBoostAsioVerify
+        CoreMemoryRecallTestSupport:
+          Kind: OBJECT
+          Sources: [Source/Core/CoreChatService.cpp, Source/Core/IdentityPolicy.cpp, Source/Core/OperationRecord.cpp, Source/Core/BusinessActionRegistry.cpp, Source/Agent/OutputBudgetController.cpp]
+          LinkTargets: [EmulativeDialogBoostAsio]
+          Dependencies: [EmulativeDialogBoostAsioVerify]
+        CorePolicyAndActionContractTests:
+          Source: Tests/Contract/Core/CorePolicyAndActionContractTests.cpp
+          LinkTargets: [CoreMemoryRecallTestSupport]
+        MemorySuites:
+          InMemory: [ConversationMemoryObject, CoreMemoryRecallTestSupport]
+          SQLite: [ConversationMemoryObject, CoreMemoryRecallTestSupport, EmulativeDialogSQLite, Source/Memory/SqliteMemoryStorageAdapter.cpp, Source/Storage/SqliteStore.cpp]
+        CoverageReuse: "All three CTests link the same CoreMemoryRecallTestSupport object so CoreChatService.cpp has one gcno/gcda identity."
       MemoryConfigureCommand: >-
         I:/cmake/bin/cmake.exe -S H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Worktree/Tests/Contract/Memory
         -B H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Memory
@@ -8236,8 +8256,8 @@ Tasks:
         -DEMULATIVE_DIALOG_OFFLINE=ON
         -DGCOV_EXECUTABLE=C:/msys64/ucrt64/bin/gcov.exe
         -DBUILD_TESTING=ON
-      MemoryBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Memory --target CoreMemoryRecallTestSupport ConversationMemoryObject ConversationMemoryTests SqliteMemoryStorageAdapterTests --parallel 4"
-      MemoryCTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Memory --output-on-failure --no-tests=error -R ^(ConversationMemoryTests|SqliteMemoryStorageAdapterTests)$"
+      MemoryBuildCommand: "I:/cmake/bin/cmake.exe --build H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Memory --target CoreMemoryRecallTestSupport ConversationMemoryObject ConversationMemoryTests SqliteMemoryStorageAdapterTests CorePolicyAndActionContractTests --parallel 4"
+      MemoryCTestCommand: "I:/cmake/bin/ctest.exe --test-dir H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Memory --output-on-failure --no-tests=error -R \"^(ConversationMemoryTests|SqliteMemoryStorageAdapterTests|Core\\.PolicyAndAction)$\""
       ToolchainVersionCommands:
         Gxx: "C:/msys64/ucrt64/bin/g++.exe --version"
         Gcov: "C:/msys64/ucrt64/bin/gcov.exe --version"
@@ -8249,7 +8269,7 @@ Tasks:
         Command: "For each production source, invoke gcov.exe --json-format --branch-counts -o <exact .gcno path> <source path> from the task ReportDirectory; record the helper digest in the assignment ledger if a helper is used."
         OutputLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Logs/CoverageCommandExecution.log
         RawGcovLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Logs/GcovOutput.log
-        RunAfter: ConversationMemoryTests and SqliteMemoryStorageAdapterTests CTests pass
+        RunAfter: ConversationMemoryTests, SqliteMemoryStorageAdapterTests, and Core.PolicyAndAction CTests pass
         ProductionSources:
           - Source/Core/CoreChatService.cpp
           - Source/Memory/ConversationMemory.cpp
@@ -8264,7 +8284,7 @@ Tasks:
           MemoryRecord Content V2 addendum to MemoryContract V1. WorkflowController does not validate ContractVersion state; the Coordinator verifies these references before assignment.
         - "git diff --check assigned BaselineCommit..HeadCommit exits 0 and changed paths exactly equal the ten frozen WriteSet paths."
         - "ConversationMemoryTests proves the Core-issued grant and Memory boundary; SqliteMemoryStorageAdapterTests proves persistent Recall behavior through the same Core authorization path; failures make zero Runtime calls."
-        - "A fresh standalone Memory Windows C++20 build compiles the four listed targets and both listed CTests pass against the same final source Head."
+        - "A fresh standalone Memory Windows C++20 build includes CMake/BoostAsioDependency.cmake, links the pinned EmulativeDialogBoostAsio target, compiles all five listed targets, and all three listed CTests pass against the same final source Head."
         - "Coverage reports bind to the final implementation PR Head and each changed production source meets the 80 percent threshold."
       LiveSideEffects: Forbidden
       RequiresCredentials: false
@@ -8419,7 +8439,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-11-01T03:23:17Z"
-    UpdatedAt: "2026-11-01T03:23:17Z"
+    UpdatedAt: "2026-11-01T07:17:01Z"
     DependsOn: [ED-0102, ED-0103, ED-0109, ED-0115, ED-0150, ED-0157, ED-0158, ED-0161]
     ModuleIds: [AgentRuntime, ContextSelector]
     CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]
@@ -8478,12 +8498,15 @@ Tasks:
     Acceptance:
       - AcceptanceId: AC-1
         Description: >-
-          AsyncAgentRuntime maps only Core-authorized MemoryRecallCandidate fields into ContextSelector input, preserves
-          each candidate's trusted scope and selection metadata, and enforces the frozen scope and token/byte budgets.
-          It never serializes or exposes MemoryReadGrant, consent identifiers, proposal identifiers, or policy handles.
+          Before projecting any Core-authorized MemoryRecallCandidate into ContextSelector's narrower scope key,
+          AsyncAgentRuntime compares its complete trusted scope with AuthorizedTurnContext::Scope: PrincipalId,
+          ChannelId, AccountId, IntegrationMode, ConversationId, ConversationKind, and SenderId. It then maps only
+          contract-approved DTO fields, preserves selection metadata, and enforces the frozen scope and token/byte
+          budgets. It never serializes or exposes MemoryReadGrant, consent identifiers, proposal identifiers, or policy handles.
         Evidence: >-
-          Captured ContextSelector requests contain only allowed DTO fields and exact scope. Budget-boundary, empty,
-          cross-scope, and malformed candidate cases are asserted.
+          Captured ContextSelector requests contain only allowed DTO fields after full-scope equality succeeds.
+          Tests reject mismatches for every trusted scope field, including IntegrationMode and SenderId which are not
+          represented in ConversationScopeKey, and cover budget-boundary, empty, cross-scope, and malformed candidates.
       - AcceptanceId: AC-2
         Description: >-
           InstructionAssembler receives the selected bundle while system/developer precedence and required AI
@@ -8494,8 +8517,9 @@ Tasks:
           pass in the actual AsyncRuntimeVerticalSlice executable.
       - AcceptanceId: AC-3
         Description: >-
-          The actual path completes trusted Core identity/policy checks → MemoryRecallPort → ContextSelector →
-          InstructionAssembler → AsyncAgentRuntime → FakeProvider → Mock Channel receipt.
+          The actual path completes trusted Core identity/policy checks → MemoryRecallPort → AsyncAgentRuntime
+          (which internally runs ContextSelector → InstructionAssembler) → FakeProvider/authorized business-action
+          loop → Core turn completion and Mock Channel receipt.
         Evidence: >-
           Agent.AsyncRuntimeVerticalSlice passes with captured provider request content/roles and exactly one authorized
           Mock Channel receipt after the complete terminal provider event.
