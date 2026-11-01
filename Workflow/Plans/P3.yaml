@@ -8417,8 +8417,8 @@ Tasks:
         NewTaskRevision: 3
         FollowUpTaskId: ED-0162
         ContractVersion: "CoreMemoryRecallAuthorizationContract V1; see ED-0161"
-    TaskSpecPullRequestNumber: null
-    TaskSpecPullRequestUrl: ""
+    TaskSpecPullRequestNumber: 135
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
 
   - TaskId: ED-0162
     TaskRevision: 1
@@ -8607,8 +8607,8 @@ Tasks:
       TaskReportFile: false
       EventShard: Workflow/Events/CodexRewrite/P3.jsonl
       FollowUpTaskIds: []
-    TaskSpecPullRequestNumber: null
-    TaskSpecPullRequestUrl: ""
+    TaskSpecPullRequestNumber: 135
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
 
   - TaskId: ED-0161
     TaskRevision: 1
@@ -8821,5 +8821,5 @@ Tasks:
         NewTaskId: ED-0161
         NewTaskRevision: 1
         ContractVersion: "CoreMemoryRecallAuthorization V1"
-    TaskSpecPullRequestNumber: null
-    TaskSpecPullRequestUrl: ""
+    TaskSpecPullRequestNumber: 135
+    TaskSpecPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
