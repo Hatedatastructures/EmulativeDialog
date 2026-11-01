@@ -1,11 +1,10 @@
-# 2026-10-31 ED-0144/R7 Memory Validation Assignment
+# 2026-11-01 ED-0144/R7 Memory final validation
 
-- TaskSpec PR [#131](https://github.com/Hatedatastructures/EmulativeDialog/pull/131) merged to `main` at `66f82dd5cb2f43088c16b164646ab344df919e78`. Worker05 Owner and Worker04 independent fixed-head reviews both approved Head `92b75c6f2037748a3e27bf55ca383ca0453ed166`; both Windows CI checks passed.
-- Assignment ledger PR [#132](https://github.com/Hatedatastructures/EmulativeDialog/pull/132) is open from Base `66f82dd`. It assigns validation-only work to Worker05 on `Task/ED-0144-R6FinalHeadValidation`, with Worker04 independent Reviewer. Pre-merge Controller validation returned `AssignmentAccepted`; the separate assignment ledger must merge and Controller must return `AssignmentAccepted` again on merged `main` before any validation.
-- Coverage command syntax was corrected and statically parsed with PowerShell 7.6.9 (zero parser errors). The command was not executed. No R7 product worktree, configure, build, CTest, or coverage run has occurred.
-- The first fixed-head review of PR #132 requested two record corrections: approval/merge event time ordering and exact command text. The follow-up ledger uses append-only correction events tied to the original review files, GitHub merge timestamp, and Controller output log; it does not rewrite original event rows.
-- Product validation target remains merged Memory PR #124, Base `d6aa14022d5098378d230a0215aa9461c4a34a76` / Head `a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f`; each modified production source must meet the frozen 80% unique executable line threshold.
-- After ED-0144 closes, ED-0158 is the next product integration: scoped Memory/Context into asynchronous AgentRuntime. ED-0158 remains Proposed and has no product-write authorization.
+- Assignment PR #132 merged to main at 30e5fd335e4758746712aa9953ed5a052e91a311. The post-merge Controller returned AssignmentAccepted (exit 0; log SHA-256 6E9C7B0A474451ED2BF74BAC951D79A39C7A51728A98607EE5BB079B466BEFB9).
+- Validation was bound to merged Memory PR #124 Base d6aa14022d5098378d230a0215aa9461c4a34a76 / Head a2a107a3a9fca714072ed83fe8ede8d5fa51cf1f; the clean Windows C++20 worktree changed no product source or tests.
+- Configure, both targeted builds, full build, compiler/gcov version checks, coverage helper check, coverage command, and all four CTests passed. ConversationMemory.cpp: 453/502 (90.24%); SqliteMemoryStorageAdapter.cpp: 402/424 (94.81%).
+- Worker04's fixed-evidence review confirmed the build, tests, and coverage, and requested the nine formal P3 CommandExecuted records plus precise preflight newline wording. Evidence PR #133 records the nine uniquely correlated events and the CRLF/LF normalization clarification; fixed-head review and final closeout remain pending.
+- ED-0158 remains the next C++ Memory/Context-to-AsyncAgentRuntime integration task. Product writes remain unauthorized until ED-0144/R7 is formally closed and ED-0158 receives its own accepted assignment.
 
 # 当前状态
 
