@@ -8105,15 +8105,15 @@ Tasks:
     CapabilityIds: [ScopedChatMemory]
     ContractVersion:
       - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged; P3 activation pending; current header remains Frozen candidate)"
-      - Architecture/Contracts/MemoryContract.md V2 Frozen
+      - "Architecture/Contracts/MemoryContract.md V1 (header remains Frozen candidate) + MemoryRecord Content V2 addendum (PR #120 merged 30e33b8; PR #121 activation recorded at 38feb8e)"
       - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed by ED-0161; activation evidence required after merge)
     FrozenContractEvidence:
-      MemoryContractV2:
+      MemoryContractV1ContentV2:
         PullRequest: 120
         MergeCommit: 30e33b842f7f2ee578a09c383232263e2ec62a64
         ActivationPullRequest: 121
         ActivationCommit: 38feb8e14444557102dceee36c341ad4cd1f3ff9
-        Evidence: "PR #120 merged MemoryContract V2; PR #121 records post-merge activation. Recheck exact task state at assignment."
+        Evidence: "PR #120 added durable MemoryRecord Content V2 rules to MemoryContract V1; PR #121 recorded activation of that addendum. Recheck both references at assignment."
     Context:
       ReadSet:
         - Architecture/Contracts/CoreAgentContract.md
@@ -8170,8 +8170,8 @@ Tasks:
         Description: >-
           ConversationMemory implements the Core-owned MemoryRecallPort without a Core→Memory concrete dependency.
           Recall accepts only the Core grant and returns neutral MemoryRecallCandidate DTOs; Memory no longer exposes
-          ContextSelector types in its Recall API. Existing MemoryContract V2 consent, exact-scope, expiry, revocation,
-          group-member and SessionScopeVolatile refusal semantics remain intact; write, persistence, delete and schema
+          ContextSelector types in its Recall API. Existing MemoryContract V1 consent, exact-scope, expiry, revocation,
+          group-member and SessionScopeVolatile refusal semantics remain intact. The activated MemoryRecord Content V2 addendum only governs durable Content write/restore validation; Recall, persistence, delete and schema
           behavior do not change.
         Evidence: >-
           ConversationMemoryTests and SqliteMemoryStorageAdapterTests drive private/group consent, scope mismatch,
@@ -8260,8 +8260,8 @@ Tasks:
         - "After a separate assignment ledger merges and WorkflowController returns AssignmentAccepted, preflight binds the exact implementation branch, worktree and current-main baseline recorded by that ledger; the worktree is clean before implementation."
         - >-
           The implementation assignment ledger must cite P3 activation evidence for CoreAgentContract V1.1 and
-          CoreMemoryRecallAuthorizationContract V1, and MemoryContract V2 activation PR #121. WorkflowController does
-          not validate ContractVersion state; the Coordinator verifies these references before assignment.
+          CoreMemoryRecallAuthorizationContract V1 activation evidence. The assignment ledger must also cite PR #121 activation of the
+          MemoryRecord Content V2 addendum to MemoryContract V1. WorkflowController does not validate ContractVersion state; the Coordinator verifies these references before assignment.
         - "git diff --check assigned BaselineCommit..HeadCommit exits 0 and changed paths exactly equal the ten frozen WriteSet paths."
         - "ConversationMemoryTests proves the Core-issued grant and Memory boundary; SqliteMemoryStorageAdapterTests proves persistent Recall behavior through the same Core authorization path; failures make zero Runtime calls."
         - "A fresh standalone Memory Windows C++20 build compiles the four listed targets and both listed CTests pass against the same final source Head."
@@ -8322,7 +8322,7 @@ Tasks:
       ProposedTaskRevision: 3
       RequesterRole: Coordinator
       Date: "2026-11-01"
-      RuleIdContractVersion: "PAR-002; SEC-001; CoreAgentContract V1.1; MemoryContract V2; CoreMemoryRecallAuthorization V1"
+      RuleIdContractVersion: "PAR-002; SEC-001; CoreAgentContract V1.1; MemoryContract V1 plus activated MemoryRecord Content V2 addendum; CoreMemoryRecallAuthorization V1"
       Severity: MUST
       TriggerEvidence: >-
         R2's controller ReadSet is already at the supported 12-reference limit but omits required current production
@@ -8620,7 +8620,7 @@ Tasks:
       - 接入真实 QQ、任何 WeChat、credentials、live provider request 或外部副作用
     ContractVersion:
       - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged at de7376a97f8e645f946c77056439f90618c31448; P3 activation pending; header remains Frozen candidate)"
-      - Architecture/Contracts/MemoryContract.md V2 (merged by PR #120, activated by PR #121 at main 38feb8e14444557102dceee36c341ad4cd1f3ff9)
+      - "Architecture/Contracts/MemoryContract.md V1 (header remains Frozen candidate) + MemoryRecord Content V2 addendum (PR #120 merged 30e33b842f7f2ee578a09c383232263e2ec62a64; PR #121 activation recorded at 38feb8e14444557102dceee36c341ad4cd1f3ff9)"
       - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed output)
     ModuleIds: [Core, Memory, AgentRuntime, ContextSelector]
     Context:
@@ -8672,8 +8672,8 @@ Tasks:
           The contract normatively defines a Core-owned MemoryRecallPort that consumes the grant once and returns only
           neutral MemoryRecallCandidate DTOs with content and selection metadata; it forbids ConsentId, ProposalId,
           capabilities, policy handles, or authorization internals in those DTOs. It requires future Memory
-          implementations to enforce existing MemoryContract V2 consent, exact-scope, expiry, revocation, and
-          group-member rules without a Core→Memory concrete dependency. ED-0161 defines the contract only; ED-0158/R3
+          implementations to enforce MemoryContract V1 consent, exact-scope, expiry, revocation, and
+          group-member rules without a Core→Memory concrete dependency. The activated MemoryRecord Content V2 addendum governs durable Content write/restore validation only and does not change Recall/read semantics. ED-0161 defines the contract only; ED-0158/R3
           implements and behaviorally verifies the Core/Memory boundary, and ED-0162/R1 verifies runtime consumption.
         Evidence: >-
           Owner and independent review verify that the contract specifies exact API names, ownership, fields,
@@ -8701,11 +8701,11 @@ Tasks:
           non-serialization to explicit contract clauses; ED-0162/R1 separately verifies downstream dispatch.
       - AcceptanceId: AC-4
         Description: >-
-          The contract composes with the existing CoreAgent and Memory contracts without changing their identity,
+          The contract composes with CoreAgent V1.1 and MemoryContract V1, including the activated MemoryRecord Content V2 addendum. It preserves MemoryContract V1 identity mapping,
           consent, exact-scope, expiry, revocation, group-member, or persistence behavior. It introduces no provider,
           channel, action, cancellation, UnknownOutcome, or receipt semantics; those remain outside ED-0161/R1.
         Evidence: >-
-          Reviewer compares the contract only against CoreAgent V1.1 and MemoryContract V2 and confirms async runtime,
+          Reviewer compares the contract against CoreAgent V1.1, MemoryContract V1, and the activated MemoryRecord Content V2 addendum, confirming async runtime,
           provider, action, and channel behavior is not specified or widened by this contract.
     Validation:
       RequiredTargets: []
@@ -8716,7 +8716,7 @@ Tasks:
           Keep ED-0161 Proposed and unassigned until a reviewed assignment ledger records P3 activation evidence
           for CoreAgent V1.1. Its header still says Frozen candidate; WorkflowController.ValidateAssignment checks
           assignment and dependencies but not ContractVersion state, so the Coordinator must cite activation evidence
-          in TaskReadinessValidated. MemoryContract V2 activation is already recorded by PR #121.
+          in TaskReadinessValidated. PR #121 records activation of the MemoryRecord Content V2 addendum to MemoryContract V1.
         - "The new contract states only Frozen after its implementation PR merges and its separate activation evidence is recorded."
         - "Fixed-head independent review verifies no C++ source, test, CMake, persistent-data, provider-wire, or channel-wire behavior is changed."
       Coverage:
@@ -8741,19 +8741,19 @@ Tasks:
       RelatedTaskId: ED-0158
       RequesterRole: Coordinator
       Date: "2026-11-01"
-      RuleIdContractVersion: "SEC-001; CoreAgentContract V1.1; MemoryContract V2"
+      RuleIdContractVersion: "SEC-001; CoreAgentContract V1.1; MemoryContract V1 plus activated MemoryRecord Content V2 addendum"
       Severity: MUST
       TriggerEvidence: >-
         ED-0158/R3 requires an independently versioned Core-owned Recall boundary before implementation. The current
         ConversationMemory API accepts caller-constructible AuthorizedMemoryContext with IdentityVerified and returns
         ContextSelector::ContextCandidate directly. CoreMemoryRecallAuthorizationContractV1.md does not yet exist on
-        main. CoreAgent V1.1 was merged by PR #102 but its header still says Frozen candidate; MemoryContract V2 already
-        has activation evidence in PR #121.
+        main. CoreAgent V1.1 was merged by PR #102 but its header still says Frozen candidate; MemoryContract.md remains titled V1; PR #120 added a MemoryRecord Content V2 addendum and PR #121 recorded its
+        activation only; this is not a separately versioned full-contract V2.
       OriginalGoal: >-
         Implement the authorized Core to Memory Recall boundary needed by ED-0158/R3 without changing established
         memory consent, scope, TTL, persistence, deletion, or provider/channel behavior.
       OriginalWriteSet: >-
-        ED-0158/R3 has twelve product/test paths. This contract task is limited to the new contract and two module
+        ED-0158/R3 has ten product/test paths. This contract task is limited to the new contract and two module
         shards so the public boundary can be frozen and reviewed before those product writes are assigned.
       OriginalAcceptance: >-
         The original ED-0158/R2 AC-1 through AC-5 require a Core-issued grant, neutral Recall DTOs, pure ContextSelector
@@ -8762,7 +8762,7 @@ Tasks:
       ExistingWorkAndEvidence: >-
         PR #128 registered ED-0158/R1 only and did not authorize product writes. PR #102 merged CoreAgent V1.1, whose
         current header remains Frozen candidate pending P3 activation evidence.
-        PR #120 introduced MemoryContract V2 and PR #121 recorded its activation.
+        PR #120 added the MemoryRecord Content V2 rules to MemoryContract V1, and PR #121 recorded activation of that addendum. The merged ED-0160 task used V2 shorthand; its commit and the contract file show no independent full-contract V2.
       ProposedChange: >-
         Freeze CoreMemoryRecallAuthorizationContract V1 defining the Core-issued move-only one-shot grant, the
         Core-owned MemoryRecallPort, neutral candidate DTOs, exact trusted scope/policy/turn binding, Core Recall
