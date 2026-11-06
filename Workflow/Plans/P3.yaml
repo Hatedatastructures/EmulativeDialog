@@ -8794,6 +8794,12 @@ Tasks:
     AssignmentLedgerCreatedEventId: 3c5f2722-b7dd-4260-aba3-1a83243970d7
     AssignmentLedgerCurrentHead: de4b4f5edf3041070578bf6cd57e95af410c48b5
     AssignmentLedgerHeadUpdatedEventId: 05c683fe-9254-46a4-bd07-91c8310ee6ae
+    AssignmentLedgerFinalReviewDecision: APPROVE
+    AssignmentLedgerFinalReviewBaseCommit: a819cb8d4a846f112e2cb0243321ed40fa089ce5
+    AssignmentLedgerFinalReviewHeadCommit: f9e48ae00b22b87b2971e2a0fd1ec5e086483df7
+    AssignmentLedgerFinalReviewEventId: 2b4fb542-400e-4217-aa97-4631fce6c307
+    AssignmentLedgerFinalReviewerAgentId: 01a1ae70-d363-71d2-b9d9-096c4aacd8f2
+    AssignmentLedgerFinalReviewSource: InternalFixedHeadReview
     ChangeRequest:
       ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
       ChangeRequestProposedEventId: 36b364a2-8af8-4041-8119-6f88f94b2ec8
