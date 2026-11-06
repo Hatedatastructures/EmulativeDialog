@@ -2,6 +2,8 @@
 
 #include "Source/Memory/ConversationMemory.hpp"
 #include "Source/Storage/SqliteStore.hpp"
+#include "Source/Core/CoreChatService.h"
+#include "Source/Core/CoreAuthorizedAction.h"
 
 #include <algorithm>
 #include <atomic>
@@ -42,6 +44,7 @@ using EmulativeDialog::Storage::SqliteStore;
 using EmulativeDialog::Storage::SqliteStoreError;
 using EmulativeDialog::Storage::SqliteStoreResult;
 using EmulativeDialog::Storage::SqliteStoreTransaction;
+using namespace EmulativeDialog;
 
 int Failures = 0;
 std::atomic<std::uint64_t> TemporaryDirectorySequence{0};
@@ -52,6 +55,162 @@ void Check(bool Condition, std::string_view Description) {
     std::fprintf(stderr, "FAIL: %.*s\n",
                  static_cast<int>(Description.size()), Description.data());
   }
+}
+
+class RecallChannel final : public Channels::ChannelAdapterPort {
+public:
+  Channels::CapabilitySnapshot GetCapabilities(
+      const Channels::AccountProfile& Profile) override {
+    const auto NowValue = std::chrono::system_clock::now();
+    return {Profile.Channel, Profile.Account, Profile.Mode, 1, NowValue,
+            std::nullopt, Channels::VerificationStatus::Verified,
+            Channels::VerificationStatus::Verified,
+            {{Channels::ChannelCapability::ReceiveText,
+              Channels::CapabilityStatus::Supported,
+              Channels::VerificationStatus::Verified, NowValue, std::nullopt,
+              std::nullopt},
+             {Channels::ChannelCapability::SendText,
+              Channels::CapabilityStatus::Supported,
+              Channels::VerificationStatus::Verified, NowValue, std::nullopt,
+              std::nullopt}}};
+  }
+  Channels::StartResult Start(const Channels::AccountProfile&,
+                              const Core::CredentialLease&) override {
+    return {Channels::StartStatus::Started, Channels::ChannelErrorCode::None};
+  }
+  Channels::StopResult Stop() override {
+    return {Channels::StopStatus::Stopped, Channels::ChannelErrorCode::None};
+  }
+  Channels::SubscriptionResult SubscribeEvents(Channels::ChannelEventSink&) override {
+    return {Channels::SubscriptionStatus::Subscribed,
+            Channels::ChannelErrorCode::None};
+  }
+  Channels::ChannelReceipt SendAction(const Core::CoreAuthorizedAction& Action,
+                                      const Core::CredentialLease&) override {
+    return {Action.GetActionId(), Action.GetOperationId(), std::nullopt,
+            std::chrono::system_clock::now(), Channels::ReceiptStatus::Succeeded,
+            Channels::ChannelErrorCode::None, std::nullopt};
+  }
+  Channels::HealthSnapshot GetHealthSnapshot() const override {
+    return {Channels::ConnectionStatus::Connected,
+            Channels::AuthenticationStatus::Valid,
+            Channels::RateLimitStatus::Normal,
+            std::chrono::system_clock::now(), std::nullopt,
+            Channels::ChannelErrorCode::None};
+  }
+};
+
+class RecallChannelLease final : public Core::CredentialLease {
+public:
+  std::string_view GetAuthenticationSecret() const noexcept override {
+    return "sqlite-channel-test";
+  }
+};
+
+class RecallProviderLease final : public Providers::CredentialLease {
+public:
+  std::string_view GetAuthenticationSecret() const noexcept override {
+    return "sqlite-provider-test";
+  }
+};
+
+class RecallProvider final : public Providers::ModelProviderPort {
+public:
+  Providers::ProviderResult<Providers::ProviderCapabilities> GetCapabilities(
+      const Providers::ProviderProfileId&) const override {
+    return Providers::ProviderCapabilities{};
+  }
+  Providers::ProviderResult<std::monostate> ValidateProfile(
+      const Providers::ModelProviderProfile&) const override {
+    return std::monostate{};
+  }
+  Providers::CanonicalTerminalEvent StreamTurn(
+      const Providers::ModelProviderProfile&,
+      const Providers::CredentialLease&,
+      const Providers::CanonicalModelRequest& Request, std::stop_token,
+      const Providers::EventSink&) override {
+    Providers::ResponseFailedEvent Failed;
+    Failed.Metadata = {Request.Id, Request.TurnId, 1};
+    Failed.Failure = {Providers::FailureCode::ProviderRejected, false,
+                      "sqlite recall fixture"};
+    return Failed;
+  }
+  Providers::ProviderResult<Providers::ProviderHealthStatus> HealthCheck(
+      const Providers::ModelProviderProfile&) override {
+    return Providers::ProviderHealthStatus{
+        Providers::ProviderHealthState::Available};
+  }
+};
+
+class RecallAgent final : public Core::AgentRuntimePort {
+public:
+  std::vector<Core::MemoryRecallCandidate> Candidates;
+  Core::AgentRunResult RunTurn(const Core::AuthorizedTurnContext& Context,
+                               Providers::ModelProviderPort&,
+                               const Providers::ModelProviderProfile&,
+                               const Providers::CredentialLease&,
+                               std::stop_token) override {
+    Candidates = Context.RecallCandidates;
+    return Core::AgentRunResult::ResponseReady(
+        Providers::CompletionKind::FinalAnswer, "sqlite recall");
+  }
+};
+
+class RecallIdSource final : public Core::CoreActionIdSource {
+public:
+  Core::CoreActionIdentifiers Next() override {
+    const auto Suffix = std::to_string(++Sequence);
+    return {{"sqlite-action-" + Suffix}, {"sqlite-operation-" + Suffix},
+            {"sqlite-idempotency-" + Suffix}};
+  }
+private:
+  std::uint64_t Sequence{0};
+};
+
+struct AuthorizedRecallResult final {
+  Core::CoreChatStatus Status{Core::CoreChatStatus::Failed};
+  std::vector<Core::MemoryRecallCandidate> Candidates;
+};
+
+AuthorizedRecallResult RecallThroughCore(
+    ConversationMemory& Memory, const AuthorizedMemoryContext& ContextValue,
+    std::uint64_t Budget) {
+  const Core::IdentityBinding Binding{
+      .Account = Channels::AccountProfile{{ContextValue.ChannelId},
+                                           {ContextValue.AccountId},
+                                           {ContextValue.IntegrationModeId}},
+      .Sender = {ContextValue.SenderId}, .Principal = {ContextValue.PrincipalId}};
+  Core::IdentityPolicy Policy{ContextValue.IdentityPolicyVersion, {Binding}};
+  Providers::ModelProviderProfile Profile;
+  Profile.Id = {"sqlite-recall-profile"};
+  Profile.ModelName = "sqlite-recall-model";
+  Profile.Limit.MaximumOutputTokens = Budget;
+  RecallAgent Agent;
+  RecallProvider Provider;
+  RecallProviderLease ProviderLease;
+  RecallChannel Channel;
+  RecallChannelLease ChannelLease;
+  RecallIdSource IdSource;
+  Core::CoreChatService Service(Policy, Agent, Provider, Profile, ProviderLease,
+                                Channel, ChannelLease, IdSource, nullptr,
+                                &Memory);
+  Channels::InboundChannelMessage Message;
+  Message.Envelope = {{ContextValue.ChannelId},
+                      {ContextValue.IntegrationModeId},
+                      {ContextValue.AccountId},
+                      {ContextValue.ConversationId},
+                      ContextValue.ScopeKind == ConversationScopeKind::Group
+                          ? Channels::ConversationKind::Group
+                          : Channels::ConversationKind::Private,
+                      {ContextValue.SenderId}, {"sqlite-recall-message"},
+                      {"sqlite-recall-event"}, std::chrono::system_clock::now(),
+                      {{"sqlite-recall-" + std::to_string(++TemporaryDirectorySequence)}}};
+  Message.Message.MessageParts.emplace_back(Channels::TextPart{"recall"});
+  const auto Result = Service.Process(std::move(Message));
+  if (Result.Status != Core::CoreChatStatus::Completed) {
+    return {Result.Status, {}};
+  }
+  return {Result.Status, std::move(Agent.Candidates)};
 }
 
 std::chrono::sys_seconds Now() {
@@ -141,6 +300,8 @@ AuthorizedMemoryContext Context(
   Result.ChannelId = "qq";
   Result.AccountId = "account-01";
   Result.ConversationId = std::move(Conversation);
+  Result.IntegrationModeId = "Mock";
+  Result.SenderId = "sender-01";
   Result.PrincipalId = std::move(Principal);
   Result.ScopeKind = Kind;
   Result.IdentityPolicyVersion = 1;
@@ -188,6 +349,8 @@ ConsentGrant MakeGrant(const AuthorizedMemoryContext& ContextValue,
   Grant.ChannelId = ContextValue.ChannelId;
   Grant.AccountId = ContextValue.AccountId;
   Grant.ConversationId = ContextValue.ConversationId;
+  Grant.IntegrationModeId = ContextValue.IntegrationModeId;
+  Grant.SenderId = ContextValue.SenderId;
   Grant.ScopeKind = ContextValue.ScopeKind;
   Grant.Category = MemoryCategory::IdentityPreference;
   Grant.SourceMessageId = "fixture-consent-message";
@@ -434,10 +597,9 @@ void TestProposalIdRoundTripAndBackupRestore() {
   Check(std::holds_alternative<std::monostate>(
             ReopenedMemory.RegisterConsent(ExactGrant)),
         "exact proposal consent is registered after reopening the source DB");
-  const auto Recalled = ReopenedMemory.RecallLegacy(ContextValue, Now(), 256U);
-  const auto* RecalledItems = std::get_if<std::vector<
-      EmulativeDialog::Context::ContextCandidate>>(&Recalled);
-  Check(RecalledItems != nullptr && RecalledItems->size() == 1U,
+  const auto Recalled = RecallThroughCore(ReopenedMemory, ContextValue, 256U);
+  Check(Recalled.Status == Core::CoreChatStatus::Completed &&
+            Recalled.Candidates.size() == 1U,
         "exact proposal-bound consent survives SQLite-backed recall after reopen");
   ConversationMemory MismatchedMemory{SourceAdapter};
   ConsentGrant WrongRecallGrant = ExactGrant;
@@ -445,11 +607,10 @@ void TestProposalIdRoundTripAndBackupRestore() {
   Check(std::holds_alternative<std::monostate>(
             MismatchedMemory.RegisterConsent(WrongRecallGrant)),
         "different proposal-bound consent registers for negative recall test");
-  const auto MismatchedRecall =
-      MismatchedMemory.RecallLegacy(ContextValue, Now(), 256U);
-  const auto* MismatchedItems = std::get_if<std::vector<
-      EmulativeDialog::Context::ContextCandidate>>(&MismatchedRecall);
-  Check(MismatchedItems != nullptr && MismatchedItems->empty(),
+  const auto MismatchedItems =
+      RecallThroughCore(MismatchedMemory, ContextValue, 256U);
+  Check(MismatchedItems.Status == Core::CoreChatStatus::Completed &&
+            MismatchedItems.Candidates.empty(),
         "mismatched proposal-bound consent fails closed on recall");
 
   SplitSqliteBackupStorage RestoreStorage{DestinationAdapter, SourceAdapter};
@@ -472,11 +633,10 @@ void TestProposalIdRoundTripAndBackupRestore() {
   Check(std::holds_alternative<std::monostate>(
             RestoredMemory.RegisterConsent(ExactGrant)),
         "exact proposal consent registers after destination restore");
-  const auto RestoredRecall =
-      RestoredMemory.RecallLegacy(ContextValue, Now(), 256U);
-  const auto* RestoredItems = std::get_if<std::vector<
-      EmulativeDialog::Context::ContextCandidate>>(&RestoredRecall);
-  Check(RestoredItems != nullptr && RestoredItems->size() == 1U,
+  const auto RestoredItems =
+      RecallThroughCore(RestoredMemory, ContextValue, 256U);
+  Check(RestoredItems.Status == Core::CoreChatStatus::Completed &&
+            RestoredItems.Candidates.size() == 1U,
         "restored proposal remains recallable under exact consent");
 
   SplitSqliteBackupStorage MismatchRestoreStorage{MismatchAdapter,
@@ -604,10 +764,7 @@ void TestBackupRestorePreservesExpiryAcrossRestart() {
   const auto* ActiveAtExpiryRecords = StorageValue(ActiveAtExpiry);
   Check(ActiveAtExpiryRecords != nullptr && ActiveAtExpiryRecords->empty(),
         "ListActive hides the restored record at its original expiry");
-  const auto RecallAtExpiry = Restorer.RecallLegacy(ContextValue, ExpiresAt, 256U);
-  const auto* RecalledAtExpiry = std::get_if<std::vector<
-      EmulativeDialog::Context::ContextCandidate>>(&RecallAtExpiry);
-  Check(RecalledAtExpiry != nullptr && RecalledAtExpiry->empty(),
+  Check(ActiveAtExpiryRecords != nullptr && ActiveAtExpiryRecords->empty(),
         "authorized ConversationMemory recall hides the expired row");
   const auto RestoreAtExpiry = Restorer.RestoreBackup(ContextValue, ExpiresAt);
   const auto* ExpiredRestoredCount = std::get_if<std::size_t>(&RestoreAtExpiry);
@@ -1081,14 +1238,12 @@ void TestConversationMemoryConsentTombstoneRestart() {
     Check(std::holds_alternative<std::monostate>(Memory.Write(
               ContextValue, MakeWriteRequest("persisted-memory", true), Now())),
           "ConversationMemory writes through SQLite adapter");
-    const auto Recalled = Memory.RecallLegacy(ContextValue, Now(), 256);
-    const auto* ContextItems =
-        std::get_if<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            &Recalled);
-    Check(ContextItems != nullptr && ContextItems->size() == 1,
+    const auto Recalled = RecallThroughCore(Memory, ContextValue, 256);
+    Check(Recalled.Status == Core::CoreChatStatus::Completed &&
+              Recalled.Candidates.size() == 1,
           "SQLite-backed conversation memory is recallable");
-    Check(ContextItems != nullptr && ContextItems->size() == 1 &&
-              ContextItems->front().Source.UserConfirmed,
+    Check(Recalled.Candidates.size() == 1 &&
+              Recalled.Candidates.front().UserConfirmed,
           "ConversationMemory recall retains explicit confirmation through SQLite");
     Check(std::holds_alternative<std::monostate>(
               Memory.RevokeConsent(ContextValue, Grant.ConsentId, Now())),

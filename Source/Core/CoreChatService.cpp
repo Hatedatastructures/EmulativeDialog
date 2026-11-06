@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cctype>
+#include <limits>
 #include <stdexcept>
 #include <string_view>
 #include <unordered_set>
@@ -333,15 +334,22 @@ bool IsValidIdentifiers(const CoreActionIdentifiers& Identifiers) noexcept {
 MemoryReadGrant::MemoryReadGrant(PrincipalId PrincipalValue,
                                  ConversationScope ScopeValue,
                                  std::uint64_t PolicyVersionValue,
-                                 Providers::AgentTurnId AgentTurnValue)
+                                 Providers::AgentTurnId AgentTurnValue,
+                                 std::string IssuerNonceValue)
     : Principal(std::move(PrincipalValue)), Scope(std::move(ScopeValue)),
-      PolicyVersion(PolicyVersionValue), AgentTurn(std::move(AgentTurnValue)) {}
+      PolicyVersion(PolicyVersionValue), AgentTurn(std::move(AgentTurnValue)),
+      IssuerNonce(std::move(IssuerNonceValue)),
+      IssuerIdentity("CoreChatService") {}
 
 MemoryReadGrant::MemoryReadGrant(MemoryReadGrant&& Other) noexcept
     : Principal(std::move(Other.Principal)), Scope(std::move(Other.Scope)),
       PolicyVersion(Other.PolicyVersion), AgentTurn(std::move(Other.AgentTurn)),
+      IssuerNonce(std::move(Other.IssuerNonce)),
+      IssuerIdentity(std::move(Other.IssuerIdentity)),
       Consumed(Other.Consumed) {
   Other.Consumed = true;
+  Other.IssuerNonce.clear();
+  Other.IssuerIdentity.clear();
 }
 
 bool MemoryReadGrant::Consume() noexcept {
@@ -612,8 +620,23 @@ std::optional<CoreChatResult> CoreChatService::RecallAuthorizedMemory(
           : 2048U;
 
   try {
+    std::uint64_t GrantSequence = 0;
+    {
+      std::lock_guard<std::mutex> Lock(StateMutex);
+      if (MemoryGrantSequence == std::numeric_limits<std::uint64_t>::max()) {
+        return CoreChatResult{CoreChatStatus::Failed,
+                              CoreChatFailureCode::MemoryRecallFailed,
+                              AgentRunFailureCode::InvalidRequest,
+                              std::nullopt, std::nullopt};
+      }
+      GrantSequence = ++MemoryGrantSequence;
+    }
+    const std::string IssuerNonce =
+        "CoreMemoryGrant:" + std::to_string(GrantSequence) + ":" +
+        Context.AgentTurn.Value;
     MemoryReadGrant Grant{Identity.Principal, Identity.Scope,
-                          Policy.GetPolicyVersion(), Context.AgentTurn};
+                          Policy.GetPolicyVersion(), Context.AgentTurn,
+                          IssuerNonce};
     MemoryRecallResult RecallResult =
         MemoryRecall->Recall(std::move(Grant), RecallBudget{TokenBudget});
     if (const auto* Failure = std::get_if<MemoryRecallError>(&RecallResult);

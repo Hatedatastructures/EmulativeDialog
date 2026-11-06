@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -80,6 +81,12 @@ public:
   [[nodiscard]] const Providers::AgentTurnId& GetAgentTurn() const noexcept {
     return AgentTurn;
   }
+  [[nodiscard]] std::string_view GetIssuerNonce() const noexcept {
+    return IssuerNonce;
+  }
+  [[nodiscard]] std::string_view GetIssuerIdentity() const noexcept {
+    return IssuerIdentity;
+  }
 
 private:
   friend class CoreChatService;
@@ -87,7 +94,8 @@ private:
 
   MemoryReadGrant(PrincipalId PrincipalValue, ConversationScope ScopeValue,
                   std::uint64_t PolicyVersionValue,
-                  Providers::AgentTurnId AgentTurnValue);
+                  Providers::AgentTurnId AgentTurnValue,
+                  std::string IssuerNonceValue);
 
   [[nodiscard]] bool Consume() noexcept;
 
@@ -95,6 +103,8 @@ private:
   ConversationScope Scope;
   std::uint64_t PolicyVersion{0};
   Providers::AgentTurnId AgentTurn;
+  std::string IssuerNonce;
+  std::string IssuerIdentity;
   bool Consumed{false};
 };
 
