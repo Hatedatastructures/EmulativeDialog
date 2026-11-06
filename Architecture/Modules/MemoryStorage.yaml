@@ -22,12 +22,12 @@ Modules:
       - Source/Context/
       - Tests/Contract/Context/
     ContractRefs:
-      - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md
       - Architecture/Contracts/ModelProviderContract.md
     DependsOn:
       - ModelProviderPort
     LoadEntry:
-      - Architecture/Contracts/MemoryContract.md#ContextSelector-规则
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md#ContextSelector-Purity
 
   - ModuleId: Storage
     OwnerRole: StorageOwner

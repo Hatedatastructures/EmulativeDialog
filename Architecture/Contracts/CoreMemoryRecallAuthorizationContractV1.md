@@ -26,7 +26,7 @@ Message text, model output, Provider fields, Channel display fields, caller-supp
 
 `MemoryReadGrant` is a Core-issued, single-turn capability with the following required properties:
 
-- It is non-default-constructible and can be created only by the Core issuance path represented by `CoreChatService` and its trusted policy boundary.
+- It is non-default-constructible. `CoreChatService` is the sole issuer of `MemoryReadGrant`, and it may issue one only through its trusted policy boundary after the checks in this contract. No other Core component, Memory implementation, AgentRuntime, Provider, Channel, test fake, or external caller may construct, copy, deserialize, or re-issue a grant.
 - It is move-only. Copy construction, copy assignment, serialization, deserialization, reflection into a prompt, and construction from a public field set are forbidden.
 - It is consumed by exactly one `MemoryRecallPort` call. The port accepts it by move or an equivalent consuming form. A moved-from grant is invalid and cannot be submitted again.
 - It binds the exact verified `PrincipalId` and the complete trusted `ConversationScope`: `ChannelId`, `AccountId`, `IntegrationMode`, `ConversationId`, `ConversationKind`, and `SenderId` (the current C++ scope uses the corresponding `Channel`, `Account`, `Mode`, `Conversation`, `ConversationType`, and `Sender` members).
@@ -104,6 +104,12 @@ trusted envelope and identity resolution
 Any identity failure, route failure, unsupported input, capability failure, invalid scope, grant failure, Recall error, or Memory contract rejection stops the turn before AgentRuntime is invoked. The failure path makes zero Runtime calls and does not send a Provider request or Channel action. Core returns a stable failure category without disclosing the grant or authorization internals.
 
 AgentRuntime receives the approved candidate DTO sequence through the separately versioned runtime/context contract. It does not receive the grant, the Core Memory port, a ConsentId, a ProposalId, or a caller-settable authorization flag. AgentRuntime alone may map approved neutral candidates into pure ContextSelector inputs; ContextSelector does not call Memory and cannot request a broader scope.
+
+## ContextSelector purity
+
+The authorized Recall handoff into ContextSelector is a pure data transformation. AgentRuntime is the only module that may map the bounded `MemoryRecallCandidate` sequence into ContextSelector inputs. ContextSelector may rank, budget, and assemble those already-approved inputs, but it cannot call `MemoryRecallPort`, access the Memory module or storage, resolve identity, verify consent, issue or consume a grant, widen a scope, or request another Recall. It receives the current trusted turn data and bounded approved context through its existing context-selection interface and cannot create authorization from content.
+
+The existing MemoryContract V1 selection priorities, scope restrictions, and low-trust treatment remain compatibility requirements for the approved context. This section defines the authorization handoff and purity boundary; it does not transfer Memory consent or scope enforcement to ContextSelector.
 
 ## Dependency and version rules
 
