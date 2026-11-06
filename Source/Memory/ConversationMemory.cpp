@@ -32,6 +32,8 @@ bool SameScopeFields(const ConsentGrant& Grant,
   return Grant.ChannelId == Context.ChannelId &&
          Grant.AccountId == Context.AccountId &&
          Grant.ConversationId == Context.ConversationId &&
+         Grant.IntegrationModeId == Context.IntegrationModeId &&
+         Grant.SenderId == Context.SenderId &&
          Grant.ScopeKind == Context.ScopeKind;
 }
 
@@ -139,6 +141,7 @@ bool IsValidDurableContent(std::string_view Content) noexcept {
 
 bool AuthorizedMemoryContext::IsComplete() const noexcept {
   return !ChannelId.empty() && !AccountId.empty() && !ConversationId.empty() &&
+         !IntegrationModeId.empty() && !SenderId.empty() &&
          !PrincipalId.empty() && IdentityPolicyVersion > 0 &&
          IdentityVerified;
 }
@@ -190,7 +193,7 @@ std::optional<MemoryError> ConversationMemory::Authorize(
   }
   const std::string_view ContextStrings[] = {
       Context.ChannelId, Context.AccountId, Context.ConversationId,
-      Context.PrincipalId};
+      Context.IntegrationModeId, Context.SenderId, Context.PrincipalId};
   for (const std::string_view Value : ContextStrings) {
     if (ContainsSensitiveContent(Value)) {
       return Error(MemoryErrorCode::SensitiveContent,
@@ -302,7 +305,8 @@ MemoryResult<std::monostate> ConversationMemory::RegisterConsent(
     const ConsentGrant& Grant) {
   if (Grant.ConsentId.empty() || Grant.GrantorPrincipalId.empty() ||
       Grant.ChannelId.empty() || Grant.AccountId.empty() ||
-      Grant.ConversationId.empty() || Grant.SourceMessageId.empty() ||
+      Grant.ConversationId.empty() || Grant.IntegrationModeId.empty() ||
+      Grant.SenderId.empty() || Grant.SourceMessageId.empty() ||
       Grant.IdentityPolicyVersion == 0U) {
     return Error(MemoryErrorCode::InvalidArgument,
                  "consent requires id, verified grantor, exact scope, source "
@@ -310,7 +314,8 @@ MemoryResult<std::monostate> ConversationMemory::RegisterConsent(
   }
   const std::string_view GrantStrings[] = {
       Grant.ConsentId, Grant.GrantorPrincipalId, Grant.ChannelId,
-      Grant.AccountId, Grant.ConversationId, Grant.SourceMessageId};
+      Grant.AccountId, Grant.ConversationId, Grant.IntegrationModeId,
+      Grant.SenderId, Grant.SourceMessageId};
   for (const std::string_view Value : GrantStrings) {
     if (ContainsSensitiveContent(Value)) {
       return Error(MemoryErrorCode::SensitiveContent,
@@ -593,6 +598,12 @@ Core::MemoryRecallResult ConversationMemory::Recall(
   if (!MemoryGrantConsumer::Consume(Grant)) {
     return Core::MemoryRecallError{Core::MemoryRecallErrorCode::InvalidGrant};
   }
+  if (Grant.GetIssuerIdentity() != "CoreChatService" ||
+      Grant.GetIssuerNonce().empty() ||
+      Grant.GetIssuerNonce().find(Grant.GetAgentTurn().Value) ==
+          std::string_view::npos) {
+    return Core::MemoryRecallError{Core::MemoryRecallErrorCode::InvalidGrant};
+  }
   if (Budget.TokenBudget == 0U || Grant.GetPolicyVersion() == 0U ||
       Grant.GetAgentTurn().Value.empty()) {
     return Core::MemoryRecallError{Core::MemoryRecallErrorCode::InvalidBudget};
@@ -612,6 +623,8 @@ Core::MemoryRecallResult ConversationMemory::Recall(
   Context.ChannelId = Scope.Channel.Value;
   Context.AccountId = Scope.Account.Value;
   Context.ConversationId = Scope.Conversation.Value;
+  Context.IntegrationModeId = Scope.Mode.Value;
+  Context.SenderId = Scope.Sender.Value;
   Context.PrincipalId = Grant.GetPrincipal().Value;
   Context.IdentityPolicyVersion = Grant.GetPolicyVersion();
   Context.IdentityVerified = true;

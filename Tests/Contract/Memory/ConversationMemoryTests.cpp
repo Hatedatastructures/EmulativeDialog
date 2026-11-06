@@ -276,9 +276,14 @@ class CoreTestRecallPort final : public EmulativeDialog::Core::MemoryRecallPort 
 public:
   bool Fail{false};
   bool SeenExactGrant{false};
+  bool MovedFromReplayRejected{false};
   [[nodiscard]] EmulativeDialog::Core::MemoryRecallResult Recall(
       EmulativeDialog::Core::MemoryReadGrant Grant,
       const EmulativeDialog::Core::RecallBudget& Budget) override {
+    if (Grant.GetIssuerNonce().empty()) {
+      return EmulativeDialog::Core::MemoryRecallError{
+          EmulativeDialog::Core::MemoryRecallErrorCode::InvalidGrant};
+    }
     SeenExactGrant = Grant.GetPrincipal().Value == "principal-memory" &&
                      Grant.GetScope().Channel.Value == "qq" &&
                      Grant.GetScope().Account.Value == "account-memory" &&
@@ -286,11 +291,21 @@ public:
                      Grant.GetScope().Conversation.Value == "conversation-memory" &&
                      Grant.GetScope().Sender.Value == "sender-memory" &&
                      Grant.GetPolicyVersion() == 9 &&
+                     Grant.GetIssuerIdentity() == "CoreChatService" &&
+                     !Grant.GetIssuerNonce().empty() &&
                      !Grant.GetAgentTurn().Value.empty() && Budget.TokenBudget != 0;
     if (Fail) {
       return EmulativeDialog::Core::MemoryRecallError{
           EmulativeDialog::Core::MemoryRecallErrorCode::ConsentMismatch};
     }
+    auto Moved = std::move(Grant);
+    const auto Replay = Recall(std::move(Grant), Budget);
+    MovedFromReplayRejected =
+        std::holds_alternative<EmulativeDialog::Core::MemoryRecallError>(
+            Replay) &&
+        std::get<EmulativeDialog::Core::MemoryRecallError>(Replay).Code ==
+            EmulativeDialog::Core::MemoryRecallErrorCode::InvalidGrant;
+    static_cast<void>(Moved);
     return std::vector<EmulativeDialog::Core::MemoryRecallCandidate>{
         {.MemoryId = "memory-neutral",
          .Kind = EmulativeDialog::Core::MemoryRecallCandidateKind::IdentityPreference,
@@ -302,6 +317,29 @@ public:
          .Confidence = EmulativeDialog::Core::MemoryRecallConfidence::Medium,
          .TokenCost = 2}};
   }
+};
+
+class ReplayProbeMemoryRecallPort final
+    : public EmulativeDialog::Core::MemoryRecallPort {
+public:
+  explicit ReplayProbeMemoryRecallPort(
+      EmulativeDialog::Memory::ConversationMemory& MemoryValue)
+      : Memory(MemoryValue) {}
+  bool ReplayRejected{false};
+  EmulativeDialog::Core::MemoryRecallResult Recall(
+      EmulativeDialog::Core::MemoryReadGrant Grant,
+      const EmulativeDialog::Core::RecallBudget& Budget) override {
+    const auto First = Memory.Recall(std::move(Grant), Budget);
+    const auto Replay = Memory.Recall(std::move(Grant), Budget);
+    ReplayRejected =
+        std::holds_alternative<EmulativeDialog::Core::MemoryRecallError>(
+            Replay) &&
+        std::get<EmulativeDialog::Core::MemoryRecallError>(Replay).Code ==
+            EmulativeDialog::Core::MemoryRecallErrorCode::InvalidGrant;
+    return First;
+  }
+private:
+  EmulativeDialog::Memory::ConversationMemory& Memory;
 };
 
 EmulativeDialog::Channels::InboundChannelMessage MakeCoreMemoryMessage(
@@ -351,6 +389,7 @@ void TestCoreAuthorizedRecallBoundary() {
       Service.Process(MakeCoreMemoryMessage("memory-success"));
   Check(Success.Status == Core::CoreChatStatus::Completed &&
             Recall.SeenExactGrant && Agent.Calls == 1U &&
+            Recall.MovedFromReplayRejected &&
             Agent.LastCandidates.size() == 1U &&
             Agent.LastCandidates.front().Content == "authorized context",
         "Core issues exact one-turn MemoryReadGrant and forwards neutral DTOs");
@@ -547,6 +586,8 @@ void TestCoreConversationMemoryRecallPort() {
   MemoryContext.ChannelId = "qq";
   MemoryContext.AccountId = "account-memory";
   MemoryContext.ConversationId = "conversation-memory";
+  MemoryContext.IntegrationModeId = "Mock";
+  MemoryContext.SenderId = "sender-memory";
   MemoryContext.PrincipalId = "principal-memory";
   MemoryContext.IdentityPolicyVersion = 9;
   MemoryContext.IdentityVerified = true;
@@ -556,6 +597,8 @@ void TestCoreConversationMemoryRecallPort() {
   Consent.ChannelId = MemoryContext.ChannelId;
   Consent.AccountId = MemoryContext.AccountId;
   Consent.ConversationId = MemoryContext.ConversationId;
+  Consent.IntegrationModeId = MemoryContext.IntegrationModeId;
+  Consent.SenderId = MemoryContext.SenderId;
   Consent.Category = Memory::MemoryCategory::IdentityPreference;
   Consent.SourceMessageId = "consent-source";
   Consent.GrantedAt = Now();
@@ -591,13 +634,15 @@ void TestCoreConversationMemoryRecallPort() {
   CoreTestChannel Channel;
   CoreTestChannelLease ChannelLease;
   CoreTestIdSource IdSource;
+  ReplayProbeMemoryRecallPort ReplayPort(Memory);
   Core::CoreChatService Service(Policy, Agent, Provider, Profile, ProviderLease,
                                 Channel, ChannelLease, IdSource, nullptr,
-                                &Memory);
+                                &ReplayPort);
   const Core::CoreChatResult Result =
       Service.Process(MakeCoreMemoryMessage("memory-real-service"));
   Check(Result.Status == Core::CoreChatStatus::Completed &&
             Agent.Calls == 1U && Agent.LastCandidates.size() == 1U &&
+            ReplayPort.ReplayRejected &&
             Agent.LastCandidates.front().Content == "real authorized memory",
         "Core reaches ConversationMemory through the authorized Recall port");
 }
@@ -611,6 +656,8 @@ AuthorizedMemoryContext Context(
   Value.ChannelId = "qq";
   Value.AccountId = "account-01";
   Value.ConversationId = std::move(Conversation);
+  Value.IntegrationModeId = "Mock";
+  Value.SenderId = "sender-01";
   Value.PrincipalId = std::move(Principal);
   Value.ScopeKind = Kind;
   Value.IdentityPolicyVersion = PolicyVersion;
@@ -627,6 +674,8 @@ ConsentGrant Grant(MemoryCategory Category,
   Grant.ChannelId = Value.ChannelId;
   Grant.AccountId = Value.AccountId;
   Grant.ConversationId = Value.ConversationId;
+  Grant.IntegrationModeId = Value.IntegrationModeId;
+  Grant.SenderId = Value.SenderId;
   Grant.ScopeKind = Value.ScopeKind;
   Grant.Category = Category;
   Grant.SourceMessageId = "fixture-message-consent";
@@ -889,6 +938,38 @@ void TestIdentitySessionAndPolicy() {
             Request("memory-2", MemoryCategory::IdentityPreference), Now()))
             ->Code == MemoryErrorCode::ConsentMismatch,
         "identity policy version change invalidates consent");
+}
+
+void TestModeAndSenderFailClosed() {
+  FakeMemoryStorage Storage;
+  ConversationMemory Memory(Storage);
+  const auto Owner = Context();
+  Check(std::holds_alternative<std::monostate>(
+            Memory.RegisterConsent(Grant(MemoryCategory::IdentityPreference,
+                                         Owner))),
+        "mode/sender scope consent registers");
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(Owner,
+                         Request("mode-sender-memory",
+                                 MemoryCategory::IdentityPreference),
+                         Now())),
+        "mode/sender scope write succeeds");
+  auto WrongMode = Owner;
+  WrongMode.IntegrationModeId = "OtherMode";
+  const auto WrongModeRecall = Memory.RecallLegacy(WrongMode, Now(), 100);
+  Check(std::holds_alternative<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+            WrongModeRecall) &&
+            std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(WrongModeRecall)
+                .empty(),
+        "different integration mode cannot recall consented memory");
+  auto WrongSender = Owner;
+  WrongSender.SenderId = "other-sender";
+  const auto WrongSenderRecall = Memory.RecallLegacy(WrongSender, Now(), 100);
+  Check(std::holds_alternative<std::vector<EmulativeDialog::Context::ContextCandidate>>(
+            WrongSenderRecall) &&
+            std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(WrongSenderRecall)
+                .empty(),
+        "different sender cannot recall consented memory");
 }
 
 void TestConsentValidationAndProposalBinding() {
@@ -2016,6 +2097,7 @@ int RunConversationMemoryContractTests() {
   TestCoreAsyncBusinessActionDispatcher();
   TestCoreConversationMemoryRecallPort();
   TestIdentitySessionAndPolicy();
+  TestModeAndSenderFailClosed();
   TestConsentValidationAndProposalBinding();
   TestOptionalProposalConsentRequiresExactMatch();
   TestScopeKindAndGroupMembership();

@@ -142,6 +142,7 @@ private:
   const BusinessActionRegistry* BusinessActions{};
   MemoryRecallPort* MemoryRecall{};
   std::mutex StateMutex;
+  std::uint64_t MemoryGrantSequence{0};
   std::unordered_set<std::string> ProcessedDeduplicationIds;
   std::unordered_set<std::string> IssuedActionIds;
   std::unordered_set<std::string> IssuedOperationIds;

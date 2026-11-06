@@ -40,6 +40,8 @@ struct AuthorizedMemoryContext final {
   std::string ChannelId;
   std::string AccountId;
   std::string ConversationId;
+  std::string IntegrationModeId;
+  std::string SenderId;
   std::string PrincipalId;
   ConversationScopeKind ScopeKind{ConversationScopeKind::Direct};
   std::uint64_t IdentityPolicyVersion{0};
@@ -54,6 +56,8 @@ struct ConsentGrant final {
   std::string ChannelId;
   std::string AccountId;
   std::string ConversationId;
+  std::string IntegrationModeId;
+  std::string SenderId;
   ConversationScopeKind ScopeKind{ConversationScopeKind::Direct};
   MemoryCategory Category{MemoryCategory::IdentityPreference};
   std::string SourceMessageId;
