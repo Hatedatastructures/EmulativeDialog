@@ -31,6 +31,7 @@ Modules:
     ContractRefs:
       - Architecture/Contracts/CoreAgentContract.md
       - Architecture/Contracts/CoreEndpointGrantContract.md
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md
       - Architecture/Contracts/ModelProviderContract.md
       - Architecture/Contracts/ChannelAdapterContract.md
     DependsOn:
@@ -51,6 +52,7 @@ Modules:
       - Architecture/Contracts/CoreAgentContract.md
       - Architecture/Contracts/ModelProviderContract.md
       - Architecture/Contracts/MemoryContract.md
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md
     DependsOn:
       - Core
       - ContextSelector
