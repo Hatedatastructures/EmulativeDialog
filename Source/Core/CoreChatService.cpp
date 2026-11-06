@@ -330,6 +330,28 @@ bool IsValidIdentifiers(const CoreActionIdentifiers& Identifiers) noexcept {
 
 } // namespace
 
+MemoryReadGrant::MemoryReadGrant(PrincipalId PrincipalValue,
+                                 ConversationScope ScopeValue,
+                                 std::uint64_t PolicyVersionValue,
+                                 Providers::AgentTurnId AgentTurnValue)
+    : Principal(std::move(PrincipalValue)), Scope(std::move(ScopeValue)),
+      PolicyVersion(PolicyVersionValue), AgentTurn(std::move(AgentTurnValue)) {}
+
+MemoryReadGrant::MemoryReadGrant(MemoryReadGrant&& Other) noexcept
+    : Principal(std::move(Other.Principal)), Scope(std::move(Other.Scope)),
+      PolicyVersion(Other.PolicyVersion), AgentTurn(std::move(Other.AgentTurn)),
+      Consumed(Other.Consumed) {
+  Other.Consumed = true;
+}
+
+bool MemoryReadGrant::Consume() noexcept {
+  if (Consumed) {
+    return false;
+  }
+  Consumed = true;
+  return true;
+}
+
 AgentRunResult::AgentRunResult(
     AgentRunStatus Status,
     std::optional<Providers::CompletionKind> Completion,
@@ -430,11 +452,12 @@ CoreChatService::CoreChatService(
     const Providers::ModelProviderProfile& ProviderProfile,
     const Providers::CredentialLease& ProviderLease,
     Channels::ChannelAdapterPort& Channel, const CredentialLease& ChannelLease,
-    CoreActionIdSource& ActionIdSource, OperationRecordObserver* RecordObserver)
+    CoreActionIdSource& ActionIdSource, OperationRecordObserver* RecordObserver,
+    MemoryRecallPort* MemoryRecall)
     : Policy(Policy), AgentRuntime(AgentRuntime), Provider(Provider),
       ProviderProfile(ProviderProfile), ProviderLease(ProviderLease), Channel(Channel),
       ChannelLease(ChannelLease), ActionIdSource(ActionIdSource),
-      RecordObserver(RecordObserver) {}
+      RecordObserver(RecordObserver), MemoryRecall(MemoryRecall) {}
 
 CoreChatService::CoreChatService(
     const IdentityPolicy& Policy, AgentRuntimePort& AgentRuntime,
@@ -444,12 +467,12 @@ CoreChatService::CoreChatService(
     Channels::ChannelAdapterPort& Channel, const CredentialLease& ChannelLease,
     CoreActionIdSource& ActionIdSource,
     const BusinessActionRegistry& BusinessActions,
-    OperationRecordObserver* RecordObserver)
+    OperationRecordObserver* RecordObserver, MemoryRecallPort* MemoryRecall)
     : Policy(Policy), AgentRuntime(AgentRuntime), Provider(Provider),
       ProviderProfile(ProviderProfile), ProviderLease(ProviderLease),
       Channel(Channel), ChannelLease(ChannelLease),
       ActionIdSource(ActionIdSource), RecordObserver(RecordObserver),
-      BusinessActions(&BusinessActions) {}
+      BusinessActions(&BusinessActions), MemoryRecall(MemoryRecall) {}
 
 std::optional<CoreChatResult> CoreChatService::PrepareTurn(
     const Channels::InboundChannelMessage& Message,
@@ -574,6 +597,40 @@ std::optional<CoreChatResult> CoreChatService::PrepareTurn(
                           CoreChatFailureCode::InvalidAgentResult,
                           AgentRunFailureCode::InternalError,
                           std::nullopt, std::nullopt};
+  }
+  return std::nullopt;
+}
+
+std::optional<CoreChatResult> CoreChatService::RecallAuthorizedMemory(
+    const ResolvedIdentity& Identity, AuthorizedTurnContext& Context) {
+  if (MemoryRecall == nullptr) {
+    return std::nullopt;
+  }
+  const std::uint64_t TokenBudget =
+      ProviderProfile.Limit.MaximumOutputTokens.has_value()
+          ? static_cast<std::uint64_t>(*ProviderProfile.Limit.MaximumOutputTokens)
+          : 2048U;
+
+  try {
+    MemoryReadGrant Grant{Identity.Principal, Identity.Scope,
+                          Policy.GetPolicyVersion(), Context.AgentTurn};
+    MemoryRecallResult RecallResult =
+        MemoryRecall->Recall(std::move(Grant), RecallBudget{TokenBudget});
+    if (const auto* Failure = std::get_if<MemoryRecallError>(&RecallResult);
+        Failure != nullptr) {
+      static_cast<void>(Failure);
+      return CoreChatResult{CoreChatStatus::Failed,
+                            CoreChatFailureCode::MemoryRecallFailed,
+                            AgentRunFailureCode::InvalidRequest, std::nullopt,
+                            std::nullopt};
+    }
+    Context.RecallCandidates =
+        std::move(std::get<std::vector<MemoryRecallCandidate>>(RecallResult));
+  } catch (...) {
+    return CoreChatResult{CoreChatStatus::Failed,
+                          CoreChatFailureCode::MemoryRecallFailed,
+                          AgentRunFailureCode::InternalError, std::nullopt,
+                          std::nullopt};
   }
   return std::nullopt;
 }
@@ -837,6 +894,10 @@ CoreChatResult CoreChatService::Process(
 
   const TurnBudgetCleanup BudgetCleanup{
       Agent::OutputBudgetController::Shared(), Context->AgentTurn};
+  if (const std::optional<CoreChatResult> Failure =
+          RecallAuthorizedMemory(*Identity, *Context)) {
+    return *Failure;
+  }
   AgentRunResult AgentResult =
       AgentRunResult::Failed(AgentRunFailureCode::InternalError);
   try {
@@ -866,6 +927,10 @@ boost::asio::awaitable<CoreChatResult> CoreChatService::ProcessAsync(
 
   const TurnBudgetCleanup BudgetCleanup{
       Agent::OutputBudgetController::Shared(), Context->AgentTurn};
+  if (const std::optional<CoreChatResult> Failure =
+          RecallAuthorizedMemory(*Identity, *Context)) {
+    co_return *Failure;
+  }
   AgentRunResult AgentResult =
       AgentRunResult::Failed(AgentRunFailureCode::InternalError);
   try {
@@ -904,6 +969,10 @@ boost::asio::awaitable<CoreChatResult> CoreChatService::ProcessAsync(
 
   const TurnBudgetCleanup BudgetCleanup{
       Agent::OutputBudgetController::Shared(), Context->AgentTurn};
+  if (const std::optional<CoreChatResult> Failure =
+          RecallAuthorizedMemory(*Identity, *Context)) {
+    co_return *Failure;
+  }
   CoreOwnedAsyncBusinessActionDispatcher Dispatcher{*BusinessActions, *Context};
   AgentRunResult AgentResult =
       AgentRunResult::Failed(AgentRunFailureCode::InternalError);

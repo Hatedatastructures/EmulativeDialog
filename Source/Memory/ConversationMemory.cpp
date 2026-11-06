@@ -17,6 +17,16 @@ using Context::ContextTrustClass;
 using Context::ConversationKind;
 using Context::ConversationScopeKey;
 
+} // namespace
+
+struct MemoryGrantConsumer final {
+  [[nodiscard]] static bool Consume(Core::MemoryReadGrant& Grant) noexcept {
+    return Grant.Consume();
+  }
+};
+
+namespace {
+
 bool SameScopeFields(const ConsentGrant& Grant,
                      const AuthorizedMemoryContext& Context) {
   return Grant.ChannelId == Context.ChannelId &&
@@ -474,7 +484,7 @@ MemoryResult<std::vector<StoredMemory>> ConversationMemory::ListActive(
   return std::get<std::vector<StoredMemory>>(Listed);
 }
 
-MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
+MemoryResult<std::vector<ContextCandidate>> ConversationMemory::RecallLegacy(
     const AuthorizedMemoryContext& Context, std::chrono::sys_seconds Now,
     std::uint64_t TokenBudget) const {
   const auto Listed = ListActive(Context, Now);
@@ -574,6 +584,116 @@ MemoryResult<std::vector<ContextCandidate>> ConversationMemory::Recall(
     Candidate.TokenCost = Cost;
     Candidates.push_back(std::move(Candidate));
     UsedTokens += Cost;
+  }
+  return Candidates;
+}
+
+Core::MemoryRecallResult ConversationMemory::Recall(
+    Core::MemoryReadGrant Grant, const Core::RecallBudget& Budget) {
+  if (!MemoryGrantConsumer::Consume(Grant)) {
+    return Core::MemoryRecallError{Core::MemoryRecallErrorCode::InvalidGrant};
+  }
+  if (Budget.TokenBudget == 0U || Grant.GetPolicyVersion() == 0U ||
+      Grant.GetAgentTurn().Value.empty()) {
+    return Core::MemoryRecallError{Core::MemoryRecallErrorCode::InvalidBudget};
+  }
+
+  const Core::ConversationScope& Scope = Grant.GetScope();
+  if (Grant.GetPrincipal().Value.empty() || Scope.Channel.Value.empty() ||
+      Scope.Account.Value.empty() || Scope.Mode.Value.empty() ||
+      Scope.Conversation.Value.empty() ||
+      Scope.Sender.Value.empty() || Scope.Principal.Value.empty() ||
+      Scope.Principal.Value != Grant.GetPrincipal().Value) {
+    return Core::MemoryRecallError{
+        Core::MemoryRecallErrorCode::UnauthorizedIdentity};
+  }
+
+  AuthorizedMemoryContext Context;
+  Context.ChannelId = Scope.Channel.Value;
+  Context.AccountId = Scope.Account.Value;
+  Context.ConversationId = Scope.Conversation.Value;
+  Context.PrincipalId = Grant.GetPrincipal().Value;
+  Context.IdentityPolicyVersion = Grant.GetPolicyVersion();
+  Context.IdentityVerified = true;
+  if (Scope.Mode.Value == "Session") {
+    Context.ScopeKind = ConversationScopeKind::Session;
+  } else if (Scope.ConversationType == Channels::ConversationKind::Group) {
+    Context.ScopeKind = ConversationScopeKind::Group;
+  } else {
+    Context.ScopeKind = ConversationScopeKind::Direct;
+  }
+
+  const auto Now = std::chrono::time_point_cast<std::chrono::seconds>(
+      std::chrono::system_clock::now());
+  const auto Recalled = static_cast<const ConversationMemory*>(this)->RecallLegacy(
+      Context, Now, Budget.TokenBudget);
+  if (const auto* Failure = std::get_if<MemoryError>(&Recalled);
+      Failure != nullptr) {
+    Core::MemoryRecallErrorCode Code =
+        Core::MemoryRecallErrorCode::StorageFailure;
+    switch (Failure->Code) {
+    case MemoryErrorCode::UnauthorizedIdentity:
+      Code = Core::MemoryRecallErrorCode::UnauthorizedIdentity;
+      break;
+    case MemoryErrorCode::SessionScopeVolatile:
+      Code = Core::MemoryRecallErrorCode::SessionScopeVolatile;
+      break;
+    case MemoryErrorCode::ConsentMismatch:
+    case MemoryErrorCode::ConsentRequired:
+      Code = Core::MemoryRecallErrorCode::ConsentMismatch;
+      break;
+    case MemoryErrorCode::StorageFailure:
+      Code = Core::MemoryRecallErrorCode::StorageFailure;
+      break;
+    case MemoryErrorCode::SensitiveContent:
+    case MemoryErrorCode::InvalidArgument:
+    case MemoryErrorCode::ForgetScopeRequired:
+      Code = Core::MemoryRecallErrorCode::UnauthorizedIdentity;
+      break;
+    }
+    return Core::MemoryRecallError{Code};
+  }
+
+  std::vector<Core::MemoryRecallCandidate> Candidates;
+  const auto& Legacy = std::get<std::vector<ContextCandidate>>(Recalled);
+  Candidates.reserve(Legacy.size());
+  for (const ContextCandidate& Candidate : Legacy) {
+    Core::MemoryRecallCandidate Neutral;
+    Neutral.MemoryId = Candidate.Id.Value;
+    switch (Candidate.Kind) {
+    case ContextItemKind::IdentityPreference:
+      Neutral.Kind = Core::MemoryRecallCandidateKind::IdentityPreference;
+      break;
+    case ContextItemKind::GroupMemory:
+      Neutral.Kind = Core::MemoryRecallCandidateKind::GroupMemory;
+      break;
+    case ContextItemKind::IdentityLinkMemory:
+      Neutral.Kind = Core::MemoryRecallCandidateKind::IdentityLinkMemory;
+      break;
+    case ContextItemKind::ActiveChatTask:
+      Neutral.Kind = Core::MemoryRecallCandidateKind::ActiveConversationContext;
+      break;
+    case ContextItemKind::ConversationHistory:
+    case ContextItemKind::SessionContext:
+      Neutral.Kind = Core::MemoryRecallCandidateKind::ConversationSummary;
+      break;
+    default:
+      Neutral.Kind = Core::MemoryRecallCandidateKind::ConversationSummary;
+      break;
+    }
+    Neutral.Priority = static_cast<std::uint8_t>(Candidate.Priority);
+    Neutral.Content = Candidate.Utf8Text;
+    Neutral.SourceMessageId = Candidate.Source.SourceMessageId;
+    Neutral.CreatedAt = Candidate.Source.CreatedAt;
+    Neutral.ExpiresAt = Candidate.Source.ExpiresAt;
+    Neutral.UserConfirmed = Candidate.Source.UserConfirmed;
+    Neutral.Confidence = Candidate.Source.Confidence == ContextConfidence::High
+                             ? Core::MemoryRecallConfidence::High
+                             : Candidate.Source.Confidence == ContextConfidence::Medium
+                                   ? Core::MemoryRecallConfidence::Medium
+                                   : Core::MemoryRecallConfidence::Low;
+    Neutral.TokenCost = Candidate.TokenCost;
+    Candidates.push_back(std::move(Neutral));
   }
   return Candidates;
 }

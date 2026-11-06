@@ -14,6 +14,7 @@
 #include "Source/Core/BusinessActionRegistry.hpp"
 #include "Source/Core/CredentialLease.h"
 #include "Source/Core/IdentityPolicy.h"
+#include "Source/Core/MemoryRecallPort.hpp"
 #include "Source/Core/OperationRecord.h"
 #include "Source/Providers/Contracts/ModelProviderPort.h"
 #include "Source/Providers/Contracts/AsyncModelProviderPort.hpp"
@@ -61,6 +62,7 @@ enum class CoreChatFailureCode : std::uint8_t {
   InvalidActionIdentifiers,
   OperationTransitionFailure,
   ChannelException,
+  MemoryRecallFailed,
 };
 
 struct CoreChatResult final {
@@ -81,7 +83,8 @@ public:
                   Channels::ChannelAdapterPort& Channel,
                   const CredentialLease& ChannelLease,
                   CoreActionIdSource& ActionIdSource,
-                  OperationRecordObserver* RecordObserver = nullptr);
+                  OperationRecordObserver* RecordObserver = nullptr,
+                  MemoryRecallPort* MemoryRecall = nullptr);
 
   CoreChatService(const IdentityPolicy& Policy,
                   AgentRuntimePort& AgentRuntime,
@@ -92,7 +95,8 @@ public:
                   const CredentialLease& ChannelLease,
                   CoreActionIdSource& ActionIdSource,
                   const BusinessActionRegistry& BusinessActions,
-                  OperationRecordObserver* RecordObserver = nullptr);
+                  OperationRecordObserver* RecordObserver = nullptr,
+                  MemoryRecallPort* MemoryRecall = nullptr);
 
   [[nodiscard]] CoreChatResult Process(
       const Channels::InboundChannelMessage& Message,
@@ -123,6 +127,9 @@ private:
       AgentRunResult AgentResult,
       std::stop_token CancellationToken);
 
+  [[nodiscard]] std::optional<CoreChatResult> RecallAuthorizedMemory(
+      const ResolvedIdentity& Identity, AuthorizedTurnContext& Context);
+
   const IdentityPolicy& Policy;
   AgentRuntimePort& AgentRuntime;
   Providers::ModelProviderPort& Provider;
@@ -133,6 +140,7 @@ private:
   CoreActionIdSource& ActionIdSource;
   OperationRecordObserver* RecordObserver{};
   const BusinessActionRegistry* BusinessActions{};
+  MemoryRecallPort* MemoryRecall{};
   std::mutex StateMutex;
   std::unordered_set<std::string> ProcessedDeduplicationIds;
   std::unordered_set<std::string> IssuedActionIds;

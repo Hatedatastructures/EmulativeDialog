@@ -1,4 +1,11 @@
 #include "Source/Memory/ConversationMemory.hpp"
+#include "Source/Core/CoreChatService.h"
+#include "Source/Core/CoreAuthorizedAction.h"
+#include "Tests/Contract/Memory/ConversationMemoryTests.hpp"
+
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 
 #include <algorithm>
 #include <charconv>
@@ -13,6 +20,12 @@
 #include <utility>
 #include <vector>
 
+#include <type_traits>
+
+static_assert(!std::is_default_constructible_v<EmulativeDialog::Core::MemoryReadGrant>);
+static_assert(!std::is_copy_constructible_v<EmulativeDialog::Core::MemoryReadGrant>);
+static_assert(!std::is_copy_assignable_v<EmulativeDialog::Core::MemoryReadGrant>);
+
 namespace {
 
 using namespace EmulativeDialog::Memory;
@@ -26,6 +39,401 @@ void Check(bool Condition, std::string_view Name) {
     ++Failures;
     std::cerr << "FAIL " << Name << '\n';
   }
+}
+
+class CoreTestChannel final : public EmulativeDialog::Channels::ChannelAdapterPort {
+public:
+  EmulativeDialog::Channels::CapabilitySnapshot GetCapabilities(
+      const EmulativeDialog::Channels::AccountProfile& Profile) override {
+    const auto Now = std::chrono::system_clock::now();
+    return {Profile.Channel,
+            Profile.Account,
+            Profile.Mode,
+            1,
+            Now,
+            std::nullopt,
+            EmulativeDialog::Channels::VerificationStatus::Verified,
+            EmulativeDialog::Channels::VerificationStatus::Verified,
+            {{EmulativeDialog::Channels::ChannelCapability::ReceiveText,
+              EmulativeDialog::Channels::CapabilityStatus::Supported,
+              EmulativeDialog::Channels::VerificationStatus::Verified,
+              Now,
+              std::nullopt,
+              std::nullopt},
+             {EmulativeDialog::Channels::ChannelCapability::SendText,
+              EmulativeDialog::Channels::CapabilityStatus::Supported,
+              EmulativeDialog::Channels::VerificationStatus::Verified,
+              Now,
+              std::nullopt,
+              std::nullopt}}};
+  }
+
+  EmulativeDialog::Channels::StartResult Start(
+      const EmulativeDialog::Channels::AccountProfile&,
+      const EmulativeDialog::Core::CredentialLease&) override {
+    return {EmulativeDialog::Channels::StartStatus::Started,
+            EmulativeDialog::Channels::ChannelErrorCode::None};
+  }
+  EmulativeDialog::Channels::StopResult Stop() override {
+    return {EmulativeDialog::Channels::StopStatus::Stopped,
+            EmulativeDialog::Channels::ChannelErrorCode::None};
+  }
+  EmulativeDialog::Channels::SubscriptionResult SubscribeEvents(
+      EmulativeDialog::Channels::ChannelEventSink&) override {
+    return {EmulativeDialog::Channels::SubscriptionStatus::Subscribed,
+            EmulativeDialog::Channels::ChannelErrorCode::None};
+  }
+  EmulativeDialog::Channels::ChannelReceipt SendAction(
+      const EmulativeDialog::Core::CoreAuthorizedAction& Action,
+      const EmulativeDialog::Core::CredentialLease&) override {
+    return {Action.GetActionId(),
+            Action.GetOperationId(),
+            std::nullopt,
+            std::chrono::system_clock::now(),
+            EmulativeDialog::Channels::ReceiptStatus::Succeeded,
+            EmulativeDialog::Channels::ChannelErrorCode::None,
+            std::nullopt};
+  }
+  EmulativeDialog::Channels::HealthSnapshot GetHealthSnapshot() const override {
+    return {EmulativeDialog::Channels::ConnectionStatus::Connected,
+            EmulativeDialog::Channels::AuthenticationStatus::Valid,
+            EmulativeDialog::Channels::RateLimitStatus::Normal,
+            std::chrono::system_clock::now(),
+            std::nullopt,
+            EmulativeDialog::Channels::ChannelErrorCode::None};
+  }
+};
+
+class CoreTestChannelLease final : public EmulativeDialog::Core::CredentialLease {
+public:
+  [[nodiscard]] std::string_view GetAuthenticationSecret() const noexcept override {
+    return "channel-test";
+  }
+};
+
+class CoreTestProviderLease final : public EmulativeDialog::Providers::CredentialLease {
+public:
+  [[nodiscard]] std::string_view GetAuthenticationSecret() const noexcept override {
+    return "provider-test";
+  }
+};
+
+class CoreTestProvider final : public EmulativeDialog::Providers::ModelProviderPort {
+public:
+  [[nodiscard]] EmulativeDialog::Providers::ProviderResult<
+      EmulativeDialog::Providers::ProviderCapabilities>
+  GetCapabilities(const EmulativeDialog::Providers::ProviderProfileId&) const override {
+    return EmulativeDialog::Providers::ProviderCapabilities{};
+  }
+  [[nodiscard]] EmulativeDialog::Providers::ProviderResult<std::monostate>
+  ValidateProfile(const EmulativeDialog::Providers::ModelProviderProfile&) const override {
+    return std::monostate{};
+  }
+  [[nodiscard]] EmulativeDialog::Providers::CanonicalTerminalEvent StreamTurn(
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      const EmulativeDialog::Providers::CanonicalModelRequest& Request,
+      std::stop_token,
+      const EmulativeDialog::Providers::EventSink&) override {
+    EmulativeDialog::Providers::ResponseFailedEvent Failed;
+    Failed.Metadata = {Request.Id, Request.TurnId, 1};
+    Failed.Failure = {EmulativeDialog::Providers::FailureCode::ProviderRejected,
+                      false,
+                      "unused"};
+    return Failed;
+  }
+  [[nodiscard]] EmulativeDialog::Providers::ProviderResult<
+      EmulativeDialog::Providers::ProviderHealthStatus>
+  HealthCheck(const EmulativeDialog::Providers::ModelProviderProfile&) override {
+    return EmulativeDialog::Providers::ProviderHealthStatus{
+        EmulativeDialog::Providers::ProviderHealthState::Available};
+  }
+};
+
+class CoreTestAgent final : public EmulativeDialog::Core::AgentRuntimePort {
+public:
+  std::size_t Calls{0};
+  std::vector<EmulativeDialog::Core::MemoryRecallCandidate> LastCandidates;
+  [[nodiscard]] EmulativeDialog::Core::AgentRunResult RunTurn(
+      const EmulativeDialog::Core::AuthorizedTurnContext& Context,
+      EmulativeDialog::Providers::ModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      std::stop_token) override {
+    ++Calls;
+    LastCandidates = Context.RecallCandidates;
+    return EmulativeDialog::Core::AgentRunResult::ResponseReady(
+        EmulativeDialog::Providers::CompletionKind::FinalAnswer, "ok");
+  }
+};
+
+class CoreTestAsyncProvider final
+    : public EmulativeDialog::Providers::AsyncModelProviderPort {
+public:
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::ProviderResult<
+          EmulativeDialog::Providers::ProviderCapabilities>>
+  GetCapabilitiesAsync(
+      const EmulativeDialog::Providers::ProviderProfileId&) const override {
+    co_return EmulativeDialog::Providers::ProviderCapabilities{};
+  }
+
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::ProviderResult<std::monostate>>
+  ValidateProfileAsync(
+      const EmulativeDialog::Providers::ModelProviderProfile&) const override {
+    co_return std::monostate{};
+  }
+
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::CanonicalTerminalEvent>
+  StreamTurnAsync(
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      const EmulativeDialog::Providers::CanonicalModelRequest& Request,
+      std::stop_token,
+      const EmulativeDialog::Providers::EventSink&) override {
+    EmulativeDialog::Providers::ResponseFailedEvent Failed;
+    Failed.Metadata = {Request.Id, Request.TurnId, 1};
+    Failed.Failure = {EmulativeDialog::Providers::FailureCode::ProviderRejected,
+                      false, "unused async action fixture"};
+    co_return Failed;
+  }
+
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::ProviderResult<
+          EmulativeDialog::Providers::ProviderHealthStatus>>
+  HealthCheckAsync(
+      const EmulativeDialog::Providers::ModelProviderProfile&) override {
+    co_return EmulativeDialog::Providers::ProviderHealthStatus{
+        EmulativeDialog::Providers::ProviderHealthState::Available};
+  }
+};
+
+class CoreTestToolRuntime final
+    : public EmulativeDialog::Core::AsyncAgentToolRuntimePort,
+      public EmulativeDialog::Core::AgentRuntimePort {
+public:
+  [[nodiscard]] EmulativeDialog::Core::AgentRunResult RunTurn(
+      const EmulativeDialog::Core::AuthorizedTurnContext&,
+      EmulativeDialog::Providers::ModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      std::stop_token) override {
+    return EmulativeDialog::Core::AgentRunResult::Unsupported();
+  }
+
+  [[nodiscard]] boost::asio::awaitable<EmulativeDialog::Core::AgentRunResult>
+  RunTurnAsync(
+      const EmulativeDialog::Core::AuthorizedTurnContext&,
+      EmulativeDialog::Providers::AsyncModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      std::stop_token) override {
+    co_return EmulativeDialog::Core::AgentRunResult::ResponseReady(
+        EmulativeDialog::Providers::CompletionKind::FinalAnswer, "unused");
+  }
+
+  [[nodiscard]] boost::asio::awaitable<EmulativeDialog::Core::AgentRunResult>
+  RunTurnWithToolsAsync(
+      const EmulativeDialog::Core::AuthorizedTurnContext& Context,
+      EmulativeDialog::Providers::AsyncModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      EmulativeDialog::Core::AsyncBusinessActionDispatcherPort& Dispatcher,
+      std::stop_token CancellationToken) override {
+    const auto Definitions = Dispatcher.GetToolDefinitions(Context);
+    if (Definitions.empty()) {
+      co_return EmulativeDialog::Core::AgentRunResult::Unsupported();
+    }
+    std::vector<EmulativeDialog::Providers::FunctionCall> Calls;
+    Calls.push_back(EmulativeDialog::Providers::FunctionCall{
+        .Id = {"tool-memory-1"},
+        .Name = Definitions.front().Name,
+        .Arguments = {R"({"query":"memory"})"}});
+    const auto Receipts = co_await Dispatcher.DispatchAsync(
+        Context, {"request-memory-1"}, std::move(Calls), CancellationToken);
+    if (Receipts.size() != 1U ||
+        Receipts.front().Status !=
+            EmulativeDialog::Core::CoreActionReceiptStatus::Succeeded) {
+      co_return EmulativeDialog::Core::AgentRunResult::Failed(
+          EmulativeDialog::Core::AgentRunFailureCode::InternalError);
+    }
+    co_return EmulativeDialog::Core::AgentRunResult::ResponseReady(
+        EmulativeDialog::Providers::CompletionKind::FinalAnswer,
+        "action completed");
+  }
+};
+
+class CoreTestIdSource final : public EmulativeDialog::Core::CoreActionIdSource {
+public:
+  [[nodiscard]] EmulativeDialog::Core::CoreActionIdentifiers Next() override {
+    return {{"action-memory"}, {"operation-memory"}, {"idempotency-memory"}};
+  }
+};
+
+class CoreTestRecallPort final : public EmulativeDialog::Core::MemoryRecallPort {
+public:
+  bool Fail{false};
+  bool SeenExactGrant{false};
+  [[nodiscard]] EmulativeDialog::Core::MemoryRecallResult Recall(
+      EmulativeDialog::Core::MemoryReadGrant Grant,
+      const EmulativeDialog::Core::RecallBudget& Budget) override {
+    SeenExactGrant = Grant.GetPrincipal().Value == "principal-memory" &&
+                     Grant.GetScope().Channel.Value == "qq" &&
+                     Grant.GetScope().Account.Value == "account-memory" &&
+                     Grant.GetScope().Mode.Value == "Mock" &&
+                     Grant.GetScope().Conversation.Value == "conversation-memory" &&
+                     Grant.GetScope().Sender.Value == "sender-memory" &&
+                     Grant.GetPolicyVersion() == 9 &&
+                     !Grant.GetAgentTurn().Value.empty() && Budget.TokenBudget != 0;
+    if (Fail) {
+      return EmulativeDialog::Core::MemoryRecallError{
+          EmulativeDialog::Core::MemoryRecallErrorCode::ConsentMismatch};
+    }
+    return std::vector<EmulativeDialog::Core::MemoryRecallCandidate>{
+        {.MemoryId = "memory-neutral",
+         .Kind = EmulativeDialog::Core::MemoryRecallCandidateKind::IdentityPreference,
+         .Priority = 5,
+         .Content = "authorized context",
+         .SourceMessageId = "memory-source",
+         .ExpiresAt = std::nullopt,
+         .UserConfirmed = false,
+         .Confidence = EmulativeDialog::Core::MemoryRecallConfidence::Medium,
+         .TokenCost = 2}};
+  }
+};
+
+EmulativeDialog::Channels::InboundChannelMessage MakeCoreMemoryMessage(
+    std::string Deduplication) {
+  EmulativeDialog::Channels::InboundChannelMessage Message;
+  Message.Envelope = {
+      {"qq"},
+      {"Mock"},
+      {"account-memory"},
+      {"conversation-memory"},
+      EmulativeDialog::Channels::ConversationKind::Private,
+      {"sender-memory"},
+      {"message-memory"},
+      {"event-memory"},
+      std::chrono::system_clock::now(),
+      {std::move(Deduplication)}};
+  Message.Message.MessageParts.emplace_back(
+      EmulativeDialog::Channels::TextPart{"recall please"});
+  return Message;
+}
+
+void TestCoreAuthorizedRecallBoundary() {
+  using namespace EmulativeDialog;
+  const Core::IdentityBinding Binding{
+      .Account = Channels::AccountProfile{.Channel = {"qq"},
+                                          .Account = {"account-memory"},
+                                          .Mode = {"Mock"}},
+      .Sender = {"sender-memory"},
+      .Principal = {"principal-memory"}};
+  Core::IdentityPolicy Policy{9, {Binding}};
+  Providers::ModelProviderProfile Profile;
+  Profile.Id = {"memory-test-profile"};
+  Profile.ModelName = "memory-test-model";
+  Profile.Limit.MaximumOutputTokens = 64;
+
+  CoreTestAgent Agent;
+  CoreTestProvider Provider;
+  CoreTestProviderLease ProviderLease;
+  CoreTestChannel Channel;
+  CoreTestChannelLease ChannelLease;
+  CoreTestIdSource IdSource;
+  CoreTestRecallPort Recall;
+  Core::CoreChatService Service(Policy, Agent, Provider, Profile, ProviderLease,
+                                Channel, ChannelLease, IdSource, nullptr,
+                                &Recall);
+  const Core::CoreChatResult Success =
+      Service.Process(MakeCoreMemoryMessage("memory-success"));
+  Check(Success.Status == Core::CoreChatStatus::Completed &&
+            Recall.SeenExactGrant && Agent.Calls == 1U &&
+            Agent.LastCandidates.size() == 1U &&
+            Agent.LastCandidates.front().Content == "authorized context",
+        "Core issues exact one-turn MemoryReadGrant and forwards neutral DTOs");
+
+  CoreTestAgent FailedAgent;
+  CoreTestIdSource FailedIds;
+  CoreTestRecallPort FailedRecall;
+  FailedRecall.Fail = true;
+  Core::CoreChatService FailedService(
+      Policy, FailedAgent, Provider, Profile, ProviderLease, Channel,
+      ChannelLease, FailedIds, nullptr, &FailedRecall);
+  const Core::CoreChatResult Failure =
+      FailedService.Process(MakeCoreMemoryMessage("memory-failure"));
+  Check(Failure.Status == Core::CoreChatStatus::Failed &&
+            Failure.Failure == Core::CoreChatFailureCode::MemoryRecallFailed &&
+            FailedAgent.Calls == 0U,
+        "Memory Recall failure is fail-closed before AgentRuntime");
+}
+
+void TestCoreAsyncBusinessActionDispatcher() {
+  using namespace EmulativeDialog;
+  const Core::IdentityBinding Binding{
+      .Account = Channels::AccountProfile{.Channel = {"qq"},
+                                          .Account = {"account-memory"},
+                                          .Mode = {"Mock"}},
+      .Sender = {"sender-memory"},
+      .Principal = {"principal-memory"}};
+  Core::IdentityPolicy Policy{9, {Binding}};
+  Providers::ModelProviderProfile Profile;
+  Profile.Id = {"action-profile"};
+  Profile.ModelName = "action-model";
+  Profile.Limit.MaximumOutputTokens = 64;
+  Core::BusinessActionRegistry Actions;
+  const auto Registration = Actions.Register(Core::BusinessActionDefinition{
+      .Name = "LookupProfile",
+      .RequiredArgumentFields = {"query"},
+      .RequiredCapabilities = {},
+      .Scope = Core::BusinessActionScopeRequirement{
+          .ChannelId = std::string{"qq"},
+          .ConversationId = std::string{"conversation-memory"}},
+      .Handler = {},
+      .ModelTool = Providers::ToolDefinition{
+          .Name = "LookupProfile",
+          .Description = "read-only memory fixture",
+          .Parameters = Providers::JsonSchema{
+              R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query"],"additionalProperties":false})"},
+          .Strict = true},
+      .EffectClass = Core::BusinessActionEffectClass::InProcessReadOnly,
+      .AsyncHandler = [](const Core::BusinessActionInvocation&,
+                         std::stop_token) -> boost::asio::awaitable<
+                             Core::BusinessActionExecutionResult> {
+        co_return Core::BusinessActionExecutionResult{
+            Core::BusinessActionExecutionStatus::Succeeded, "LookupOk"};
+      }});
+  Check(!Registration.has_value(),
+        "read-only async business action registers for dispatcher coverage");
+
+  CoreTestProviderLease ProviderLease;
+  CoreTestChannel Channel;
+  CoreTestChannelLease ChannelLease;
+  CoreTestIdSource IdSource;
+  CoreTestProvider SyncProvider;
+  CoreTestAsyncProvider Provider;
+  CoreTestToolRuntime Runtime;
+  Core::CoreChatService Service(Policy, Runtime, SyncProvider, Profile,
+                                ProviderLease, Channel, ChannelLease, IdSource,
+                                Actions);
+  boost::asio::io_context Io;
+  std::optional<Core::CoreChatResult> Result;
+  std::exception_ptr Failure;
+  boost::asio::co_spawn(
+      Io,
+      Service.ProcessAsync(MakeCoreMemoryMessage("memory-action"), Runtime,
+                           Provider),
+      [&Result, &Failure](std::exception_ptr Exception,
+                          Core::CoreChatResult Value) {
+        Failure = std::move(Exception);
+        Result = std::move(Value);
+      });
+  Io.run();
+  Check(!Failure && Result.has_value() &&
+            Result->Status == Core::CoreChatStatus::Completed,
+        "async Core action dispatcher completes an authorized read-only call");
 }
 
 std::chrono::sys_seconds Now() {
@@ -130,6 +538,69 @@ public:
     return Result;
   }
 };
+
+void TestCoreConversationMemoryRecallPort() {
+  using namespace EmulativeDialog;
+  FakeMemoryStorage Storage;
+  Memory::ConversationMemory Memory(Storage);
+  Memory::AuthorizedMemoryContext MemoryContext;
+  MemoryContext.ChannelId = "qq";
+  MemoryContext.AccountId = "account-memory";
+  MemoryContext.ConversationId = "conversation-memory";
+  MemoryContext.PrincipalId = "principal-memory";
+  MemoryContext.IdentityPolicyVersion = 9;
+  MemoryContext.IdentityVerified = true;
+  Memory::ConsentGrant Consent;
+  Consent.ConsentId = "consent-memory";
+  Consent.GrantorPrincipalId = MemoryContext.PrincipalId;
+  Consent.ChannelId = MemoryContext.ChannelId;
+  Consent.AccountId = MemoryContext.AccountId;
+  Consent.ConversationId = MemoryContext.ConversationId;
+  Consent.Category = Memory::MemoryCategory::IdentityPreference;
+  Consent.SourceMessageId = "consent-source";
+  Consent.GrantedAt = Now();
+  Consent.IdentityPolicyVersion = 9;
+  static_cast<void>(Memory.RegisterConsent(Consent));
+  Memory::MemoryWriteRequest Request;
+  Request.MemoryId = "memory-real";
+  Request.Category = Memory::MemoryCategory::IdentityPreference;
+  Request.SubjectId = MemoryContext.PrincipalId;
+  Request.Content = "real authorized memory";
+  Request.SourceReference = "memory-source";
+  Request.ConsentId = Consent.ConsentId;
+  Request.CreatedAt = Now();
+  Request.UserConfirmed = true;
+  Check(std::holds_alternative<std::monostate>(
+            Memory.Write(MemoryContext, Request, Now())),
+        "real ConversationMemory fixture writes before Core Recall");
+
+  const Core::IdentityBinding Binding{
+      .Account = Channels::AccountProfile{.Channel = {"qq"},
+                                          .Account = {"account-memory"},
+                                          .Mode = {"Mock"}},
+      .Sender = {"sender-memory"},
+      .Principal = {"principal-memory"}};
+  Core::IdentityPolicy Policy{9, {Binding}};
+  Providers::ModelProviderProfile Profile;
+  Profile.Id = {"real-memory-profile"};
+  Profile.ModelName = "real-memory-model";
+  Profile.Limit.MaximumOutputTokens = 64;
+  CoreTestAgent Agent;
+  CoreTestProvider Provider;
+  CoreTestProviderLease ProviderLease;
+  CoreTestChannel Channel;
+  CoreTestChannelLease ChannelLease;
+  CoreTestIdSource IdSource;
+  Core::CoreChatService Service(Policy, Agent, Provider, Profile, ProviderLease,
+                                Channel, ChannelLease, IdSource, nullptr,
+                                &Memory);
+  const Core::CoreChatResult Result =
+      Service.Process(MakeCoreMemoryMessage("memory-real-service"));
+  Check(Result.Status == Core::CoreChatStatus::Completed &&
+            Agent.Calls == 1U && Agent.LastCandidates.size() == 1U &&
+            Agent.LastCandidates.front().Content == "real authorized memory",
+        "Core reaches ConversationMemory through the authorized Recall port");
+}
 
 AuthorizedMemoryContext Context(
     ConversationScopeKind Kind = ConversationScopeKind::Direct,
@@ -401,12 +872,12 @@ void TestIdentitySessionAndPolicy() {
             Now()))
             ->Code == MemoryErrorCode::SessionScopeVolatile,
         "SessionScope write rejected");
-  Check(AsError(Memory.Recall(Session, Now(), 100))->Code ==
+  Check(AsError(Memory.RecallLegacy(Session, Now(), 100))->Code ==
             MemoryErrorCode::SessionScopeVolatile,
         "SessionScope recall rejected");
   auto Unverified = Context();
   Unverified.IdentityVerified = false;
-  Check(AsError(Memory.Recall(Unverified, Now(), 100))->Code ==
+  Check(AsError(Memory.RecallLegacy(Unverified, Now(), 100))->Code ==
             MemoryErrorCode::UnauthorizedIdentity,
         "unverified identity rejected");
   auto MismatchedPolicy = Context(ConversationScopeKind::Direct,
@@ -519,7 +990,7 @@ void TestOptionalProposalConsentRequiresExactMatch() {
                                   std::string(ConsentId), "proposal-a");
     Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
 
-    const auto Recalled = Memory.Recall(Direct, Now(), 1000);
+    const auto Recalled = Memory.RecallLegacy(Direct, Now(), 1000);
     const auto* Items = std::get_if<
         std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
     Check(Items != nullptr && Items->empty(),
@@ -539,7 +1010,7 @@ void TestOptionalProposalConsentRequiresExactMatch() {
                                   std::string(ConsentId), "proposal-a");
     Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
 
-    const auto Recalled = Memory.Recall(Direct, Now(), 1000);
+    const auto Recalled = Memory.RecallLegacy(Direct, Now(), 1000);
     const auto* Items = std::get_if<
         std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
     Check(Items != nullptr && Items->size() == 1U &&
@@ -563,7 +1034,7 @@ void TestOptionalProposalConsentRequiresExactMatch() {
                                   std::string(ConsentId), "proposal-a");
     Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
 
-    const auto Recalled = Memory.Recall(GroupReader, Now(), 1000);
+    const auto Recalled = Memory.RecallLegacy(GroupReader, Now(), 1000);
     const auto* Items = std::get_if<
         std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
     Check(Items != nullptr && Items->empty(),
@@ -587,7 +1058,7 @@ void TestOptionalProposalConsentRequiresExactMatch() {
                                   std::string(ConsentId), "proposal-a");
     Storage.Rows[ScopeKey(BoundRecord)].push_back(BoundRecord);
 
-    const auto Recalled = Memory.Recall(GroupReader, Now(), 1000);
+    const auto Recalled = Memory.RecallLegacy(GroupReader, Now(), 1000);
     const auto* Items = std::get_if<
         std::vector<EmulativeDialog::Context::ContextCandidate>>(&Recalled);
     Check(Items != nullptr && Items->size() == 1U &&
@@ -655,8 +1126,8 @@ void TestScopeKindAndGroupMembership() {
       Group,
       Request("memory-group", MemoryCategory::GroupMemory, "consent-group"),
       Now()));
-  const auto DirectRecall = Memory.Recall(Direct, Now(), 1000);
-  const auto GroupRecall = Memory.Recall(Group, Now(), 1000);
+  const auto DirectRecall = Memory.RecallLegacy(Direct, Now(), 1000);
+  const auto GroupRecall = Memory.RecallLegacy(Group, Now(), 1000);
   Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
             DirectRecall)
             .size() == 1,
@@ -788,7 +1259,7 @@ void TestFixtureGroupConsentAllowsListedMemberRecall() {
         JsonStringField(Attempt, "AccountId").value_or("");
     const auto Expected = JsonStringField(Attempt, "Expected");
     const auto RecordKind = JsonStringField(Attempt, "RecordKind");
-    const auto Recall = Memory.Recall(Reader, Now(), 1000);
+    const auto Recall = Memory.RecallLegacy(Reader, Now(), 1000);
     const auto* Candidates =
         std::get_if<std::vector<EmulativeDialog::Context::ContextCandidate>>(
             &Recall);
@@ -1022,7 +1493,7 @@ void TestRecallPriorityAndSummaryMapping() {
       Request("memory-task", MemoryCategory::ActiveConversationContext,
               "consent-task"),
       Now()));
-  const auto Recall = Memory.Recall(Value, Now(), 1000);
+  const auto Recall = Memory.RecallLegacy(Value, Now(), 1000);
   const auto& Candidates =
       std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
           Recall);
@@ -1270,13 +1741,13 @@ void TestRestartBoundaryAndStorageFailures() {
   ConversationMemory Restarted(Storage);
   static_cast<void>(Restarted.RegisterConsent(
       Grant(MemoryCategory::IdentityPreference, Value)));
-  const auto Recall = Restarted.Recall(Value, Now(), 1000);
+  const auto Recall = Restarted.RecallLegacy(Value, Now(), 1000);
   Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
             Recall)
             .size() == 1,
         "durable scope recovers after restart");
   Storage.FailList = true;
-  Check(AsError(Restarted.Recall(Value, Now(), 1000))->Code ==
+  Check(AsError(Restarted.RecallLegacy(Value, Now(), 1000))->Code ==
             MemoryErrorCode::StorageFailure,
         "list failure mapped");
   Storage.FailList = false;
@@ -1357,11 +1828,11 @@ void TestAdditionalReviewScenarios() {
             Memory.Write(Value, FutureExpiry, Now())),
         "future expiry accepted");
   Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            Memory.Recall(Value, Now() + std::chrono::seconds{6}, 1000))
+            Memory.RecallLegacy(Value, Now() + std::chrono::seconds{6}, 1000))
             .empty(),
         "expired recall filtered");
   Check(std::get<std::vector<EmulativeDialog::Context::ContextCandidate>>(
-            Memory.Recall(Value, Now(), 1))
+            Memory.RecallLegacy(Value, Now(), 1))
             .empty(),
         "tiny token budget yields no candidates");
 }
@@ -1540,7 +2011,10 @@ void TestSensitiveMarkersAreRejectedAcrossPersistedFields() {
 
 } // namespace
 
-int main() {
+int RunConversationMemoryContractTests() {
+  TestCoreAuthorizedRecallBoundary();
+  TestCoreAsyncBusinessActionDispatcher();
+  TestCoreConversationMemoryRecallPort();
   TestIdentitySessionAndPolicy();
   TestConsentValidationAndProposalBinding();
   TestOptionalProposalConsentRequiresExactMatch();
@@ -1563,3 +2037,7 @@ int main() {
   std::cout << "All ConversationMemory checks passed\n";
   return 0;
 }
+
+#ifndef EMULATIVE_DIALOG_MEMORY_SUITE_NO_MAIN
+int main() { return RunConversationMemoryContractTests(); }
+#endif

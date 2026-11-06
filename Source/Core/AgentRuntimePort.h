@@ -9,6 +9,7 @@
 
 #include "Source/Channels/Contracts/ChannelAdapterPort.h"
 #include "Source/Core/IdentityPolicy.h"
+#include "Source/Core/MemoryRecallPort.hpp"
 #include "Source/Providers/Contracts/ModelProviderPort.h"
 
 namespace EmulativeDialog::Core {
@@ -21,6 +22,9 @@ struct AuthorizedTurnContext final {
   // Populated by IdentityPolicy from trusted Core bindings. Model output and
   // ChannelEnvelope fields never supply this set.
   std::vector<std::string> GrantedCapabilities{};
+  // Core-authorized, neutral memory material. The grant and its authorization
+  // internals are consumed before this context is handed to AgentRuntime.
+  std::vector<MemoryRecallCandidate> RecallCandidates{};
 };
 
 enum class AgentRunStatus : std::uint8_t {
