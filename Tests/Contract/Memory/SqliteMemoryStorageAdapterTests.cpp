@@ -434,7 +434,7 @@ void TestProposalIdRoundTripAndBackupRestore() {
   Check(std::holds_alternative<std::monostate>(
             ReopenedMemory.RegisterConsent(ExactGrant)),
         "exact proposal consent is registered after reopening the source DB");
-  const auto Recalled = ReopenedMemory.Recall(ContextValue, Now(), 256U);
+  const auto Recalled = ReopenedMemory.RecallLegacy(ContextValue, Now(), 256U);
   const auto* RecalledItems = std::get_if<std::vector<
       EmulativeDialog::Context::ContextCandidate>>(&Recalled);
   Check(RecalledItems != nullptr && RecalledItems->size() == 1U,
@@ -446,7 +446,7 @@ void TestProposalIdRoundTripAndBackupRestore() {
             MismatchedMemory.RegisterConsent(WrongRecallGrant)),
         "different proposal-bound consent registers for negative recall test");
   const auto MismatchedRecall =
-      MismatchedMemory.Recall(ContextValue, Now(), 256U);
+      MismatchedMemory.RecallLegacy(ContextValue, Now(), 256U);
   const auto* MismatchedItems = std::get_if<std::vector<
       EmulativeDialog::Context::ContextCandidate>>(&MismatchedRecall);
   Check(MismatchedItems != nullptr && MismatchedItems->empty(),
@@ -473,7 +473,7 @@ void TestProposalIdRoundTripAndBackupRestore() {
             RestoredMemory.RegisterConsent(ExactGrant)),
         "exact proposal consent registers after destination restore");
   const auto RestoredRecall =
-      RestoredMemory.Recall(ContextValue, Now(), 256U);
+      RestoredMemory.RecallLegacy(ContextValue, Now(), 256U);
   const auto* RestoredItems = std::get_if<std::vector<
       EmulativeDialog::Context::ContextCandidate>>(&RestoredRecall);
   Check(RestoredItems != nullptr && RestoredItems->size() == 1U,
@@ -604,7 +604,7 @@ void TestBackupRestorePreservesExpiryAcrossRestart() {
   const auto* ActiveAtExpiryRecords = StorageValue(ActiveAtExpiry);
   Check(ActiveAtExpiryRecords != nullptr && ActiveAtExpiryRecords->empty(),
         "ListActive hides the restored record at its original expiry");
-  const auto RecallAtExpiry = Restorer.Recall(ContextValue, ExpiresAt, 256U);
+  const auto RecallAtExpiry = Restorer.RecallLegacy(ContextValue, ExpiresAt, 256U);
   const auto* RecalledAtExpiry = std::get_if<std::vector<
       EmulativeDialog::Context::ContextCandidate>>(&RecallAtExpiry);
   Check(RecalledAtExpiry != nullptr && RecalledAtExpiry->empty(),
@@ -1081,7 +1081,7 @@ void TestConversationMemoryConsentTombstoneRestart() {
     Check(std::holds_alternative<std::monostate>(Memory.Write(
               ContextValue, MakeWriteRequest("persisted-memory", true), Now())),
           "ConversationMemory writes through SQLite adapter");
-    const auto Recalled = Memory.Recall(ContextValue, Now(), 256);
+    const auto Recalled = Memory.RecallLegacy(ContextValue, Now(), 256);
     const auto* ContextItems =
         std::get_if<std::vector<EmulativeDialog::Context::ContextCandidate>>(
             &Recalled);

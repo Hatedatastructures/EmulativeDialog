@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Source/Core/MemoryRecallPort.hpp"
 #include "Source/Context/ContextSelector.hpp"
 
 #include <chrono>
@@ -169,7 +170,7 @@ struct ForgetRequest final {
   bool EntireAuthorizedScope{false};
 };
 
-class ConversationMemory final {
+class ConversationMemory final : public Core::MemoryRecallPort {
 public:
   explicit ConversationMemory(MemoryStoragePort& Storage,
                               std::size_t PerScopeCapacity = 8) noexcept;
@@ -183,9 +184,15 @@ public:
       const AuthorizedMemoryContext& Context,
       const MemoryWriteRequest& Request,
       std::chrono::sys_seconds Now);
-  [[nodiscard]] MemoryResult<std::vector<Context::ContextCandidate>> Recall(
+  // Compatibility projection for the pre-contract memory fixture. The
+  // Core-owned Recall API below returns neutral DTOs and never exposes this
+  // projection to Core or AgentRuntime.
+  [[nodiscard]] MemoryResult<std::vector<Context::ContextCandidate>> RecallLegacy(
       const AuthorizedMemoryContext& Context, std::chrono::sys_seconds Now,
       std::uint64_t TokenBudget) const;
+  [[nodiscard]] Core::MemoryRecallResult Recall(
+      Core::MemoryReadGrant Grant,
+      const Core::RecallBudget& Budget) override;
   [[nodiscard]] MemoryResult<std::monostate> Forget(
       const AuthorizedMemoryContext& Context, const ForgetRequest& Request,
       std::chrono::sys_seconds Now);
