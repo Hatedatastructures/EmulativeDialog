@@ -167,6 +167,104 @@ public:
   }
 };
 
+class CoreTestAsyncProvider final
+    : public EmulativeDialog::Providers::AsyncModelProviderPort {
+public:
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::ProviderResult<
+          EmulativeDialog::Providers::ProviderCapabilities>>
+  GetCapabilitiesAsync(
+      const EmulativeDialog::Providers::ProviderProfileId&) const override {
+    co_return EmulativeDialog::Providers::ProviderCapabilities{};
+  }
+
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::ProviderResult<std::monostate>>
+  ValidateProfileAsync(
+      const EmulativeDialog::Providers::ModelProviderProfile&) const override {
+    co_return std::monostate{};
+  }
+
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::CanonicalTerminalEvent>
+  StreamTurnAsync(
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      const EmulativeDialog::Providers::CanonicalModelRequest& Request,
+      std::stop_token,
+      const EmulativeDialog::Providers::EventSink&) override {
+    EmulativeDialog::Providers::ResponseFailedEvent Failed;
+    Failed.Metadata = {Request.Id, Request.TurnId, 1};
+    Failed.Failure = {EmulativeDialog::Providers::FailureCode::ProviderRejected,
+                      false, "unused async action fixture"};
+    co_return Failed;
+  }
+
+  [[nodiscard]] boost::asio::awaitable<
+      EmulativeDialog::Providers::ProviderResult<
+          EmulativeDialog::Providers::ProviderHealthStatus>>
+  HealthCheckAsync(
+      const EmulativeDialog::Providers::ModelProviderProfile&) override {
+    co_return EmulativeDialog::Providers::ProviderHealthStatus{
+        EmulativeDialog::Providers::ProviderHealthState::Available};
+  }
+};
+
+class CoreTestToolRuntime final
+    : public EmulativeDialog::Core::AsyncAgentToolRuntimePort,
+      public EmulativeDialog::Core::AgentRuntimePort {
+public:
+  [[nodiscard]] EmulativeDialog::Core::AgentRunResult RunTurn(
+      const EmulativeDialog::Core::AuthorizedTurnContext&,
+      EmulativeDialog::Providers::ModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      std::stop_token) override {
+    return EmulativeDialog::Core::AgentRunResult::Unsupported();
+  }
+
+  [[nodiscard]] boost::asio::awaitable<EmulativeDialog::Core::AgentRunResult>
+  RunTurnAsync(
+      const EmulativeDialog::Core::AuthorizedTurnContext&,
+      EmulativeDialog::Providers::AsyncModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      std::stop_token) override {
+    co_return EmulativeDialog::Core::AgentRunResult::ResponseReady(
+        EmulativeDialog::Providers::CompletionKind::FinalAnswer, "unused");
+  }
+
+  [[nodiscard]] boost::asio::awaitable<EmulativeDialog::Core::AgentRunResult>
+  RunTurnWithToolsAsync(
+      const EmulativeDialog::Core::AuthorizedTurnContext& Context,
+      EmulativeDialog::Providers::AsyncModelProviderPort&,
+      const EmulativeDialog::Providers::ModelProviderProfile&,
+      const EmulativeDialog::Providers::CredentialLease&,
+      EmulativeDialog::Core::AsyncBusinessActionDispatcherPort& Dispatcher,
+      std::stop_token CancellationToken) override {
+    const auto Definitions = Dispatcher.GetToolDefinitions(Context);
+    if (Definitions.empty()) {
+      co_return EmulativeDialog::Core::AgentRunResult::Unsupported();
+    }
+    std::vector<EmulativeDialog::Providers::FunctionCall> Calls;
+    Calls.push_back(EmulativeDialog::Providers::FunctionCall{
+        .Id = {"tool-memory-1"},
+        .Name = Definitions.front().Name,
+        .Arguments = {R"({"query":"memory"})"}});
+    const auto Receipts = co_await Dispatcher.DispatchAsync(
+        Context, {"request-memory-1"}, std::move(Calls), CancellationToken);
+    if (Receipts.size() != 1U ||
+        Receipts.front().Status !=
+            EmulativeDialog::Core::CoreActionReceiptStatus::Succeeded) {
+      co_return EmulativeDialog::Core::AgentRunResult::Failed(
+          EmulativeDialog::Core::AgentRunFailureCode::InternalError);
+    }
+    co_return EmulativeDialog::Core::AgentRunResult::ResponseReady(
+        EmulativeDialog::Providers::CompletionKind::FinalAnswer,
+        "action completed");
+  }
+};
+
 class CoreTestIdSource final : public EmulativeDialog::Core::CoreActionIdSource {
 public:
   [[nodiscard]] EmulativeDialog::Core::CoreActionIdentifiers Next() override {
@@ -270,6 +368,72 @@ void TestCoreAuthorizedRecallBoundary() {
             Failure.Failure == Core::CoreChatFailureCode::MemoryRecallFailed &&
             FailedAgent.Calls == 0U,
         "Memory Recall failure is fail-closed before AgentRuntime");
+}
+
+void TestCoreAsyncBusinessActionDispatcher() {
+  using namespace EmulativeDialog;
+  const Core::IdentityBinding Binding{
+      .Account = Channels::AccountProfile{.Channel = {"qq"},
+                                          .Account = {"account-memory"},
+                                          .Mode = {"Mock"}},
+      .Sender = {"sender-memory"},
+      .Principal = {"principal-memory"}};
+  Core::IdentityPolicy Policy{9, {Binding}};
+  Providers::ModelProviderProfile Profile;
+  Profile.Id = {"action-profile"};
+  Profile.ModelName = "action-model";
+  Profile.Limit.MaximumOutputTokens = 64;
+  Core::BusinessActionRegistry Actions;
+  const auto Registration = Actions.Register(Core::BusinessActionDefinition{
+      .Name = "LookupProfile",
+      .RequiredArgumentFields = {"query"},
+      .RequiredCapabilities = {},
+      .Scope = Core::BusinessActionScopeRequirement{
+          .ChannelId = std::string{"qq"},
+          .ConversationId = std::string{"conversation-memory"}},
+      .Handler = {},
+      .ModelTool = Providers::ToolDefinition{
+          .Name = "LookupProfile",
+          .Description = "read-only memory fixture",
+          .Parameters = Providers::JsonSchema{
+              R"({"type":"object","properties":{"query":{"type":"string"}},"required":["query"],"additionalProperties":false})"},
+          .Strict = true},
+      .EffectClass = Core::BusinessActionEffectClass::InProcessReadOnly,
+      .AsyncHandler = [](const Core::BusinessActionInvocation&,
+                         std::stop_token) -> boost::asio::awaitable<
+                             Core::BusinessActionExecutionResult> {
+        co_return Core::BusinessActionExecutionResult{
+            Core::BusinessActionExecutionStatus::Succeeded, "LookupOk"};
+      }});
+  Check(!Registration.has_value(),
+        "read-only async business action registers for dispatcher coverage");
+
+  CoreTestProviderLease ProviderLease;
+  CoreTestChannel Channel;
+  CoreTestChannelLease ChannelLease;
+  CoreTestIdSource IdSource;
+  CoreTestProvider SyncProvider;
+  CoreTestAsyncProvider Provider;
+  CoreTestToolRuntime Runtime;
+  Core::CoreChatService Service(Policy, Runtime, SyncProvider, Profile,
+                                ProviderLease, Channel, ChannelLease, IdSource,
+                                Actions);
+  boost::asio::io_context Io;
+  std::optional<Core::CoreChatResult> Result;
+  std::exception_ptr Failure;
+  boost::asio::co_spawn(
+      Io,
+      Service.ProcessAsync(MakeCoreMemoryMessage("memory-action"), Runtime,
+                           Provider),
+      [&Result, &Failure](std::exception_ptr Exception,
+                          Core::CoreChatResult Value) {
+        Failure = std::move(Exception);
+        Result = std::move(Value);
+      });
+  Io.run();
+  Check(!Failure && Result.has_value() &&
+            Result->Status == Core::CoreChatStatus::Completed,
+        "async Core action dispatcher completes an authorized read-only call");
 }
 
 std::chrono::sys_seconds Now() {
@@ -1849,6 +2013,7 @@ void TestSensitiveMarkersAreRejectedAcrossPersistedFields() {
 
 int RunConversationMemoryContractTests() {
   TestCoreAuthorizedRecallBoundary();
+  TestCoreAsyncBusinessActionDispatcher();
   TestCoreConversationMemoryRecallPort();
   TestIdentitySessionAndPolicy();
   TestConsentValidationAndProposalBinding();
