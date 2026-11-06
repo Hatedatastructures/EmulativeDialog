@@ -1,6 +1,6 @@
 # 2026-11-01 接管 ED-0158：Core 授权 Memory Recall
 
-- PR #135 已 squash 合并到 `main@a819cb8d4a846f112e2cb0243321ed40fa089ce5`，注册 ED-0158/R3、ED-0161/R1、ED-0162/R1；本 assignment ledger 正在对齐合并记录并办理 ED-0161 派工。
+- PR #135 已 squash 合并到 `main@a819cb8d4a846f112e2cb0243321ed40fa089ce5`，注册 ED-0158/R3、ED-0161/R1、ED-0162/R1；assignment ledger PR #136 已基于 `main@a819cb8d4a846f112e2cb0243321ed40fa089ce5` 创建，Head 为 `180c148ac8d1e8af55ab84d64a22cdbab8e9c62f`，等待合并和 post-merge Controller `AssignmentAccepted`。
 - ED-0161/R1 是当前前置：ED-0109/R4、ED-0113/R4、ED-0160/R1 均已合并。PR #102 冻结 CoreAgent V1.1；PR #117 提供 CoreActionReceipt 与异步授权回合的实现、Windows 构建/CTest/覆盖率及 Worker04 固定头批准。
 - ED-0161/R1 的 `TaskReadinessValidated` 已记录 CoreAgent V1.1 的派工门证据（PR #102 与 PR #117）；合同头仍为 `Frozen candidate`。AsyncBusinessAction V1 的激活依据留给 ED-0162/R1 记录。产品写入仍等待 assignment ledger 合并及 post-merge Controller `AssignmentAccepted`。
 - ED-0158/R3 保持十路径 Core/Memory 实现，包含 Core.PolicyAndAction 目标、真实 Core 授权的内存与 SQLite Recall、ProcessAsync 成功和 fail-closed 覆盖。ED-0162/R1 按顺序消费 DTO；其派工再记录 AsyncBusinessAction V1 与 Recall 合同激活证据。
