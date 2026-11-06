@@ -27,7 +27,7 @@ Modules:
     DependsOn:
       - ModelProviderPort
     LoadEntry:
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md#ContextSelector-Purity
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md#contextselector-purity
 
   - ModuleId: Storage
     OwnerRole: StorageOwner
