@@ -8073,7 +8073,10 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core 授权的 Memory Recall 边界
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Assigned
+    Branch: Task/ED-0158-R3CoreMemoryRecall
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Worktree
+    BaselineCommit: 7ff756bfd81d37d1b8240a22e18eba55447fb969
     Phase: P3
     ParallelGroup: AgentMemoryContextIntegration
     Goal: >-
@@ -8625,7 +8628,7 @@ Tasks:
     EpicId: EP-06
     Title: 冻结 Core 到 Memory 的授权 Recall 接口合同
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P3
     ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
     OwnerRole: AgentRuntimeContractOwner
@@ -8655,7 +8658,7 @@ Tasks:
     ContractVersion:
       - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged at de7376a97f8e645f946c77056439f90618c31448; TaskReadinessValidated records activation evidence for the ED-0161 assignment gate; header remains Frozen candidate)"
       - "Architecture/Contracts/MemoryContract.md V1 (header remains Frozen candidate) + MemoryRecord Content V2 addendum (PR #120 merged 30e33b842f7f2ee578a09c383232263e2ec62a64; PR #121 activation recorded at 38feb8e14444557102dceee36c341ad4cd1f3ff9)"
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed output)
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (PR #137 merged at 7ff756bfd81d37d1b8240a22e18eba55447fb969; activation recorded for ED-0158/R3)
     ModuleIds: [Core, Memory, AgentRuntime, ContextSelector]
     Context:
       ModuleId: Core

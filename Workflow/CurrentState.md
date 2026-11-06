@@ -1,3 +1,7 @@
+# 2026-11-06 ED-0158/R3 assignment after ED-0161 activation
+
+- ED-0161/R1 is merged at `main@7ff756bfd81d37d1b8240a22e18eba55447fb969`. ED-0158/R3 is now assigned to the frozen `Task/ED-0158-R3CoreMemoryRecall` branch and isolated worktree `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Worktree` at that baseline; product writes remain gated until post-merge Controller validation returns `AssignmentAccepted`.
+
 # 2026-11-01 接管 ED-0158：Core 授权 Memory Recall
 
 - PR #135 已 squash 合并到 `main@a819cb8d4a846f112e2cb0243321ed40fa089ce5`，注册 ED-0158/R3、ED-0161/R1、ED-0162/R1；assignment ledger PR #136 的最终固定头审查候选 `f9e48ae00b22b87b2971e2a0fd1ec5e086483df7` 已获独立 `APPROVE`，等待转 ready、合并和 post-merge Controller `AssignmentAccepted`。
