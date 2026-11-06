@@ -8792,8 +8792,8 @@ Tasks:
     AssignmentLedgerHeadAtCreation: 180c148ac8d1e8af55ab84d64a22cdbab8e9c62f
     AssignmentLedgerPullRequestCreatedAtUtc: "2026-11-06T00:58:41Z"
     AssignmentLedgerCreatedEventId: 3c5f2722-b7dd-4260-aba3-1a83243970d7
-    AssignmentLedgerCurrentHead: bc9c86d4f746c2635f826dd22f9ba1804d6d5967
-    AssignmentLedgerHeadUpdatedEventId: 8fccc0d8-262b-4de9-80d7-5288eb9fd8ba
+    AssignmentLedgerCurrentHead: de4b4f5edf3041070578bf6cd57e95af410c48b5
+    AssignmentLedgerHeadUpdatedEventId: 05c683fe-9254-46a4-bd07-91c8310ee6ae
     ChangeRequest:
       ChangeRequestId: CR-ED-0161-R1-CORE-MEMORY-RECALL-001
       ChangeRequestProposedEventId: 36b364a2-8af8-4041-8119-6f88f94b2ec8
