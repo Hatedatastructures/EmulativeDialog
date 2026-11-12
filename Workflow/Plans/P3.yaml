@@ -3492,13 +3492,13 @@ Tasks:
     EpicId: EP-06
     Title: 将三 Provider、Memory、Network 合同测试接入根 CMake/CTest
     TaskKind: Build
-    State: Ready
+    State: Assigned
     PreviousBlockedBy: "P3 EntryGate remains Pending until ED-0146 and ED-0147 pass; relaxing TaskIndex.LoadWhen only makes the phase plan discoverable and does not authorize this root-build task."
     BlockedByClearedAt: "2026-11-12T15:20:00Z"
     BlockedByClearedReason: "P3 EntryGate is Passed through merged ED-0151/R3, and every declared dependency is Merged."
     TaskReadinessValidatedEventId: 7e81cf48-d651-4e2d-bda6-121014d25992
     TaskReadinessCorrectionEventId: 662ad98e-bd57-41bf-991a-e79bc26219cc
-    UpdatedAt: "2026-11-12T15:20:00Z"
+    UpdatedAt: "2026-11-12T17:05:00Z"
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -3512,6 +3512,26 @@ Tasks:
     CreatedBy: Coordinator
     Branch: Task/ED-0145-RootProviderTestIntegration
     Worktree: H:/Qbot/EmulativeDialog.ED-0145
+    BaselineCommit: 3afd27b46e2535ac1a7ae7575e4f5c25fd31f863
+    AssignedToSlot: Worker01
+    AssignmentLedgerBaseCommit: 3afd27b46e2535ac1a7ae7575e4f5c25fd31f863
+    ProductWriteAuthorization: None
+    AssignmentNote: "Assignment ledger PR #145 is based on main 3afd27b: all six dependencies are Merged and the isolated product branch/worktree was created clean at the same base. Product writes remain forbidden until this ledger merges and post-merge validate-assignment returns AssignmentAccepted."
+    AssignmentLedgerPullRequestNumber: 145
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/145
+    AssignmentLedgerHeadAtCreation: 30e7d63253a8da76c5938bdc113e9810186e30cc
+    AssignmentLedgerCreatedEventId: 8dca7286-31a8-4e40-b600-e96e2b6de0cf
+    TaskAssignedEventId: 28292fe6-dede-40a0-aad8-0c3d40af4d04
+    AssignmentValidationEventId: 682e210c-6bdb-4736-8b4e-dcfc5aa4a596
+    AgentSlotAssignmentEventId: 5f9b197b-0a03-4953-a4a6-c3b2824fc61c
+    TaskStartedEventId: 7e0f5ca7-66ec-4ee6-a176-afd5e7e431a6
+    TaskStartedStatus: Staged
+    TaskStartedEffectiveAfter: "assignment-ledger PR merge and post-merge WorkflowController validate-assignment returning AssignmentAccepted"
+    AssignmentControllerEvidence:
+      Query: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1Assignment/Controller-Query-ED0145.txt#SHA256=5FC983FC04ABE3DE7A728DF34CD42C1AD6FD4DA971ED2FF23A89B1BE1002A7DD
+      ValidateAssignment: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1Assignment/Controller-ValidateAssignment-PreMerge.txt#SHA256=B4B580F9B7398001A5F15E7778EA5ACCA592F61D6BA72D4C7C9ED19D1E30BEDB
+      CreateWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1Assignment/Controller-CreateWorktree.txt#SHA256=68AA745E36834848D9ABD8E52F1D52D022A290A68314AF7CEE54125D5D3B0B40
+    WorktreeCreatedEventId: 91541283784300-1
     Goal: "把三个 Provider adapter、Memory、Network 的合同测试目录挂到根 CMake/CTest，并确保 windows-agent-slice 全量 ctest 可重复通过（含数据目录环境）。"
     OutOfScope: ["修改 Provider 行为", "新增网络访问", "CI 平台配置"]
     DependsOn: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0121, ED-0143]

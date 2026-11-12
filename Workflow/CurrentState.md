@@ -1,3 +1,10 @@
+# 2026-11-13 ED-0145/R1 assignment candidate
+
+- 权威 `origin/main` 为 `3afd27b46e2535ac1a7ae7575e4f5c25fd31f863`。ED-0145/R1 仍是冻结的四路径根构建任务，WriteSet 为 `CMakeLists.txt`、`Tests/Contract/Providers/CMakeLists.txt`、`Tests/Contract/Memory/CMakeLists.txt`、`Tests/Contract/Platform/Network/CMakeLists.txt`；不得修改 `Source/`。
+- Controller 在干净快照上查询 ED-0145/R1 为 `Ready`，六个依赖 ED-0104、ED-0105、ED-0106、ED-0113、ED-0121、ED-0143 均为 `Merged`。本 candidate 使用基线 `3afd27b`，逻辑 Owner 为 Worker01，独立 Reviewer 为 Worker02；产品分支 `Task/ED-0145-RootProviderTestIntegration`、工作树 `H:/Qbot/EmulativeDialog.ED-0145`。
+- assignment ledger PR [#145](https://github.com/Hatedatastructures/EmulativeDialog/pull/145) 基于 `3afd27b`，初始 Head `30e7d63253a8da76c5938bdc113e9810186e30cc`；pre-merge Controller `validate-assignment` 返回 `AssignmentAccepted`（exit 0），产品 worktree 在 `3afd27b` clean，WorktreeCreated event `91541283784300-1`。
+- 当前只记录 assignment candidate、CurrentState 和槽位绑定；产品写入仍为 None。assignment ledger 合并并从 main 重新运行 `validate-assignment` 返回 `AssignmentAccepted` 后，才允许修改四个 CMake 路径和运行根构建/全量 CTest。
+
 # 2026-11-13 ED-0162/R1 完成：授权 Memory Recall 接入异步 AgentRuntime
 
 - 权威 `origin/main` 为 `e822234da726613beb3fc2b31fc56653936d849f`。PR [#143](https://github.com/Hatedatastructures/EmulativeDialog/pull/143) 的冻结产品补丁 Base 为 `fcfe8f09b74e7af335416c898b253d10611b32a3`，GitHub 最终 PR Base 为 `792fe646eedb4098b0fc016e4a0670284e797262`；已审查产品 Head 为 `2101ecea6b5036b0a19cbfa8d5db8ebf28105284`，最终 PR Head 为 rebase 后的 `5728851512e84522207e816de7c6fc0825db64da`；squash merge commit 为 `e822234da726613beb3fc2b31fc56653936d849f`。前后 patch-id 相同，Base..Head 严格只有三条冻结写集路径。
