@@ -8498,7 +8498,7 @@ Tasks:
     EpicId: EP-06
     Title: 将授权 Memory Recall DTO 接入异步 AgentRuntime
     TaskKind: IntegrationTask
-    State: Ready
+    State: Assigned
     Phase: P3
     ChangeRequestId: CR-ED-0158-R2-CONTEXT-SPLIT-001
     ParallelGroup: AgentMemoryContextIntegration
@@ -8512,7 +8512,30 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-11-01T03:23:17Z"
-    UpdatedAt: "2026-11-12T15:25:00Z"
+    UpdatedAt: "2026-11-12T15:40:00Z"
+    BaselineCommit: fcfe8f09b74e7af335416c898b253d10611b32a3
+    Branch: Task/ED-0162-R1AsyncAgentContextAssembly
+    Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Worktree
+    AssignedToSlot: Worker05
+    AssignmentLedgerBaseCommit: fcfe8f09b74e7af335416c898b253d10611b32a3
+    AssignmentLedgerPullRequestNumber: 142
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/142
+    AssignmentLedgerHeadAtCreation: b678189032110cbf507e289f55b164816d067972
+    AssignmentLedgerCreatedEventId: d72fccde-f4e0-45d2-ac00-125084deb12e
+    TaskAssignedEventId: 459a0681-7d9b-4dd5-8f29-3fb16f05d130
+    AssignmentValidationEventId: 95594a35-2db9-4ae7-950e-22d89250dcd2
+    AgentSlotAssignmentEventId: 315377db-d67d-4d34-aae3-61fc8857c38a
+    TaskStartedEventId: ca70bdc5-ee73-450e-9fb3-8d8fba0a37ad
+    TaskStartedStatus: Staged
+    TaskStartedEffectiveAfter: "assignment-ledger PR merge and post-merge WorkflowController validate-assignment returning AssignmentAccepted"
+    ProductWriteAuthorization: None
+    AssignmentControllerEvidence:
+      Query: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Assignment/Controller-Query-Current.txt#SHA256=13798FC76A26FB6B82F94732CF4FE1BE0E1E9B10D4055C6D2EB5106F4B7F36A1
+      ValidateAssignment: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Assignment/Controller-ValidateAssignment-Current.txt#SHA256=5CEAE6E451163189C91B2353A3FC34B9F1EF7EDAFD976E0ED8DC4C5AE6F1F8B3
+      CreateWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Assignment/Controller-CreateWorktree-Current.txt#SHA256=B3C4C929E1094069CB61CBC68D82127BCA02EE25B9FAB168B291C79B451A33F4
+    WorktreeVerifiedEventIds: [87110407934300-1, 87134019998000-1]
+    WorktreeVerifiedNote: "The first event was emitted by the stale ED-0124-R9 controller before it errored on the newer event schema; the current ED-0161 controller then verified the same clean worktree and emitted the second event."
+    AssignmentNote: "Post-merge assignment on main fcfe8f0: all eight dependencies are Merged; the exact branch and worktree are isolated under ED-0162-R1. Product writes remain forbidden until this ledger merges and post-merge validate-assignment returns AssignmentAccepted."
     DependsOn: [ED-0102, ED-0103, ED-0109, ED-0115, ED-0150, ED-0157, ED-0158, ED-0161]
     ModuleIds: [AgentRuntime, ContextSelector]
     CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]
@@ -8631,7 +8654,7 @@ Tasks:
       AssignmentCandidate:
         ImplementationBranch: Task/ED-0162-R1AsyncAgentContextAssembly
         ImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Worktree
-        BaselineCommit: "Set by a separate post-merge assignment ledger after ED-0158/R3 and all other DependsOn tasks are Merged."
+        BaselineCommit: fcfe8f09b74e7af335416c898b253d10611b32a3
         ProductWriteAuthorization: None
       TaskBuildDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Async
       DependencyDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0131-R2/Dependencies
