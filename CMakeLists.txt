@@ -150,6 +150,9 @@ message(STATUS \"Verified BoostJsonProbe consumer link options\")
   endif()
   add_subdirectory(Tests/Contract/Agent)
   add_subdirectory(Tests/Contract/Storage)
+  add_subdirectory(Tests/Contract/Providers)
+  add_subdirectory(Tests/Contract/Memory)
+  add_subdirectory(Tests/Contract/Platform/Network)
 endif()
 
 add_library(WorkflowControllerCore STATIC

@@ -7,13 +7,16 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
       "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
   include("${_EmulativeDialogRepoRoot}/CMake/DependencyPins.cmake")
   include("${_EmulativeDialogRepoRoot}/CMake/BoostAsioDependency.cmake")
-  add_subdirectory(
-      "${_EmulativeDialogRepoRoot}/Tests/Contract/Storage"
-      "${CMAKE_CURRENT_BINARY_DIR}/Storage")
 endif()
 
 get_filename_component(EMULATIVE_DIALOG_ROOT
     "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+
+if(NOT TARGET EmulativeDialogSQLite)
+  add_subdirectory(
+      "${EMULATIVE_DIALOG_ROOT}/Tests/Contract/Storage"
+      "${CMAKE_CURRENT_BINARY_DIR}/Storage")
+endif()
 
 add_library(CoreMemoryRecallTestSupport OBJECT
     "${EMULATIVE_DIALOG_ROOT}/Source/Core/CoreChatService.cpp"
@@ -73,23 +76,28 @@ if(BUILD_TESTING)
   set_tests_properties(ConversationMemoryTests PROPERTIES
       WORKING_DIRECTORY "${EMULATIVE_DIALOG_ROOT}")
 
+  set(MEMORY_TEST_DATA_DIR "${CMAKE_CURRENT_BINARY_DIR}/Data")
+  file(MAKE_DIRECTORY "${MEMORY_TEST_DATA_DIR}")
   add_test(NAME SqliteMemoryStorageAdapterTests
       COMMAND SqliteMemoryStorageAdapterTests)
   set_tests_properties(SqliteMemoryStorageAdapterTests PROPERTIES
       WORKING_DIRECTORY "${EMULATIVE_DIALOG_ROOT}"
+      RUN_SERIAL TRUE
       ENVIRONMENT
-        "EMULATIVEDIALOG_TEST_DATA_DIR=${CMAKE_CURRENT_BINARY_DIR}/Data")
+        "EMULATIVEDIALOG_TEST_DATA_DIR=${MEMORY_TEST_DATA_DIR}")
 endif()
 
-add_executable(CorePolicyAndActionContractTests
-    "${EMULATIVE_DIALOG_ROOT}/Tests/Contract/Core/CorePolicyAndActionContractTests.cpp")
-target_include_directories(CorePolicyAndActionContractTests PRIVATE
-    "${EMULATIVE_DIALOG_ROOT}")
-target_compile_features(CorePolicyAndActionContractTests PRIVATE cxx_std_20)
-target_compile_options(CorePolicyAndActionContractTests PRIVATE
-    -Wall -Wextra -Wpedantic -Werror)
-target_link_libraries(CorePolicyAndActionContractTests PRIVATE
-    CoreMemoryRecallTestSupport)
-if(BUILD_TESTING)
-  add_test(NAME Core.PolicyAndAction COMMAND CorePolicyAndActionContractTests)
+if(NOT TARGET CorePolicyAndActionContractTests)
+  add_executable(CorePolicyAndActionContractTests
+      "${EMULATIVE_DIALOG_ROOT}/Tests/Contract/Core/CorePolicyAndActionContractTests.cpp")
+  target_include_directories(CorePolicyAndActionContractTests PRIVATE
+      "${EMULATIVE_DIALOG_ROOT}")
+  target_compile_features(CorePolicyAndActionContractTests PRIVATE cxx_std_20)
+  target_compile_options(CorePolicyAndActionContractTests PRIVATE
+      -Wall -Wextra -Wpedantic -Werror)
+  target_link_libraries(CorePolicyAndActionContractTests PRIVATE
+      CoreMemoryRecallTestSupport)
+  if(BUILD_TESTING)
+    add_test(NAME Core.PolicyAndAction COMMAND CorePolicyAndActionContractTests)
+  endif()
 endif()
