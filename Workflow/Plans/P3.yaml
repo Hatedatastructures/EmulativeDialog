@@ -3492,13 +3492,13 @@ Tasks:
     EpicId: EP-06
     Title: 将三 Provider、Memory、Network 合同测试接入根 CMake/CTest
     TaskKind: Build
-    State: Assigned
+    State: Merged
     PreviousBlockedBy: "P3 EntryGate remains Pending until ED-0146 and ED-0147 pass; relaxing TaskIndex.LoadWhen only makes the phase plan discoverable and does not authorize this root-build task."
     BlockedByClearedAt: "2026-11-12T15:20:00Z"
     BlockedByClearedReason: "P3 EntryGate is Passed through merged ED-0151/R3, and every declared dependency is Merged."
     TaskReadinessValidatedEventId: 7e81cf48-d651-4e2d-bda6-121014d25992
     TaskReadinessCorrectionEventId: 662ad98e-bd57-41bf-991a-e79bc26219cc
-    UpdatedAt: "2026-11-12T17:05:00Z"
+    UpdatedAt: "2026-11-12T17:28:00Z"
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
@@ -3532,6 +3532,50 @@ Tasks:
       ValidateAssignment: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1Assignment/Controller-ValidateAssignment-PreMerge.txt#SHA256=B4B580F9B7398001A5F15E7778EA5ACCA592F61D6BA72D4C7C9ED19D1E30BEDB
       CreateWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1Assignment/Controller-CreateWorktree.txt#SHA256=68AA745E36834848D9ABD8E52F1D52D022A290A68314AF7CEE54125D5D3B0B40
     WorktreeCreatedEventId: 91541283784300-1
+    ImplementationPullRequestNumber: 146
+    ImplementationPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/146
+    ImplementationBaseCommit: 3afd27b46e2535ac1a7ae7575e4f5c25fd31f863
+    ImplementationHeadCommit: 12edd5d409ac01fc5ab7b304b359993c22ae5cdb
+    ImplementationValidatedProductHeadCommit: 2973d6e8d482546ff71191be9421fa39cf105fec
+    ImplementationMergeCommit: 5584737f493c8573284eaa8f0e56ac44506f1bdb
+    ImplementationMergedAt: "2026-11-12T17:24:23Z"
+    ImplementationReviewDecision: APPROVE
+    ImplementationReviewerSlotId: Worker04
+    ImplementationReviewerAgentId: /root/p3_reviewer
+    ImplementationReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1/Assignment/Reviewer-Implementation-12edd5d.md
+    ImplementationReviewBundleSha256: 0AF05FE7A4DFFEFD95AA2070FD1B5217125DB871B78292BBB1C3813CA50DDC4E
+    ImplementationProductHeadReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1/Assignment/Reviewer-Implementation-2973d6e.md
+    ImplementationProductHeadReviewBundleSha256: 9A8959F432A63821FCA657B67BD835AFCC1212AB88A5F116CA8166FD11401B68
+    ImplementationRequiredChecks: "WindowsAgentSlice / Build and Test: 2/2 SUCCESS on final Head 12edd5d (runs 43268363555 and 43268378472)."
+    PostMergeAssignmentQuery: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1-PostMergeValidation146/Controller-Query-PostMerge146.txt#SHA256=9C4FCF4805980C6FA1ABD3917B52E8136B00F7F0E637019CB68556691F65B430
+    PostMergeAssignmentValidation: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1-PostMergeValidation146/Controller-ValidateAssignment-PostMerge146.txt#SHA256=B4B580F9B7398001A5F15E7778EA5ACCA592F61D6BA72D4C7C9ED19D1E30BEDB
+    PostMergeAssignmentValidationExitCode: 0
+    TaskReviewCompletedEventId: 432009c1-2aa4-4021-b5ef-57b147f7dfad
+    PRMergedEventId: a5db2bdd-7783-4718-9a79-8bef92451b03
+    TaskMergedEventId: 2a194fe9-6bfa-4956-9e4b-32636fe82a7f
+    TaskClosedEventId: 90b886da-b8bc-49f2-b072-1ccb98761600
+    FinalOwnerSlotRecoveredEventId: 1dbcfadc-bdc7-43c4-8969-7343f3eb905d
+    ImplementationAcceptanceEvidence:
+      FullTargetBuildExitCode: 0
+      FullCTestExitCode: 0
+      FullCTestPassed: 29
+      FullCTestTotal: 29
+      FullCTestLog: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1/RootBuild/CTest-Final.log#SHA256=8E14FE46DC448B9222CE980F960227CC5029E63E8005CD9B6D27350262B06B00
+      ProviderTests: [Provider.OpenAIResponses, Provider.ChatCompletions, Provider.AnthropicMessages]
+      MemoryTests: [ConversationMemoryTests, SqliteMemoryStorageAdapterTests]
+      NetworkTests: [Platform.Network.HttpTransportPort, Platform.Network.WinHttpTransport]
+      StandaloneProviderPassed: 3
+      StandaloneMemoryPassed: 5
+      StandaloneNetworkPassed: 2
+      SqliteDataDirectory: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1/RootBuild/Tests/Contract/Memory/Data
+      NoSourceChanges: true
+      LiveSideEffects: ForbiddenAndNotRun
+    CompletionNote: >-
+      PR #146 merged the four-path root build/test registration after independent fixed-Head APPROVE and
+      2/2 WindowsAgentSlice checks. Full-target root build and full CTest passed 29/29. The final PR Head
+      12edd5d is a rebase of validated product Head 2973d6e; patch-id equivalence and the four-path WriteSet
+      were independently reconfirmed. Post-merge WorkflowController validation returned AssignmentAccepted.
+      No real QQ, live Provider, external network, or production Source changes are part of this task.
     Goal: "把三个 Provider adapter、Memory、Network 的合同测试目录挂到根 CMake/CTest，并确保 windows-agent-slice 全量 ctest 可重复通过（含数据目录环境）。"
     OutOfScope: ["修改 Provider 行为", "新增网络访问", "CI 平台配置"]
     DependsOn: [ED-0104, ED-0105, ED-0106, ED-0113, ED-0121, ED-0143]
