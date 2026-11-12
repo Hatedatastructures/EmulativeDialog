@@ -8518,6 +8518,10 @@ Tasks:
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Worktree
     AssignedToSlot: Worker05
     AssignmentLedgerBaseCommit: fcfe8f09b74e7af335416c898b253d10611b32a3
+    AssignmentLedgerPullRequestNumber: 142
+    AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/142
+    AssignmentLedgerHeadAtCreation: b678189032110cbf507e289f55b164816d067972
+    AssignmentLedgerCreatedEventId: d72fccde-f4e0-45d2-ac00-125084deb12e
     TaskAssignedEventId: 459a0681-7d9b-4dd5-8f29-3fb16f05d130
     AssignmentValidationEventId: 95594a35-2db9-4ae7-950e-22d89250dcd2
     AgentSlotAssignmentEventId: 315377db-d67d-4d34-aae3-61fc8857c38a

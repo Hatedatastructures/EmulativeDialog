@@ -2,6 +2,7 @@
 
 - 当前权威基线为 `origin/main=fcfe8f09b74e7af335416c898b253d10611b32a3`。ED-0162/R1 写集仍为 `Source/Agent/AsyncAgentRuntime.cpp`、`Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp` 和 `Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt`。
 - assignment 分支为 `Task/ED-0162-R1AssignmentLedger`，产品分支为 `Task/ED-0162-R1AsyncAgentContextAssembly`，隔离 worktree 为 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Worktree`，Base 为 `fcfe8f0`。
+- assignment ledger PR 为 [#142](https://github.com/Hatedatastructures/EmulativeDialog/pull/142)，创建时 Head 为 `b678189032110cbf507e289f55b164816d067972`；该 PR 只含四个 Workflow 账本路径。
 - 当前 Controller 二进制解析旧事件 schema 时曾在 `create-worktree` 报 `Invalid scalar field: CorrectedValue`（退出 1），但工作树已创建；随后使用当前源码构建的 Controller（`H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0161-R1/ControllerMain.build/.../WorkflowController.exe`）重新执行，query 为 Assigned、validate-assignment 为 AssignmentAccepted、create-worktree 为 exit 0 且 `Created=false`（验证既有干净工作树）。
 - 产品工作树当前在 `fcfe8f0` 且 clean；尚未写入任何产品文件，也未运行产品构建或测试。
 - 该 assignment ledger 合并并将 TaskStarted 置为生效前，产品写入仍禁止。独立 Reviewer 必须审查固定 Base/Head；合并后必须从 main 重新运行 `validate-assignment` 并取得 `AssignmentAccepted`。
