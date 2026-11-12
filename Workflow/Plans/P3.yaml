@@ -8498,7 +8498,7 @@ Tasks:
     EpicId: EP-06
     Title: 将授权 Memory Recall DTO 接入异步 AgentRuntime
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Phase: P3
     ChangeRequestId: CR-ED-0158-R2-CONTEXT-SPLIT-001
     ParallelGroup: AgentMemoryContextIntegration
@@ -8512,7 +8512,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-11-01T03:23:17Z"
-    UpdatedAt: "2026-11-12T15:40:00Z"
+    UpdatedAt: "2026-11-12T16:45:00Z"
     BaselineCommit: fcfe8f09b74e7af335416c898b253d10611b32a3
     Branch: Task/ED-0162-R1AsyncAgentContextAssembly
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Worktree
@@ -8536,6 +8536,50 @@ Tasks:
     WorktreeVerifiedEventIds: [87110407934300-1, 87134019998000-1]
     WorktreeVerifiedNote: "The first event was emitted by the stale ED-0124-R9 controller before it errored on the newer event schema; the current ED-0161 controller then verified the same clean worktree and emitted the second event."
     AssignmentNote: "Post-merge assignment on main fcfe8f0: all eight dependencies are Merged; the exact branch and worktree are isolated under ED-0162-R1. Product writes remain forbidden until this ledger merges and post-merge validate-assignment returns AssignmentAccepted."
+    ImplementationPullRequestNumber: 143
+    ImplementationPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/143
+    ImplementationBaseCommit: fcfe8f09b74e7af335416c898b253d10611b32a3
+    ImplementationHeadCommit: 5728851512e84522207e816de7c6fc0825db64da
+    ImplementationValidatedProductHeadCommit: 2101ecea6b5036b0a19cbfa8d5db8ebf28105284
+    ImplementationMergeCommit: e822234da726613beb3fc2b31fc56653936d849f
+    ImplementationMergedAt: "2026-11-12T16:41:32Z"
+    ImplementationReviewDecision: APPROVE
+    ImplementationReviewerSlotId: Worker04
+    ImplementationReviewerAgentId: /root/p3_reviewer
+    ImplementationReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Assignment/Reviewer-Implementation-5728851.md
+    ImplementationReviewBundleSha256: C9B7128FA211CFD5DD904948D00ACFFBF425CFF5B690053DE7E631ED4AF753CC
+    ImplementationProductHeadReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Assignment/Reviewer-Implementation-2101ece.md
+    ImplementationProductHeadReviewBundleSha256: 6AAF151167312DD78666D3ED20E666DE66C24E0A2ECCE1A88E048C85B6E248B6
+    ImplementationRequiredChecks: "WindowsAgentSlice / Build and Test: 2/2 SUCCESS on final Head 5728851 (runs 43260687404 and 43260697986)."
+    PostMergeAssignmentQuery: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/PostMergeValidation/Controller-Query-PostMerge143.txt#SHA256=B63327E4F6F2C78A33EC7DE4CD551F1B635DD61892CBB9F2427A5A1BFD683A35
+    PostMergeAssignmentValidation: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/PostMergeValidation/Controller-ValidateAssignment-PostMerge143.txt#SHA256=40255D2DFDD689C8219B7C704AB96528A545CAD1826FB7F74ED19C5319024648
+    PostMergeAssignmentValidationExitCode: 0
+    TaskReviewCompletedEventId: 0a5b6935-42c2-4b19-b385-05c7ecfa822d
+    PRMergedEventId: 1a4d4011-fe64-43f6-87c2-ac3025adbd69
+    TaskMergedEventId: 2617dfc9-0c1c-4e29-b3fe-18cb8aa2d9c5
+    TaskClosedEventId: 17235452-96a6-409a-9c66-27b7df92697b
+    FinalOwnerSlotRecoveredEventId: d846c47c-88ca-4e3f-8ded-e477dc76672e
+    ImplementationAcceptanceEvidence:
+      ConfigureExitCode: 0
+      TargetBuildExitCode: 0
+      TargetCTestName: Agent.AsyncRuntimeVerticalSlice
+      TargetCTestExitCode: 0
+      TargetCTestPassed: 1
+      TargetCTestTotal: 1
+      CoverageSource: Source/Agent/AsyncAgentRuntime.cpp
+      CoverageLineCount: 414
+      CoverageExecutableLineCount: 478
+      CoveragePercent: 86.61
+      CoverageFormat: "gcov JSON v2; GCC/gcov 16.1.0"
+      CoverageReport: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/Async/Reports/AsyncAgentRuntime.gcov.json.gz
+      MemorySuiteEmbedded: true
+      MemorySuiteOutput: All ConversationMemory checks passed
+      LiveSideEffects: ForbiddenAndNotRun
+    CompletionNote: >-
+      PR #143 merged the implementation after an independent fixed-Head APPROVE and 2/2 WindowsAgentSlice checks.
+      The final PR Head 5728851 is a rebase of the reviewed product Head 2101ece; patch-id equivalence and the
+      three-path WriteSet were independently reconfirmed. Post-merge WorkflowController validation returned
+      AssignmentAccepted. No real QQ, live Provider, network, or external side-effect test was run.
     DependsOn: [ED-0102, ED-0103, ED-0109, ED-0115, ED-0150, ED-0157, ED-0158, ED-0161]
     ModuleIds: [AgentRuntime, ContextSelector]
     CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]

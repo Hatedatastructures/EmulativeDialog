@@ -1,3 +1,12 @@
+# 2026-11-13 ED-0162/R1 完成：授权 Memory Recall 接入异步 AgentRuntime
+
+- 权威 `origin/main` 为 `e822234da726613beb3fc2b31fc56653936d849f`。PR [#143](https://github.com/Hatedatastructures/EmulativeDialog/pull/143) 的冻结产品补丁 Base 为 `fcfe8f09b74e7af335416c898b253d10611b32a3`，GitHub 最终 PR Base 为 `792fe646eedb4098b0fc016e4a0670284e797262`；已审查产品 Head 为 `2101ecea6b5036b0a19cbfa8d5db8ebf28105284`，最终 PR Head 为 rebase 后的 `5728851512e84522207e816de7c6fc0825db64da`；squash merge commit 为 `e822234da726613beb3fc2b31fc56653936d849f`。前后 patch-id 相同，Base..Head 严格只有三条冻结写集路径。
+- 两个异步入口 `RunTurnAsync` 与 `RunTurnWithToolsAsync` 共用 `PrepareTurnContext`：完整 trusted scope 校验、MemoryRecallCandidate 映射、ContextSelector 预算/scope/expiry、InstructionAssembler 角色与 AI disclosure 均在 provider/action 之前完成。Recall、mapping、selection、assembly 失败均在两个入口产生零 provider/action 调用。
+- 同一 `Agent.AsyncRuntimeVerticalSlice` executable 嵌入 Memory 合同套件；独立 CTest 为 1/1 passed，embedded Memory suite 输出 `All ConversationMemory checks passed`。离线链路证据覆盖 Core→Memory→AsyncAgentRuntime→FakeProvider/authorized action→Mock Channel，且 exactly-one receipt。
+- 独立固定 Head 审查为 APPROVE：产品 Head 报告 SHA-256 `6AAF151167312DD78666D3ED20E666DE66C24E0A2ECCE1A88E048C85B6E248B6`，rebase Head 报告 SHA-256 `C9B7128FA211CFD5DD904948D00ACFFBF425CFF5B690053DE7E631ED4AF753CC`。PR #143 的两个 `WindowsAgentSlice / Build and Test` checks 均为 SUCCESS；merge 后 `validate-assignment` 为 `AssignmentAccepted`，exit 0，证据位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0162-R1/PostMergeValidation/`。
+- 独立覆盖率（GCC/gcov 16.1.0，gcov JSON v2）：`Source/Agent/AsyncAgentRuntime.cpp` 为 `414/478` unique executable lines = `86.61%`，高于 80% 门槛。未接真实 QQ/Provider、未进行网络或外部副作用测试。
+- ED-0162/R1 已回填为 Merged/Closed；Worker05 已释放。ED-0145/R1 仍为 Ready，下一步单独建立 assignment ledger，只改根 CMake 与三个测试 CMake 注册文件。
+
 # 2026-11-12 ED-0162/R1 assignment candidate
 
 - 当前权威基线为 `origin/main=fcfe8f09b74e7af335416c898b253d10611b32a3`。ED-0162/R1 写集仍为 `Source/Agent/AsyncAgentRuntime.cpp`、`Tests/Contract/Agent/AsyncRuntimeVerticalSlice/AsyncRuntimeVerticalSliceTests.cpp` 和 `Tests/Contract/Agent/AsyncRuntimeVerticalSlice/CMakeLists.txt`。
