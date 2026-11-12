@@ -974,6 +974,58 @@ public:
     return RunServiceAsync(Context, std::move(Message), CancellationToken);
   }
 
+  [[nodiscard]] Core::CoreChatResult RunAsyncWithRuntime(
+      Channels::InboundChannelMessage Message,
+      Core::AsyncAgentRuntimePort& RuntimePort,
+      std::stop_token CancellationToken = {}) {
+    Asio::io_context Context;
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Asio::co_spawn(
+        Context,
+        Service.ProcessAsync(std::move(Message), RuntimePort, Provider,
+                             CancellationToken),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    if (Failure) {
+      std::rethrow_exception(Failure);
+    }
+    if (!Result.has_value()) {
+      throw std::runtime_error("custom runtime produced no CoreChatResult");
+    }
+    return *Result;
+  }
+
+  [[nodiscard]] Core::CoreChatResult RunToolAsyncWithRuntime(
+      Channels::InboundChannelMessage Message,
+      Core::AsyncAgentToolRuntimePort& RuntimePort,
+      std::stop_token CancellationToken = {}) {
+    Asio::io_context Context;
+    std::optional<Core::CoreChatResult> Result;
+    std::exception_ptr Failure;
+    Asio::co_spawn(
+        Context,
+        Service.ProcessAsync(std::move(Message), RuntimePort, Provider,
+                             CancellationToken),
+        [&Result, &Failure](std::exception_ptr Exception,
+                            Core::CoreChatResult Value) {
+          Failure = std::move(Exception);
+          Result = std::move(Value);
+        });
+    Context.run();
+    if (Failure) {
+      std::rethrow_exception(Failure);
+    }
+    if (!Result.has_value()) {
+      throw std::runtime_error("custom tool runtime produced no CoreChatResult");
+    }
+    return *Result;
+  }
+
   [[nodiscard]] Core::CoreChatResult RunDefaultAsync(
       std::stop_token CancellationToken = {}) {
     return RunAsync(InboundSink.Events.front(), CancellationToken);
@@ -3808,6 +3860,93 @@ public:
   std::atomic<std::uint32_t> DispatchCalls{0};
 };
 
+class FailingMemoryRecallPort final : public Core::MemoryRecallPort {
+public:
+  [[nodiscard]] Core::MemoryRecallResult Recall(
+      Core::MemoryReadGrant,
+      const Core::RecallBudget&) override {
+    ++Calls;
+    return Core::MemoryRecallError{
+        Core::MemoryRecallErrorCode::InvalidGrant};
+  }
+
+  std::atomic<std::uint32_t> Calls{0};
+};
+
+class CountingDispatcherProxy final
+    : public Core::AsyncBusinessActionDispatcherPort {
+public:
+  CountingDispatcherProxy(Core::AsyncBusinessActionDispatcherPort& InnerValue,
+                          std::atomic<std::uint32_t>& ToolDefinitionCallsValue,
+                          std::atomic<std::uint32_t>& DispatchCallsValue)
+      : Inner(InnerValue),
+        ToolDefinitionCalls(ToolDefinitionCallsValue),
+        DispatchCalls(DispatchCallsValue) {}
+
+  [[nodiscard]] std::vector<Providers::ToolDefinition> GetToolDefinitions(
+      const Core::AuthorizedTurnContext& Context) const override {
+    ++ToolDefinitionCalls;
+    return Inner.GetToolDefinitions(Context);
+  }
+
+  [[nodiscard]] Asio::awaitable<std::vector<Core::CoreActionReceipt>>
+  DispatchAsync(const Core::AuthorizedTurnContext& Context,
+                const Providers::RequestId& Request,
+                std::vector<Providers::FunctionCall> Calls,
+                std::stop_token CancellationToken) override {
+    ++DispatchCalls;
+    co_return co_await Inner.DispatchAsync(Context, Request, std::move(Calls),
+                                           CancellationToken);
+  }
+
+private:
+  Core::AsyncBusinessActionDispatcherPort& Inner;
+  std::atomic<std::uint32_t>& ToolDefinitionCalls;
+  std::atomic<std::uint32_t>& DispatchCalls;
+};
+
+class CountingRuntimeProbe final
+    : public Core::AsyncAgentToolRuntimePort {
+public:
+  explicit CountingRuntimeProbe(
+      EmulativeDialog::Agent::AsyncAgentRuntime& RuntimeValue)
+      : Runtime(RuntimeValue) {}
+
+  [[nodiscard]] Asio::awaitable<Core::AgentRunResult> RunTurnAsync(
+      const Core::AuthorizedTurnContext& Context,
+      Providers::AsyncModelProviderPort& Provider,
+      const Providers::ModelProviderProfile& Profile,
+      const Providers::CredentialLease& Lease,
+      std::stop_token CancellationToken) override {
+    ++RunTurnCalls;
+    co_return co_await Runtime.RunTurnAsync(Context, Provider, Profile, Lease,
+                                            CancellationToken);
+  }
+
+  [[nodiscard]] Asio::awaitable<Core::AgentRunResult>
+  RunTurnWithToolsAsync(
+      const Core::AuthorizedTurnContext& Context,
+      Providers::AsyncModelProviderPort& Provider,
+      const Providers::ModelProviderProfile& Profile,
+      const Providers::CredentialLease& Lease,
+      Core::AsyncBusinessActionDispatcherPort& Dispatcher,
+      std::stop_token CancellationToken) override {
+    ++RunTurnWithToolsCalls;
+    CountingDispatcherProxy Proxy{Dispatcher, ToolDefinitionCalls,
+                                  DispatchCalls};
+    co_return co_await Runtime.RunTurnWithToolsAsync(
+        Context, Provider, Profile, Lease, Proxy, CancellationToken);
+  }
+
+  std::atomic<std::uint32_t> RunTurnCalls{0};
+  std::atomic<std::uint32_t> RunTurnWithToolsCalls{0};
+  std::atomic<std::uint32_t> ToolDefinitionCalls{0};
+  std::atomic<std::uint32_t> DispatchCalls{0};
+
+private:
+  EmulativeDialog::Agent::AsyncAgentRuntime& Runtime;
+};
+
 class RuntimeTurnGuard final {
 public:
   RuntimeTurnGuard(const Providers::AgentTurnId& Turn,
@@ -4052,6 +4191,12 @@ RunRuntimeWithToolsResult(
              "memory", Core::MemoryRecallCandidateKind::IdentityPreference, 5,
              std::string("\xFF")));
        }},
+      {"whitespace memory reaches assembly",
+       [](Core::AuthorizedTurnContext& Value) {
+         Value.RecallCandidates.push_back(MakeRecallCandidate(
+             "whitespace-memory",
+             Core::MemoryRecallCandidateKind::IdentityPreference, 5, "   "));
+       }},
       {"blank user text reaches assembly",
        [](Core::AuthorizedTurnContext& Value) {
          Value.Message.MessageParts = {Channels::TextPart{"   "}};
@@ -4065,28 +4210,143 @@ RunRuntimeWithToolsResult(
 
   bool Passed = true;
   for (const auto& [Label, Mutate] : Cases) {
+    for (const bool WithTools : {false, true}) {
+      Core::AuthorizedTurnContext Context = MakeRuntimeContext();
+      Mutate(Context);
+      AsyncFakeProvider Provider;
+      CountingDispatcher Dispatcher;
+      const Providers::ModelProviderProfile Profile = MakeProviderProfile();
+      TestProviderCredential Lease;
+      EmulativeDialog::Agent::AsyncAgentRuntime Runtime;
+      const Core::AgentRunResult Result =
+          WithTools ? RunRuntimeWithTools(Runtime, Context, Provider, Profile,
+                                          Lease, Dispatcher)
+                    : RunRuntime(Runtime, Context, Provider, Profile, Lease);
+      const std::string Prefix =
+          Label + (WithTools ? " in tool path" : " in plain path");
+      Passed &= Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
+                          Result.GetFailureCode() ==
+                              Core::AgentRunFailureCode::InvalidRequest,
+                      Prefix + " fails before provider dispatch");
+      Passed &= Check(Provider.DispatchCount.load() == 0U &&
+                          Provider.ValidateProfileCount.load() == 0U &&
+                          Provider.CapabilitiesCount.load() == 0U &&
+                          Dispatcher.ToolDefinitionCalls.load() == 0U &&
+                          Dispatcher.DispatchCalls.load() == 0U,
+                      Prefix +
+                          " produces zero provider calls and zero action calls");
+    }
+  }
+  return Passed;
+}
+
+[[nodiscard]] bool TestFailingRecallAsyncFailClosed() {
+  FailingMemoryRecallPort Recall;
+  Fixture TestFixture(FakeScenario::Final, {"Chat.Lookup"}, &Recall);
+  bool Passed = Check(TestFixture.Ready, "failing-recall fixture starts");
+
+  CountingRuntimeProbe PlainProbe{TestFixture.Runtime};
+  const Core::CoreChatResult PlainResult = TestFixture.RunAsyncWithRuntime(
+      MakeInboundMessage("recall-plain-dedup", "recall-plain-message"),
+      PlainProbe);
+  Passed &= Check(PlainResult.Status == Core::CoreChatStatus::Failed &&
+                      PlainResult.Failure ==
+                          Core::CoreChatFailureCode::MemoryRecallFailed,
+                  "plain ProcessAsync returns MemoryRecallFailed");
+  Passed &= Check(Recall.Calls.load() == 1U &&
+                      PlainProbe.RunTurnCalls.load() == 0U &&
+                      PlainProbe.RunTurnWithToolsCalls.load() == 0U &&
+                      PlainProbe.ToolDefinitionCalls.load() == 0U &&
+                      PlainProbe.DispatchCalls.load() == 0U &&
+                      TestFixture.Provider.ValidateProfileCount.load() == 0U &&
+                      TestFixture.Provider.CapabilitiesCount.load() == 0U &&
+                      TestFixture.Provider.DispatchCount.load() == 0U &&
+                      TestFixture.Channel.GetSendActionCallCount() == 0U &&
+                      TestFixture.IdSource.NextSequence.load() == 1U &&
+                      TestFixture.OperationObserver.Snapshot().empty(),
+                  "plain ProcessAsync makes zero provider/runtime/action calls");
+
+  CountingRuntimeProbe ToolProbe{TestFixture.Runtime};
+  const Core::CoreChatResult ToolResult = TestFixture.RunToolAsyncWithRuntime(
+      MakeInboundMessage("recall-tool-dedup", "recall-tool-message"), ToolProbe);
+  Passed &= Check(ToolResult.Status == Core::CoreChatStatus::Failed &&
+                      ToolResult.Failure ==
+                          Core::CoreChatFailureCode::MemoryRecallFailed,
+                  "tool ProcessAsync returns MemoryRecallFailed");
+  Passed &= Check(Recall.Calls.load() == 2U &&
+                      ToolProbe.RunTurnCalls.load() == 0U &&
+                      ToolProbe.RunTurnWithToolsCalls.load() == 0U &&
+                      ToolProbe.ToolDefinitionCalls.load() == 0U &&
+                      ToolProbe.DispatchCalls.load() == 0U &&
+                      TestFixture.Provider.ValidateProfileCount.load() == 0U &&
+                      TestFixture.Provider.CapabilitiesCount.load() == 0U &&
+                      TestFixture.Provider.DispatchCount.load() == 0U &&
+                      TestFixture.Channel.GetSendActionCallCount() == 0U &&
+                      TestFixture.IdSource.NextSequence.load() == 1U &&
+                      TestFixture.OperationObserver.Snapshot().empty(),
+                  "tool ProcessAsync makes zero provider/runtime/dispatcher/action calls");
+  return Passed;
+}
+
+[[nodiscard]] bool TestRuntimeSessionRecallFailClosed() {
+  // ConversationScopeKey cannot carry Mode/Sender. Runtime therefore checks
+  // the known volatile Session+recall case and leaves exact non-Session
+  // Mode/Sender binding to the Core grant/Memory Recall boundary.
+  bool Passed = true;
+  for (const bool WithTools : {false, true}) {
     Core::AuthorizedTurnContext Context = MakeRuntimeContext();
-    Mutate(Context);
+    Context.Scope.Mode = Channels::IntegrationMode{"Session"};
+    Context.RecallCandidates.push_back(MakeRecallCandidate(
+        "session-memory", Core::MemoryRecallCandidateKind::IdentityPreference,
+        5U, "must not be recalled"));
     AsyncFakeProvider Provider;
     CountingDispatcher Dispatcher;
     const Providers::ModelProviderProfile Profile = MakeProviderProfile();
     TestProviderCredential Lease;
     EmulativeDialog::Agent::AsyncAgentRuntime Runtime;
     const Core::AgentRunResult Result =
-        RunRuntimeWithTools(Runtime, Context, Provider, Profile, Lease,
-                            Dispatcher);
+        WithTools ? RunRuntimeWithTools(Runtime, Context, Provider, Profile,
+                                        Lease, Dispatcher)
+                  : RunRuntime(Runtime, Context, Provider, Profile, Lease);
+    const std::string Path = WithTools ? "tool path" : "plain path";
     Passed &= Check(Result.GetStatus() == Core::AgentRunStatus::Failed &&
                         Result.GetFailureCode() ==
                             Core::AgentRunFailureCode::InvalidRequest,
-                    Label + " fails before provider dispatch");
+                    "Session-mode recall material is rejected in " + Path);
     Passed &= Check(Provider.DispatchCount.load() == 0U &&
                         Provider.ValidateProfileCount.load() == 0U &&
                         Provider.CapabilitiesCount.load() == 0U &&
                         Dispatcher.ToolDefinitionCalls.load() == 0U &&
                         Dispatcher.DispatchCalls.load() == 0U,
-                    Label +
-                        " produces zero provider calls and zero action calls");
+                    "Session-mode recall material makes zero provider/action calls in " +
+                        Path);
   }
+
+  Core::AuthorizedTurnContext SessionWithoutRecall = MakeRuntimeContext();
+  SessionWithoutRecall.Scope.Mode = Channels::IntegrationMode{"Session"};
+  AsyncFakeProvider Provider;
+  const Providers::ModelProviderProfile Profile = MakeProviderProfile();
+  TestProviderCredential Lease;
+  EmulativeDialog::Agent::AsyncAgentRuntime Runtime;
+  const Core::AgentRunResult Result =
+      RunRuntime(Runtime, SessionWithoutRecall, Provider, Profile, Lease);
+  Passed &= Check(Result.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+                      Provider.DispatchCount.load() == 1U,
+                  "Session mode without recall material remains a valid chat turn");
+
+  Core::AuthorizedTurnContext OpaqueMode = MakeRuntimeContext();
+  OpaqueMode.Scope.Mode = Channels::IntegrationMode{"OpaqueMode"};
+  OpaqueMode.RecallCandidates.push_back(MakeRecallCandidate(
+      "opaque-mode-memory", Core::MemoryRecallCandidateKind::IdentityPreference,
+      5U, "opaque mode memory"));
+  AsyncFakeProvider OpaqueProvider;
+  OpaqueProvider.AllowAdditionalContextMessages = true;
+  const Core::AgentRunResult OpaqueResult =
+      RunRuntime(Runtime, OpaqueMode, OpaqueProvider, Profile, Lease);
+  Passed &= Check(OpaqueResult.GetStatus() == Core::AgentRunStatus::ResponseReady &&
+                      OpaqueProvider.DispatchCount.load() == 1U &&
+                      OpaqueProvider.GetRequests().front().Messages.size() == 2U,
+                  "an arbitrary nonempty non-Session mode is not rejected");
   return Passed;
 }
 
@@ -4543,6 +4803,8 @@ bool RunAllTests() {
   Passed &= TestConcreteAsyncRuntimePreservesLegacyConstructor();
   Passed &= TestRuntimeScopeValidationFailClosed();
   Passed &= TestRuntimeCandidateAndContextFailures();
+  Passed &= TestFailingRecallAsyncFailClosed();
+  Passed &= TestRuntimeSessionRecallFailClosed();
   Passed &= TestRuntimeMemorySelectionBudgets();
   Passed &= TestRuntimeMemoryInstructionPrecedence();
   Passed &= TestCoreMemoryRuntimeVerticalSlice();

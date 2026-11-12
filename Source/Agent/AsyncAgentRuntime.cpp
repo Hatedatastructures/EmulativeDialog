@@ -468,11 +468,18 @@ std::uint64_t EstimateTokenCost(std::string_view Text) noexcept {
 std::optional<Context::ConversationScopeKey> MapTrustedScope(
     const Core::AuthorizedTurnContext& Context) {
   const Core::ConversationScope& Scope = Context.Scope;
+  // ConversationScopeKey intentionally omits IntegrationMode and SenderId, so
+  // Runtime cannot compare them with a second trusted copy. It requires them
+  // nonempty; the Core-issued grant and Memory Recall own exact non-Session
+  // Mode/Sender equality. Session mode is volatile and cannot carry recall.
   if (Context.Principal.Value.empty() || Scope.Principal.Value.empty() ||
       Context.Principal.Value != Scope.Principal.Value ||
       Scope.Channel.Value.empty() || Scope.Account.Value.empty() ||
       Scope.Mode.Value.empty() || Scope.Conversation.Value.empty() ||
       Scope.Sender.Value.empty()) {
+    return std::nullopt;
+  }
+  if (Scope.Mode.Value == "Session" && !Context.RecallCandidates.empty()) {
     return std::nullopt;
   }
 
