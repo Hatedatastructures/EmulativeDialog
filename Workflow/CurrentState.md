@@ -1,3 +1,13 @@
+# 2026-11-12 P3 已完成任务账本闭环
+
+- 本轮从 `origin/main@13298d05299c0b1628b6807edf5fd80036d00b4b` 创建隔离治理 worktree，只修改 `Workflow/Plans/P3.yaml`、`Workflow/Events/CodexRewrite/P3.jsonl`、`Workflow/CurrentState.md` 和 `Workflow/AgentPool.yaml`；没有修改产品 C++，也没有把旧构建当作本轮验证。
+- ED-0155/R3 已完成：PR #110 的固定 Base/Head 为 `376fe97e20c5d0ce36be4ab7545bcd465842e74e` / `d0939173fcf4bab34e9acd1e120c5ec99603be6d`，merge commit 为 `f34f6bc060c0599fd574b50c9660ab7c4a86d3d7`。产品 diff 严格等于 `Tests/Contract/Agent/CMakeLists.txt`；Worker06 固定头审查为 APPROVE，ReviewBundle SHA-256 为 `7F2A89947242F84A78B584C19985A448A99F9F94B887E06128EAC1F6CEDE7110`；Windows checks 2/2 SUCCESS。任务已回填为 Merged/Closed，Worker01 已释放。
+- ED-0158/R3 已完成：PR #139 的 merge commit 为 `268332d3319fbed75eb5d25f3957af436527aa67`，其十个差异路径等于冻结的十路径 WriteSet；后续 PR #140 的最终 Head 为 `d487e291ca7d90b3e00692f6e7dc2c3e86dcbb19`，merge commit 为 `13298d05299c0b1628b6807edf5fd80036d00b4b`，其七个差异路径全部是十路径 WriteSet 的子集。最终独立 ReviewBundle 为 APPROVE，SHA-256 为 `2715B043AAA3948DCD62B1C006234AD3898F514F82EA703DF64CF0EAE314AFDB`；Windows checks 在 #139 和 #140 上均为 2/2 SUCCESS；覆盖率记录为 `CoreChatService.cpp` 86.21%（486 行可执行）和 `ConversationMemory.cpp` 85.10%（604 行可执行）。任务已回填为 Merged/Closed，Worker05 已释放。
+- ED-0161/R1 早已为 Merged；本次发现 AgentPool 仍把 Worker02 绑在 `ED-0161/R1`，已用 AgentSlotRecovered 事件和空 CurrentTaskId 修正，未改写任务本身。
+- ED-0145/R1 的旧 `BlockedBy` 已过期：ED-0151/R3 已 Merged，P3 EntryGate 已 Passed；ED-0104、ED-0105、ED-0106、ED-0113、ED-0121、ED-0143 均由 Controller 查询为 Merged。已保留 `PreviousBlockedBy`，清除活动阻塞并置为 Ready；Goal、Acceptance 和 WriteSet 未变。Owner/Reviewer 的旧会话标识同步到当前稳定槽身份 `luna01` / `luna02`，旧值保留。
+- ED-0162/R1 的八个依赖经 Controller 逐一查询均为 Merged，TaskSpec PR #135 已合并在 `a819cb8`；TaskSpec review 与 Coordinator 接受状态已补齐。AsyncBusinessAction V1 的激活依据为 PR #102 合同合并、PR #117 实现合并及 ED-0150/R6 TaskClosed 事件；CoreMemoryRecallAuthorization V1 的依据为 PR #137 合同合并、PR #139/#140 实现合并及 ED-0158/R3 最终 TaskMerged 事件。任务已置为 Ready，产品写权限仍为 None，等待独立 assignment ledger。
+- 本轮未运行产品 configure/build/CTest 或 gcov；只运行 Controller 查询、YAML/JSONL 解析、路径与事件审计。首次依赖查询早于 ED-0158 回填，已保留为历史；回填后的权威查询证据位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/P3-LedgerClosure/DependencyQueries-AfterLedger-20261112T153500Z.txt`，并由追加的 Correction 事件绑定。
+
 # 2026-11-06 ED-0158/R3 assignment after ED-0161 activation
 
 - ED-0161/R1 is merged at `main@7ff756bfd81d37d1b8240a22e18eba55447fb969`. ED-0158/R3 is now assigned to the frozen `Task/ED-0158-R3CoreMemoryRecall` branch and isolated worktree `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Worktree` at that baseline; product writes remain gated until post-merge Controller validation returns `AssignmentAccepted`.

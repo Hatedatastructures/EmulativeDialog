@@ -3492,15 +3492,22 @@ Tasks:
     EpicId: EP-06
     Title: 将三 Provider、Memory、Network 合同测试接入根 CMake/CTest
     TaskKind: Build
-    State: Blocked
-    BlockedBy: "P3 EntryGate remains Pending until ED-0146 and ED-0147 pass; relaxing TaskIndex.LoadWhen only makes the phase plan discoverable and does not authorize this root-build task."
+    State: Ready
+    PreviousBlockedBy: "P3 EntryGate remains Pending until ED-0146 and ED-0147 pass; relaxing TaskIndex.LoadWhen only makes the phase plan discoverable and does not authorize this root-build task."
+    BlockedByClearedAt: "2026-11-12T15:20:00Z"
+    BlockedByClearedReason: "P3 EntryGate is Passed through merged ED-0151/R3, and every declared dependency is Merged."
+    TaskReadinessValidatedEventId: 7e81cf48-d651-4e2d-bda6-121014d25992
+    TaskReadinessCorrectionEventId: 662ad98e-bd57-41bf-991a-e79bc26219cc
+    UpdatedAt: "2026-11-12T15:20:00Z"
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
     OwnerSlotId: Worker01
-    OwnerAgentId: /root/worker01_http_contract
+    OwnerAgentId: /root/luna01_ed0112_r8_audit
+    PreviousOwnerAgentId: /root/worker01_http_contract
     ReviewerRole: AgentRuntimeOwner
     ReviewerSlotId: Worker02
-    ReviewerAgentId: /root/worker02_instruction_assembly
+    ReviewerAgentId: /root/luna02_ed0148_pr_ready
+    PreviousReviewerAgentId: /root/worker02_instruction_assembly
     ReviewerIndependence: Required
     CreatedBy: Coordinator
     Branch: Task/ED-0145-RootProviderTestIntegration
@@ -6438,7 +6445,7 @@ Tasks:
     EpicId: EP-06
     Title: 将异步业务动作实现对象接入 CoreChatService 测试目标
     TaskKind: Build
-    State: Assigned
+    State: Merged
     Phase: P3
     OwnerRole: BuildAndWorkflowOwner
     OwnerSlotId: Worker01
@@ -6450,7 +6457,7 @@ Tasks:
     CreatedBy: AgentRuntimeOwner
     CreatedByAgentId: "/root/luna02_ed0148_pr_ready"
     CreatedAt: "2026-10-31T03:39:16Z"
-    UpdatedAt: "2026-10-31T04:15:04Z"
+    UpdatedAt: "2026-11-12T15:22:00Z"
     ParallelGroup: AgentRuntimeTestBuildIntegration
     TaskSpecProposalBaseCommit: ba5a3c2ad325224daa2a586844142cf74f54c463
     ProposedTaskSpecBranch: Task/ED-0155-R3IntegrationHeadTaskSpec
@@ -6481,6 +6488,24 @@ Tasks:
     AssignmentLedgerPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/109
     AssignmentLedgerCreatedEventId: 8a76020f-f27c-42a1-b750-c608500ae590
     PreMergeAssignmentValidationEvidence: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3-AssignmentLedger/Logs/PreMerge-ValidateAssignment.log#SHA256=6146F65A792C9A1CACF4FDAAB888AFFD17FF8CFB072D4DE226F19739BE592F69
+    ImplementationPullRequestNumber: 110
+    ImplementationPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/110
+    ImplementationBaseCommit: 376fe97e20c5d0ce36be4ab7545bcd465842e74e
+    ImplementationHeadCommit: d0939173fcf4bab34e9acd1e120c5ec99603be6d
+    ImplementationMergeCommit: f34f6bc060c0599fd574b50c9660ab7c4a86d3d7
+    ImplementationMergedAt: "2026-10-31T04:37:00Z"
+    ImplementationReviewDecision: APPROVE
+    ImplementationReviewerSlotId: Worker06
+    ImplementationReviewerAgentId: /root/luna06_capability_status_audit
+    ImplementationReviewBundle: H:/Qbot/EmulativeDialog.integration-port-contract.build/Reviews/ED-0155-R3-Implementation/Worker06-FinalHeadReview-d0939173.md
+    ImplementationReviewBundleSha256: 7F2A89947242F84A78B584C19985A448A99F9F94B887E06128EAC1F6CEDE7110
+    ImplementationRequiredChecks: "WindowsAgentSlice / Build and Test: 2/2 SUCCESS on Head d0939173 (runs 41169083621 and 41169080337)."
+    PRMergedEventId: 7189442c-2bb4-457a-b537-00fa0842e4b8
+    TaskReviewCompletedEventId: 22a57ce3-5483-4f10-9a02-542de5d3a0d2
+    TaskMergedEventId: 9b40c8cc-7547-4ef4-99cf-8d4d90c63dc8
+    TaskClosedEventId: 51d060b1-f4a4-4036-8758-5abfdb889cf3
+    FinalOwnerSlotRecoveredEventId: 0f274e44-b2f6-438d-8269-f6e25c844742
+    TaskSpecReviewEvidenceEventId: a47534bb-ec51-4e47-913d-5fd98901fcad
     TaskSpecStatusNote: >-
       PR #108 merged the approved R3 TaskSpec to main at 74ba2bcc55aaee36a400bbfc99df5f8962124c9e after Worker01 Owner
       APPROVE and Worker04 fixed-head APPROVE on Base ba5a3c2ad325224daa2a586844142cf74f54c463 / Head
@@ -6654,9 +6679,11 @@ Tasks:
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Logs/R2-Integration-PR104-9ac7-Targets-Verbose-20261031.log#SHA256=3E736166118EB3CBC568E2B5A576D0CBF0841E5621BD43027149BB7B223B6F0A
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Logs/R2-Integration-PR104-9ac7-PresetBuild-20261031.log#SHA256=A541A021836FABA583F10F9B9DF24697807CDC153C90D1CFE08869F1E254DDB0
         - H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R2/Logs/R2-Integration-PR104-9ac7-TargetedCTest-20261031.log#SHA256=695512815E429B21B95347DB358592CD98AE555BC3CF12F0B163AEA14E527424
-    TaskSpecCoordinatorDecision: Pending
+    TaskSpecCoordinatorDecision: Accepted
     TaskSpecCoordinatorDecisionAgentId: "/root"
-    TaskSpecCoordinatorDecisionRequired: true
+    TaskSpecCoordinatorDecisionHeadCommit: b52c5d37d1309201e65f69dfb1d9fd7ed922e18c
+    TaskSpecCoordinatorDecisionEventId: a47534bb-ec51-4e47-913d-5fd98901fcad
+    TaskSpecCoordinatorDecisionRequired: false
     ProposedOwnerImplementationBranch: Task/ED-0155-R3BusinessActionRegistryLink
     ProposedOwnerImplementationWorktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0155-R3/Worktree
     GoalAcceptanceDependencyApprovalGate: "Owner/ProjectOwner approves CR; Worker04 fixed-head review; Coordinator accepts and merges TaskSpec PR; create a fresh assignment ledger bound to then-current main; WorkflowController validate-assignment returns AssignmentAccepted before product writes."
@@ -6768,12 +6795,12 @@ Tasks:
     RequiresExternalAccount: false
     Rules: {MustFollow: [PAR-002], SoftDefaults: [], ApprovedOverrides: []}
     Checkpoint:
-      LastCompletedAcceptance: "R1 is merged and verified; its historical review/build evidence is preserved under PreviousRevision1."
-      CurrentFindingOrFailure: "The historical d3d3375 full integration build stops at AgentRuntimeContractTests.cpp:104 on the unrelated missing GrantedCapabilities initializer; R3 pins the isolated reproduction to PR #104 head 9ac7cfcd, whose compatibility fix permits the CMake overlay acceptance to run."
+      LastCompletedAcceptance: "PR #110 merged the exact one-path BusinessActionRegistryObject target repair at f34f6bc after Worker06 fixed-head APPROVE and two successful WindowsAgentSlice checks."
+      CurrentFindingOrFailure: "None for the frozen one-path scope. The previously recorded d3d3375 compatibility failure remains historical and outside this task."
       TriedApproaches: []
-      NextAction: "Merge the R3 assignment ledger, require post-merge Controller AssignmentAccepted, then implement the one-path CMake link repair and run the fresh R3 Windows validation."
+      NextAction: "No further ED-0155/R3 work; Worker01 is released for the root-build follow-up."
       OpenMessageIds: []
-      LastValidationResult: "CR-ED-0155-003 evidence records R2 implementation target/full-preset build exit 0, current PR #104 head 9ac7cfcd integration configure/build exit 0, and affected CTests 4/4. The d3d3375 complete target build exit 2 is preserved as an unrelated historical compatibility failure. R3 still requires its frozen fresh-directory acceptance run after assignment."
+      LastValidationResult: "Task build and isolated PR #104 reproduction each completed full preset builds with affected CTests 4/4. GitHub checks on PR #110 Head d0939173 passed 2/2; diff was exactly Tests/Contract/Agent/CMakeLists.txt."
     Deliverable: {PullRequestSummaryRequired: true, TaskReportFile: false, EventShard: Workflow/Events/CodexRewrite/P3.jsonl, FollowUpTaskIds: []}
     PreviousRevision2:
       TaskId: ED-0155
@@ -8073,7 +8100,7 @@ Tasks:
     EpicId: EP-06
     Title: 实现 Core 授权的 Memory Recall 边界
     TaskKind: IntegrationTask
-    State: Assigned
+    State: Merged
     Branch: Task/ED-0158-R3CoreMemoryRecall
     Worktree: H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0158-R3/Worktree
     BaselineCommit: 7ff756bfd81d37d1b8240a22e18eba55447fb969
@@ -8107,9 +8134,9 @@ Tasks:
     ModuleIds: [Core, Memory]
     CapabilityIds: [ScopedChatMemory]
     ContractVersion:
-      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged; P3 activation pending; current header remains Frozen candidate)"
+      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged; CoreAgent activation recorded by P3 event 14f66def-8465-44d9-8e36-8f25f5516104; header remains Frozen candidate)"
       - "Architecture/Contracts/MemoryContract.md V1 (header remains Frozen candidate) + MemoryRecord Content V2 addendum (PR #120 merged 30e33b8; PR #121 activation recorded at 38feb8e)"
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed by ED-0161; activation evidence required after merge)
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (PR #137 merged at 7ff756b; activation recorded by ED-0158/R3 final TaskMerged event f706d909-47c6-4b6e-9da7-a7a26cc1592c after PR #139/#140)
     FrozenContractEvidence:
       MemoryContractV1ContentV2:
         PullRequest: 120
@@ -8296,6 +8323,39 @@ Tasks:
     RiskLevel: High
     RiskOwnerRole: MemoryContextOwner
     Rules: {MustFollow: [SEC-001, SEC-002, API-001, CTX-001, PAR-002], SoftDefaults: [], ApprovedOverrides: []}
+    ImplementationPullRequestNumber: 139
+    ImplementationPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/139
+    ImplementationBaseCommit: 027e92f7b907bc28d14c634e4ac464994901bdb0
+    ImplementationInitialHeadCommit: 451749da56d343c9ecfe225649692697cd92e8ce
+    ImplementationInitialMergeCommit: 268332d3319fbed75eb5d25f3957af436527aa67
+    ImplementationFollowUpPullRequestNumber: 140
+    ImplementationFollowUpPullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/140
+    ImplementationFollowUpBranch: Task/ED-0158-R3AuthorizationFix
+    ImplementationFollowUpBaseCommit: 268332d3319fbed75eb5d25f3957af436527aa67
+    ImplementationFollowUpHeadCommit: d487e291ca7d90b3e00692f6e7dc2c3e86dcbb19
+    ImplementationFinalHeadCommit: d487e291ca7d90b3e00692f6e7dc2c3e86dcbb19
+    ImplementationFinalMergeCommit: 13298d05299c0b1628b6807edf5fd80036d00b4b
+    ImplementationReviewDecision: APPROVE
+    ImplementationReviewerSlotId: Worker04
+    ImplementationReviewerAgentId: 01a1afb7-014c-77b1-979a-c7a3341cf7ec
+    ImplementationInitialReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0158-R3-FixedHead-451749d/ReviewBundle.md
+    ImplementationInitialReviewBundleSha256: 38B5A0683D09DAF4B0D54872B9AC0D5D67376D2124072189B116FCBDBF440DD9
+    ImplementationFollowUpReviewBundle: H:/Qbot/ReviewBundles/EmulativeDialog-ED-0158-R3-Followup-FixedHead-d487e29/ReviewBundle.md
+    ImplementationFollowUpReviewBundleSha256: 2715B043AAA3948DCD62B1C006234AD3898F514F82EA703DF64CF0EAE314AFDB
+    ImplementationRequiredChecks: "PR #139 Head 451749d: 2/2 SUCCESS (runs 42167803351 and 42167795340). PR #140 Head d487e29: 2/2 SUCCESS (runs 42176517917 and 42176512062)."
+    PRMergedEventIds: [b65f0361-7bf5-4925-959a-e06b736ae8bf, bcb62516-0139-4029-be39-9f7c70c43121]
+    TaskReviewCompletedEventId: ea37c775-bd16-4ef1-b503-9fb87d8b5f1a
+    TaskMergedEventId: f706d909-47c6-4b6e-9da7-a7a26cc1592c
+    TaskClosedEventId: 8770bfc6-a292-455b-b6b4-871fec713bae
+    FinalOwnerSlotRecoveredEventId: 33cc899c-db33-477b-89df-26f6eb15eadd
+    UpdatedAt: "2026-11-12T15:23:00Z"
+    Checkpoint:
+      LastCompletedAcceptance: "PR #139 implemented the ten-path Core/Memory Recall boundary; PR #140 closed the four authorization gaps at final Head d487e29."
+      CurrentFindingOrFailure: "None for the frozen scope. CoreMemoryRecallAuthorizationContract V1 activation is recorded in P3 events, while the contract header remains Frozen candidate as historical metadata."
+      TriedApproaches: []
+      NextAction: "No further ED-0158/R3 work; Worker05 is released for ED-0162/R1."
+      OpenMessageIds: []
+      LastValidationResult: "Fresh MinGW C++20 Memory build passed; ConversationMemoryTests, SqliteMemoryStorageAdapterTests, and Core.PolicyAndAction passed; AgentRuntime.VerticalSlice passed 1/1; CoreChatService.cpp 86.21% of 486 executable lines and ConversationMemory.cpp 85.10% of 604 lines; WindowsAgentSlice 2/2 SUCCESS on final Head."
     Deliverable:
       PullRequestSummaryRequired: true
       TaskReportFile: false
@@ -8427,13 +8487,18 @@ Tasks:
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
     TaskSpecMergeMethod: squash
     TaskSpecMergedToMainEventId: 63f7d4a4-a04e-45d2-b562-782fbe6ea89f
+    TaskSpecHeadCommit: 9f81083a770f094e8a044d65f62074b3e2fe7ddd
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionAgentId: /root
+    TaskSpecCoordinatorDecisionHeadCommit: 9f81083a770f094e8a044d65f62074b3e2fe7ddd
 
   - TaskId: ED-0162
     TaskRevision: 1
     EpicId: EP-06
     Title: 将授权 Memory Recall DTO 接入异步 AgentRuntime
     TaskKind: IntegrationTask
-    State: Proposed
+    State: Ready
     Phase: P3
     ChangeRequestId: CR-ED-0158-R2-CONTEXT-SPLIT-001
     ParallelGroup: AgentMemoryContextIntegration
@@ -8447,7 +8512,7 @@ Tasks:
     CreatedBy: Coordinator
     CreatedByAgentId: /root
     CreatedAt: "2026-11-01T03:23:17Z"
-    UpdatedAt: "2026-11-01T07:17:01Z"
+    UpdatedAt: "2026-11-12T15:25:00Z"
     DependsOn: [ED-0102, ED-0103, ED-0109, ED-0115, ED-0150, ED-0157, ED-0158, ED-0161]
     ModuleIds: [AgentRuntime, ContextSelector]
     CapabilityIds: [ScopedChatMemory, ContextSelectionAndBudget, InstructionAssemblyAndPolicyPrecedence]
@@ -8466,8 +8531,8 @@ Tasks:
     ContractVersion:
       - Architecture/Contracts/AsyncAgentRuntimeContractV3.md V3 Frozen
       - Architecture/Contracts/AsyncModelProviderContract.md V1 Frozen
-      - "Architecture/Contracts/AsyncBusinessActionContract.md V1 (PR #102 merged; P3 activation pending; header remains Frozen candidate)"
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (ED-0161 output; merge and activation required)
+      - "Architecture/Contracts/AsyncBusinessActionContract.md V1 (PR #102 merged; activation recorded by ED-0150/R6 TaskClosed event 8ccf81d0-1bd2-4af0-a474-97fb96f1d6a0; header remains Frozen candidate)"
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (PR #137 merged; activation recorded by PR #139/#140 and ED-0158/R3 TaskMerged event f706d909-47c6-4b6e-9da7-a7a26cc1592c)
     Context:
       ModuleId: AgentRuntime
       ReadSet:
@@ -8622,6 +8687,39 @@ Tasks:
     TaskSpecMergePullRequestUrl: https://github.com/Hatedatastructures/EmulativeDialog/pull/135
     TaskSpecMergeMethod: squash
     TaskSpecMergedToMainEventId: c4f40c0a-ad2e-4e56-8ae7-167bc907d742
+    TaskSpecHeadCommit: 9f81083a770f094e8a044d65f62074b3e2fe7ddd
+    TaskSpecReviewStatus: ApprovedAndMergedToMain
+    TaskSpecCoordinatorDecision: Accepted
+    TaskSpecCoordinatorDecisionAgentId: /root
+    TaskSpecCoordinatorDecisionHeadCommit: 9f81083a770f094e8a044d65f62074b3e2fe7ddd
+    TaskReadinessValidatedEventId: c0a686d5-725b-4f64-ac06-89c7571520f3
+    TaskReadinessCorrectionEventId: 40289d12-8003-426f-978d-eb31174c5cb6
+    TaskReadinessValidatedAt: "2026-11-12T15:25:00Z"
+    DependencyStatesAtReadiness:
+      ED-0102: Merged
+      ED-0103: Merged
+      ED-0109: Merged
+      ED-0115: Merged
+      ED-0150: Merged
+      ED-0157: Merged
+      ED-0158: Merged
+      ED-0161: Merged
+    ContractActivationEvidence:
+      AsyncBusinessActionV1:
+        ContractPullRequestNumber: 102
+        ContractMergeCommit: de7376a97f8e645f946c77056439f90618c31448
+        ImplementationPullRequestNumber: 117
+        ImplementationHeadCommit: 20c6289cfbbed9e689341231a7a0716803e63d55
+        ImplementationMergeCommit: 13c6b0dcb7b623da47283789e1d000ac69a30edb
+        TaskClosedEventId: 8ccf81d0-1bd2-4af0-a474-97fb96f1d6a0
+      CoreMemoryRecallAuthorizationV1:
+        ContractPullRequestNumber: 137
+        ContractMergeCommit: 7ff756bfd81d37d1b8240a22e18eba55447fb969
+        ImplementationPullRequestNumbers: [139, 140]
+        FinalImplementationHeadCommit: d487e291ca7d90b3e00692f6e7dc2c3e86dcbb19
+        FinalImplementationMergeCommit: 13298d05299c0b1628b6807edf5fd80036d00b4b
+        ActivationEvidenceEventId: f706d909-47c6-4b6e-9da7-a7a26cc1592c
+    ContractActivationNote: "Activation is recorded in P3 events; the contract headers retain their historical Frozen candidate status."
 
   - TaskId: ED-0161
     TaskRevision: 1
