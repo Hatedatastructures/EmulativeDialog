@@ -1,12 +1,11 @@
-# Offline WinHTTP transport contract target.
-#
-# The root CMakeLists.txt is outside this task's frozen WriteSet, so this file
-# is a self-contained project for the task validation command. Integration into
-# the root build is a reported follow-up gap.
+# Offline WinHTTP transport contract target. The same file is consumable as a
+# standalone project and as a root `add_subdirectory` child.
 cmake_minimum_required(VERSION 3.24)
-project(EmulativeDialogWinHttpTransportContract LANGUAGES CXX)
 
-include(CTest)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(EmulativeDialogWinHttpTransportContract LANGUAGES CXX)
+  include(CTest)
+endif()
 
 set(EMULATIVE_DIALOG_ROOT
     "${CMAKE_CURRENT_LIST_DIR}/../../../..")
