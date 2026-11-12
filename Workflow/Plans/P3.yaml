@@ -3497,6 +3497,7 @@ Tasks:
     BlockedByClearedAt: "2026-11-12T15:20:00Z"
     BlockedByClearedReason: "P3 EntryGate is Passed through merged ED-0151/R3, and every declared dependency is Merged."
     TaskReadinessValidatedEventId: 7e81cf48-d651-4e2d-bda6-121014d25992
+    TaskReadinessCorrectionEventId: 662ad98e-bd57-41bf-991a-e79bc26219cc
     UpdatedAt: "2026-11-12T15:20:00Z"
     Phase: P3
     OwnerRole: BuildAndDependencyOwner
@@ -8133,9 +8134,9 @@ Tasks:
     ModuleIds: [Core, Memory]
     CapabilityIds: [ScopedChatMemory]
     ContractVersion:
-      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged; P3 activation pending; current header remains Frozen candidate)"
+      - "Architecture/Contracts/CoreAgentContract.md V1.1 (PR #102 merged; CoreAgent activation recorded by P3 event 14f66def-8465-44d9-8e36-8f25f5516104; header remains Frozen candidate)"
       - "Architecture/Contracts/MemoryContract.md V1 (header remains Frozen candidate) + MemoryRecord Content V2 addendum (PR #120 merged 30e33b8; PR #121 activation recorded at 38feb8e)"
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (proposed by ED-0161; activation evidence required after merge)
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (PR #137 merged at 7ff756b; activation recorded by P3 event f6c5e6b1-5f70-4cf1-a161-0161aeeeeded after ED-0158/R3 merge)
     FrozenContractEvidence:
       MemoryContractV1ContentV2:
         PullRequest: 120
@@ -8530,8 +8531,8 @@ Tasks:
     ContractVersion:
       - Architecture/Contracts/AsyncAgentRuntimeContractV3.md V3 Frozen
       - Architecture/Contracts/AsyncModelProviderContract.md V1 Frozen
-      - "Architecture/Contracts/AsyncBusinessActionContract.md V1 (PR #102 merged; P3 activation pending; header remains Frozen candidate)"
-      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (ED-0161 output; merge and activation required)
+      - "Architecture/Contracts/AsyncBusinessActionContract.md V1 (PR #102 merged; activation recorded by ED-0150/R6 TaskClosed event 8ccf81d0-1bd2-4af0-a474-97fb96f1d6a0; header remains Frozen candidate)"
+      - Architecture/Contracts/CoreMemoryRecallAuthorizationContractV1.md V1 (PR #137 merged; activation recorded by PR #139/#140 and ED-0158/R3 TaskMerged event f706d909-47c6-4b6e-9da7-a7a26cc1592c)
     Context:
       ModuleId: AgentRuntime
       ReadSet:
@@ -8692,6 +8693,7 @@ Tasks:
     TaskSpecCoordinatorDecisionAgentId: /root
     TaskSpecCoordinatorDecisionHeadCommit: 9f81083a770f094e8a044d65f62074b3e2fe7ddd
     TaskReadinessValidatedEventId: c0a686d5-725b-4f64-ac06-89c7571520f3
+    TaskReadinessCorrectionEventId: 40289d12-8003-426f-978d-eb31174c5cb6
     TaskReadinessValidatedAt: "2026-11-12T15:25:00Z"
     DependencyStatesAtReadiness:
       ED-0102: Merged
