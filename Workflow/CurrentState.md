@@ -1,3 +1,11 @@
+# 2026-11-13 ED-0145/R1 完成：根 Provider/Memory/Network 合同测试注册
+
+- 权威 `origin/main` 为 `5584737f493c8573284eaa8f0e56ac44506f1bdb`。PR [#146](https://github.com/Hatedatastructures/EmulativeDialog/pull/146) 的冻结产品补丁 Base 为 `3afd27b46e2535ac1a7ae7575e4f5c25fd31f863`，已审查产品 Head 为 `2973d6e8d482546ff71191be9421fa39cf105fec`，最终 PR Head 为 rebase 后的 `12edd5d409ac01fc5ab7b304b359993c22ae5cdb`；squash merge commit 为 `5584737f493c8573284eaa8f0e56ac44506f1bdb`。前后 patch-id 相同，Base..Head 严格只有四条冻结 WriteSet 路径。
+- 根 `windows-agent-slice` 现在注册 Providers、Memory 与 Platform/Network 合同子目录；三个 Provider adapter、两个 Memory 测试和两个 Network 测试均实际编译并运行。全目标 build exit 0，全量 CTest 为 `29/29` passed，exit 0；SQLite 测试使用 `RootBuild/Tests/Contract/Memory/Data` 隔离目录并串行运行。
+- 独立固定 Head 审查为 APPROVE：产品 Head 报告 SHA-256 `9A8959F432A63821FCA657B67BD835AFCC1212AB88A5F116CA8166FD11401B68`，rebase Head 报告 SHA-256 `0AF05FE7A4DFFEFD95AA2070FD1B5217125DB871B78292BBB1C3813CA50DDC4E`。PR #146 的两个 `WindowsAgentSlice / Build and Test` checks 均为 SUCCESS；merge 后 `validate-assignment` 为 `AssignmentAccepted`，exit 0，证据位于 `H:/Qbot/EmulativeDialog.integration-port-contract.build/ED-0145-R1-PostMergeValidation146/`。
+- Standalone 检查保留并通过：Providers 3/3、Memory 5/5、Network 2/2。没有修改 `Source/`、CMakePresets、依赖锁或单个 Provider 子 CMake；没有真实 QQ/Provider 网络或外部副作用测试。
+- ED-0145/R1 已回填为 Merged/Closed；Worker01 已释放。P3 当前没有 Ready 产品任务，下一步只基于能力地图提出 P4 TaskSpec 建议，等待用户确认后再实施。
+
 # 2026-11-13 ED-0145/R1 assignment candidate
 
 - 权威 `origin/main` 为 `3afd27b46e2535ac1a7ae7575e4f5c25fd31f863`。ED-0145/R1 仍是冻结的四路径根构建任务，WriteSet 为 `CMakeLists.txt`、`Tests/Contract/Providers/CMakeLists.txt`、`Tests/Contract/Memory/CMakeLists.txt`、`Tests/Contract/Platform/Network/CMakeLists.txt`；不得修改 `Source/`。
