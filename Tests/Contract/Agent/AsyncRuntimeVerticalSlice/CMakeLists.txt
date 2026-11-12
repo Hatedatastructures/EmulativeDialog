@@ -32,15 +32,25 @@ add_executable(
   "${PROJECT_ROOT}/Source/Agent/AgentEventProjector.cpp"
   "${PROJECT_ROOT}/Source/Agent/AsyncAgentRuntime.cpp"
   "${PROJECT_ROOT}/Source/Agent/AsyncToolCallCoordinator.cpp"
+  "${PROJECT_ROOT}/Source/Agent/InstructionAssembler.cpp"
   "${PROJECT_ROOT}/Source/Agent/OutputBudgetController.cpp"
   "${PROJECT_ROOT}/Source/Agent/ToolCallCoordinator.cpp"
   "${PROJECT_ROOT}/Source/Core/BusinessActionRegistry.cpp"
   "${PROJECT_ROOT}/Source/Core/CoreChatService.cpp"
   "${PROJECT_ROOT}/Source/Core/IdentityPolicy.cpp"
+  "${PROJECT_ROOT}/Source/Core/InstructionPolicy.cpp"
   "${PROJECT_ROOT}/Source/Core/OperationRecord.cpp"
+  "${PROJECT_ROOT}/Source/Context/ContextSelector.cpp"
+  "${PROJECT_ROOT}/Source/Memory/ConversationMemory.cpp"
   "${PROJECT_ROOT}/Tests/Contract/Channels/Contracts/MockChannelAdapter.cpp"
   "${PROJECT_ROOT}/Tests/Contract/Agent/ToolCallRoundTripTests.cpp"
+  "${PROJECT_ROOT}/Tests/Contract/Memory/ConversationMemoryTests.cpp"
   AsyncRuntimeVerticalSliceTests.cpp
+)
+set_source_files_properties(
+  "${PROJECT_ROOT}/Tests/Contract/Memory/ConversationMemoryTests.cpp"
+  PROPERTIES
+    COMPILE_DEFINITIONS "EMULATIVE_DIALOG_MEMORY_SUITE_NO_MAIN"
 )
 target_include_directories(
   AsyncRuntimeVerticalSliceTests
@@ -90,6 +100,8 @@ if(BUILD_TESTING)
   )
   set_tests_properties(
     Agent.AsyncRuntimeVerticalSlice
-    PROPERTIES TIMEOUT 30
+    PROPERTIES
+      TIMEOUT 30
+      WORKING_DIRECTORY "${PROJECT_ROOT}"
   )
 endif()
